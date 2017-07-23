@@ -328,4 +328,44 @@ char const* message::read_string() const
     return (char const*)str;
 }
 
+//------------------------------------------------------------------------------
+void delta_message::write_bits(int value, int bits)
+{
+    if (_target) {
+        _target->write_bits(value, bits);
+    }
+
+    if (!_source) {
+        _writer->write_bits(value, bits);
+    } else if (value == _source->read_bits(bits)) {
+        _writer->write_bits(0, 1);
+    } else {
+        _writer->write_bits(1, 1);
+        _writer->write_bits(value, bits);
+    }
+}
+
+//------------------------------------------------------------------------------
+int delta_message::read_bits(int bits) const
+{
+    int value;
+
+    if (!_source) {
+        value = _reader->read_bits(bits);
+    } else {
+        int base_value = _source->read_bits(bits);
+        if (!_reader->read_bits(1)) {
+            value = base_value;
+        } else {
+            value = _reader->read_bits(bits);
+        }
+    }
+
+    if (_target) {
+        _target->write_bits(value, bits);
+    }
+
+    return value;
+}
+
 } // namespace network
