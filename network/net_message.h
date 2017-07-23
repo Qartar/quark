@@ -132,4 +132,21 @@ protected:
     std::array<byte, 1400> _buffer;
 };
 
+//------------------------------------------------------------------------------
+class delta_message
+{
+public:
+    //! write an arbitrary number of bits
+    void write_bits(int value, int bits);
+
+    //! read an arbitrary number of bits
+    int read_bits(int bits) const;
+
+protected:
+    network::message const* _source;
+    network::message const* _reader;
+    network::message* _writer;
+    network::message* _target; //!< source + delta
+};
+
 } // namespace network
