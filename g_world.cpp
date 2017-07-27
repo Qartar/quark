@@ -174,11 +174,13 @@ void world::read_snapshot(network::message& message)
 //------------------------------------------------------------------------------
 void world::read_frame(network::message const& message)
 {
-    _framenum = message.read_long();
+    network::delta_message delta_message(nullptr, &message, nullptr);
+
+    _framenum = delta_message.read_long();
 
     // read active objects
     for (std::size_t ii = 0; ; ++ii) {
-        std::size_t spawn_id = message.read_long();
+        std::size_t spawn_id = delta_message.read_long();
 
         if (!spawn_id) {
             for (; ii < _objects.size(); ++ii) {
@@ -187,7 +189,7 @@ void world::read_frame(network::message const& message)
             break;
         }
 
-        auto type = static_cast<object_type>(message.read_byte());
+        auto type = static_cast<object_type>(delta_message.read_byte());
 
         while (ii < _objects.size() && _objects[ii]->_spawn_id < spawn_id) {
             remove(_objects[ii++].get());
@@ -195,11 +197,11 @@ void world::read_frame(network::message const& message)
 
         if (ii >= _objects.size()) {
             game::object* obj = spawn_snapshot(spawn_id, type);
-            obj->read_snapshot(message);
+            obj->read_snapshot(delta_message);
             obj->set_position(obj->get_position(), true);
         } else /*if (ii < _objects.size())*/ {
             assert(_objects[ii]->_spawn_id == spawn_id);
-            _objects[ii]->read_snapshot(message);
+            _objects[ii]->read_snapshot(delta_message);
         }
     }
 }
@@ -232,15 +234,16 @@ void world::write_snapshot(network::message& message) const
 
     // write frame
     message.write_byte(static_cast<int>(message_type::frame));
-    message.write_long(_framenum);
+    network::delta_message delta_message(nullptr, &message, nullptr);
+    delta_message.write_long(_framenum);
 
     // write active objects
     for (auto const& obj : _objects) {
-        message.write_long(obj->_spawn_id);
-        message.write_byte(static_cast<int>(obj->_type));
-        obj->write_snapshot(message);
+        delta_message.write_long(obj->_spawn_id);
+        delta_message.write_byte(static_cast<int>(obj->_type));
+        obj->write_snapshot(delta_message);
     }
-    message.write_long(0);
+    delta_message.write_long(0);
 
     // write sounds and effects
     message.write(_message);

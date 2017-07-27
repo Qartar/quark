@@ -374,7 +374,7 @@ void tank::update_effects()
 }
 
 //------------------------------------------------------------------------------
-void tank::read_snapshot(network::message const& message)
+void tank::read_snapshot(network::delta_message const& message)
 {
     _old_position = get_position();
     _old_rotation = get_rotation();
@@ -399,7 +399,7 @@ void tank::read_snapshot(network::message const& message)
 }
 
 //------------------------------------------------------------------------------
-void tank::write_snapshot(network::message& message) const
+void tank::write_snapshot(network::delta_message& message) const
 {
     message.write_byte(_player_index);
     message.write_float(_color.r);
@@ -716,7 +716,7 @@ void projectile::draw(render::system* renderer, float time) const
 }
 
 //------------------------------------------------------------------------------
-void projectile::read_snapshot(network::message const& message)
+void projectile::read_snapshot(network::delta_message const& message)
 {
     _old_position = get_position();
 
@@ -731,7 +731,7 @@ void projectile::read_snapshot(network::message const& message)
 }
 
 //------------------------------------------------------------------------------
-void projectile::write_snapshot(network::message& message) const
+void projectile::write_snapshot(network::delta_message& message) const
 {
     message.write_long(_owner->spawn_id());
     message.write_float(_damage);

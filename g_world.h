@@ -71,8 +71,8 @@ public:
     virtual void touch(object *other, physics::contact const* contact);
     virtual void think();
 
-    virtual void read_snapshot(network::message const& message);
-    virtual void write_snapshot(network::message& message) const;
+    virtual void read_snapshot(network::delta_message const& message);
+    virtual void write_snapshot(network::delta_message& message) const;
 
     //! Get frame-interpolated position
     virtual vec2 get_position(float lerp) const;
@@ -150,8 +150,8 @@ public:
     virtual void touch(object *other, physics::contact const* contact) override;
     virtual void think() override;
 
-    virtual void read_snapshot(network::message const& message) override;
-    virtual void write_snapshot(network::message& message) const override;
+    virtual void read_snapshot(network::delta_message const& message) override;
+    virtual void write_snapshot(network::delta_message& message) const override;
 
     float damage() const { return _damage; }
 
@@ -186,8 +186,8 @@ public:
     virtual void touch(object *other, physics::contact const* contact) override;
     virtual void think() override;
 
-    virtual void read_snapshot(network::message const& message) override;
-    virtual void write_snapshot(network::message& message) const override;
+    virtual void read_snapshot(network::delta_message const& message) override;
+    virtual void write_snapshot(network::delta_message& message) const override;
 
     //! Get frame-interpolated turret rotation
     float get_turret_rotation(float lerp) const;
