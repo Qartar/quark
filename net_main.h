@@ -47,10 +47,10 @@ public:
 };
 
 //------------------------------------------------------------------------------
-class message
+template<typename impl> class message_base
 {
 public:
-    message(byte* data, std::size_t size);
+    message_base(byte* data, std::size_t size);
 
     //! reset write and read cursor to beginning of internal buffer
     void reset();
@@ -66,20 +66,20 @@ public:
     //! return a pointer to internal buffer at current read cursor for reading
     byte const* read(std::size_t size) const;
 
-    //! reserve bytes for writing but does not advance write cursor until commit
-    byte* reserve(std::size_t size);
-    //! commit reserved bytes, size must be less than or equal to total reserved bytes
-    std::size_t commit(std::size_t size);
-
     //! write data from the given buffer
     std::size_t write(byte const* data, std::size_t size);
     //! read data into the given buffer
     std::size_t read(byte* data, std::size_t size) const;
 
     //! write data from the given message
-    std::size_t write(network::message const& message);
+    template<typename T> std::size_t write(network::message_base<T> const& message);
     //! read data into the given message
-    std::size_t read(network::message& message) const;
+    template<typename T> std::size_t read(network::message_base<T>& message) const;
+
+    //! reserve bytes for writing but does not advance write cursor until commit
+    byte* reserve(std::size_t size);
+    //! commit reserved bytes, size must be less than or equal to total reserved bytes
+    std::size_t commit(std::size_t size);
 
     //! number of bits that have been read
     std::size_t bits_read() const;
@@ -101,18 +101,16 @@ public:
     //! number of bytes that can be written or reserved
     std::size_t bytes_available() const { return _size - _bytes_written - _bytes_reserved; }
 
-    //! write an arbitrary number of bits
-    void write_bits(int value, int bits);
     //! write bit padding up to the next aligned byte
     void write_align();
     //! write an 8-bit unsigned integer
-    void write_byte(int b) { write_bits(b, 8); }
+    void write_byte(int b) { static_cast<typename impl*>(this)->write_bits(b, 8); }
     //! write an 8-bit signed integer
-    void write_char(int c) { write_bits(c, -8); }
+    void write_char(int c) { static_cast<typename impl*>(this)->write_bits(c, -8); }
     //! write a 16-bit signed integer
-    void write_short(int s) { write_bits(s, -16); }
+    void write_short(int s) { static_cast<typename impl*>(this)->write_bits(s, -16); }
     //! write a 32-bit signed integer
-    void write_long(int l) { write_bits(l, -32); }
+    void write_long(int l) { static_cast<typename impl*>(this)->write_bits(l, -32); }
     //! write a 32-bit float
     void write_float(float f);
     //! write a two-dimensional vector
@@ -120,18 +118,16 @@ public:
     //! write a null-terminated string
     void write_string(char const* sz);
 
-    //! read an arbitrary number of bits
-    int read_bits(int bits) const;
     //! read bit padding up to the next aligned byte
     void read_align() const;
     //! read an 8-bit unsigned integer
-    int read_byte() const { return read_bits(8); }
+    int read_byte() const { return static_cast<typename impl const*>(this)->read_bits(8); }
     //! read an 8-bit signed integer
-    int read_char() const { return read_bits(-8); }
+    int read_char() const { return static_cast<typename impl const*>(this)->read_bits(-8); }
     //! read a 16-bit signed integer
-    int read_short() const { return read_bits(-16); }
+    int read_short() const { return static_cast<typename impl const*>(this)->read_bits(-16); }
     //! read a 32-bit signed integer
-    int read_long() const { return read_bits(-32); }
+    int read_long() const { return static_cast<typename impl const*>(this)->read_bits(-32); }
     //! read a 32-bit float
     float read_float() const;
     //! read a two-dimensional vector
@@ -149,6 +145,19 @@ protected:
     std::size_t _bytes_reserved;
 
     constexpr static int byte_bits = CHAR_BIT;
+};
+
+//------------------------------------------------------------------------------
+class message : public message_base<message>
+{
+public:
+    message(byte* data, std::size_t size);
+
+    //! write an arbitrary number of bits
+    void write_bits(int value, int bits);
+
+    //! read an arbitrary number of bits
+    int read_bits(int bits) const;
 
 protected:
     message(message&&) = delete;
@@ -168,9 +177,12 @@ protected:
 };
 
 //------------------------------------------------------------------------------
-class delta_message
+class delta_message : public message_base<delta_message>
 {
 public:
+    delta_message(network::message const* source, network::message const* reader, network::message* target);
+    delta_message(network::message const* source, network::message* writer, network::message* target);
+
     //! write an arbitrary number of bits
     void write_bits(int value, int bits);
 
@@ -276,3 +288,5 @@ protected:
 };
 
 } // namespace network
+
+#include "net_msg.inl"
