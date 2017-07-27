@@ -325,6 +325,26 @@ char const* message::read_string() const
     return (char const*)str;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+//------------------------------------------------------------------------------
+delta_message::delta_message(network::message const* source, network::message const* reader, network::message* target)
+    : _source(source)
+    , _reader(reader)
+    , _writer(nullptr)
+    , _target(target)
+    , _has_changed(false)
+{}
+
+//------------------------------------------------------------------------------
+delta_message::delta_message(network::message const* source, network::message* writer, network::message* target)
+    : _source(source)
+    , _reader(nullptr)
+    , _writer(writer)
+    , _target(target)
+    , _has_changed(false)
+{}
+
 //------------------------------------------------------------------------------
 void delta_message::write_bits(int value, int bits)
 {
@@ -334,12 +354,30 @@ void delta_message::write_bits(int value, int bits)
 
     if (!_source) {
         _writer->write_bits(value, bits);
+        _has_changed = true;
     } else if (value == _source->read_bits(bits)) {
         _writer->write_bits(0, 1);
     } else {
         _writer->write_bits(1, 1);
         _writer->write_bits(value, bits);
+        _has_changed = true;
     }
+}
+
+//------------------------------------------------------------------------------
+void delta_message::write_float(float f)
+{
+    int i;
+
+    memcpy(&i, &f, sizeof(i));
+    write_bits(i, 32);
+}
+
+//------------------------------------------------------------------------------
+void delta_message::write_vector(vec2 v)
+{
+    write_float(v.x);
+    write_float(v.y);
 }
 
 //------------------------------------------------------------------------------
@@ -349,12 +387,14 @@ int delta_message::read_bits(int bits) const
 
     if (!_source) {
         value = _reader->read_bits(bits);
+        _has_changed = true;
     } else {
         int base_value = _source->read_bits(bits);
         if (!_reader->read_bits(1)) {
             value = base_value;
         } else {
             value = _reader->read_bits(bits);
+            _has_changed = true;
         }
     }
 
@@ -363,6 +403,24 @@ int delta_message::read_bits(int bits) const
     }
 
     return value;
+}
+
+//------------------------------------------------------------------------------
+float delta_message::read_float() const
+{
+    float f;
+
+    int i = read_bits(32);
+    memcpy(&f, &i, sizeof(i));
+    return f;
+}
+
+//------------------------------------------------------------------------------
+vec2 delta_message::read_vector() const
+{
+    float outx = read_float();
+    float outy = read_float();
+    return vec2(outx, outy);
 }
 
 } // namespace network

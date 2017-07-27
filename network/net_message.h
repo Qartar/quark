@@ -136,17 +136,48 @@ protected:
 class delta_message
 {
 public:
+    delta_message(network::message const* source, network::message const* reader, network::message* target);
+    delta_message(network::message const* source, network::message* writer, network::message* target);
+
+    //! true if source is different than target
+    bool has_changed() const { return _has_changed; }
+
     //! write an arbitrary number of bits
     void write_bits(int value, int bits);
+    //! write an 8-bit unsigned integer
+    void write_byte(int b) { write_bits(b, 8); }
+    //! write an 8-bit signed integer
+    void write_char(int c) { write_bits(c, -8); }
+    //! write a 16-bit signed integer
+    void write_short(int s) { write_bits(s, -16); }
+    //! write a 32-bit signed integer
+    void write_long(int l) { write_bits(l, -32); }
+    //! write a 32-bit float
+    void write_float(float f);
+    //! write a two-dimensional vector
+    void write_vector(vec2 v);
 
     //! read an arbitrary number of bits
     int read_bits(int bits) const;
+    //! read an 8-bit unsigned integer
+    int read_byte() const { return read_bits(8); }
+    //! read an 8-bit signed integer
+    int read_char() const { return read_bits(-8); }
+    //! read a 16-bit signed integer
+    int read_short() const { return read_bits(-16); }
+    //! read a 32-bit signed integer
+    int read_long() const { return read_bits(-32); }
+    //! read a 32-bit float
+    float read_float() const;
+    //! read a two-dimensional vector
+    vec2 read_vector() const;
 
 protected:
     network::message const* _source;
     network::message const* _reader;
     network::message* _writer;
     network::message* _target; //!< source + delta
+    mutable bool _has_changed;
 };
 
 } // namespace network
