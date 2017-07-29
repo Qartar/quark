@@ -423,4 +423,98 @@ vec2 delta_message::read_vector() const
     return vec2(outx, outy);
 }
 
+//------------------------------------------------------------------------------
+void delta_message::write_delta_float(float value, float delta, float epsilon)
+{
+    if (_target) {
+        _target->write_float(value);
+    }
+
+    if (!_source) {
+        _writer->write_float(value);
+        _has_changed = true;
+    } else {
+        float base_value = _source->read_float() + delta;
+        if (std::abs(value - base_value) < epsilon) {
+            _writer->write_bits(0, 1);
+        } else {
+            _writer->write_bits(1, 1);
+            _writer->write_float(value);
+            _has_changed = true;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void delta_message::write_delta_vector(vec2 value, vec2 delta, float epsilon)
+{
+    if (_target) {
+        _target->write_vector(value);
+    }
+
+    if (!_source) {
+        _writer->write_vector(value);
+        _has_changed = true;
+    } else {
+        vec2 base_value = _source->read_vector() + delta;
+        if ((value - base_value).length_sqr() < square(epsilon)) {
+            _writer->write_bits(0, 1);
+        } else {
+            _writer->write_bits(1, 1);
+            _writer->write_vector(value);
+            _has_changed = true;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+float delta_message::read_delta_float(float delta) const
+{
+    float value;
+
+    if (!_source) {
+        value = _reader->read_float();
+        _has_changed = true;
+    } else {
+        float base_value = _source->read_float();
+        if (!_reader->read_bits(1)) {
+            value = base_value + delta;
+        } else {
+            value = _reader->read_float();
+            _has_changed = true;
+        }
+    }
+
+    if (_target) {
+        _target->write_float(value);
+    }
+
+    return value;
+}
+
+//------------------------------------------------------------------------------
+vec2 delta_message::read_delta_vector(vec2 delta) const
+{
+    vec2 value;
+
+    if (!_source) {
+        value = _reader->read_vector();
+        _has_changed = true;
+    } else {
+        vec2 base_value = _source->read_vector();
+        if (!_reader->read_bits(1)) {
+            value = base_value + delta;
+        } else {
+            value = _reader->read_vector();
+            _has_changed = true;
+        }
+    }
+
+    if (_target) {
+        _target->write_vector(value);
+    }
+
+    return value;
+}
+
 } // namespace network

@@ -172,6 +172,16 @@ public:
     //! read a two-dimensional vector
     vec2 read_vector() const;
 
+    //!
+    void write_delta_float(float value, float delta, float epsilon = 1e-3f);
+    //!
+    void write_delta_vector(vec2 value, vec2 delta, float epsilon = 1e-3f);
+
+    //!
+    float read_delta_float(float delta) const;
+    //!
+    vec2 read_delta_vector(vec2 delta) const;
+
 protected:
     network::message const* _source;
     network::message const* _reader;
