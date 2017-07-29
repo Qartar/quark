@@ -376,22 +376,25 @@ void tank::update_effects()
 //------------------------------------------------------------------------------
 void tank::read_snapshot(network::delta_message const& message)
 {
-    _old_position = get_position();
-    _old_rotation = get_rotation();
-    _old_turret_rotation = get_turret_rotation();
-
     _player_index = message.read_byte();
     _client = g_Game->_clients + _player_index;
     _world->_players[_player_index] = this;
-    _color.r = message.read_float();
-    _color.g = message.read_float();
-    _color.b = message.read_float();
-    set_position(message.read_vector());
+    _color.r = message.read_byte() * (1.f / 255.5f);
+    _color.g = message.read_byte() * (1.f / 255.5f);
+    _color.b = message.read_byte() * (1.f / 255.5f);
+
     set_linear_velocity(message.read_vector());
-    set_rotation(message.read_float());
+    set_position(message.read_delta_vector(get_linear_velocity()));
+    _old_position = message.read_delta_vector(get_linear_velocity());
+
     set_angular_velocity(message.read_float());
-    _turret_rotation = message.read_float();
-    _turret_velocity = message.read_float();
+    set_rotation(message.read_delta_float(get_angular_velocity()));
+    _old_rotation = message.read_delta_float(get_angular_velocity());
+
+    set_turret_velocity(message.read_float());
+    set_turret_rotation(message.read_delta_float(get_turret_velocity()));
+    _old_turret_rotation = message.read_delta_float(get_turret_velocity());
+
     _damage = message.read_float();
     _fire_time = message.read_float();
 
@@ -402,15 +405,22 @@ void tank::read_snapshot(network::delta_message const& message)
 void tank::write_snapshot(network::delta_message& message) const
 {
     message.write_byte(_player_index);
-    message.write_float(_color.r);
-    message.write_float(_color.g);
-    message.write_float(_color.b);
-    message.write_vector(get_position());
+    message.write_byte(_color.r * 255.5f);
+    message.write_byte(_color.g * 255.5f);
+    message.write_byte(_color.b * 255.5f);
+
     message.write_vector(get_linear_velocity());
-    message.write_float(get_rotation());
+    message.write_delta_vector(get_position(), get_linear_velocity());
+    message.write_delta_vector(_old_position, get_linear_velocity());
+
     message.write_float(get_angular_velocity());
-    message.write_float(_turret_rotation);
-    message.write_float(_turret_velocity);
+    message.write_delta_float(get_rotation(), get_angular_velocity());
+    message.write_delta_float(_old_rotation, get_angular_velocity());
+
+    message.write_float(get_turret_velocity());
+    message.write_delta_float(get_turret_rotation(), get_turret_velocity());
+    message.write_delta_float(_old_turret_rotation, get_turret_velocity());
+
     message.write_float(_damage);
     message.write_float(_fire_time);
 }
@@ -718,13 +728,12 @@ void projectile::draw(render::system* renderer, float time) const
 //------------------------------------------------------------------------------
 void projectile::read_snapshot(network::delta_message const& message)
 {
-    _old_position = get_position();
-
     _owner = _world->find_object(message.read_long());
     _damage = message.read_float();
     _type = static_cast<weapon_type>(message.read_byte());
-    set_position(message.read_vector());
     set_linear_velocity(message.read_vector());
+    set_position(message.read_delta_vector(get_linear_velocity()));
+    _old_position = message.read_delta_vector(get_linear_velocity());
 
     update_effects();
     update_sound();
@@ -736,8 +745,9 @@ void projectile::write_snapshot(network::delta_message& message) const
     message.write_long(_owner->spawn_id());
     message.write_float(_damage);
     message.write_byte(static_cast<int>(_type));
-    message.write_vector(get_position());
     message.write_vector(get_linear_velocity());
+    message.write_delta_vector(get_position(), get_linear_velocity());
+    message.write_delta_vector(_old_position, get_linear_velocity());
 }
 
 } // namespace game

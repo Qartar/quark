@@ -127,7 +127,7 @@ void world::run_frame()
 }
 
 //------------------------------------------------------------------------------
-void world::read_snapshot(network::message& message)
+void world::read_snapshot(network::message const& message)
 {
     for (auto& obj : _pending) {
         _objects.push_back(std::move(obj));

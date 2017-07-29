@@ -275,7 +275,7 @@ public:
     void run_frame ();
     void draw(render::system* renderer, float time) const;
 
-    void read_snapshot(network::message& message);
+    void read_snapshot(network::message const& message);
     void write_snapshot(network::message& message) const;
 
     std::vector<std::unique_ptr<object>> const& objects() { return _objects; }
