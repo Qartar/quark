@@ -60,6 +60,21 @@ void system::draw_box(vec2 size, vec2 position, color4 color)
 }
 
 //------------------------------------------------------------------------------
+void system::draw_triangles(vec2 const* position, color4 const* color, int const* indices, std::size_t num_indices)
+{
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    glVertexPointer(2, GL_FLOAT, 0, position);
+    glColorPointer(4, GL_FLOAT, 0, color);
+
+    glDrawElements(GL_TRIANGLES, (GLsizei)num_indices, GL_UNSIGNED_INT, indices);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+}
+
+//------------------------------------------------------------------------------
 void system::draw_particles(time_value time, render::particle const* particles, std::size_t num_particles)
 {
     // Scaling factor for particle tessellation
