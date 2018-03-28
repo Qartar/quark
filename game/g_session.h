@@ -26,13 +26,6 @@ namespace game {
 //------------------------------------------------------------------------------
 typedef struct game_client_s
 {
-    float   damage_mod;
-    float   armor_mod;
-    float   refire_mod;
-    float   speed_mod;
-
-    int     upgrades;
-
     usercmdgen input;
 
     time_value usercmd_time;
@@ -78,7 +71,6 @@ typedef enum netops_e
 
     svc_disconnect, //  force disconnect
     svc_message,    //  message from server
-    svc_score,      //  score update
     svc_info,       //  client info
     svc_snapshot,   //  game snapshot
     svc_restart     //  game restart
@@ -197,8 +189,6 @@ public:
     void restart();
     void resume();
 
-    void add_score(std::size_t player_index, int score);
-
     bool _menu_active;
     bool _dedicated;
 
@@ -242,9 +232,6 @@ private:
     void draw_world();
 
     void draw_menu();
-
-    int _score[MAX_PLAYERS];
-    void draw_score ();
 
     void draw_netgraph();
 
@@ -316,9 +303,6 @@ private:
     void client_connect(network::address const& remote, string::view message_string, std::size_t client);
     void client_disconnect(std::size_t client);
     void client_command(network::message& message, std::size_t client);
-
-    void read_upgrade(std::size_t client, int upgrade);
-    void write_upgrade(int upgrade);
 
     void client_send ();
 

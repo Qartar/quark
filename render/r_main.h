@@ -93,6 +93,7 @@ protected:
 struct view
 {
     vec2 origin; //!< center
+    float angle;
     vec2 size;
     rect viewport;
 };

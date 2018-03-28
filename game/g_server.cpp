@@ -4,8 +4,6 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_tank.h"
-
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -136,10 +134,6 @@ void session::server_packet(network::message& message, std::size_t client)
                     svs.clients[client].info.name.data(), message.read_string()));
                 break;
 
-            case clc_upgrade:
-                read_upgrade(client, message.read_byte());
-                break;
-
             case svc_info:
                 read_info(message);
                 break;
@@ -164,12 +158,6 @@ void session::write_frame()
             strcpy(svs.clients[0].info.name.data(), cls.info.name.data());
             svs.clients[0].info.color = cls.info.color;
             svs.clients[0].info.weapon = cls.info.weapon;
-
-            game::tank* player = _world.player(0);
-            if (player) {
-                player->_color = color4(svs.clients[0].info.color);
-                player->_weapon = svs.clients[0].info.weapon;
-            }
 
             write_info(message, 0);
         }
@@ -247,7 +235,6 @@ void session::client_disconnect(std::size_t client)
         return;
     }
 
-    _world.remove_player(client);
     svs.clients[client].active = false;
 
     write_info(message, client);
@@ -255,7 +242,7 @@ void session::client_disconnect(std::size_t client)
 }
 
 //------------------------------------------------------------------------------
-void session::client_command(network::message& message, std::size_t client)
+void session::client_command(network::message& message, std::size_t /*client*/)
 {
     game::usercmd cmd{};
 
@@ -263,10 +250,10 @@ void session::client_command(network::message& message, std::size_t client)
     cmd.look = message.read_vector();
     cmd.action = static_cast<decltype(cmd.action)>(message.read_byte());
 
-    game::tank* player = _world.player(client);
-    if (player) {
-        player->update_usercmd(cmd);
-    }
+    //game::tank* player = _world.player(client);
+    //if (player) {
+    //    player->update_usercmd(cmd);
+    //}
 }
 
 //------------------------------------------------------------------------------
@@ -287,57 +274,6 @@ void session::info_send(network::address const& remote)
         return;
 
     svs.socket.printf(remote, "info %s", svs.name);
-}
-
-char const* sz_upgrades[] = {
-    "damage",
-    "armor",
-    "gunnery",
-    "speed",
-};
-
-//------------------------------------------------------------------------------
-void session::read_upgrade(std::size_t client, int upgrade)
-{
-    if (_clients[client].upgrades) {
-        network::message_storage netmsg;
-
-        _clients[client].upgrades--;
-        if (upgrade == 0) {
-            _clients[client].damage_mod += _upgrade_frac;
-            _clients[client].refire_mod -= _upgrade_penalty;
-            if (_clients[client].refire_mod < _upgrade_min) {
-                _clients[client].refire_mod = _upgrade_min;
-            }
-        } else if (upgrade == 1) {
-            _clients[client].armor_mod += _upgrade_frac;
-            _clients[client].speed_mod -= _upgrade_penalty;
-            if (_clients[client].speed_mod < _upgrade_min) {
-                _clients[client].speed_mod = _upgrade_min;
-            }
-        } else if (upgrade == 2) {
-            _clients[client].refire_mod += _upgrade_frac;
-            _clients[client].damage_mod -= _upgrade_penalty;
-            if (_clients[client].damage_mod < _upgrade_min) {
-                _clients[client].damage_mod = _upgrade_min;
-            }
-        } else if (upgrade == 3) {
-            _clients[client].speed_mod += _upgrade_frac;
-            _clients[client].armor_mod -= _upgrade_penalty;
-            if (_clients[client].armor_mod < _upgrade_min) {
-                _clients[client].armor_mod = _upgrade_min;
-            }
-        }
-
-        write_message( va( "^%x%x%x%s^xxx has upgraded their %s!",
-            (int )(svs.clients[client].info.color.r * 15.5f),
-            (int )(svs.clients[client].info.color.g * 15.5f),
-            (int )(svs.clients[client].info.color.b * 15.5f),
-            svs.clients[client].info.name.data(), sz_upgrades[upgrade] ) );
-
-        write_info(netmsg, client);
-        broadcast(netmsg);
-    }
 }
 
 } // namespace game

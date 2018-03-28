@@ -5,7 +5,6 @@
 #pragma hdrstop
 
 #include "cm_parser.h"
-#include "g_tank.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -169,20 +168,6 @@ void session::write_info(network::message& message, std::size_t client)
     message.write_float( svs.clients[client].info.color.b );
 
     message.write_byte( narrow_cast<uint8_t>(svs.clients[client].info.weapon ) );
-
-    //  write extra shit
-
-    message.write_byte( _clients[client].upgrades );
-    message.write_byte( narrow_cast<uint8_t>(_clients[client].armor_mod * 10) );
-    message.write_byte( narrow_cast<uint8_t>(_clients[client].damage_mod * 10) );
-    message.write_byte( narrow_cast<uint8_t>(_clients[client].refire_mod * 10) );
-    message.write_byte( narrow_cast<uint8_t>(_clients[client].speed_mod * 10) );
-
-    // also write score
-
-    message.write_byte( svc_score );
-    message.write_byte( narrow_cast<uint8_t>(client) );
-    message.write_byte( narrow_cast<uint8_t>(_score[client]) );
 }
 
 //------------------------------------------------------------------------------
@@ -205,18 +190,6 @@ void session::read_info(network::message& message)
     svs.clients[client].info.color.b = message.read_float();
 
     svs.clients[client].info.weapon = static_cast<weapon_type>(message.read_byte());
-
-    game::tank* player = _world.player(client);
-    if (player) {
-        player->_color = color4(svs.clients[client].info.color);
-        player->_weapon = svs.clients[client].info.weapon;
-    }
-
-    _clients[client].upgrades = message.read_byte( );
-    _clients[client].armor_mod = message.read_byte( ) / 10.0f;
-    _clients[client].damage_mod = message.read_byte( ) / 10.0f;
-    _clients[client].refire_mod = message.read_byte( ) / 10.0f;
-    _clients[client].speed_mod = message.read_byte( ) / 10.0f;
 
     // relay info to other clients
     if (svs.active) {

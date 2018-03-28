@@ -6,8 +6,6 @@
 
 #include "cm_keys.h"
 #include "cm_parser.h"
-#include "g_tank.h"
-
 #include "resource.h"
 
 #include "version.h"
@@ -76,9 +74,6 @@ result session::init (string::view cmdline)
         memset( cls.servers[i].name, 0, 32 );
     }
 
-    _score[0] = 0;
-    _score[1] = 0;
-
     svs.active = false;
     svs.local = false;
 
@@ -96,7 +91,7 @@ result session::init (string::view cmdline)
 
     cls.active = false;
     cls.local = false;
-    cls.number = 0;
+    cls.number = -1;
 
     _clients[0].input.bind({
         {'w', usercmdgen::button::forward},
@@ -220,8 +215,6 @@ void session::update_screen()
     //
 
     draw_menu();
-
-    draw_score();
 
     draw_messages();
 
@@ -380,96 +373,16 @@ void session::key_event(int key, bool down)
 
     if (!_dedicated) {
         for (int ii = 0; ii < MAX_PLAYERS; ++ii) {
-            game::tank* player = _world.player(ii);
-            if (player && _clients[ii].input.key_event(key, down)) {
-                player->update_usercmd(_clients[ii].input.generate());
-            }
+            //game::tank* player = _world.player(ii);
+            //if (player && _clients[ii].input.key_event(key, down)) {
+            //    player->update_usercmd(_clients[ii].input.generate());
+            //}
         }
     }
 
     if (down) {
-        switch (key) {
-            case K_F1:
-            case VK_PAD_LSHOULDER:
-                write_message_client("");
-                write_message_client("----- TANKS HELP -----");
-                write_message_client("note: pressing PGDN will refresh the message log");
-                write_message_client("");
-                write_message_client("  Each player commands an entire tank using the keyboard.");
-                write_message_client("The following keys are using in multiplayer mode: ");
-                write_message_client("W - Forward");
-                write_message_client("S - Backward");
-                write_message_client("A - Turns tank left");
-                write_message_client("D - Turns tank right");
-                write_message_client("J - Turns turret left");
-                write_message_client("L - Turns turret right");
-                write_message_client("K - Fire main gun");
-                write_message_client("  Shots struck in the rear will do full damage (one shot");
-                write_message_client("kill with no upgrades), the sides will do 1/2 damage, and");
-                write_message_client("shots to the front will do 1/3 normal damage.");
-                write_message_client("  You can change your nick and the color of your tank in");
-                write_message_client("the Game Options menu. You can toggle the menu at any");
-                write_message_client("time by pressing the ESC key.");
-                write_message_client("  Every 10 kills you achieve in multiplayer you will be");
-                write_message_client("prompted to upgrade your tank, you can see more about");
-                write_message_client("upgrades by pressing F9 or RSHLDR");
-                write_message_client("");
-                break;
-
-                //
-                //  upgrades bullshit
-                //
-
-            case '1':
-            case VK_PAD_A:
-                if (_clients[cls.number].upgrades) {
-                    write_upgrade(0);
-                }
-                break;
-
-            case '2':
-            case VK_PAD_B:
-                if (_clients[cls.number].upgrades) {
-                    write_upgrade(1);
-                }
-                break;
-
-            case '3':
-            case VK_PAD_X:
-                if (_clients[cls.number].upgrades) {
-                    write_upgrade(2);
-                }
-                break;
-
-            case '4':
-            case VK_PAD_Y:
-                if (_clients[cls.number].upgrades) {
-                    write_upgrade(3);
-                }
-                break;
-
-            case K_F9:
-            case VK_PAD_RSHOULDER:
-                write_message_client("");
-                write_message_client("---- UPGRADES HELP ----");
-                write_message_client("  Upgrades are given every ten kills you achieve. The");
-                write_message_client("categories you can upgrade in are the following: ");
-                write_message_client("(1)(^8f8A^xxx) Damage - weapon damage");
-                write_message_client("(2)(^d4dB^xxx) Armor - damage absorption");
-                write_message_client("(3)(^44fX^xxx) Gunnery - fire rate");
-                write_message_client("(4)(^ff0Y^xxx) Speed - tank speed");
-                write_message_client("  To upgrade your tank, press the number associated with");
-                write_message_client("the upgrade when you have upgrades available to you. You");
-                write_message_client("should note that when you upgrade your tank a penalty");
-                write_message_client("will be taken from a complementary category. Damage");
-                write_message_client("goes with Gunnery, and Speed with Armor. However, when");
-                write_message_client("you upgrade you will see a net increase in your tanks");
-                write_message_client("performance.");
-                write_message_client("");
-                break;
-
-            default:
-                break;
+        if (key >= '0' && key <= '9') {
+            cls.number = key - '0' - 1;
         }
     }
 
@@ -510,131 +423,14 @@ void session::cursor_event(vec2 position)
 }
 
 //------------------------------------------------------------------------------
-void session::gamepad_event(int index, gamepad const& pad)
+void session::gamepad_event(int /*index*/, gamepad const& /*pad*/)
 {
     if (!_dedicated) {
-        game::tank* player = _world.player(index);
-        if (player) {
-            _clients[index].input.gamepad_event(pad);
-            player->update_usercmd(_clients[index].input.generate());
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-void session::add_score(std::size_t player_index, int score)
-{
-    player_index = clamp<std::size_t>(player_index,0,MAX_PLAYERS);
-
-    _score[player_index] += score;
-
-    if (svs.active || cls.active) {
-        if ( _score[player_index] % 10 == 0 ) {
-            if ( _upgrades ) {
-                _clients[player_index].upgrades++;
-            }
-        }
-    }
-
-    if (svs.active && !svs.local) {
-        network::message_storage netmsg;
-
-        write_info(netmsg, player_index);
-        broadcast(netmsg);
-    }
-}
-
-//------------------------------------------------------------------------------
-void session::draw_score ()
-{
-    int width = static_cast<int>(_renderer->view().size.x);
-    int height = static_cast<int>(_renderer->view().size.y);
-
-    // draw console/chat box
-
-    if (_client_say) {
-        _renderer->draw_string("say:", vec2(vec2i(width/4,height-16)), menu::colors[7]);
-        _renderer->draw_string(_clientsay, vec2(vec2i(width/4+32,height-16)), menu::colors[7]);
-    }
-
-    // don't draw score if menu is active
-
-    if (_menu_active) {
-        return;
-    }
-
-    // show player if upgrades are available
-
-    if (_clients[cls.number].upgrades) {
-        int num = _clients[cls.number].upgrades;
-
-        if (num > 1) {
-            _renderer->draw_string(va( "you have %i upgrades waiting...", num), vec2(8,12), menu::colors[7]);
-        } else {
-            _renderer->draw_string("you have 1 upgrade waiting...", vec2(8,12), menu::colors[7]);
-        }
-        _renderer->draw_string("for help with upgrades press F9 or RSHLDR", vec2(8,24), menu::colors[7]);
-    }
-
-    // count active players and maximum name width
-
-    int panel_width = 96;
-    int active_count = 0;
-
-    if (svs.active || cls.active) {
-        for (auto const& cl : svs.clients) {
-            if (cl.active) {
-                int cl_width = static_cast<int>(_renderer->string_size(string::view(cl.info.name.data())).x);
-                panel_width = std::max<int>(panel_width, cl_width + 40);
-                active_count++;
-            }
-        }
-    } else {
-        active_count = 2;
-    }
-
-    // draw the score panel
-
-    _renderer->draw_box(
-        vec2(vec2i(panel_width, active_count*12 + 8)),
-        vec2(vec2i(width - panel_width/2 - 16, active_count*6 + 20)),
-        menu::colors[4]);
-
-    _renderer->draw_box(
-        vec2(vec2i(panel_width - 2, active_count*12 + 8 - 2)),
-        vec2(vec2i(width - panel_width/2 - 16, active_count*6 + 20)),
-        menu::colors[5]);
-
-    // sort players by score
-
-    std::array<int, MAX_PLAYERS> sort;
-    std::iota(sort.begin(), sort.end(), 0);
-    std::sort(sort.begin(), sort.end(), [this](auto lhs, auto rhs) {
-        return _score[lhs] > _score[rhs];
-    });
-
-    // draw each player score
-
-    for (int n = 0, ii = 0; ii < MAX_PLAYERS; ++ii) {
-        if (!svs.clients[sort[ii]].active) {
-            continue;
-        }
-
-        string::buffer score(va("%d", _score[sort[ii]]));
-        int score_width = static_cast<int>(_renderer->string_size(score).x);
-
-        _renderer->draw_box(vec2(7,7), vec2(vec2i(width - panel_width - 8, n*12 + 26)), color4(svs.clients[sort[ii]].info.color));
-        _renderer->draw_string(string::view(svs.clients[sort[ii]].info.name.data()), vec2(vec2i(width - panel_width - 2, n*12 + 30)), menu::colors[7]);
-        _renderer->draw_string(score, vec2(vec2i(width - score_width - 20, n*12 + 30)), menu::colors[7]);
-
-        n++;
-    }
-
-    // draw restart timer
-
-    if (_restart_time > _frametime) {
-        int nTime = static_cast<int>((_restart_time - _frametime).to_microseconds() / 1000);
-        _renderer->draw_string(va("Restart in... %i", nTime), vec2(vec2i(width/2-48,16+13)), menu::colors[7]);
+        //game::tank* player = _world.player(index);
+        //if (player) {
+        //    _clients[index].input.gamepad_event(pad);
+        //    player->update_usercmd(_clients[index].input.generate());
+        //}
     }
 }
 
@@ -698,17 +494,6 @@ void session::draw_netgraph()
 //------------------------------------------------------------------------------
 void session::reset()
 {
-    for ( int i=0 ; i<MAX_PLAYERS ; i++ )
-    {
-        _score[i] = 0;
-
-        _clients[i].armor_mod = 1.0f;
-        _clients[i].damage_mod = 1.0f;
-        _clients[i].refire_mod = 1.0f;
-        _clients[i].speed_mod = 1.0f;
-        _clients[i].upgrades = 0;
-    }
-
     _world.reset( );
     _worldtime = time_value::zero;
 }
@@ -737,40 +522,17 @@ void session::new_game()
     _worldtime = time_value::zero;
 
     //
-    //  reset scores
-    //
-
-    if (svs.local) {
-        network::message_storage netmsg;
-
-        for ( int i=0 ; i<MAX_PLAYERS ; i++ ) {
-            netmsg.write_byte(svc_score);   //  score command
-            netmsg.write_byte(i);           //  player index
-            netmsg.write_byte(0);           //  current score
-        }
-        broadcast(netmsg);
-    }
-
-    //
     //  reset players
     //
 
     for ( int i=0 ; i<MAX_PLAYERS ; i++ )
     {
-        _clients[i].armor_mod = 1.0f;
-        _clients[i].damage_mod = 1.0f;
-        _clients[i].refire_mod = 1.0f;
-        _clients[i].speed_mod = 1.0f;
-        _clients[i].upgrades = 0;
-
-        _score[ i ] = 0;
-
         if (svs.local && i > 1 )
             break;
         else if (svs.active && !svs.clients[i].active )
             continue;
 
-        if (_restart_time == time_value::zero || !_world.player(i)) {
+        if (_restart_time == time_value::zero/* || !_world.player(i)*/) {
             spawn_player(i);
         }
     }
@@ -794,39 +556,27 @@ void session::restart()
             continue;
         }
 
-        assert(_world.player(ii) != nullptr);
-        _world.player(ii)->respawn();
+        //assert(_world.player(ii) != nullptr);
+        //_world.player(ii)->respawn();
     }
 
     _menu_active = false;
 }
 
 //------------------------------------------------------------------------------
-void session::spawn_player(std::size_t num)
+void session::spawn_player(std::size_t /*num*/)
 {
     //
     //  initialize tank object
     //
 
-    assert(_world.player(num) == nullptr);
-    game::tank* player = _world.spawn_player(num);
-    player->_color = color4(svs.clients[num].info.color);
-    player->_weapon = svs.clients[num].info.weapon;
-    player->_client = _clients + num;
+    //assert(_world.player(num) == nullptr);
+    //game::tank* player = _world.spawn_player(num);
+    //player->_color = color4(svs.clients[num].info.color);
+    //player->_weapon = svs.clients[num].info.weapon;
+    //player->_client = _clients + num;
 
-    player->respawn();
-
-    //
-    //  initialize stats
-    //
-
-    _score[num] = 0;
-
-    _clients[num].armor_mod = 1.0f;
-    _clients[num].damage_mod = 1.0f;
-    _clients[num].refire_mod = 1.0f;
-    _clients[num].speed_mod = 1.0f;
-    _clients[num].upgrades = 0;
+    //player->respawn();
 }
 
 //------------------------------------------------------------------------------
@@ -884,6 +634,16 @@ void session::draw_messages ()
 
             ypos -= 12.f;
         }
+    }
+
+    int width = static_cast<int>(_renderer->view().size.x);
+    int height = static_cast<int>(_renderer->view().size.y);
+
+    // draw console/chat box
+
+    if (_client_say) {
+        _renderer->draw_string("say:", vec2(vec2i(width/4,height-16)), menu::colors[7]);
+        _renderer->draw_string(_clientsay, vec2(vec2i(width/4+32,height-16)), menu::colors[7]);
     }
 }
 

@@ -188,6 +188,10 @@ void system::set_default_state()
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+
+    glTranslatef(_view.origin.x, _view.origin.y, 0);
+    glRotatef(math::rad2deg(_view.angle), 0, 0, -1);
+    glTranslatef(-_view.origin.x, -_view.origin.y, 0);
 }
 
 //------------------------------------------------------------------------------

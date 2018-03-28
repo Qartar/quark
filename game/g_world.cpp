@@ -5,7 +5,7 @@
 #pragma hdrstop
 
 #include "g_projectile.h"
-#include "g_tank.h"
+#include "g_ship.h"
 #include "p_collide.h"
 #include "p_trace.h"
 
@@ -17,7 +17,6 @@ namespace game {
 //------------------------------------------------------------------------------
 world::world()
     : _spawn_id(0)
-    , _players{}
     , _border_material{0,0}
     , _border_shapes{{vec2(0,0)}, {vec2(0,0)}}
     , _arena_width("g_arenaWidth", 640, config::archive|config::server|config::reset, "arena width")
@@ -57,36 +56,15 @@ void world::reset()
     _pending.clear();
     _removed.clear();
 
-    for (int ii = 0; ii < MAX_PLAYERS; ++ii) {
-        _players[ii] = nullptr;
-    }
-
     _spawn_id = 0;
 
-    // Initialize border objects
-    {
-        vec2 mins = vec2(vec2i(-_border_thickness / 2, -_border_thickness / 2));
-        vec2 maxs = vec2(vec2i(_arena_width, _arena_height)) - mins;
+    for (int ii = 0; ii < 3; ++ii) {
+        float angle = float(ii) * (math::pi<float> * 2.f / 3.f);
+        vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
-        vec2 positions[] = {
-            {(mins.x+maxs.x)/2,mins.y}, // bottom
-            {(mins.x+maxs.x)/2,maxs.y}, // top
-            {mins.x,(mins.y+maxs.y)/2}, // left
-            {maxs.x,(mins.y+maxs.y)/2}, // right
-        };
-
-        physics::shape* shapes[] = {
-            &_border_shapes[0],
-            &_border_shapes[0],
-            &_border_shapes[1],
-            &_border_shapes[1],
-        };
-
-        for (int ii = 0; ii < 4; ++ii) {
-            physics::rigid_body body(shapes[ii], &_border_material, 0.0f);
-            body.set_position(positions[ii]);
-            spawn<obstacle>(std::move(body));
-        }
+        ship* sh = spawn<ship>();
+        sh->set_position(vec2(vec2i(_arena_width, _arena_height)) * .5f - dir * 96.f, true);
+        sh->set_rotation(angle, true);
     }
 }
 
@@ -288,12 +266,6 @@ void world::write_effect(time_value time, effect_type type, vec2 position, vec2 
 game::object* world::spawn_snapshot(std::size_t spawn_id, object_type type)
 {
     switch (type) {
-        case object_type::tank: {
-            auto tank = spawn<game::tank>();
-            tank->_spawn_id = _spawn_id = spawn_id;
-            return tank;
-        }
-
         case object_type::projectile: {
             auto proj = spawn<game::projectile>(nullptr, 1.0f, weapon_type::cannon);
             proj->_spawn_id = _spawn_id = spawn_id;
@@ -310,23 +282,6 @@ game::object* world::spawn_snapshot(std::size_t spawn_id, object_type type)
         default:
             return nullptr;
     }
-}
-
-//------------------------------------------------------------------------------
-game::tank* world::spawn_player(std::size_t player_index)
-{
-    assert(_players[player_index] == nullptr);
-    _players[player_index] = spawn<game::tank>();
-    _players[player_index]->_player_index = player_index;
-    return _players[player_index];
-}
-
-//------------------------------------------------------------------------------
-void world::remove_player(std::size_t player_index)
-{
-    assert(_players[player_index]);
-    remove(_players[player_index]);
-    _players[player_index] = nullptr;
 }
 
 //------------------------------------------------------------------------------

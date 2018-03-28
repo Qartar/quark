@@ -4,8 +4,6 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_tank.h"
-
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -114,12 +112,6 @@ void session::client_packet(network::message& message)
                 write_message(string::view(message.read_string()));
                 break;
 
-            case svc_score: {
-                int client = message.read_byte();
-                int score = message.read_byte();
-                _score[client] = score;
-                break;
-            }
             case svc_info:
                 read_info(message);
                 break;
@@ -208,12 +200,6 @@ void session::connect_ack(string::view message_string)
     cls.active = true;
 
     _menu_active = false;
-
-    _clients[cls.number].upgrades = 0;
-    _clients[cls.number].damage_mod = 1.0f;
-    _clients[cls.number].armor_mod = 1.0f;
-    _clients[cls.number].refire_mod = 1.0f;
-    _clients[cls.number].speed_mod = 1.0f;
 
     _clients[0].usercmd_time = time_value::zero;
 
@@ -318,17 +304,6 @@ void session::info_get(network::address const& remote, string::view message_stri
 }
 
 //------------------------------------------------------------------------------
-void session::write_upgrade(int upgrade)
-{
-    if (svs.active) {
-        read_upgrade(0, upgrade);
-    } else {
-        _netchan.write_byte(clc_upgrade);
-        _netchan.write_byte(upgrade);
-    }
-}
-
-//------------------------------------------------------------------------------
 void session::draw_world()
 {
     //
@@ -341,19 +316,25 @@ void session::draw_world()
     render::view view{};
     view.size = world_size;
 
-    game::tank* player = _world.player(cls.number);
+    game::object const* player = nullptr;
+    {
+        std::vector<game::object const*> ships;
+        for (auto const& obj : _world.objects()) {
+            if (obj->_type == object_type::ship) {
+                ships.push_back(obj.get());
+            }
+        }
+        if (cls.number >= 0 && cls.number < ships.size()) {
+            player = ships[cls.number];
+        }
+    }
+
     if (cls.active && player) {
-        vec2 position = player->get_position(_worldtime);
-        vec2 view_mins = _world.mins() + view.size * 0.5f;
-        vec2 view_maxs = _world.maxs() - view.size * 0.5f;
-
-        view.origin.x = view_mins.x > view_maxs.x ? world_center.x
-            : clamp(position.x, view_mins.x, view_maxs.x);
-
-        view.origin.y = view_mins.y > view_maxs.y ? world_center.y
-            : clamp(position.y, view_mins.y, view_maxs.y);
+        view.origin = player->get_position(_worldtime);
+        view.angle = player->get_rotation(_worldtime);
     } else {
         view.origin = world_center;
+        view.angle = 0;
     }
 
     // draw world

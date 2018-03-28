@@ -20,7 +20,7 @@ enum class weapon_type
 class projectile : public object
 {
 public:
-    projectile(tank* owner, float damage, weapon_type type);
+    projectile(object* owner, float damage, weapon_type type);
     ~projectile();
 
     virtual void draw(render::system* renderer, time_value time) const override;

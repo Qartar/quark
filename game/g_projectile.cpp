@@ -5,7 +5,6 @@
 #pragma hdrstop
 
 #include "g_projectile.h"
-#include "g_tank.h"
 #include "p_collide.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +14,7 @@ physics::circle_shape projectile::_shape(1.0f);
 physics::material projectile::_material(0.5f, 1.0f);
 
 //------------------------------------------------------------------------------
-projectile::projectile(tank* owner, float damage, weapon_type type)
+projectile::projectile(object* owner, float damage, weapon_type type)
     : object(object_type::projectile, owner)
     , _damage(damage)
     , _type(type)
@@ -62,10 +61,7 @@ void projectile::update_homing()
     game::object* bestTarget = nullptr;
 
     for (auto& obj : _world->objects()) {
-        if (obj->_type != object_type::tank) {
-            continue;
-        }
-        if (static_cast<game::tank*>(obj.get())->_damage >= 1.0f) {
+        if (obj->_type != object_type::ship) {
             continue;
         }
 
@@ -163,77 +159,6 @@ bool projectile::touch(object *other, physics::collision const* collision)
     }
 
     _world->remove(this);
-
-    if (other && other->_type == object_type::tank) {
-        tank* owner_tank = static_cast<tank*>(_owner);
-        tank* other_tank = static_cast<tank*>(other);
-
-        if (other_tank->_damage >= 1.0f) {
-            return true; // dont add damage or score
-        }
-
-        vec2 direction = get_linear_velocity().normalize();
-        vec2 impact_normal = collision ? -collision->normal : -direction;
-        vec2 forward = rotate(vec2(1,0), other->get_rotation());
-        float impact_angle = impact_normal.dot(forward);
-        float damage = _damage / other_tank->_client->armor_mod;
-
-        if (_type == weapon_type::cannon) {
-            float surface_angle = impact_normal.dot(-direction);
-            damage = 1.2f * damage * surface_angle;
-            if (impact_angle > .5f * math::sqrt2<float>) {
-                other_tank->_damage += damage * DAMAGE_FRONT;
-            } else if (impact_angle > -.5f * math::sqrt2<float>) {
-                other_tank->_damage += damage * DAMAGE_SIDE;
-            } else {
-                other_tank->_damage += damage * DAMAGE_REAR;
-            }
-        } else if (_type == weapon_type::missile) {
-            other_tank->_damage += damage * DAMAGE_SIDE;
-        } else if (_type == weapon_type::blaster) {
-            if (impact_angle > .5f * math::sqrt2<float>) {
-                other_tank->_damage += damage * DAMAGE_FRONT / 1.25f;
-            } else if (impact_angle > -.5f * math::sqrt2<float>) {
-                other_tank->_damage += damage * DAMAGE_SIDE * 1.25f;
-            } else {
-                other_tank->_damage += damage * DAMAGE_REAR * 1.5f;
-            }
-        }
-
-        if (other_tank->_damage >= 1.0f) {
-            g_Game->add_score( owner_tank->_player_index, 1 );
-            other_tank->_dead_time = _world->frametime();
-
-            string::literal fmt = "";
-
-            switch (_type) {
-                case weapon_type::cannon:
-                    switch (rand()%3) {
-                        case 0: fmt = "%s couldn't take %s's HEAT."; break;
-                        case 1: fmt = "%s was on the wrong end of %s's cannon."; break;
-                        case 2: fmt = "%s ate all 125mm of %s's boom stick."; break;
-                    }
-                    break;
-
-                case weapon_type::missile:
-                    switch (rand()%2) {
-                        case 0: fmt = "%s couldn't hide from %s's heat seeker."; break;
-                        case 1: fmt = "%s ate %s's rocket."; break;
-                    }
-                    break;
-
-                case weapon_type::blaster:
-                    switch (rand()%2) {
-                        case 0: fmt = "%s was melted by %s's blaster."; break;
-                        case 1: fmt = "%s was blasted by %s."; break;
-                    }
-                    break;
-            }
-
-            g_Game->write_message(va(fmt, other_tank->player_name().c_str(), owner_tank->player_name().c_str()));
-        }
-    }
-
     return true;
 }
 

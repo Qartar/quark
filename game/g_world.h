@@ -30,7 +30,6 @@ constexpr const time_delta FRAMETIME = time_delta::from_seconds(0.05f);
 namespace game {
 
 class object;
-class tank;
 class world;
 
 typedef struct game_client_s game_client_t;
@@ -78,9 +77,6 @@ public:
 
     void remove(object* object);
 
-    game::tank* spawn_player(std::size_t player_index);
-    void remove_player(std::size_t player_index);
-
     void add_sound(sound::asset sound_asset, vec2 position, float volume = 1.0f);
     void add_effect(time_value time, effect_type type, vec2 position, vec2 direction = vec2(0,0), float strength = 1);
     void add_trail_effect(effect_type type, vec2 position, vec2 old_position, vec2 direction = vec2(0,0), float strength = 1);
@@ -92,8 +88,6 @@ public:
     vec2 maxs() const { return _maxs; }
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
-
-    game::tank* player( std::size_t index ) { return _players[ index ]; }
 
 private:
     //! Active objects in the world
@@ -121,10 +115,6 @@ private:
 
     config::integer _arena_width;
     config::integer _arena_height;
-
-    friend game::tank;
-
-    game::tank* _players[MAX_PLAYERS];
 
     //
     // particle system
