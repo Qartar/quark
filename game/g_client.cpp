@@ -337,6 +337,8 @@ void session::draw_world()
         view.angle = 0;
     }
 
+    view.size /= _zoom;
+
     // draw world
 
     _renderer->set_view(view);

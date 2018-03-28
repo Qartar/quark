@@ -220,6 +220,8 @@ private:
 
     time_value _restart_time;
 
+    float _zoom;
+
     time_value _worldtime;
     time_value _frametime;
     std::size_t _framenum;

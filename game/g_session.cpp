@@ -38,6 +38,7 @@ session::session()
     , _cl_weapon("ui_weapon", 0, config::archive, "user info: weapon")
     , _timescale("timescale", 1.f, config::server, "")
     , _restart_time(time_value::zero)
+    , _zoom(1)
     , _worldtime(time_value::zero)
     , _frametime(time_value::zero)
     , _framenum(0)
@@ -367,6 +368,10 @@ void session::key_event(int key, bool down)
         for (int i = 0; i < MAX_MESSAGES; i++) {
             _messages[i].time = _frametime;
         }
+    } else if ((key == K_MWHEELUP || key == '+' || key =='=') && down) {
+        _zoom = _zoom * 1.1f;
+    } else if ((key == K_MWHEELDOWN || key == '-') && down) {
+        _zoom = _zoom / 1.1f;
     }
 
     // user commands here
