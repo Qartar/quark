@@ -33,6 +33,8 @@ enum class object_type
     obstacle,
     projectile,
     tank,
+    ship,
+    shield,
 };
 
 //------------------------------------------------------------------------------

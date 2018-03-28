@@ -45,3 +45,5 @@ protected:
 
 extern render::model tank_body_model;
 extern render::model tank_turret_model;
+
+extern render::model ship_model;

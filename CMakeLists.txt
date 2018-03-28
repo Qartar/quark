@@ -61,6 +61,10 @@ set(QUARK_SOURCES
     game/g_server.cpp
     game/g_session.cpp
     game/g_session.h
+    game/g_shield.cpp
+    game/g_shield.h
+    game/g_ship.cpp
+    game/g_ship.h
     game/g_tank.cpp
     game/g_tank.h
     game/g_usercmd.cpp
