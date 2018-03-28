@@ -6,6 +6,7 @@ set(PHYSICS_SOURCES
     p_motion.h
     p_rigidbody.cpp
     p_rigidbody.h
+    p_shape.cpp
     p_shape.h
     p_trace.cpp
     p_trace.h

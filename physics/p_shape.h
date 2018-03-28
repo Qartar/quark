@@ -96,4 +96,36 @@ protected:
     float _radius;
 };
 
+//------------------------------------------------------------------------------
+class convex_shape : public shape
+{
+public:
+    convex_shape();
+    convex_shape(vec2 const* vertices, std::size_t num_vertices);
+    template<std::size_t sz> convex_shape(vec2 const (&vertices)[sz])
+        : convex_shape(vertices, sz)
+    {
+        static_assert(sz < kMaxVertices - 1, "exceeded maximum vertices");
+    }
+
+    virtual bool contains_point(vec2 point) const override;
+
+    virtual vec2 supporting_vertex(vec2 direction) const override;
+
+    virtual void calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const override;
+
+    virtual bounds calculate_bounds(vec2 position, float rotation) const override;
+
+protected:
+    static constexpr std::size_t kMaxVertices = 64;
+    std::size_t _num_vertices;
+    float _area;
+    vec2 _center_of_mass;
+    vec2 _vertices[kMaxVertices + 1];
+
+protected:
+    std::size_t _extract_convex_hull(vec2* vertices, std::size_t num_vertices) const;
+    std::size_t _decimate_convex_hull(vec2* vertices, std::size_t num_vertices, std::size_t max_vertices) const;
+};
+
 } // namespace physics

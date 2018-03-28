@@ -33,6 +33,8 @@ public:
         return _contact;
     }
 
+    static vec2 closest_point(shape const* shape, vec2 point);
+
 protected:
     bool _has_contact;
 

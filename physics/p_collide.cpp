@@ -21,6 +21,17 @@ collide::motion_data::motion_data(motion const& motion)
 }
 
 //------------------------------------------------------------------------------
+vec2 collide::closest_point(shape const* shape, vec2 point)
+{
+    static circle_shape point_shape(0.f);
+    motion shape_motion{shape};
+    motion point_motion{&point_shape, point};
+
+    collide c(shape_motion, point_motion);
+    return c.get_contact().point;
+}
+
+//------------------------------------------------------------------------------
 collide::collide(motion const& motion_a, motion const& motion_b)
     : _motion{motion_a, motion_b}
 {
