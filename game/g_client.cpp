@@ -338,6 +338,9 @@ void session::draw_world()
     }
 
     view.size /= _zoom;
+    // maintain aspect ratio
+    view.size.x *= (view.size.y * _renderer->window()->width())
+                 / (view.size.x * _renderer->window()->height());
 
     // draw world
 
