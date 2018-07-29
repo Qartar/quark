@@ -9,6 +9,7 @@
 namespace game {
 
 class shield;
+class weapon;
 
 //------------------------------------------------------------------------------
 class ship : public object
@@ -30,6 +31,7 @@ protected:
     game::usercmd _usercmd;
 
     shield* _shield;
+    std::vector<weapon*> _weapons;
 
     static physics::material _material;
     static physics::convex_shape _shape;

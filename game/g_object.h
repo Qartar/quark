@@ -34,6 +34,7 @@ enum class object_type
     projectile,
     ship,
     shield,
+    weapon,
 };
 
 //------------------------------------------------------------------------------
