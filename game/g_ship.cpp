@@ -44,6 +44,50 @@ ship::~ship()
 }
 
 //------------------------------------------------------------------------------
+void ship::spawn()
+{
+    object::spawn();
+
+    _shield = _world->spawn<shield>(&_shape, this);
+
+    for (int ii = 0; ii < 2; ++ii) {
+        weapon_info info{};
+
+        int c = rand() % 4;
+        if (c == 0) {
+            info.type = weapon_type::blaster;
+            info.projectile_speed = 768.f;
+            info.projectile_delay = time_delta::from_seconds(.2f);
+            info.projectile_count = 3;
+            info.projectile_damage = .2f;
+            info.projectile_inertia = true;
+        } else if (c == 1) {
+            info.type = weapon_type::cannon;
+            info.projectile_speed = 1280.f;
+            info.projectile_delay = time_delta::from_seconds(.3f);
+            info.projectile_count = 2;
+            info.projectile_damage = .3f;
+            info.projectile_inertia = true;
+        } else if (c == 2) {
+            info.type = weapon_type::missile;
+            info.projectile_speed = 256.f;
+            info.projectile_delay = time_delta::from_seconds(.2f);
+            info.projectile_count = 3;
+            info.projectile_damage = .2f;
+            info.projectile_inertia = true;
+        } else {
+            info.type = weapon_type::laser;
+            info.beam_duration = time_delta::from_seconds(1.f);
+            info.beam_sweep = 1.f;
+            info.beam_damage = 1.f;
+        }
+        info.reload_time = time_delta::from_seconds(4.f);
+
+        _weapons.push_back(_world->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
+    }
+}
+
+//------------------------------------------------------------------------------
 void ship::draw(render::system* renderer, time_value time) const
 {
     renderer->draw_model(_model, get_transform(time), _color);
@@ -58,48 +102,6 @@ bool ship::touch(object* /*other*/, physics::collision const* /*collision*/)
 //------------------------------------------------------------------------------
 void ship::think()
 {
-    if (_shield == nullptr) {
-        _shield = _world->spawn<shield>(&_shape, this);
-    }
-
-    if (_weapons.size() == 0) {
-        for (int ii = 0; ii < 2; ++ii) {
-            weapon_info info{};
-
-            int c = rand() % 4;
-            if (c == 0) {
-                info.type = weapon_type::blaster;
-                info.projectile_speed = 768.f;
-                info.projectile_delay = time_delta::from_seconds(.2f);
-                info.projectile_count = 3;
-                info.projectile_damage = .2f;
-                info.projectile_inertia = true;
-            } else if (c == 1) {
-                info.type = weapon_type::cannon;
-                info.projectile_speed = 1280.f;
-                info.projectile_delay = time_delta::from_seconds(.3f);
-                info.projectile_count = 2;
-                info.projectile_damage = .3f;
-                info.projectile_inertia = true;
-            } else if (c == 2) {
-                info.type = weapon_type::missile;
-                info.projectile_speed = 256.f;
-                info.projectile_delay = time_delta::from_seconds(.2f);
-                info.projectile_count = 3;
-                info.projectile_damage = .2f;
-                info.projectile_inertia = true;
-            } else {
-                info.type = weapon_type::laser;
-                info.beam_duration = time_delta::from_seconds(1.f);
-                info.beam_sweep = 1.f;
-                info.beam_damage = 1.f;
-            }
-            info.reload_time = time_delta::from_seconds(4.f);
-
-            _weapons.push_back(_world->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
-        }
-    }
-
     {
         constexpr float radius = 128.f;
         constexpr float speed = 16.f;
