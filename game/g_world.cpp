@@ -305,6 +305,43 @@ game::object* world::find_object(std::size_t spawn_id) const
 }
 
 //------------------------------------------------------------------------------
+game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore) const
+{
+    struct candidate {
+        float fraction;
+        physics::contact contact;
+        game::object* object;
+
+        bool operator<(candidate const& other) const {
+            return fraction < other.fraction;
+        }
+    };
+
+    std::set<candidate> candidates;
+    for (auto& other : _objects) {
+        if (other.get() == ignore) {
+            continue;
+        }
+
+        auto tr = physics::trace(&other->rigid_body(), start, end);
+        if (tr.get_fraction() < 1.0f) {
+            candidates.insert(candidate{
+                tr.get_fraction(),
+                tr.get_contact(),
+                other.get()}
+            );
+        }
+    }
+
+    if (candidates.size()) {
+        contact = candidates.begin()->contact;
+        return candidates.begin()->object;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
 void world::add_sound(sound::asset sound_asset, vec2 position, float volume)
 {
     write_sound(sound_asset, position, volume);

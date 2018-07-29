@@ -84,6 +84,8 @@ public:
     void add_body(game::object* owner, physics::rigid_body* body);
     void remove_body(physics::rigid_body* body);
 
+    game::object* trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore = nullptr) const;
+
     vec2 mins() const { return _mins; }
     vec2 maxs() const { return _maxs; }
     int framenum() const { return _framenum; }
