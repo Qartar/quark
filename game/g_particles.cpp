@@ -103,30 +103,6 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->drag = _random.uniform_real(.5f, 1.f);
                 p->flags = render::particle::tail;
             }
-
-            for (int ii = 0; ii < 2; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
-                    return;
-
-                r = _random.uniform_real(2.f * math::pi<float>);
-                d = _random.uniform_real(24.f);
-
-                p->position = position + vec2(cos(r)*d,sin(r)*d);
-
-                r = _random.uniform_real(2.f * math::pi<float>);
-                d = _random.uniform_real(24.f);
-
-                p->velocity = vec2(cos(r)*d,sin(r)*d);
-                p->velocity += direction * d * 0.5f;
-
-                p->size = _random.uniform_real(4.f, 12.f);
-                p->size_velocity = 2.0;
-
-                p->color = color4(0.5f,0.5f,0.5f,_random.uniform_real(.1f, .2f));
-                p->color_velocity = color4(0,0,0,-p->color.a / _random.uniform_real(2.f, 3.5f));
-
-                p->drag = _random.uniform_real(.5f, 2.5f);
-            }
             break;
         }
 
@@ -149,32 +125,6 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->size = 12.0f * scale;
             p->size_velocity = 192.0f * scale;
             p->flags = render::particle::invert;
-
-            // smoke
-
-            for (int ii = 0; ii < 96 * scale; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
-                    return;
-
-                r = _random.uniform_real(2.f * math::pi<float>);
-                d = _random.uniform_real(12.f * scale);
-
-                p->position = position + vec2(cos(r),sin(r))*d;
-
-                r = _random.uniform_real(2.f * math::pi<float>);
-                d = sqrt(_random.uniform_real()) * 128.f * strength;
-
-                p->velocity = vec2(cos(r),sin(r)) * d;
-                p->velocity += direction * d * 0.5f;
-
-                p->size = _random.uniform_real(4.f, 12.f) * scale;
-                p->size_velocity = 2.0f * strength;
-
-                p->color = color4(0.5f,0.5f,0.5f,_random.uniform_real(.1f, .2f));
-                p->color_velocity = color4(0,0,0,-p->color.a / _random.uniform_real(2.f, 3.5f));
-
-                p->drag = _random.uniform_real(3.f, 4.f) * scale;
-            }
 
             // fire
 
@@ -352,32 +302,6 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->size_velocity = 192.0f * scale;
             p->flags = render::particle::invert;
 
-            // smoke
-
-            for (int ii = 0; ii < 64 * scale; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
-                    return;
-
-                r = _random.uniform_real(2.f * math::pi<float>);
-                d = _random.uniform_real(12.f) * scale;
-
-                p->position = position + vec2(cos(r),sin(r))*d;
-
-                r = _random.uniform_real(2.f * math::pi<float>);
-                d = sqrt(_random.uniform_real()) * 128.0f * strength;
-
-                p->velocity = vec2(cos(r),sin(r)) * d;
-                p->velocity += direction * d * 0.5f;
-
-                p->size = _random.uniform_real(4.f, 12.f) * scale;
-                p->size_velocity = 2.0f * strength;
-
-                p->color = color4(0.5f,0.5f,0.5f,_random.uniform_real(.1f, .2f));
-                p->color_velocity = color4(0,0,0,-p->color.a / _random.uniform_real(2.f, 3.5f));
-
-                p->drag = _random.uniform_real(3.f, 4.f) * scale;
-            }
-
             // fire
 
             for (int ii = 0; ii < 64 * scale; ++ii) {
@@ -446,28 +370,6 @@ void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position,
         case effect_type::missile_trail: {
             int count = static_cast<int>(strength);
             render::particle* p;
-
-            // smoke
-
-            for (int ii = 0; ii < count; ++ii) {
-                float t = static_cast<float>(ii) / static_cast<float>(count);
-                if ( (p = add_particle(frametime() + FRAMETIME * t)) == NULL )
-                    return;
-
-                r = _random.uniform_real(2.f * math::pi<float>);
-                d = _random.uniform_real();
-                p->position = position + vec2(cos(r)*d,sin(r)*d) + lerp * float(ii) / float(count);
-                p->velocity = direction * (_random.uniform_real(0.25f, 0.75f)) + vec2(_random.uniform_real(-24.f, 24.f), _random.uniform_real(-24.f, 24.f));
-
-                p->size = _random.uniform_real(2.f, 4.f);
-                p->size_velocity = _random.uniform_real(2.f, 4.f);
-
-                p->color = color4(0.5f,0.5f,0.5f,_random.uniform_real(0.1f, 0.2f));
-                p->color_velocity = color4(0,0,0,-p->color.a / _random.uniform_real(1.f, 2.f));
-
-                p->drag = _random.uniform_real(2.5f, 4.f);
-                p->time += FRAMETIME * ii / count;
-            }
 
             // fire
 
