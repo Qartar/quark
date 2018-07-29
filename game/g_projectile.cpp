@@ -115,7 +115,7 @@ void projectile::update_sound()
             if (!_channel->playing()) {
                 _channel->loop(_sound_missile_flight);
             }
-            _channel->set_volume(0.2f);
+            _channel->set_volume(0.1f);
             _channel->set_attenuation(0.0f);
             _channel->set_origin(vec3(get_position()));
         }
