@@ -109,7 +109,17 @@ void weapon::think()
             proj->set_linear_velocity(projectile_velocity);
             proj->set_rotation(std::atan2(dir.y, dir.x), true);
 
-            _world->add_effect(time, effect_type::blaster, start, dir);
+            if (_info.type == weapon_type::blaster) {
+                sound::asset _sound_blaster_fire = pSound->load_sound("assets/sound/blaster_fire.wav");
+                _world->add_sound(_sound_blaster_fire, start, _info.projectile_damage);
+                _world->add_effect(time, effect_type::blaster, start, dir * 2);
+            } else if (_info.type == weapon_type::cannon) {
+                sound::asset _sound_cannon_fire = pSound->load_sound("assets/sound/cannon_fire.wav");
+                _world->add_sound(_sound_cannon_fire, start, _info.projectile_damage);
+                _world->add_effect(time, effect_type::cannon, start, dir * 2);
+            } else {
+                _world->add_effect(time, effect_type::cannon, start, dir * 2);
+            }
 
             ++_projectile_count;
         }

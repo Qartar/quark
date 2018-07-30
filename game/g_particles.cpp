@@ -178,6 +178,80 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             break;
         }
 
+        case effect_type::cannon: {
+            render::particle* p;
+
+            // flash
+
+            if ( (p = add_particle(time)) == NULL )
+                return;
+
+            p->position = position;
+            p->velocity = direction * 9.6f;
+
+            p->color = color4(1,1,0,1);
+            p->color_velocity = color4(0,-2.5f,0,-5.f);
+            p->size = .1f;
+            p->size_velocity = 96.0f;
+
+            // fire
+
+            for (int ii = 0; ii < 8; ++ii) {
+                if ( (p = add_particle(time)) == NULL )
+                    return;
+
+                r = _random.uniform_real(2.f * math::pi<float>);
+                d = _random.uniform_real(4.f);
+
+                p->position = position + vec2(cos(r),sin(r))*d;
+
+                r = _random.uniform_real(2.f * math::pi<float>);
+                d = sqrt(_random.uniform_real()) * 32.0f;
+
+                p->velocity = vec2(cos(r),sin(r))*d;
+                p->velocity += direction * d * 0.5f;
+
+                p->color = color4(1.0f,_random.uniform_real(.25f, .75f),0.0f,0.1f);
+                p->color_velocity = color4(0,0,0,-p->color.a/(.25f+square(_random.uniform_real())));
+                p->size = _random.uniform_real(2.f, 6.f);
+                p->size_velocity = 0.5f;
+                p->flags = render::particle::invert;
+
+                p->drag = _random.uniform_real(3.f, 6.f);
+            }
+
+            // debris
+
+            for (int ii = 0; ii < 4; ++ii) {
+                if ( (p = add_particle(time)) == NULL )
+                    return;
+
+                r = _random.uniform_real(2.f * math::pi<float>);
+                d = _random.uniform_real(.5f);
+
+                p->position = position + vec2(cos(r)*d,sin(r)*d);
+
+                r = _random.uniform_real(2.f * math::pi<float>);
+                d = _random.uniform_real(64.f);
+
+                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity += direction * _random.uniform_real(96.f);
+
+                r = _random.uniform_real(2.f * math::pi<float>);
+                d = _random.uniform_real(64.f, 128.f);
+
+                p->acceleration = vec2(cos(r), sin(r))*d;
+
+                p->color = color4(1,_random.uniform_real(.25f, .75f),0,1);
+                p->color_velocity = color4(0,0,0,_random.uniform_real(-3.5f, -1.5f));
+                p->size = 0.5f;
+                p->size_velocity = 0.0f;
+                p->drag = _random.uniform_real(2.f, 4.f);
+                p->flags = render::particle::tail;
+            }
+            break;
+        }
+
         case effect_type::blaster: {
             render::particle* p;
 
