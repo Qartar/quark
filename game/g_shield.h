@@ -23,6 +23,7 @@ public:
     virtual void write_snapshot(network::message& message) const override;
 
     void recharge(float strength_per_second);
+    bool damage(vec2 position, float damage);
 
 protected:
     static physics::material _material;

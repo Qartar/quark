@@ -5,7 +5,11 @@
 #pragma hdrstop
 
 #include "g_weapon.h"
+#include "g_projectile.h"
+#include "g_shield.h"
 #include "g_ship.h"
+#include "p_collide.h"
+#include "p_trace.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -26,6 +30,7 @@ weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
     , _beam_target(nullptr)
     , _beam_sweep_start(vec2_zero)
     , _beam_sweep_end(vec2_zero)
+    , _beam_shield(nullptr)
 {
     set_position(position, true);
     set_linear_velocity(vec2_zero);
@@ -42,10 +47,16 @@ void weapon::draw(render::system* renderer, time_value time) const
 {
     if (_beam_target && time - _last_attack_time < _info.beam_duration) {
         float t = (time - _last_attack_time) / _info.beam_duration;
-        vec2 beam_start = get_position() * _owner->rigid_body().get_transform();
-        vec2 beam_end = (_beam_sweep_end * t + _beam_sweep_start * (1.f - t)) * _beam_target->rigid_body().get_transform();
+        vec2 beam_start = get_position(time) * mat3::rotate<2>(_owner->get_rotation(time)) + _owner->get_position(time);
+        vec2 beam_end = (_beam_sweep_end * t + _beam_sweep_start * (1.f - t)) * mat3::rotate<2>(_beam_target->get_rotation(time)) + _beam_target->get_position(time);
 
-        renderer->draw_line(beam_start, beam_end, color4(1, 0.5, 0, 0.5), color4(1, 0.5, 0, 0.5));
+        if (_beam_shield) {
+            // Note: the traced rigid body does not use the interpolated position/rotation
+            auto tr = physics::trace(&_beam_shield->rigid_body(), beam_start, beam_end);
+            renderer->draw_line(beam_start, tr.get_contact().point, color4(1, 0.5, 0, 0.5), color4(1, 0.5, 0, 0.5));
+        } else {
+            renderer->draw_line(beam_start, beam_end, color4(1, 0.5, 0, 0.5), color4(1, 0.5, 0, 0.5));
+        }
     }
 }
 
@@ -63,6 +74,7 @@ void weapon::think()
             _beam_target = _target;
             _beam_sweep_start = _target_pos;
             _beam_sweep_end = _target_end;
+            _beam_shield = nullptr;
         }
         _last_attack_time = time;
         _is_attacking = _is_repeating;
@@ -113,7 +125,15 @@ void weapon::think()
         vec2 beam_end = (_beam_sweep_end * t + _beam_sweep_start * (1.f - t)) * _beam_target->rigid_body().get_transform();
         vec2 beam_dir = (beam_end - beam_start).normalize();
 
-        _world->add_effect(time, effect_type::sparks, beam_end, -beam_dir, .5f);
+        physics::collision c{};
+        game::object* obj = _world->trace(c, beam_start, beam_end, _owner);
+        if (obj && obj->_type == object_type::shield && obj->touch(this, &c)) {
+            _beam_shield = static_cast<game::shield*>(obj);
+        } else {
+            _beam_shield = nullptr;
+            _world->add_effect(time, effect_type::sparks, beam_end, -beam_dir, .5f);
+        }
+
         // damage
     }
 }

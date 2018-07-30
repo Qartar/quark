@@ -9,6 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+class shield;
 class ship;
 
 struct weapon_info
@@ -66,6 +67,7 @@ protected:
     game::object* _beam_target;
     vec2 _beam_sweep_start;
     vec2 _beam_sweep_end;
+    game::shield* _beam_shield; //!< beam weapons need to track whether it's hitting shields or not
 };
 
 } // namespace game

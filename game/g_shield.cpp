@@ -5,6 +5,8 @@
 #pragma hdrstop
 
 #include "g_shield.h"
+#include "g_projectile.h"
+#include "g_weapon.h"
 #include "p_collide.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,14 +46,14 @@ shield::~shield()
 }
 
 //------------------------------------------------------------------------------
-void shield::draw(render::system* renderer, time_value /*time*/) const
+void shield::draw(render::system* renderer, time_value time) const
 {
     vec2 draw_vertices[kNumVertices * 2 + 1];
     color4 draw_colors[kNumVertices * 2 + 1];
     int draw_indices[kNumVertices * 9];
 
-    vec2 pos = get_position();
-    mat2 rot; rot.set_rotation(get_rotation());
+    vec2 pos = get_position(time);
+    mat2 rot; rot.set_rotation(get_rotation(time));
 
     constexpr color4 schemes[12] = {
         // blue
@@ -117,11 +119,24 @@ void shield::draw(render::system* renderer, time_value /*time*/) const
 //------------------------------------------------------------------------------
 bool shield::touch(object* other, physics::collision const* collision)
 {
+    if (other->_type == object_type::projectile) {
+        return damage(collision->point, static_cast<projectile*>(other)->damage());
+    } else if (other->_type == object_type::weapon) {
+        weapon_info const& info = static_cast<weapon*>(other)->info();
+        return damage(collision->point, info.beam_damage * FRAMETIME.to_seconds());
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+bool shield::damage(vec2 position, float damage)
+{
     int best = 0;
  
     vec2 pos = get_position();
     mat2 rot; rot.set_rotation(-get_rotation());
-    vec2 local = (collision->point - pos) * rot;
+    vec2 local = (position - pos) * rot;
 
     // find the nearest vertex to the impact point
     for (int ii = 1; ii < kNumVertices; ++ii) {
@@ -130,29 +145,27 @@ bool shield::touch(object* other, physics::collision const* collision)
         }
     }
 
-    if (other->_type == object_type::projectile) {
-        float damage = kNumVertices * static_cast<projectile*>(other)->damage();
+    if (_strength[best] < 2.f * damage) {
+        return false;
+    }
 
-        if (_strength[best] < 2.f * static_cast<projectile*>(other)->damage()) {
-            return false;
-        }
+    damage *= kNumVertices;
 
-        float delta = std::min(_strength[best], damage);
-        _strength[best] -= delta;
+    float delta = std::min(_strength[best], damage);
+    _strength[best] -= delta;
+    damage -= delta;
+
+    for (int ii = 1; damage > 0.0f && ii < kNumVertices / 2; ++ii) {
+        int i0 = (best + kNumVertices - ii) % kNumVertices;
+        int i1 = (best + kNumVertices + ii) % kNumVertices;
+
+        delta = std::min(_strength[i0], damage);
+        _strength[i0] -= delta;
         damage -= delta;
 
-        for (int ii = 1; damage > 0.0f && ii < kNumVertices / 2; ++ii) {
-            int i0 = (best + kNumVertices - ii) % kNumVertices;
-            int i1 = (best + kNumVertices + ii) % kNumVertices;
-
-            delta = std::min(_strength[i0], damage);
-            _strength[i0] -= delta;
-            damage -= delta;
-
-            delta = std::min(_strength[i1], damage);
-            _strength[i1] -= delta;
-            damage -= delta;
-        }
+        delta = std::min(_strength[i1], damage);
+        _strength[i1] -= delta;
+        damage -= delta;
     }
 
     return true;

@@ -319,7 +319,7 @@ game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game
 
     std::set<candidate> candidates;
     for (auto& other : _objects) {
-        if (other.get() == ignore) {
+        if (other.get() == ignore || other.get()->_owner == ignore) {
             continue;
         }
 
