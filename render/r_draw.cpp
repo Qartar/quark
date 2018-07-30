@@ -211,4 +211,66 @@ void system::draw_model(render::model const* model, mat3 tx, color4 color)
     glPopMatrix();
 }
 
+//------------------------------------------------------------------------------
+void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, color4 end_color, color4 start_edge_color, color4 end_edge_color)
+{
+    // Scaling factor for particle tessellation
+    const float view_scale = sqrtf(_framebuffer_size.length_sqr() / _view.size.length_sqr());
+
+    vec2 direction = (end - start).normalize() * .5f * width;
+    vec2 normal = direction.cross(1.f);
+
+    glBegin(GL_TRIANGLE_STRIP);
+        glColor4fv(start_edge_color);
+        glVertex2fv(start - normal);
+        glColor4fv(end_edge_color);
+        glVertex2fv(end - normal);
+
+        glColor4fv(start_color);
+        glVertex2fv(start);
+        glColor4fv(end_color);
+        glVertex2fv(end);
+
+        glColor4fv(start_edge_color);
+        glVertex2fv(start + normal);
+        glColor4fv(end_edge_color);
+        glVertex2fv(end + normal);
+    glEnd();
+
+    // Number of circle segments, approximation for pi / acos(1 - 1/2x)
+    int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, width * view_scale - 0.25f)));
+    int k = std::max<int>(4, 360 / n);
+
+    // Draw half-circle at start
+    glBegin(GL_TRIANGLE_FAN);
+        glColor4fv(start_color);
+        glVertex2fv(start);
+        glColor4fv(start_edge_color);
+        glVertex2fv(start + normal);
+        for (int ii = k; ii < 180 ; ii += k) {
+            vec2 vertex = start + normal * _costbl[ii] - direction * _sintbl[ii];
+            glVertex2fv(vertex);
+        }
+        glVertex2fv(start - normal);
+    glEnd();
+
+    // Draw half-circle at end
+    glBegin(GL_TRIANGLE_FAN);
+        glColor4fv(end_color);
+        glVertex2fv(end);
+        glColor4fv(end_edge_color);
+        glVertex2fv(end - normal);
+        for (int ii = k; ii < 180 ; ii += k) {
+            vec2 vertex = end - normal * _costbl[ii] + direction * _sintbl[ii];
+            glVertex2fv(vertex);
+        }
+        glVertex2fv(end + normal);
+    glEnd();
+
+    // Aliasing causes thin lines to not render at full brightness
+    // when rendering lines with width less than one pixel, draw a
+    // line primitive on top with the center color to compensate.
+    draw_line(start, end, start_color, end_color);
+}
+
 } // namespace render

@@ -132,6 +132,8 @@ public:
     vec2 monospace_size(string::view string) const;
 
     void draw_line(vec2 start, vec2 end, color4 start_color, color4 end_color);
+    void draw_line(float width, vec2 start, vec2 end, color4 core_color, color4 edge_color) { draw_line(width, start, end, core_color, core_color, edge_color, edge_color); }
+    void draw_line(float width, vec2 start, vec2 end, color4 start_color, color4 end_color, color4 start_edge_color, color4 end_edge_color);
     void draw_box(vec2 size, vec2 position, color4 color);
     void draw_triangles(vec2 const* position, color4 const* color, int const* indices, std::size_t num_indices);
     void draw_particles(time_value time, render::particle const* particles, std::size_t num_particles);

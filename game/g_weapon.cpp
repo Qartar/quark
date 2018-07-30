@@ -53,9 +53,9 @@ void weapon::draw(render::system* renderer, time_value time) const
         if (_beam_shield) {
             // Note: the traced rigid body does not use the interpolated position/rotation
             auto tr = physics::trace(&_beam_shield->rigid_body(), beam_start, beam_end);
-            renderer->draw_line(beam_start, tr.get_contact().point, color4(1, 0.5, 0, 0.5), color4(1, 0.5, 0, 0.5));
+            renderer->draw_line(2.f, beam_start, tr.get_contact().point, color4(1, 0.5, 0, 0.5), color4(1, 0, 0, 0.1f));
         } else {
-            renderer->draw_line(beam_start, beam_end, color4(1, 0.5, 0, 0.5), color4(1, 0.5, 0, 0.5));
+            renderer->draw_line(2.f, beam_start, beam_end, color4(1, 0.5, 0, 0.5), color4(1, 0, 0, 0.1f));
         }
     }
 }
