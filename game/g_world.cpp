@@ -10,6 +10,7 @@
 #include "p_trace.h"
 
 #include <algorithm>
+#include <set>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -37,7 +38,9 @@ void world::shutdown()
 {
     _objects.clear();
     _pending.clear();
-    _removed.clear();
+    // swap with empty queue because std::queue has no clear method
+    std::queue<game::object*> empty;
+    _removed.swap(empty);
 }
 
 //------------------------------------------------------------------------------
@@ -54,7 +57,9 @@ void world::reset()
 
     _objects.clear();
     _pending.clear();
-    _removed.clear();
+    // swap with empty queue because std::queue has no clear method
+    std::queue<game::object*> empty;
+    _removed.swap(empty);
 
     _spawn_id = 0;
 
@@ -71,7 +76,7 @@ void world::reset()
 //------------------------------------------------------------------------------
 void world::remove(game::object* object)
 {
-    _removed.insert(object);
+    _removed.push(object);
 }
 
 //------------------------------------------------------------------------------
@@ -91,12 +96,13 @@ void world::run_frame()
 
     ++_framenum;
 
-    for (auto obj : _removed) {
-        _objects.erase(std::find_if(_objects.begin(), _objects.end(), [=](auto& it){
-            return it.get() == obj;
-        }));
-    }
-    _removed.clear();
+    while (_removed.size()) {
+        game::object* obj = _removed.front();
+        _removed.pop();
+         _objects.erase(std::find_if(_objects.begin(), _objects.end(), [=](auto& it){
+             return it.get() == obj;
+         }));
+     }
 
     for (auto& obj : _objects) {
         obj->think();
@@ -122,12 +128,13 @@ void world::read_snapshot(network::message& message)
     }
     _pending.clear();
 
-    for (auto obj : _removed) {
-        _objects.erase(std::find_if(_objects.begin(), _objects.end(), [=](auto& it){
-            return it.get() == obj;
-        }));
-    }
-    _removed.clear();
+    while (_removed.size()) {
+        game::object* obj = _removed.front();
+        _removed.pop();
+         _objects.erase(std::find_if(_objects.begin(), _objects.end(), [=](auto& it){
+             return it.get() == obj;
+         }));
+     }
 
     while (message.bytes_remaining()) {
         message_type type = static_cast<message_type>(message.read_byte());
@@ -372,8 +379,8 @@ bool world::physics_filter_callback(physics::rigid_body const* body_a, physics::
         return false;
     }
 
-    game::object const* owner_a = obj_a->_owner ? obj_a->_owner : obj_a;
-    game::object const* owner_b = obj_b->_owner ? obj_b->_owner : obj_b;
+    game::object const* owner_a = obj_a->_owner ? obj_a->_owner.get() : obj_a;
+    game::object const* owner_b = obj_b->_owner ? obj_b->_owner.get() : obj_b;
 
     if (owner_a == owner_b) {
         return false;

@@ -18,7 +18,7 @@
 
 #include <array>
 #include <memory>
-#include <set>
+#include <queue>
 #include <type_traits>
 #include <vector>
 
@@ -100,7 +100,7 @@ private:
     std::vector<std::unique_ptr<object>> _pending;
 
     //! Objects pending removal
-    std::set<object*> _removed;
+    std::queue<object*> _removed;
 
     //! Previous object spawn id
     std::size_t _spawn_id;

@@ -54,20 +54,20 @@ protected:
 
     time_value _last_attack_time;
 
-    game::object* _target;
+    game::handle<object> _target;
     vec2 _target_pos;
     vec2 _target_end;
     bool _is_attacking;
     bool _is_repeating;
 
-    game::object* _projectile_target;
+    game::handle<object> _projectile_target;
     vec2 _projectile_target_pos;
     int _projectile_count;
 
-    game::object* _beam_target;
+    game::handle<object> _beam_target;
     vec2 _beam_sweep_start;
     vec2 _beam_sweep_end;
-    game::shield* _beam_shield; //!< beam weapons need to track whether it's hitting shields or not
+    game::handle<shield> _beam_shield; //!< beam weapons need to track whether it's hitting shields or not
 };
 
 } // namespace game

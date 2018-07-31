@@ -5,6 +5,7 @@
 
 #include "cm_random.h"
 #include "cm_time.h"
+#include "g_handle.h"
 #include "p_material.h"
 #include "p_rigidbody.h"
 #include "p_shape.h"
@@ -94,11 +95,12 @@ public:
 
 protected:
     friend world;
+    template<typename> friend class handle;
 
     //! Game world which contains this object
     world* _world;
 
-    object* _owner;
+    handle<object> _owner;
 
     std::size_t _spawn_id;
     time_value _spawn_time;

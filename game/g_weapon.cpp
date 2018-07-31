@@ -86,7 +86,7 @@ void weapon::think()
 
     if (_projectile_target && time - _last_attack_time <= _info.projectile_count * _info.projectile_delay) {
         if (_projectile_count < _info.projectile_count && _projectile_count * _info.projectile_delay <= time - _last_attack_time) {
-            game::projectile* proj = _world->spawn<projectile>(_owner, _info.projectile_damage, _info.type);
+            game::projectile* proj = _world->spawn<projectile>(_owner.get(), _info.projectile_damage, _info.type);
             vec2 start = get_position() * _owner->rigid_body().get_transform();
             vec2 end = _projectile_target_pos * _projectile_target->rigid_body().get_transform();
 
@@ -136,7 +136,7 @@ void weapon::think()
         vec2 beam_dir = (beam_end - beam_start).normalize();
 
         physics::collision c{};
-        game::object* obj = _world->trace(c, beam_start, beam_end, _owner);
+        game::object* obj = _world->trace(c, beam_start, beam_end, _owner.get());
         if (obj && obj->_type == object_type::shield && obj->touch(this, &c)) {
             _beam_shield = static_cast<game::shield*>(obj);
         } else {
