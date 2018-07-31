@@ -79,4 +79,37 @@ model::model(model::rect const* rects, std::size_t num_rects)
     }
 }
 
+//------------------------------------------------------------------------------
+bool model::contains(vec2 point) const
+{
+    if (point.x < _mins.x || point.x > _maxs.x
+            || point.y < _mins.y || point.y > _maxs.y) {
+        return false;
+    }
+
+    for (int ii = 0; ii < _indices.size(); ii += 3) {
+        uint16_t i0 = _indices[ii + 0];
+        uint16_t i1 = _indices[ii + 1];
+        uint16_t i2 = _indices[ii + 2];
+
+        vec2 v0 = point - _vertices[i0];
+        vec2 v1 = point - _vertices[i1];
+        vec2 v2 = point - _vertices[i2];
+
+        vec2 e0 = _vertices[i1] - _vertices[i0];
+        vec2 e1 = _vertices[i2] - _vertices[i1];
+        vec2 e2 = _vertices[i0] - _vertices[i2];
+
+        float s0 = v0.cross(e0);
+        float s1 = v1.cross(e1);
+        float s2 = v2.cross(e2);
+
+        if (s0 * s1 > 0.f && s1 * s2 > 0.f) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 } // namespace render

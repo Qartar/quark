@@ -28,6 +28,11 @@ public:
         : model(rects, Size)
     {}
 
+    vec2 mins() const { return _mins; }
+    vec2 maxs() const { return _maxs; }
+
+    bool contains(vec2 point) const;
+
 protected:
     friend system;
 
