@@ -28,12 +28,16 @@ public:
     virtual void write_snapshot(network::message& message) const override;
 
     void update_usercmd(game::usercmd usercmd);
+    void damage(object* inflictor, vec2 point, float amount);
 
 protected:
     game::usercmd _usercmd;
 
     shield* _shield;
     std::vector<weapon*> _weapons;
+
+    float _damage;
+    time_value _dead_time;
 
     static physics::material _material;
     static physics::convex_shape _shape;

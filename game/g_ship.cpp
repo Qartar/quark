@@ -32,6 +32,8 @@ ship::ship()
     : object(object_type::ship)
     , _usercmd{}
     , _shield(nullptr)
+    , _damage(0)
+    , _dead_time(time_value::max)
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
 
@@ -41,6 +43,10 @@ ship::ship()
 //------------------------------------------------------------------------------
 ship::~ship()
 {
+    _world->remove(_shield);
+    for (auto& weapon : _weapons) {
+        _world->remove(weapon);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +108,9 @@ bool ship::touch(object* /*other*/, physics::collision const* /*collision*/)
 //------------------------------------------------------------------------------
 void ship::think()
 {
-    {
+    time_value time = _world->frametime();
+
+    if (_dead_time > time) {
         constexpr float radius = 128.f;
         constexpr float speed = 16.f;
         constexpr float angular_speed = (2.f * math::pi<float>) * speed / (2.f * math::pi<float> * radius);
@@ -119,10 +127,14 @@ void ship::think()
     _shield->set_linear_velocity(get_linear_velocity());
     _shield->set_angular_velocity(get_angular_velocity());
 
-    _shield->recharge(1.f / 15.f);
+    if (_dead_time > time) {
+        _shield->recharge(1.f / 15.f);
+    } else {
+        _shield->recharge(-1.f);
+    }
 
     for (auto& weapon : _weapons) {
-        while (_random.uniform_real() < .01f) {
+        while (_dead_time > time && _random.uniform_real() < .01f) {
             std::vector<game::ship*> ships;
             for (auto& object : _world->objects()) {
                 if (object.get() != this && object->_type == object_type::ship) {
@@ -141,6 +153,38 @@ void ship::think()
             }
         }
     }
+
+    //
+    // Death sequence
+    //
+
+    {
+        constexpr time_delta death_duration = time_delta::from_seconds(3.f);
+        if (time - _dead_time < death_duration) {
+            float t = (time - _dead_time) / death_duration;
+            float s = powf(_random.uniform_real(), 6.f * (1.f - t));
+
+            vec2 v;
+            do {
+                v = _model->mins() + (_model->maxs() - _model->mins()) * vec2(_random.uniform_real(), _random.uniform_real());
+            } while (!_model->contains(v));
+
+            if (s > .2f) {
+                _world->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
+            }
+        } else {
+            // add final explosion effect
+            _world->add_effect(time, effect_type::explosion, get_position(), vec2_zero);
+
+            // remove this ship
+            _world->remove(this);
+
+            // spawn a new ship to take this ship's place
+            ship* new_ship = _world->spawn<ship>();
+            new_ship->set_position(_world->mins() + (_world->maxs() - _world->mins()) * vec2(_random.uniform_real(), _random.uniform_real()), true);
+            new_ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -151,6 +195,15 @@ void ship::read_snapshot(network::message const& /*message*/)
 //------------------------------------------------------------------------------
 void ship::write_snapshot(network::message& /*message*/) const
 {
+}
+
+//------------------------------------------------------------------------------
+void ship::damage(object* /*inflictor*/, vec2 /*point*/, float amount)
+{
+    _damage += amount;
+    if (_damage > 3.f && _dead_time > _world->frametime()) {
+        _dead_time = _world->frametime();
+    }
 }
 
 //------------------------------------------------------------------------------

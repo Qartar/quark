@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_projectile.h"
+#include "g_ship.h"
 #include "p_collide.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,6 +159,10 @@ bool projectile::touch(object *other, physics::collision const* collision)
     } else {
         _world->add_sound(sound, get_position(), factor * _damage);
         _world->add_effect(_impact_time, effect, get_position(), vec2_zero, .5f * factor * _damage);
+    }
+
+    if (other && other->_type == object_type::ship) {
+        static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _damage);
     }
 
     _world->remove(this);
