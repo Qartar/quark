@@ -85,7 +85,7 @@ void ship::spawn()
             info.type = weapon_type::laser;
             info.beam_duration = time_delta::from_seconds(1.f);
             info.beam_sweep = 1.f;
-            info.beam_damage = .2f;
+            info.beam_damage = .6f;
         }
         info.reload_time = time_delta::from_seconds(4.f);
 

@@ -141,9 +141,9 @@ void weapon::think()
             _beam_shield = static_cast<game::shield*>(obj);
         } else {
             _beam_shield = nullptr;
-            _world->add_effect(time, effect_type::sparks, beam_end, -beam_dir, .5f);
-            if (obj && obj->_type == object_type::ship) {
-                static_cast<ship*>(obj)->damage(this, beam_end, _info.beam_damage * FRAMETIME.to_seconds());
+            _world->add_effect(time, effect_type::sparks, beam_end, -beam_dir, _info.beam_damage);
+            if (_beam_target->_type == object_type::ship) {
+                static_cast<ship*>(_beam_target.get())->damage(this, beam_end, _info.beam_damage * FRAMETIME.to_seconds());
             }
         }
 
