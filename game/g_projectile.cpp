@@ -150,12 +150,14 @@ bool projectile::touch(object *other, physics::collision const* collision)
         _impact_time = _world->frametime() + time_delta::from_seconds(1) * delta_time;
     }
 
+    float factor = (other && other->_type == object_type::shield) ? .5f : 1.f;
+
     if (collision) {
-        _world->add_sound(sound, collision->point);
-        _world->add_effect(_impact_time, effect, collision->point, -collision->normal, 0.5f * _damage);
+        _world->add_sound(sound, collision->point, factor * _damage);
+        _world->add_effect(_impact_time, effect, collision->point, -collision->normal, .5f * factor * _damage);
     } else {
-        _world->add_sound(sound, get_position());
-        _world->add_effect(_impact_time, effect, get_position(), vec2_zero, 0.5f * _damage);
+        _world->add_sound(sound, get_position(), factor * _damage);
+        _world->add_effect(_impact_time, effect, get_position(), vec2_zero, .5f * factor * _damage);
     }
 
     _world->remove(this);

@@ -32,10 +32,13 @@ protected:
 
     int _style;
 
-    static constexpr int kNumVertices = 64;
+    float _strength;
 
+    time_value _damage_time; //!< last time the shield received damage
+    static constexpr time_delta kDamageDelay = time_delta::from_seconds(0.5f); //!< delay after damage before shield recharge
+
+    static constexpr int kNumVertices = 64;
     vec2 _vertices[kNumVertices];
-    float _strength[kNumVertices];
     float _flux[kNumVertices];
 
 protected:

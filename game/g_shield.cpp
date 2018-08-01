@@ -12,20 +12,20 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-physics::material shield::_material(0.5f, 1.0f, 5.0f);
+physics::material shield::_material(0.0f, 0.0f);
 
 //------------------------------------------------------------------------------
 shield::shield(physics::shape const* base, game::object* owner)
     : object(object_type::shield, owner)
     , _base(base)
-    , _shape(_vertices, kNumVertices)
+    , _strength(1)
+    , _damage_time(time_value::zero)
 {
     float radius = 32.f;
 
     for (int ii = 0; ii < kNumVertices; ++ii) {
         float a = ii * (2.f * math::pi<float> / kNumVertices);
         _vertices[ii] = vec2(std::cos(a), std::sin(a)) * radius;
-        _strength[ii] = 1.f;
         _flux[ii] = 0.f;
     }
 
@@ -89,8 +89,8 @@ void shield::draw(render::system* renderer, time_value time) const
         draw_colors[ii * 2 + 0] = scheme[0] * s + scheme[1] * (1.f - s);
         draw_colors[ii * 2 + 1] = scheme[1] * s + scheme[2] * (1.f - s);
 
-        draw_colors[ii * 2 + 0].a *= std::max(s, _strength[ii] + s);
-        draw_colors[ii * 2 + 1].a *= std::max(0.f, _strength[ii]);
+        draw_colors[ii * 2 + 0].a *= std::max(s, _strength + s);
+        draw_colors[ii * 2 + 1].a *= std::max(0.f, _strength);
 
         draw_indices[ii * 9 +  0] = ii * 2 + 0;
         draw_indices[ii * 9 +  1] = ii * 2 + 1;
@@ -145,27 +145,34 @@ bool shield::damage(vec2 position, float damage)
         }
     }
 
-    if (_strength[best] < 2.f * damage) {
+    _damage_time = _world->frametime();
+
+    if (_strength == 0.f) {
         return false;
     }
 
+    _strength = std::max(0.f, _strength - damage);
+
     damage *= kNumVertices;
 
-    float delta = std::min(_strength[best], damage);
-    _strength[best] -= delta;
+    float limit = 1.f;
+    float delta = std::min(limit, damage);
+    _flux[best] += delta * .4f;
     damage -= delta;
+    limit *= .9f;
 
     for (int ii = 1; damage > 0.0f && ii < kNumVertices / 2; ++ii) {
         int i0 = (best + kNumVertices - ii) % kNumVertices;
         int i1 = (best + kNumVertices + ii) % kNumVertices;
 
-        delta = std::min(_strength[i0], damage);
-        _strength[i0] -= delta;
-        damage -= delta;
+        delta = std::min(limit, damage);
+        _flux[i0] += delta * .4f;
 
-        delta = std::min(_strength[i1], damage);
-        _strength[i1] -= delta;
-        damage -= delta;
+        delta = std::min(limit, damage);
+        _flux[i1] += delta * .4f;
+
+        damage -= 2.f * delta;
+        limit *= .8f;
     }
 
     return true;
@@ -218,39 +225,34 @@ void shield::step_strength()
 {
     float delta[kNumVertices] = {0};
 
+    // propagate shield flux
     for (int ii = 0; ii < kNumVertices; ++ii) {
-        float sa = _strength[(ii + kNumVertices - 1) % kNumVertices];
-        float sb = _strength[(ii + kNumVertices + 1) % kNumVertices];
-        float sc = _strength[ii];
-
-        delta[ii] += (sa - sc) * 0.2f;
-        delta[ii] += (sb - sc) * 0.2f;
-        _flux[ii] += std::abs(sa - sc) * 0.4f;
-        _flux[ii] += std::abs(sb - sc) * 0.4f;
+        float f0 = _flux[(ii + kNumVertices - 1) % kNumVertices];
+        float f1 = _flux[(ii + kNumVertices + 1) % kNumVertices];
+        delta[ii] = (f0 + f1) * 0.5f - _flux[ii];
     }
 
+    // add propagated flux and decay
     for (int ii = 0; ii < kNumVertices; ++ii) {
-        _strength[ii] += delta[ii];
-        _flux[ii] = _flux[ii] * .5f;
+        _flux[ii] = _flux[ii] * .6f + delta[ii] * .4f;
     }
 }
 
 //------------------------------------------------------------------------------
 void shield::recharge(float strength_per_second)
 {
-    float delta = strength_per_second * FRAMETIME.to_seconds();
-    for (int ii = 0; ii < kNumVertices; ++ii) {
-        _strength[ii] = std::min(1.f, _strength[ii] + delta);
+    time_value time = _world->frametime();
+    if (time - _damage_time < kDamageDelay && strength_per_second > 0.f) {
+        return;
     }
+
+    float delta = strength_per_second * FRAMETIME.to_seconds();
+    _strength = clamp(_strength + delta, 0.f, 1.f);
 }
 
 //------------------------------------------------------------------------------
 void shield::think()
 {
-    // step twice to speed up propagation
-    step_strength();
-    step_strength();
-    step_strength();
     step_strength();
 }
 
