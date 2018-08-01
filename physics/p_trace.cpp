@@ -5,6 +5,7 @@
 #include "p_material.h"
 #include "p_rigidbody.h"
 #include "p_shape.h"
+#include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace physics {
@@ -33,9 +34,11 @@ trace::trace(rigid_body const* body, vec2 start, vec2 end)
         }
 
         fraction += _contact.distance / _contact.normal.dot(direction);
+        assert(!isnan(fraction));
     }
 
     _fraction = fraction > 1.0f ? 1.0f : fraction;
+    assert(!isnan(_fraction));
 }
 
 //------------------------------------------------------------------------------
@@ -93,9 +96,11 @@ trace::trace(rigid_body const* body_a, rigid_body const* body_b, float delta_tim
         }
 
         fraction -= _contact.distance / _contact.normal.dot(direction);
+        assert(!isnan(fraction));
     }
 
     _fraction = fraction > 1.0f ? 1.0f : fraction;
+    assert(!isnan(_fraction));
 }
 
 } // namespace physics

@@ -5,6 +5,7 @@
 #include "p_material.h"
 #include "p_rigidbody.h"
 #include "p_shape.h"
+#include <cassert>
 
 #include <algorithm>
 #include <array>
@@ -53,6 +54,9 @@ collide::collide(motion const& motion_a, motion const& motion_b)
     _contact.distance = distance;
     _contact.point = position.to_vec2();
     _contact.normal = direction.to_vec2();
+    assert(!isnan(_contact.distance));
+    assert(!isnan(_contact.point));
+    assert(!isnan(_contact.normal));
 }
 
 //------------------------------------------------------------------------------

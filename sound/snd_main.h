@@ -75,7 +75,7 @@ public:
 
     virtual void stop() override;
 
-    virtual void set_origin(vec3 origin) override { _origin = origin; }
+    virtual void set_origin(vec3 origin) override { assert(!isnan(origin)); _origin = origin; }
     virtual void set_volume(float volume) override { _volume = volume; }
     virtual void set_frequency(float frequency) override { _frequency = frequency; }
     virtual void set_attenuation(float attenuation) override { _attenuation = attenuation; }

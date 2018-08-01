@@ -332,3 +332,21 @@ protected:
 constexpr vec2 vec2_zero = vec2(0,0);
 constexpr vec3 vec3_zero = vec3(0,0,0);
 constexpr vec4 vec4_zero = vec4(0,0,0,0);
+
+//------------------------------------------------------------------------------
+template<> inline bool isnan<vec2>(vec2 v)
+{
+    return isnan(v[0]) || isnan(v[1]);
+}
+
+//------------------------------------------------------------------------------
+template<> inline bool isnan<vec3>(vec3 v)
+{
+    return isnan(v[0]) || isnan(v[1]) || isnan(v[2]);
+}
+
+//------------------------------------------------------------------------------
+template<> inline bool isnan<vec4>(vec4 v)
+{
+    return isnan(v[0]) || isnan(v[1]) || isnan(v[2]) || isnan(v[3]);
+}
