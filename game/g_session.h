@@ -197,6 +197,7 @@ public:
 private:
     menu::window _menu;
     game::world _world;
+    game::handle<game::object const> _player;
 
     render::system* _renderer;
 

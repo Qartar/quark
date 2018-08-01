@@ -316,22 +316,9 @@ void session::draw_world()
     render::view view{};
     view.size = world_size;
 
-    game::object const* player = nullptr;
-    {
-        std::vector<game::object const*> ships;
-        for (auto const& obj : _world.objects()) {
-            if (obj->_type == object_type::ship) {
-                ships.push_back(obj.get());
-            }
-        }
-        if (cls.number >= 0 && cls.number < ships.size()) {
-            player = ships[cls.number];
-        }
-    }
-
-    if (cls.active && player) {
-        view.origin = player->get_position(_worldtime);
-        view.angle = player->get_rotation(_worldtime);
+    if (cls.active && _player) {
+        view.origin = _player->get_position(_worldtime);
+        view.angle = _player->get_rotation(_worldtime);
     } else {
         view.origin = world_center;
         view.angle = 0;
