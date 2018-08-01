@@ -49,6 +49,8 @@ public:
     void attack_beam(game::object* target, vec2 sweep_start, vec2 sweep_end, bool repeat = false);
     void cancel();
 
+    object const* target() const { return _target.get(); }
+
 protected:
     weapon_info _info;
 

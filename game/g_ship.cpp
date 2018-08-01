@@ -34,6 +34,7 @@ ship::ship()
     , _shield(nullptr)
     , _damage(0)
     , _dead_time(time_value::max)
+    , _is_destroyed(false)
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
 
@@ -96,13 +97,15 @@ void ship::spawn()
 //------------------------------------------------------------------------------
 void ship::draw(render::system* renderer, time_value time) const
 {
-    renderer->draw_model(_model, get_transform(time), _color);
+    if (!_is_destroyed) {
+        renderer->draw_model(_model, get_transform(time), _color);
+    }
 }
 
 //------------------------------------------------------------------------------
 bool ship::touch(object* /*other*/, physics::collision const* /*collision*/)
 {
-    return true;
+    return !_is_destroyed;
 }
 
 //------------------------------------------------------------------------------
@@ -134,13 +137,18 @@ void ship::think()
     }
 
     for (auto& weapon : _weapons) {
-        while (_dead_time > time && _random.uniform_real() < .01f) {
+        if (_dead_time > time && _random.uniform_real() < .01f) {
+            // get a list of all ships in the world
             std::vector<game::ship*> ships;
             for (auto& object : _world->objects()) {
                 if (object.get() != this && object->_type == object_type::ship) {
-                    ships.push_back(static_cast<ship*>(object.get()));
+                    if (!static_cast<ship*>(object.get())->is_destroyed()) {
+                        ships.push_back(static_cast<ship*>(object.get()));
+                    }
                 }
             }
+
+            // select a random target
             if (ships.size()) {
                 game::ship* target = ships[_random.uniform_int(ships.size())];
                 if (weapon->info().type != weapon_type::laser) {
@@ -152,6 +160,15 @@ void ship::think()
                 }
             }
         }
+
+        if (_dead_time > time) {
+            // cancel pending attacks on targets that have been destroyed
+            if (weapon->target() && weapon->target()->_type == object_type::ship) {
+                if (static_cast<ship const*>(weapon->target())->is_destroyed()) {
+                    weapon->cancel();
+                }
+            }
+        }
     }
 
     //
@@ -159,23 +176,34 @@ void ship::think()
     //
 
     {
-        constexpr time_delta death_duration = time_delta::from_seconds(3.f);
-        if (time - _dead_time < death_duration) {
-            float t = (time - _dead_time) / death_duration;
+        if (time - _dead_time < destruction_time) {
+            float t = (time - _dead_time) / destruction_time;
             float s = powf(_random.uniform_real(), 6.f * (1.f - t));
 
+            // find a random point on the ship's model
             vec2 v;
             do {
                 v = _model->mins() + (_model->maxs() - _model->mins()) * vec2(_random.uniform_real(), _random.uniform_real());
             } while (!_model->contains(v));
 
+            // random explosion at a random point on the ship
             if (s > .2f) {
                 _world->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
             }
-        } else {
+        } else if (!_is_destroyed) {
             // add final explosion effect
             _world->add_effect(time, effect_type::explosion, get_position(), vec2_zero);
+            sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
+            _world->add_sound(_sound_explosion, get_position());
 
+            // remove weapon systems
+            for (auto& weapon : _weapons) {
+                _world->remove(weapon);
+            }
+            _weapons.clear();
+
+            _is_destroyed = true;
+        } else if (time - _dead_time > destruction_time + respawn_time) {
             // remove this ship
             _world->remove(this);
 

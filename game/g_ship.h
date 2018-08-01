@@ -30,6 +30,8 @@ public:
     void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec2 point, float amount);
 
+    bool is_destroyed() const { return _is_destroyed; }
+
 protected:
     game::usercmd _usercmd;
 
@@ -38,6 +40,11 @@ protected:
 
     float _damage;
     time_value _dead_time;
+
+    bool _is_destroyed;
+
+    static constexpr time_delta destruction_time = time_delta::from_seconds(3.f);
+    static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
 
     static physics::material _material;
     static physics::convex_shape _shape;
