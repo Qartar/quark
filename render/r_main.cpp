@@ -184,7 +184,11 @@ void system::set_default_state()
     vec2 view_min = _view.origin - _view.size * 0.5f;
     vec2 view_max = _view.origin + _view.size * 0.5f;
 
-    glOrtho(view_min.x, view_max.x, view_max.y, view_min.y, -99999, 99999);
+    if (_view.raster) {
+        glOrtho(view_min.x, view_max.x, view_max.y, view_min.y, -99999, 99999);
+    } else {
+        glOrtho(view_min.x, view_max.x, view_min.y, view_max.y, -99999, 99999);
+    }
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();

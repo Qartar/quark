@@ -207,6 +207,7 @@ void session::update_screen()
 
     render::view view = {};
 
+    view.raster = true;
     view.size = vec2(640, 480);
     view.origin = view.size * 0.5f;
     _renderer->set_view(view);

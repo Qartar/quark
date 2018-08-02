@@ -94,6 +94,7 @@ struct view
 {
     vec2 origin; //!< center
     float angle;
+    bool raster; //!< use raster-coordinates, i.e. origin at top-left
     vec2 size;
     rect viewport;
 };
