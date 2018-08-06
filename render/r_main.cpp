@@ -23,6 +23,8 @@ system::system(render::window* window)
 //------------------------------------------------------------------------------
 result system::init()
 {
+    random r;
+
     glBindRenderbuffer = (PFNGLBINDRENDERBUFFER )wglGetProcAddress("glBindRenderbuffer");
     glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERS )wglGetProcAddress("glDeleteRenderbuffers");
     glGenRenderbuffers = (PFNGLGENRENDERBUFFERS )wglGetProcAddress("glGenRenderbuffers");
@@ -40,6 +42,14 @@ result system::init()
     _view.viewport = {};
 
     resize(_window->size());
+
+    _starfield_points.resize(1024);
+    _starfield_colors.resize(1024);
+    for (std::size_t ii = 0; ii < _starfield_points.size(); ++ii) {
+        _starfield_points[ii].x = r.uniform_real();
+        _starfield_points[ii].y = r.uniform_real();
+        _starfield_colors[ii] = color3(1,1,1) * r.uniform_real();
+    }
 
     float k = 2.f * math::pi<float> / countof(_costbl);
     for (int ii = 0; ii < countof(_costbl); ++ii) {

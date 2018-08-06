@@ -273,4 +273,59 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
     draw_line(start, end, start_color, end_color);
 }
 
+//------------------------------------------------------------------------------
+void system::draw_starfield()
+{
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    glVertexPointer(2, GL_FLOAT, 0, _starfield_points.data());
+    glColorPointer(3, GL_FLOAT, 0, _starfield_colors.data());
+
+    glPointSize(0.1f);
+
+    float s = std::log2(_view.size.x);
+    float i = std::exp2(std::floor(s));
+    float scale[5] = {
+        i,
+        i * 2.f,
+        i * 4.f,
+        i * 8.f,
+        i * 16.f,
+    };
+
+    for (int ii = 0; ii < 5; ++ii) {
+        float r = (std::floor(s) + ii) * 145.f;
+
+        vec2 p = _view.origin * mat2::rotate(math::deg2rad(-r));
+
+        float tx = -p.x / scale[ii];
+        float ty = -p.y / scale[ii];
+
+        float ix = std::floor(tx);
+        float iy = std::floor(ty);
+
+        for (int xx = 0; xx < 3; ++xx) {
+            for (int yy = 0; yy < 3; ++yy) {
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+
+                glTranslatef(_view.origin.x, _view.origin.y, 0);
+                glScalef(scale[ii], scale[ii], 1);
+                glRotatef(r, 0, 0, 1);
+                glTranslatef(tx - ix + xx - 2, ty - iy + yy - 2, 0);
+
+                glDrawArrays(GL_POINTS, 0, GLsizei(_starfield_points.size()));
+
+                glPopMatrix();
+            }
+        }
+    }
+
+    glPointSize(2.f);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+}
+
 } // namespace render

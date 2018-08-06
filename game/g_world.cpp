@@ -82,6 +82,8 @@ void world::remove(game::object* object)
 //------------------------------------------------------------------------------
 void world::draw(render::system* renderer, time_value time) const
 {
+    renderer->draw_starfield();
+
     for (auto& obj : _objects) {
         obj->draw(renderer, time);
     }
