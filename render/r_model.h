@@ -28,6 +28,8 @@ public:
         : model(rects, Size)
     {}
 
+    std::vector<vec2> const& vertices() const { return _vertices; }
+
     vec2 mins() const { return _mins; }
     vec2 maxs() const { return _maxs; }
 

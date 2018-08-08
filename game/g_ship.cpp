@@ -12,20 +12,6 @@
 namespace game {
 
 physics::material ship::_material(0.5f, 1.0f, 5.0f);
-physics::convex_shape ship::_shape({
-    {-16.f,  -9.f},
-    {-15.f, -10.f},
-    { -1.f, -10.f},
-    {  8.f,  -8.f},
-    { 10.f,  -7.f},
-    { 11.f,  -6.f},
-    { 11.f,   6.f},
-    { 10.f,   7.f},
-    {  8.f,   8.f},
-    { -1.f,  10.f},
-    {-15.f,  10.f},
-    {-16.f,   9.f},
-});
 
 //------------------------------------------------------------------------------
 ship::ship()
@@ -35,6 +21,7 @@ ship::ship()
     , _damage(0)
     , _dead_time(time_value::max)
     , _is_destroyed(false)
+    , _shape(ship_model.vertices().data(), ship_model.vertices().size())
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
 

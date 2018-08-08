@@ -47,7 +47,7 @@ protected:
     static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
 
     static physics::material _material;
-    static physics::convex_shape _shape;
+    physics::convex_shape _shape;
 };
 
 } // namespace game
