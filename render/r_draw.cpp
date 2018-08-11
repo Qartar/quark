@@ -242,35 +242,41 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
     int k = std::max<int>(4, 360 / n);
 
     // Draw half-circle at start
-    glBegin(GL_TRIANGLE_FAN);
-        glColor4fv(start_color);
-        glVertex2fv(start);
-        glColor4fv(start_edge_color);
-        glVertex2fv(start + normal);
-        for (int ii = k; ii < 180 ; ii += k) {
-            vec2 vertex = start + normal * _costbl[ii] - direction * _sintbl[ii];
-            glVertex2fv(vertex);
-        }
-        glVertex2fv(start - normal);
-    glEnd();
+    if (start_color.a || start_edge_color.a) {
+        glBegin(GL_TRIANGLE_FAN);
+            glColor4fv(start_color);
+            glVertex2fv(start);
+            glColor4fv(start_edge_color);
+            glVertex2fv(start + normal);
+            for (int ii = k; ii < 180 ; ii += k) {
+                vec2 vertex = start + normal * _costbl[ii] - direction * _sintbl[ii];
+                glVertex2fv(vertex);
+            }
+            glVertex2fv(start - normal);
+        glEnd();
+    }
 
     // Draw half-circle at end
-    glBegin(GL_TRIANGLE_FAN);
-        glColor4fv(end_color);
-        glVertex2fv(end);
-        glColor4fv(end_edge_color);
-        glVertex2fv(end - normal);
-        for (int ii = k; ii < 180 ; ii += k) {
-            vec2 vertex = end - normal * _costbl[ii] + direction * _sintbl[ii];
-            glVertex2fv(vertex);
-        }
-        glVertex2fv(end + normal);
-    glEnd();
+    if (end_color.a || end_edge_color.a) {
+        glBegin(GL_TRIANGLE_FAN);
+            glColor4fv(end_color);
+            glVertex2fv(end);
+            glColor4fv(end_edge_color);
+            glVertex2fv(end - normal);
+            for (int ii = k; ii < 180 ; ii += k) {
+                vec2 vertex = end - normal * _costbl[ii] + direction * _sintbl[ii];
+                glVertex2fv(vertex);
+            }
+            glVertex2fv(end + normal);
+        glEnd();
+    }
 
     // Aliasing causes thin lines to not render at full brightness
     // when rendering lines with width less than one pixel, draw a
     // line primitive on top with the center color to compensate.
-    draw_line(start, end, start_color, end_color);
+    if (start_color != start_edge_color || end_color != end_edge_color) {
+        draw_line(start, end, start_color, end_color);
+    }
 }
 
 //------------------------------------------------------------------------------

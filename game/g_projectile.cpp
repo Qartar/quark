@@ -184,15 +184,15 @@ void projectile::draw(render::system* renderer, time_value time) const
 
     switch (_type) {
         case weapon_type::cannon:
-            renderer->draw_line(p2, p1, color4(1,0.5,0,a), color4(1,0.5,0,0));
+            renderer->draw_line(1.f, p2, p1, color4(1,0.5,0,a), color4(1,0.5,0,0), color4(1,0.5,0,a), color4(1,0.5,0,0));
             break;
 
         case weapon_type::missile:
-            renderer->draw_line(p2, p1, color4(1,1,1,a), color4(0,0,0,0));
+            renderer->draw_line(1.f, p2, p1, color4(1,1,1,a), color4(0,0,0,0), color4(1,1,1,a), color4(0,0,0,0));
             break;
 
         case weapon_type::blaster:
-            renderer->draw_line(p2, p1, color4(1,0.1f,0,a), color4(1,0.7f,0,0));
+            renderer->draw_line(1.f, p2, p1, color4(1,0.1f,0,a), color4(1,0.7f,0,0), color4(1,0.1f,0,a), color4(1,0.7f,0,0));
             break;
 
         default:
