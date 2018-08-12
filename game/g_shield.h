@@ -15,6 +15,8 @@ public:
     shield(physics::shape const* base, game::object* owner);
     ~shield();
 
+    void spawn();
+
     virtual void draw(render::system* renderer, time_value time) const override;
     virtual bool touch(object *other, physics::collision const* collision) override;
     virtual void think() override;

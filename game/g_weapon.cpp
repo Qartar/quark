@@ -33,8 +33,6 @@ weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
     , _beam_shield(nullptr)
 {
     set_position(position, true);
-    set_linear_velocity(vec2_zero);
-    _rigid_body.set_mass(0.f);
 }
 
 //------------------------------------------------------------------------------

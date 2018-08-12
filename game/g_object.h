@@ -43,7 +43,7 @@ class object
 {
 public:
     object(object_type type, object* owner = nullptr);
-    virtual ~object();
+    virtual ~object() {}
 
     void spawn(); //!< Note: not virtual
 

@@ -23,16 +23,9 @@ object::object(object_type type, object* owner)
 {}
 
 //------------------------------------------------------------------------------
-object::~object()
-{
-    _world->remove_body(&_rigid_body);
-}
-
-//------------------------------------------------------------------------------
 void object::spawn()
 {
     _random = random(_world->get_random());
-    _world->add_body(this, &_rigid_body);
 }
 
 //------------------------------------------------------------------------------

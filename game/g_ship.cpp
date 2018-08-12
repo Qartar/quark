@@ -31,6 +31,8 @@ ship::ship()
 //------------------------------------------------------------------------------
 ship::~ship()
 {
+    _world->remove_body(&_rigid_body);
+
     _world->remove(_shield);
     for (auto& weapon : _weapons) {
         _world->remove(weapon);
@@ -41,6 +43,8 @@ ship::~ship()
 void ship::spawn()
 {
     object::spawn();
+
+    _world->add_body(this, &_rigid_body);
 
     _shield = _world->spawn<shield>(&_shape, this);
 

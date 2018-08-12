@@ -37,7 +37,6 @@ public:
     virtual ~weapon();
 
     virtual void draw(render::system* renderer, time_value time) const override;
-    virtual bool touch(object*, physics::collision const*) override { return false; }
     virtual void think() override;
 
     virtual void read_snapshot(network::message const& message) override;

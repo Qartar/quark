@@ -31,10 +31,20 @@ projectile::projectile(object* owner, float damage, weapon_type type)
 //------------------------------------------------------------------------------
 projectile::~projectile()
 {
+    _world->remove_body(&_rigid_body);
+
     if (_channel) {
         _channel->stop();
         pSound->free_channel(_channel);
     }
+}
+
+//------------------------------------------------------------------------------
+void projectile::spawn()
+{
+    object::spawn();
+
+    _world->add_body(this, &_rigid_body);
 }
 
 //------------------------------------------------------------------------------
