@@ -34,6 +34,7 @@ enum class object_type
     obstacle,
     projectile,
     ship,
+    module,
     shield,
     weapon,
 };

@@ -3,16 +3,16 @@
 
 #pragma once
 
-#include "g_object.h"
+#include "g_module.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
 //------------------------------------------------------------------------------
-class shield : public object
+class shield : public module
 {
 public:
-    shield(physics::shape const* base, game::object* owner);
+    shield(physics::shape const* base, game::ship* owner);
     ~shield();
 
     void spawn();
@@ -37,7 +37,8 @@ protected:
     float _strength;
 
     time_value _damage_time; //!< last time the shield received damage
-    static constexpr time_delta kDamageDelay = time_delta::from_seconds(0.5f); //!< delay after damage before shield recharge
+    static constexpr time_delta recharge_delay = time_delta::from_seconds(0.5f); //!< delay after damage before shield recharge
+    static constexpr float discharge_rate = 1.f; //!< strength per second discharged when current strength exceeds power level
 
     static constexpr int kNumVertices = 64;
     vec2 _vertices[kNumVertices];

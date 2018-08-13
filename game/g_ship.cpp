@@ -7,6 +7,7 @@
 #include "g_ship.h"
 #include "g_shield.h"
 #include "g_weapon.h"
+#include "g_module.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -18,7 +19,6 @@ ship::ship()
     : object(object_type::ship)
     , _usercmd{}
     , _shield(nullptr)
-    , _damage(0)
     , _dead_time(time_value::max)
     , _is_destroyed(false)
     , _shape(ship_model.vertices().data(), ship_model.vertices().size())
@@ -33,10 +33,10 @@ ship::~ship()
 {
     _world->remove_body(&_rigid_body);
 
-    _world->remove(_shield);
-    for (auto& weapon : _weapons) {
-        _world->remove(weapon);
+    for (auto& module : _modules) {
+        _world->remove(module);
     }
+    _modules.clear();
 }
 
 //------------------------------------------------------------------------------
@@ -46,7 +46,14 @@ void ship::spawn()
 
     _world->add_body(this, &_rigid_body);
 
+    _reactor = _world->spawn<module>(this, module_info{module_type::reactor, 8});
+    _modules.push_back(_reactor.get());
+
+    _engines = _world->spawn<module>(this, module_info{module_type::engines, 2});
+    _modules.push_back(_engines.get());
+
     _shield = _world->spawn<shield>(&_shape, this);
+    _modules.push_back(_shield.get());
 
     for (int ii = 0; ii < 2; ++ii) {
         weapon_info info{};
@@ -82,6 +89,7 @@ void ship::spawn()
         info.reload_time = time_delta::from_seconds(4.f);
 
         _weapons.push_back(_world->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
+        _modules.push_back(_weapons.back().get());
     }
 }
 
@@ -90,6 +98,31 @@ void ship::draw(render::system* renderer, time_value time) const
 {
     if (!_is_destroyed) {
         renderer->draw_model(_model, get_transform(time), _color);
+
+        vec2 position = get_position(time) - vec2(vec2i(8 * static_cast<int>(_modules.size() - 1) / 2, 40));
+
+        for (auto const* module : _modules) {
+            int h = module->info().type == module_type::reactor ? 1 : 3;
+            for (int ii = 0; ii < module->maximum_power(); ++ii) {
+                bool damaged = ii >= module->maximum_power() - std::ceil(module->damage() - .2f);
+                bool powered = ii < module->current_power();
+
+                color4 c;
+                if (damaged && !powered) {
+                    c = color4(1,.2f,0,1);
+                } else if (damaged && powered) {
+                    float t = sin(2.f * math::pi<float> * time.to_seconds() - .1f * ii) * .5f + .5f;
+                    c = color4(1,.2f,0,1) * t + color4(0,.8f,.4f,1) * (1.f - t);
+                } else if (!damaged && !powered) {
+                    c = color4(1,.8f,0,1);
+                } else /*if (!damaged && powered)*/ {
+                    c = color4(0,.8f,.4f,1);
+                }
+
+                renderer->draw_box(vec2(vec2i(7,h)), position + vec2(vec2i(0,8 + (h + 1) * ii + h / 2)), c);
+            }
+            position += vec2(8,0);
+        }
     }
 }
 
@@ -104,7 +137,11 @@ void ship::think()
 {
     time_value time = _world->frametime();
 
-    if (_dead_time > time) {
+    if (_dead_time > time && _reactor && _reactor->damage() == _reactor->maximum_power()) {
+        _dead_time = time;
+    }
+
+    if (_engines && _engines->current_power()) {
         constexpr float radius = 128.f;
         constexpr float speed = 16.f;
         constexpr float angular_speed = (2.f * math::pi<float>) * speed / (2.f * math::pi<float> * radius);
@@ -114,17 +151,19 @@ void ship::think()
         vec2 p1 = vec2(cos(t1), sin(t1)) * radius;
         set_linear_velocity((p1 - p0) / FRAMETIME.to_seconds());
         set_angular_velocity(angular_speed);
+    } else {
+        set_linear_velocity(get_linear_velocity() * .99f);
+        set_angular_velocity(get_angular_velocity() * .99f);
     }
 
-    _shield->set_position(get_position());
-    _shield->set_rotation(get_rotation());
-    _shield->set_linear_velocity(get_linear_velocity());
-    _shield->set_angular_velocity(get_angular_velocity());
-
     if (_dead_time > time) {
-        _shield->recharge(1.f / 15.f);
-    } else {
-        _shield->recharge(-1.f);
+        for (auto& module : _modules) {
+            if (module->damage()) {
+                module->repair(1.f / 15.f);
+                break;
+            }
+        }
+        _shield->recharge(1.f / 5.f);
     }
 
     for (auto& weapon : _weapons) {
@@ -191,10 +230,11 @@ void ship::think()
             sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
             _world->add_sound(_sound_explosion, get_position());
 
-            // remove weapon systems
-            for (auto& weapon : _weapons) {
-                _world->remove(weapon);
+            // remove all modules
+            for (auto& module : _modules) {
+                _world->remove(module);
             }
+            _modules.clear();
             _weapons.clear();
 
             _is_destroyed = true;
@@ -223,9 +263,18 @@ void ship::write_snapshot(network::message& /*message*/) const
 //------------------------------------------------------------------------------
 void ship::damage(object* /*inflictor*/, vec2 /*point*/, float amount)
 {
-    _damage += amount;
-    if (_damage > 3.f && _dead_time > _world->frametime()) {
-        _dead_time = _world->frametime();
+    // get list of modules that can take additional damage
+    std::vector<module*> modules;
+    for (auto* module : _modules) {
+        if (module->damage() < module->maximum_power()) {
+            modules.push_back(module);
+        }
+    }
+
+    // apply damage to a random module
+    if (modules.size()) {
+        int idx = rand() % modules.size();
+        modules[idx]->damage(amount * 6.f);
     }
 }
 

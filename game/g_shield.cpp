@@ -15,12 +15,14 @@ namespace game {
 physics::material shield::_material(0.0f, 0.0f);
 
 //------------------------------------------------------------------------------
-shield::shield(physics::shape const* base, game::object* owner)
-    : object(object_type::shield, owner)
+shield::shield(physics::shape const* base, game::ship* owner)
+    : module(owner, {module_type::shields, 2})
     , _base(base)
-    , _strength(1)
+    , _strength(2)
     , _damage_time(time_value::zero)
 {
+    _type = object_type::shield;
+
     float radius = 32.f;
 
     for (int ii = 0; ii < kNumVertices; ++ii) {
@@ -250,19 +252,31 @@ void shield::step_strength()
 //------------------------------------------------------------------------------
 void shield::recharge(float strength_per_second)
 {
+    assert(strength_per_second >= 0.f);
     time_value time = _world->frametime();
-    if (time - _damage_time < kDamageDelay && strength_per_second > 0.f) {
+    if (time - _damage_time < recharge_delay) {
         return;
     }
 
     float delta = strength_per_second * FRAMETIME.to_seconds();
-    _strength = clamp(_strength + delta, 0.f, 1.f);
+    _strength = clamp(_strength + delta, 0.f, std::max(_strength, static_cast<float>(current_power())));
 }
 
 //------------------------------------------------------------------------------
 void shield::think()
 {
+    module::think();
     step_strength();
+
+    if (_strength > current_power()) {
+        float delta = discharge_rate * FRAMETIME.to_seconds();
+        _strength = std::max<float>(_strength - delta, static_cast<float>(current_power()));
+    }
+
+    set_position(_owner->get_position());
+    set_rotation(_owner->get_rotation());
+    set_linear_velocity(_owner->get_linear_velocity());
+    set_angular_velocity(_owner->get_angular_velocity());
 }
 
 //------------------------------------------------------------------------------

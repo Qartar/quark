@@ -16,7 +16,7 @@ namespace game {
 
 //------------------------------------------------------------------------------
 weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
-    : object(object_type::weapon, owner)
+    : module(owner, {module_type::weapons, 2})
     , _info(info)
     , _last_attack_time(time_value::zero)
     , _target(nullptr)
@@ -32,6 +32,7 @@ weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
     , _beam_sweep_end(vec2_zero)
     , _beam_shield(nullptr)
 {
+    _type = object_type::weapon;
     set_position(position, true);
 }
 
@@ -61,6 +62,13 @@ void weapon::draw(render::system* renderer, time_value time) const
 //------------------------------------------------------------------------------
 void weapon::think()
 {
+    module::think();
+
+    // cancel pending attacks if weapon module has been damaged
+    if (current_power() < maximum_power()) {
+        cancel();
+    }
+
     time_value time = _world->frametime();
 
     if (_is_attacking && time - _last_attack_time > _info.reload_time) {
