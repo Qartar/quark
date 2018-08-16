@@ -260,19 +260,19 @@ void ship::think()
     // Death sequence
     //
 
-    {
+    if (time > _dead_time) {
         if (time - _dead_time < destruction_time) {
             float t = (time - _dead_time) / destruction_time;
             float s = powf(_random.uniform_real(), 6.f * (1.f - t));
 
-            // find a random point on the ship's model
-            vec2 v;
-            do {
-                v = _model->mins() + (_model->maxs() - _model->mins()) * vec2(_random.uniform_real(), _random.uniform_real());
-            } while (!_model->contains(v));
-
             // random explosion at a random point on the ship
             if (s > .2f) {
+                // find a random point on the ship's model
+                vec2 v;
+                do {
+                    v = _model->mins() + (_model->maxs() - _model->mins()) * vec2(_random.uniform_real(), _random.uniform_real());
+                } while (!_model->contains(v));
+
                 _world->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
                 if (s * s > t) {
                     sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
