@@ -318,7 +318,7 @@ void session::draw_world()
 
     if (cls.active && _player) {
         view.origin = _player->get_position(_worldtime);
-        view.angle = _player->get_rotation(_worldtime);
+        view.angle = 0;
     } else {
         view.origin = world_center;
         view.angle = 0;
