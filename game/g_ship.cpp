@@ -104,6 +104,11 @@ void ship::draw(render::system* renderer, time_value time) const
             { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f) },
         };
 
+        float alpha = 1.f;
+        if (time > _dead_time && time - _dead_time < destruction_time) {
+            alpha = 1.f - (time - _dead_time) / destruction_time;
+        }
+
         //
         // draw reactor ui
         //
@@ -121,7 +126,7 @@ void ship::draw(render::system* renderer, time_value time) const
                 bool damaged = ii >= _reactor->maximum_power() - std::ceil(_reactor->damage() - .2f);
                 bool powered = ii < _reactor->current_power();
 
-                color4 c = module_colors[powered][damaged];
+                color4 c = module_colors[powered][damaged]; c.a *= alpha;
 
                 float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
                 float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
@@ -144,8 +149,8 @@ void ship::draw(render::system* renderer, time_value time) const
 
             vec2 pos = get_position(time);
 
-            color4 c0 = _shield->colors()[1]; c0.a *= 1.5f;
-            color4 c1 = _shield->colors()[1]; c1.a = 1.f;
+            color4 c0 = _shield->colors()[1]; c0.a *= 1.5f * alpha;
+            color4 c1 = _shield->colors()[1]; c1.a = alpha;
             renderer->draw_arc(pos, radius, 3.f, mint, maxt, c0);
             renderer->draw_arc(pos, radius, 3.f, mint, midt, c1);
         }
@@ -167,7 +172,7 @@ void ship::draw(render::system* renderer, time_value time) const
                 bool damaged = ii >= module->maximum_power() - std::ceil(module->damage() - .2f);
                 bool powered = ii < module->current_power();
 
-                color4 c = module_colors[powered][damaged];
+                color4 c = module_colors[powered][damaged]; c.a *= alpha;
 
                 renderer->draw_box(vec2(7,3), position + vec2(vec2i(0,10 + 4 * ii)), c);
             }
