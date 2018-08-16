@@ -99,27 +99,77 @@ void ship::draw(render::system* renderer, time_value time) const
     if (!_is_destroyed) {
         renderer->draw_model(_model, get_transform(time), _color);
 
-        vec2 position = get_position(time) - vec2(vec2i(8 * static_cast<int>(_modules.size() - 1) / 2, 40));
+        constexpr color4 module_colors[2][2] = {
+            { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f) },
+            { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f) },
+        };
+
+        //
+        // draw reactor ui
+        //
+
+        if (_reactor) {
+            constexpr float mint = (3.f / 4.f) * math::pi<float>;
+            constexpr float maxt = (5.f / 4.f) * math::pi<float>;
+            constexpr float radius = 40.f;
+            constexpr float edge_width = 1.f;
+            constexpr float edge = edge_width / radius;
+
+            vec2 pos = get_position(time);
+
+            for (int ii = 0; ii < _reactor->maximum_power(); ++ii) {
+                bool damaged = ii >= _reactor->maximum_power() - std::ceil(_reactor->damage() - .2f);
+                bool powered = ii < _reactor->current_power();
+
+                color4 c = module_colors[powered][damaged];
+
+                float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
+                float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
+                renderer->draw_arc(pos, radius, 3.f, t0 + .5f * edge, t1 - .5f * edge, c);
+            }
+        }
+
+        //
+        // draw shield ui
+        //
+
+        if (_shield) {
+            constexpr float mint = (-1.f / 4.f) * math::pi<float>;
+            constexpr float maxt = (1.f / 4.f) * math::pi<float>;
+            constexpr float radius = 40.f;
+            constexpr float edge_width = 1.f;
+            constexpr float edge = edge_width / radius;
+
+            float midt =  mint + (maxt - mint) * (_shield->strength() / _shield->info().maximum_power);
+
+            vec2 pos = get_position(time);
+
+            color4 c0 = _shield->colors()[1]; c0.a *= 1.5f;
+            color4 c1 = _shield->colors()[1]; c1.a = 1.f;
+            renderer->draw_arc(pos, radius, 3.f, mint, maxt, c0);
+            renderer->draw_arc(pos, radius, 3.f, mint, midt, c1);
+        }
+
+        //
+        // draw modules ui
+        //
+
+        vec2 position = get_position(time) - vec2(vec2i(8 * static_cast<int>(_modules.size() - 2) / 2, 40));
 
         for (auto const* module : _modules) {
-            int h = module->info().type == module_type::reactor ? 1 : 3;
+            // reactor module ui is drawn explicitly
+            if (module->info().type == module_type::reactor) {
+                continue;
+            }
+
+            // draw power bar for each module power level
             for (int ii = 0; ii < module->maximum_power(); ++ii) {
                 bool damaged = ii >= module->maximum_power() - std::ceil(module->damage() - .2f);
                 bool powered = ii < module->current_power();
 
-                color4 c;
-                if (damaged && !powered) {
-                    c = color4(1,.2f,0,1);
-                } else if (damaged && powered) {
-                    float t = sin(2.f * math::pi<float> * time.to_seconds() - .1f * ii) * .5f + .5f;
-                    c = color4(1,.2f,0,1) * t + color4(0,.8f,.4f,1) * (1.f - t);
-                } else if (!damaged && !powered) {
-                    c = color4(1,.8f,0,1);
-                } else /*if (!damaged && powered)*/ {
-                    c = color4(0,.8f,.4f,1);
-                }
+                color4 c = module_colors[powered][damaged];
 
-                renderer->draw_box(vec2(vec2i(7,h)), position + vec2(vec2i(0,8 + (h + 1) * ii + h / 2)), c);
+                renderer->draw_box(vec2(7,3), position + vec2(vec2i(0,10 + 4 * ii)), c);
             }
             position += vec2(8,0);
         }

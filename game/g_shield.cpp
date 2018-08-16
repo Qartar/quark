@@ -38,8 +38,29 @@ shield::shield(physics::shape const* base, game::ship* owner)
     _shape = physics::convex_shape(_vertices, kNumVertices);
     _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
 
-    static int index = 0;
-    _style = index++;
+    constexpr color4 schemes[12] = {
+        // blue
+        color4(.3f, .7f, 1.f, 1.f),
+        color4(.0f, .5f, 1.f, .2f),
+        color4(.0f, .3f, 1.f, .1f),
+        color4(.0f, .0f, 1.f, .0f),
+        // green
+        color4(.7f, 1.f, .4f, 1.f),
+        color4(.4f, 1.f, .2f, .15f),
+        color4(.2f, .9f, .1f, .05f),
+        color4(.0f, .8f, .0f, .0f),
+        // orange
+        color4(1.f, .6f, .1f, 1.f),
+        color4(1.f, .3f, .1f, .2f),
+        color4(.9f, .2f, .0f, .075f),
+        color4(.8f, .1f, .0f, .0f),
+    };
+
+    static int style = 0;
+    for (int ii = 0; ii < _colors.size(); ++ii) {
+        _colors[ii] = schemes[(style % 3) * 4 + ii];
+    }
+    ++style;
 }
 
 //------------------------------------------------------------------------------
@@ -66,30 +87,6 @@ void shield::draw(render::system* renderer, time_value time) const
     vec2 pos = get_position(time);
     mat2 rot; rot.set_rotation(get_rotation(time));
 
-    constexpr color4 schemes[12] = {
-        // blue
-        color4(.3f, .7f, 1.f, 1.f),
-        color4(.0f, .5f, 1.f, .2f),
-        color4(.0f, .3f, 1.f, .1f),
-        color4(.0f, .0f, 1.f, .0f),
-        // green
-        color4(.7f, 1.f, .4f, 1.f),
-        color4(.4f, 1.f, .2f, .15f),
-        color4(.2f, .9f, .1f, .05f),
-        color4(.0f, .8f, .0f, .0f),
-        // orange
-        color4(1.f, .6f, .1f, 1.f),
-        color4(1.f, .3f, .1f, .2f),
-        color4(.9f, .2f, .0f, .075f),
-        color4(.8f, .1f, .0f, .0f),
-    };
-
-    color4 const* scheme = schemes;
-    switch (_style % 3) {
-        case 0: scheme = schemes; break;
-        case 1: scheme = schemes + 4; break;
-        case 2: scheme = schemes + 8; break;
-    }
 
     for (int ii = 0; ii < kNumVertices; ++ii) {
         float s = _flux[ii] / (.1f + _flux[ii]);
@@ -97,8 +94,8 @@ void shield::draw(render::system* renderer, time_value time) const
         draw_vertices[ii * 2 + 0] = _vertices[ii] * rot + pos;
         draw_vertices[ii * 2 + 1] = _vertices[ii] * rot * (.9f * s + .8f * (1.f - s)) + pos;
 
-        draw_colors[ii * 2 + 0] = scheme[0] * s + scheme[1] * (1.f - s);
-        draw_colors[ii * 2 + 1] = scheme[1] * s + scheme[2] * (1.f - s);
+        draw_colors[ii * 2 + 0] = _colors[0] * s + _colors[1] * (1.f - s);
+        draw_colors[ii * 2 + 1] = _colors[1] * s + _colors[2] * (1.f - s);
 
         draw_colors[ii * 2 + 0].a *= std::max(s, _strength + s);
         draw_colors[ii * 2 + 1].a *= std::max(0.f, _strength);
@@ -117,7 +114,7 @@ void shield::draw(render::system* renderer, time_value time) const
     }
 
     draw_vertices[kNumVertices * 2] = pos;
-    draw_colors[kNumVertices * 2] = scheme[3];
+    draw_colors[kNumVertices * 2] = _colors[3];
 
     draw_indices[kNumVertices * 9 - 7] = 0;
     draw_indices[kNumVertices * 9 - 5] = 1;

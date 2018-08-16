@@ -40,6 +40,30 @@ vec2 system::monospace_size(string::view string) const
 }
 
 //------------------------------------------------------------------------------
+void system::draw_arc(vec2 center, float radius, float width, float min_angle, float max_angle, color4 color)
+{
+    // Scaling factor for circle tessellation
+    const float view_scale = sqrtf(_framebuffer_size.length_sqr() / _view.size.length_sqr());
+
+    // Number of circle segments, approximation for pi / acos(1 - 1/2x)
+    int n = 1 + static_cast<int>(0.5f * (max_angle - min_angle) * sqrtf(max(0.f, radius * view_scale - 0.25f)));
+    float step = (max_angle - min_angle) / n;
+
+    glColor4fv(color);
+
+    glBegin(GL_TRIANGLE_STRIP);
+        for (int ii = 0; ii <= n; ++ii) {
+            float a = float(ii) * step + min_angle;
+            float s = sinf(a);
+            float c = cosf(a);
+
+            glVertex2fv(center + vec2(c, s) * (radius + width * .5f));
+            glVertex2fv(center + vec2(c, s) * (radius - width * .5f));
+        }
+    glEnd();
+}
+
+//------------------------------------------------------------------------------
 void system::draw_box(vec2 size, vec2 position, color4 color)
 {
     float   xl, xh, yl, yh;

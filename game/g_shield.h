@@ -26,13 +26,15 @@ public:
 
     void recharge(float strength_per_second);
     bool damage(vec2 position, float damage);
+    float strength() const { return _strength; }
+    std::array<color4, 4> const& colors() const { return _colors; }
 
 protected:
     static physics::material _material;
     physics::shape const* _base;
     physics::convex_shape _shape;
 
-    int _style;
+    std::array<color4, 4> _colors;
 
     float _strength;
 
