@@ -17,7 +17,6 @@ object::object(object_type type, object* owner)
     , _old_position(vec2_zero)
     , _old_rotation(0)
     , _type(type)
-    , _world(nullptr)
     , _owner(owner)
     , _rigid_body(&_default_shape, &_default_material, _default_mass)
 {}
@@ -25,7 +24,7 @@ object::object(object_type type, object* owner)
 //------------------------------------------------------------------------------
 void object::spawn()
 {
-    _random = random(_world->get_random());
+    _random = random(get_world()->get_random());
 }
 
 //------------------------------------------------------------------------------
@@ -60,14 +59,14 @@ void object::write_snapshot(network::message& /*message*/) const
 //------------------------------------------------------------------------------
 vec2 object::get_position(time_value time) const
 {
-    float lerp = (time - _world->frametime()) / FRAMETIME;
+    float lerp = (time - get_world()->frametime()) / FRAMETIME;
     return _old_position + (get_position() - _old_position) * lerp;
 }
 
 //------------------------------------------------------------------------------
 float object::get_rotation(time_value time) const
 {
-    float lerp = (time - _world->frametime()) / FRAMETIME;
+    float lerp = (time - get_world()->frametime()) / FRAMETIME;
     return _old_rotation + (get_rotation() - _old_rotation) * lerp;
 }
 

@@ -32,8 +32,6 @@ namespace game {
 class object;
 class world;
 
-typedef struct game_client_s game_client_t;
-
 //------------------------------------------------------------------------------
 enum class effect_type
 {
@@ -49,11 +47,89 @@ enum class effect_type
 };
 
 //------------------------------------------------------------------------------
+template<typename type> class object_iterator
+{
+public:
+    //  required for input_iterator
+
+    bool operator!=(object_iterator const& other) const {
+        return _begin != other._begin;
+    }
+
+    type* operator*() const {
+        assert(_begin < _end);
+        return _begin->get();
+    }
+
+    object_iterator& operator++() {
+        return next();
+    }
+
+    //  required for forward_iterator
+
+    object_iterator operator++(int) const {
+        return object_iterator(*this).next();
+    }
+
+protected:
+    //! game::world uses a vector of unique_ptrs so convert the template type
+    //! to the appropriate unique_ptr type depending on constness.
+    using pointer_type = typename std::conditional<
+                             std::is_const<type>::value,
+                             std::unique_ptr<typename std::remove_const<type>::type> const*,
+                             std::unique_ptr<type>*>::type;
+
+    pointer_type _begin;
+    pointer_type _end;
+
+protected:
+    template<typename> friend class object_range;
+
+    object_iterator(pointer_type begin, pointer_type end)
+        : _begin(begin - 1)
+        , _end(end)
+    {
+        next(); // advance to the first active object
+    }
+
+    object_iterator& next() {
+        assert(_begin < _end);
+        do {
+            ++_begin;
+        } while (_begin < _end && _begin->get() == nullptr);
+        return *this;
+    }
+};
+
+//------------------------------------------------------------------------------
+template<typename type> class object_range
+{
+public:
+    using iterator_type = object_iterator<type>;
+    using pointer_type = typename iterator_type::pointer_type;
+
+    iterator_type begin() const { return iterator_type(_begin, _end); }
+    iterator_type end() const { return iterator_type(_end, _end); }
+
+protected:
+    friend world;
+
+    pointer_type _begin;
+    pointer_type _end;
+
+protected:
+    object_range(pointer_type begin, pointer_type end)
+        : _begin(begin)
+        , _end(end)
+    {}
+};
+
+//------------------------------------------------------------------------------
 class world
 {
 public:
     world ();
-    ~world () {}
+    ~world ();
 
     void init();
     void shutdown();
@@ -67,12 +143,17 @@ public:
     void read_snapshot(network::message& message);
     void write_snapshot(network::message& message) const;
 
-    std::vector<std::unique_ptr<object>> const& objects() { return _objects; }
-
     template<typename T, typename... Args>
     T* spawn(Args&& ...args);
 
-    game::object* find_object(std::size_t spawn_id) const;
+    //! Return an iterator over all active objects in the world
+    object_range<object const> objects() const;
+
+    //! Return an iterator over all active objects in the world
+    object_range<object> objects();
+
+    //! Return a handle to the object with the given sequence id
+    template<typename T> handle<T> find(uint64_t sequence) const;
 
     random& get_random() { return _random; }
 
@@ -93,17 +174,30 @@ public:
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
 
 private:
-    //! Active objects in the world
+    //! Sparse array of objects in the world, resized as needed
     std::vector<std::unique_ptr<object>> _objects;
-
-    //! Objects pending addition
-    std::vector<std::unique_ptr<object>> _pending;
 
     //! Objects pending removal
     std::queue<object*> _removed;
 
-    //! Previous object spawn id
-    std::size_t _spawn_id;
+    //! World index in singletons array
+    uint64_t _index;
+
+    //! Sequence id of most recently spawned object
+    uint64_t _sequence;
+
+    template<typename T> friend class handle;
+
+    //! Maximum number of objects that can be referenced by handle
+    constexpr static int max_objects = 1LLU << handle<object>::index_bits;
+    //! Maximum number of worlds than can be referenced by handle
+    constexpr static int max_worlds = 1LLU << handle<object>::system_bits;
+
+    //! Static array of worlds so that handles can store an index instead of pointer
+    static std::array<world*, max_worlds> _singletons;
+
+    //! Retrieve an object from its handle
+    template<typename T> T* get(handle<T> handle) const;
 
     physics::world _physics;
     std::map<physics::rigid_body const*, game::object*> _physics_objects;
@@ -113,8 +207,6 @@ private:
 
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
-
-    game::object* spawn_snapshot(std::size_t spawn_id, object_type type);
 
     config::integer _arena_width;
     config::integer _arena_height;
@@ -165,13 +257,53 @@ T* world::spawn(Args&& ...args)
     static_assert(std::is_base_of<game::object, T>::value,
                   "'spawn': 'T' must be derived from 'game::object'");
 
-    _pending.push_back(std::make_unique<T>(std::move(args)...));
-    T* obj = static_cast<T*>(_pending.back().get());
-    obj->_world = this;
-    obj->_spawn_id = ++_spawn_id;
+    uint64_t obj_index = 0;
+    // try to find an unused slot in the objects array
+    for (; obj_index < _objects.size(); ++obj_index) {
+        if (!_objects[obj_index]) {
+            break;
+        }
+    }
+
+    if (obj_index == _objects.size()) {
+        assert(_objects.size() < max_objects);
+        _objects.push_back(std::make_unique<T>(std::move(args)...));
+    } else {
+        _objects[obj_index] = std::make_unique<T>(std::move(args)...);
+    }
+
+    T* obj = static_cast<T*>(_objects[obj_index].get());
+    obj->_self = handle<object>(obj_index, _index, ++_sequence);
     obj->_spawn_time = frametime();
     obj->spawn();
     return obj;
+}
+
+//------------------------------------------------------------------------------
+template<typename T> handle<T> world::find(uint64_t sequence) const
+{
+    if (!sequence) {
+        return handle<T>(0, _index, 0);
+    }
+
+    for (auto& obj : _objects) {
+        if (obj.get() && sequence == obj->_self.get_sequence()) {
+            return obj->_self;
+        }
+    }
+
+    return handle<T>(0, _index, 0);
+}
+
+//------------------------------------------------------------------------------
+template<typename T> T* world::get(handle<T> h) const
+{
+    assert(h.get_world_index() == _index);
+    assert(h.get_index() < max_objects);
+    if (_objects[h.get_index()] && h.get_sequence() == _objects[h.get_index()]->_self.get_sequence()) {
+        return static_cast<T*>(_objects[h.get_index()].get());
+    }
+    return nullptr;
 }
 
 } // namespace game

@@ -15,9 +15,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+std::array<world*, world::max_worlds> world::_singletons{};
+
 //------------------------------------------------------------------------------
 world::world()
-    : _spawn_id(0)
+    : _sequence(0)
     , _border_material{0,0}
     , _border_shapes{{vec2(0,0)}, {vec2(0,0)}}
     , _arena_width("g_arenaWidth", 640, config::archive|config::server|config::reset, "arena width")
@@ -25,7 +27,23 @@ world::world()
     , _physics(
         std::bind(&world::physics_filter_callback, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&world::physics_collide_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
-{}
+{
+    for (_index = 0; _index < max_worlds; ++_index) {
+        if (!_singletons[_index]) {
+            _singletons[_index] = this;
+            break;
+        }
+    }
+
+    assert(_index < max_worlds);
+}
+
+//------------------------------------------------------------------------------
+world::~world()
+{
+    assert(_singletons[_index] == this);
+    _singletons[_index] = nullptr;
+}
 
 //------------------------------------------------------------------------------
 void world::init()
@@ -37,7 +55,6 @@ void world::init()
 void world::shutdown()
 {
     _objects.clear();
-    _pending.clear();
     // swap with empty queue because std::queue has no clear method
     std::queue<game::object*> empty;
     _removed.swap(empty);
@@ -56,12 +73,11 @@ void world::reset()
     _border_shapes[1] = physics::box_shape(vec2(vec2i(_border_thickness, _border_thickness + _arena_height)));
 
     _objects.clear();
-    _pending.clear();
     // swap with empty queue because std::queue has no clear method
     std::queue<game::object*> empty;
     _removed.swap(empty);
 
-    _spawn_id = 0;
+    _sequence = 0;
 
     for (int ii = 0; ii < 3; ++ii) {
         float angle = float(ii) * (math::pi<float> * 2.f / 3.f);
@@ -71,6 +87,24 @@ void world::reset()
         sh->set_position(vec2(vec2i(_arena_width, _arena_height)) * .5f - dir * 96.f, true);
         sh->set_rotation(angle, true);
     }
+}
+
+//------------------------------------------------------------------------------
+object_range<object const> world::objects() const
+{
+    return object_range<object const>(
+        &_objects[0],
+        &_objects[0] + _objects.size()
+    );
+}
+
+//------------------------------------------------------------------------------
+object_range<object> world::objects()
+{
+    return object_range<object>(
+        &_objects[0],
+        &_objects[0] + _objects.size()
+    );
 }
 
 //------------------------------------------------------------------------------
@@ -85,6 +119,10 @@ void world::draw(render::system* renderer, time_value time) const
     renderer->draw_starfield();
 
     for (auto& obj : _objects) {
+        // objects array is sparse
+        if (!obj.get()) {
+            continue;
+        }
         obj->draw(renderer, time);
     }
 
@@ -99,44 +137,39 @@ void world::run_frame()
     ++_framenum;
 
     while (_removed.size()) {
-        game::object* obj = _removed.front();
+        assert(_objects[_removed.front()->_self.get_index()].get() == _removed.front()->_self.get());
+        _objects[_removed.front()->_self.get_index()] = nullptr;
         _removed.pop();
-         _objects.erase(std::find_if(_objects.begin(), _objects.end(), [=](auto& it){
-             return it.get() == obj;
-         }));
-     }
-
-    for (auto& obj : _objects) {
-        obj->think();
     }
 
-    for (auto& obj : _objects) {
-        obj->_old_position = obj->get_position();
-        obj->_old_rotation = obj->get_rotation();
+    for (std::size_t ii = 0; ii < _objects.size(); ++ii) {
+        // objects array is sparse
+        if (!_objects[ii].get()) {
+            continue;
+        }
+
+        // objects can spawn other objects, do not think this frame
+        if (_objects[ii]->_spawn_time == frametime()) {
+            continue;
+        }
+
+        _objects[ii]->think();
+
+        _objects[ii]->_old_position = _objects[ii]->get_position();
+        _objects[ii]->_old_rotation = _objects[ii]->get_rotation();
     }
+
     _physics.step(FRAMETIME.to_seconds());
-
-    for (auto& obj : _pending) {
-        _objects.push_back(std::move(obj));
-    }
-    _pending.clear();
 }
 
 //------------------------------------------------------------------------------
 void world::read_snapshot(network::message& message)
 {
-    for (auto& obj : _pending) {
-        _objects.push_back(std::move(obj));
-    }
-    _pending.clear();
-
     while (_removed.size()) {
-        game::object* obj = _removed.front();
+        assert(_objects[_removed.front()->_self.get_index()].get() == _removed.front()->_self.get());
+        _objects[_removed.front()->_self.get_index()] = nullptr;
         _removed.pop();
-         _objects.erase(std::find_if(_objects.begin(), _objects.end(), [=](auto& it){
-             return it.get() == obj;
-         }));
-     }
+    }
 
     while (message.bytes_remaining()) {
         message_type type = static_cast<message_type>(message.read_byte());
@@ -161,46 +194,11 @@ void world::read_snapshot(network::message& message)
                 break;
         }
     }
-
-    for (auto& obj : _pending) {
-        _objects.push_back(std::move(obj));
-    }
-    _pending.clear();
 }
 
 //------------------------------------------------------------------------------
-void world::read_frame(network::message const& message)
+void world::read_frame(network::message const& /*message*/)
 {
-    _framenum = message.read_long();
-    _mins = message.read_vector();
-    _maxs = message.read_vector();
-
-    // read active objects
-    for (std::size_t ii = 0; ; ++ii) {
-        std::size_t spawn_id = message.read_long();
-
-        if (!spawn_id) {
-            for (; ii < _objects.size(); ++ii) {
-                remove(_objects[ii].get());
-            }
-            break;
-        }
-
-        auto type = static_cast<object_type>(message.read_byte());
-
-        while (ii < _objects.size() && _objects[ii]->_spawn_id < spawn_id) {
-            remove(_objects[ii++].get());
-        }
-
-        if (ii >= _objects.size()) {
-            game::object* obj = spawn_snapshot(spawn_id, type);
-            obj->read_snapshot(message);
-            obj->set_position(obj->get_position(), true);
-        } else /*if (ii < _objects.size())*/ {
-            assert(_objects[ii]->_spawn_id == spawn_id);
-            _objects[ii]->read_snapshot(message);
-        }
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -237,12 +235,7 @@ void world::write_snapshot(network::message& message) const
     message.write_vector(_maxs);
 
     // write active objects
-    for (auto const& obj : _objects) {
-        message.write_long(narrow_cast<int>(obj->_spawn_id));
-        message.write_byte(narrow_cast<uint8_t>(obj->_type));
-        obj->write_snapshot(message);
-    }
-    message.write_long(0);
+    // ...
 
     // write sounds and effects
     message.write(_message);
@@ -272,48 +265,6 @@ void world::write_effect(time_value time, effect_type type, vec2 position, vec2 
 }
 
 //------------------------------------------------------------------------------
-game::object* world::spawn_snapshot(std::size_t spawn_id, object_type type)
-{
-    switch (type) {
-        case object_type::projectile: {
-            auto proj = spawn<game::projectile>(nullptr, 1.0f, weapon_type::cannon);
-            proj->_spawn_id = _spawn_id = spawn_id;
-            return proj;
-        }
-
-        case object_type::obstacle: {
-            auto obj = spawn<game::object>(object_type::object);
-            obj->_spawn_id = _spawn_id = spawn_id;
-            return obj;
-        }
-
-        case object_type::object:
-        default:
-            return nullptr;
-    }
-}
-
-//------------------------------------------------------------------------------
-game::object* world::find_object(std::size_t spawn_id) const
-{
-    // search in active objects
-    for (auto& obj : _objects) {
-        if (obj->_spawn_id == spawn_id) {
-            return obj.get();
-        }
-    }
-
-    // look in pending objects
-    for (auto& obj : _pending) {
-        if (obj->_spawn_id == spawn_id) {
-            return obj.get();
-        }
-    }
-
-    return nullptr;
-}
-
-//------------------------------------------------------------------------------
 game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore) const
 {
     struct candidate {
@@ -327,17 +278,17 @@ game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game
     };
 
     std::set<candidate> candidates;
-    for (auto& other : _objects) {
-        if (other.get() == ignore || other.get()->_owner == ignore) {
+    for (auto& other : _physics_objects) {
+        if (other.second == ignore || other.second->_owner == ignore) {
             continue;
         }
 
-        auto tr = physics::trace(&other->rigid_body(), start, end);
+        auto tr = physics::trace(other.first, start, end);
         if (tr.get_fraction() < 1.0f) {
             candidates.insert(candidate{
                 tr.get_fraction(),
                 tr.get_contact(),
-                other.get()}
+                other.second}
             );
         }
     }

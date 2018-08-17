@@ -69,7 +69,7 @@ void weapon::think()
         cancel();
     }
 
-    time_value time = _world->frametime();
+    time_value time = get_world()->frametime();
 
     if (_is_attacking && time - _last_attack_time > _info.reload_time) {
         if (_info.type != weapon_type::laser) {
@@ -92,7 +92,7 @@ void weapon::think()
 
     if (_projectile_target && time - _last_attack_time <= _info.projectile_count * _info.projectile_delay) {
         if (_projectile_count < _info.projectile_count && _projectile_count * _info.projectile_delay <= time - _last_attack_time) {
-            game::projectile* proj = _world->spawn<projectile>(_owner.get(), _info.projectile_damage, _info.type);
+            game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), _info.projectile_damage, _info.type);
             vec2 start = get_position() * _owner->rigid_body().get_transform();
             vec2 end = _projectile_target_pos * _projectile_target->rigid_body().get_transform();
 
@@ -117,14 +117,14 @@ void weapon::think()
 
             if (_info.type == weapon_type::blaster) {
                 sound::asset _sound_blaster_fire = pSound->load_sound("assets/sound/blaster_fire.wav");
-                _world->add_sound(_sound_blaster_fire, start, _info.projectile_damage);
-                _world->add_effect(time, effect_type::blaster, start, dir * 2);
+                get_world()->add_sound(_sound_blaster_fire, start, _info.projectile_damage);
+                get_world()->add_effect(time, effect_type::blaster, start, dir * 2);
             } else if (_info.type == weapon_type::cannon) {
                 sound::asset _sound_cannon_fire = pSound->load_sound("assets/sound/cannon_fire.wav");
-                _world->add_sound(_sound_cannon_fire, start, _info.projectile_damage);
-                _world->add_effect(time, effect_type::cannon, start, dir * 2);
+                get_world()->add_sound(_sound_cannon_fire, start, _info.projectile_damage);
+                get_world()->add_effect(time, effect_type::cannon, start, dir * 2);
             } else {
-                _world->add_effect(time, effect_type::cannon, start, dir * 2);
+                get_world()->add_effect(time, effect_type::cannon, start, dir * 2);
             }
 
             ++_projectile_count;
@@ -142,12 +142,12 @@ void weapon::think()
         vec2 beam_dir = (beam_end - beam_start).normalize();
 
         physics::collision c{};
-        game::object* obj = _world->trace(c, beam_start, beam_end, _owner.get());
+        game::object* obj = get_world()->trace(c, beam_start, beam_end, _owner.get());
         if (obj && obj->_type == object_type::shield && obj->touch(this, &c)) {
             _beam_shield = static_cast<game::shield*>(obj);
         } else {
             _beam_shield = nullptr;
-            _world->add_effect(time, effect_type::sparks, beam_end, -beam_dir, _info.beam_damage);
+            get_world()->add_effect(time, effect_type::sparks, beam_end, -beam_dir, _info.beam_damage);
             if (_beam_target->_type == object_type::ship) {
                 static_cast<ship*>(_beam_target.get())->damage(this, beam_end, _info.beam_damage * FRAMETIME.to_seconds());
             }

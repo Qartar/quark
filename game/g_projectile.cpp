@@ -31,7 +31,7 @@ projectile::projectile(object* owner, float damage, weapon_type type)
 //------------------------------------------------------------------------------
 projectile::~projectile()
 {
-    _world->remove_body(&_rigid_body);
+    get_world()->remove_body(&_rigid_body);
 
     if (_channel) {
         _channel->stop();
@@ -44,14 +44,14 @@ void projectile::spawn()
 {
     object::spawn();
 
-    _world->add_body(this, &_rigid_body);
+    get_world()->add_body(this, &_rigid_body);
 }
 
 //------------------------------------------------------------------------------
 void projectile::think()
 {
-    if (_world->frametime() - _spawn_time > fuse_time) {
-        _world->remove(this);
+    if (get_world()->frametime() - _spawn_time > fuse_time) {
+        get_world()->remove(this);
         return;
     }
 
@@ -71,7 +71,7 @@ void projectile::update_homing()
     float bestValue = .5f * math::sqrt2<float>;
     game::object* bestTarget = nullptr;
 
-    for (auto& obj : _world->objects()) {
+    for (auto* obj : get_world()->objects()) {
         if (obj->_type != object_type::ship) {
             continue;
         }
@@ -80,7 +80,7 @@ void projectile::update_homing()
         float value = displacement.normalize().dot(direction);
         if (value > bestValue) {
             bestValue = value;
-            bestTarget = obj.get();
+            bestTarget = obj;
         }
     }
 
@@ -97,19 +97,19 @@ void projectile::update_homing()
 //------------------------------------------------------------------------------
 void projectile::update_effects()
 {
-    time_value time = _world->frametime();
+    time_value time = get_world()->frametime();
 
     if (time > _impact_time) {
         return;
     }
 
-    float a = min(1.f, (_spawn_time + fuse_time - _world->frametime()) / fade_time);
+    float a = min(1.f, (_spawn_time + fuse_time - get_world()->frametime()) / fade_time);
     vec2 p1 = get_position() - get_linear_velocity()
         * (std::min(FRAMETIME, time - _spawn_time) / time_delta::from_seconds(1));
     vec2 p2 = get_position();
 
     if (_type == weapon_type::missile) {
-        _world->add_trail_effect(
+        get_world()->add_trail_effect(
             effect_type::missile_trail,
             p2,
             p1,
@@ -158,24 +158,24 @@ bool projectile::touch(object *other, physics::collision const* collision)
             relative_velocity -= other->get_linear_velocity();
         }
         float delta_time = displacement.dot(relative_velocity) / relative_velocity.length_sqr();
-        _impact_time = _world->frametime() + time_delta::from_seconds(1) * delta_time;
+        _impact_time = get_world()->frametime() + time_delta::from_seconds(1) * delta_time;
     }
 
     float factor = (other && other->_type == object_type::shield) ? .5f : 1.f;
 
     if (collision) {
-        _world->add_sound(sound, collision->point, factor * _damage);
-        _world->add_effect(_impact_time, effect, collision->point, -collision->normal, .5f * factor * _damage);
+        get_world()->add_sound(sound, collision->point, factor * _damage);
+        get_world()->add_effect(_impact_time, effect, collision->point, -collision->normal, .5f * factor * _damage);
     } else {
-        _world->add_sound(sound, get_position(), factor * _damage);
-        _world->add_effect(_impact_time, effect, get_position(), vec2_zero, .5f * factor * _damage);
+        get_world()->add_sound(sound, get_position(), factor * _damage);
+        get_world()->add_effect(_impact_time, effect, get_position(), vec2_zero, .5f * factor * _damage);
     }
 
     if (other && other->_type == object_type::ship) {
         static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _damage);
     }
 
-    _world->remove(this);
+    get_world()->remove(this);
     return true;
 }
 
@@ -215,7 +215,7 @@ void projectile::read_snapshot(network::message const& message)
 {
     _old_position = get_position();
 
-    _owner = _world->find_object(message.read_long());
+    _owner = get_world()->find<object>(message.read_long());
     _damage = message.read_float();
     _type = static_cast<weapon_type>(message.read_byte());
     set_position(message.read_vector());
@@ -228,7 +228,7 @@ void projectile::read_snapshot(network::message const& message)
 //------------------------------------------------------------------------------
 void projectile::write_snapshot(network::message& message) const
 {
-    message.write_long(narrow_cast<int>(_owner->spawn_id() & 0xffffffff));
+    message.write_long(narrow_cast<int>(_owner->get_sequence() & 0xffffffff));
     message.write_float(_damage);
     message.write_byte(narrow_cast<uint8_t>(_type));
     message.write_vector(get_position());

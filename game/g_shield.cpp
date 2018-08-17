@@ -66,7 +66,7 @@ shield::shield(physics::shape const* base, game::ship* owner)
 //------------------------------------------------------------------------------
 shield::~shield()
 {
-    _world->remove_body(&_rigid_body);
+    get_world()->remove_body(&_rigid_body);
 }
 
 //------------------------------------------------------------------------------
@@ -74,7 +74,7 @@ void shield::spawn()
 {
     object::spawn();
 
-    _world->add_body(this, &_rigid_body);
+    get_world()->add_body(this, &_rigid_body);
 }
 
 //------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ bool shield::damage(vec2 position, float damage)
         }
     }
 
-    _damage_time = _world->frametime();
+    _damage_time = get_world()->frametime();
 
     if (_strength == 0.f) {
         return false;
@@ -250,7 +250,7 @@ void shield::step_strength()
 void shield::recharge(float strength_per_second)
 {
     assert(strength_per_second >= 0.f);
-    time_value time = _world->frametime();
+    time_value time = get_world()->frametime();
     if (time - _damage_time < recharge_delay) {
         return;
     }
@@ -267,7 +267,7 @@ void shield::think()
 
     if (_strength > current_power()) {
         float delta = discharge_rate * FRAMETIME.to_seconds();
-        _strength = std::max<float>(_strength - delta, static_cast<float>(current_power()));
+        _strength = std::max(_strength - delta, static_cast<float>(current_power()));
     }
 
     set_position(_owner->get_position());

@@ -31,10 +31,10 @@ ship::ship()
 //------------------------------------------------------------------------------
 ship::~ship()
 {
-    _world->remove_body(&_rigid_body);
+    get_world()->remove_body(&_rigid_body);
 
     for (auto& module : _modules) {
-        _world->remove(module);
+        get_world()->remove(module);
     }
     _modules.clear();
 }
@@ -44,15 +44,15 @@ void ship::spawn()
 {
     object::spawn();
 
-    _world->add_body(this, &_rigid_body);
+    get_world()->add_body(this, &_rigid_body);
 
-    _reactor = _world->spawn<module>(this, module_info{module_type::reactor, 8});
+    _reactor = get_world()->spawn<module>(this, module_info{module_type::reactor, 8});
     _modules.push_back(_reactor.get());
 
-    _engines = _world->spawn<module>(this, module_info{module_type::engines, 2});
+    _engines = get_world()->spawn<module>(this, module_info{module_type::engines, 2});
     _modules.push_back(_engines.get());
 
-    _shield = _world->spawn<shield>(&_shape, this);
+    _shield = get_world()->spawn<shield>(&_shape, this);
     _modules.push_back(_shield.get());
 
     for (int ii = 0; ii < 2; ++ii) {
@@ -88,7 +88,7 @@ void ship::spawn()
         }
         info.reload_time = time_delta::from_seconds(4.f);
 
-        _weapons.push_back(_world->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
+        _weapons.push_back(get_world()->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
         _modules.push_back(_weapons.back().get());
     }
 }
@@ -190,7 +190,7 @@ bool ship::touch(object* /*other*/, physics::collision const* /*collision*/)
 //------------------------------------------------------------------------------
 void ship::think()
 {
-    time_value time = _world->frametime();
+    time_value time = get_world()->frametime();
 
     if (_dead_time > time && _reactor && _reactor->damage() == _reactor->maximum_power()) {
         _dead_time = time;
@@ -225,10 +225,10 @@ void ship::think()
         if (_dead_time > time && _random.uniform_real() < .01f) {
             // get a list of all ships in the world
             std::vector<game::ship*> ships;
-            for (auto& object : _world->objects()) {
-                if (object.get() != this && object->_type == object_type::ship) {
-                    if (!static_cast<ship*>(object.get())->is_destroyed()) {
-                        ships.push_back(static_cast<ship*>(object.get()));
+            for (auto* object : get_world()->objects()) {
+                if (object != this && object->_type == object_type::ship) {
+                    if (!static_cast<ship*>(object)->is_destroyed()) {
+                        ships.push_back(static_cast<ship*>(object));
                     }
                 }
             }
@@ -273,21 +273,21 @@ void ship::think()
                     v = _model->mins() + (_model->maxs() - _model->mins()) * vec2(_random.uniform_real(), _random.uniform_real());
                 } while (!_model->contains(v));
 
-                _world->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
+                get_world()->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
                 if (s * s > t) {
                     sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
-                    _world->add_sound(_sound_explosion, get_position(), .2f * s);
+                    get_world()->add_sound(_sound_explosion, get_position(), .2f * s);
                 }
             }
         } else if (!_is_destroyed) {
             // add final explosion effect
-            _world->add_effect(time, effect_type::explosion, get_position(), vec2_zero);
+            get_world()->add_effect(time, effect_type::explosion, get_position(), vec2_zero);
             sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
-            _world->add_sound(_sound_explosion, get_position());
+            get_world()->add_sound(_sound_explosion, get_position());
 
             // remove all modules
             for (auto& module : _modules) {
-                _world->remove(module);
+                get_world()->remove(module);
             }
             _modules.clear();
             _weapons.clear();
@@ -295,11 +295,11 @@ void ship::think()
             _is_destroyed = true;
         } else if (time - _dead_time > destruction_time + respawn_time) {
             // remove this ship
-            _world->remove(this);
+            get_world()->remove(this);
 
             // spawn a new ship to take this ship's place
-            ship* new_ship = _world->spawn<ship>();
-            new_ship->set_position(_world->mins() + (_world->maxs() - _world->mins()) * vec2(_random.uniform_real(), _random.uniform_real()), true);
+            ship* new_ship = get_world()->spawn<ship>();
+            new_ship->set_position(get_world()->mins() + (get_world()->maxs() - get_world()->mins()) * vec2(_random.uniform_real(), _random.uniform_real()), true);
             new_ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
         }
     }

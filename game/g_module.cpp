@@ -47,7 +47,7 @@ void module::think()
 //------------------------------------------------------------------------------
 void module::damage(float amount)
 {
-    _damage_time = _world->frametime();
+    _damage_time = get_world()->frametime();
     _damage = std::min<float>(_damage + amount, static_cast<float>(_module_info.maximum_power));
 }
 
@@ -55,7 +55,7 @@ void module::damage(float amount)
 void module::repair(float damage_per_second)
 {
     assert(damage_per_second >= 0.f);
-    if (_world->frametime() - _damage_time > repair_delay) {
+    if (get_world()->frametime() - _damage_time > repair_delay) {
         float delta = damage_per_second * FRAMETIME.to_seconds();
         _damage = std::max(0.f, _damage - delta);
     }

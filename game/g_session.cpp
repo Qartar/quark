@@ -378,7 +378,7 @@ void session::key_event(int key, bool down)
             std::vector<game::object const*> ships;
             for (auto const& obj : _world.objects()) {
                 if (obj->_type == object_type::ship) {
-                    ships.push_back(obj.get());
+                    ships.push_back(obj);
                 }
             }
             if (cls.number >= 0 && cls.number < ships.size()) {

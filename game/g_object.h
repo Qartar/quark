@@ -48,7 +48,7 @@ public:
 
     void spawn(); //!< Note: not virtual
 
-    std::size_t spawn_id() const { return _spawn_id; }
+    uint64_t get_sequence() const { return _self.get_sequence(); }
 
     virtual void draw(render::system* renderer, time_value time) const;
     virtual bool touch(object *other, physics::collision const* collision);
@@ -98,12 +98,8 @@ protected:
     friend world;
     template<typename> friend class handle;
 
-    //! Game world which contains this object
-    world* _world;
-
     handle<object> _owner;
-
-    std::size_t _spawn_id;
+    handle<object> _self;
     time_value _spawn_time;
 
     random _random;
@@ -113,6 +109,9 @@ protected:
     static physics::material _default_material;
     static physics::circle_shape _default_shape;
     constexpr static float _default_mass = 1.0f;
+
+protected:
+    game::world* get_world() const { return _self.get_world(); }
 };
 
 //------------------------------------------------------------------------------
