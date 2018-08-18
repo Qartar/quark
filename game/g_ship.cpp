@@ -299,7 +299,7 @@ void ship::think()
 
             // spawn a new ship to take this ship's place
             ship* new_ship = get_world()->spawn<ship>();
-            new_ship->set_position(get_world()->mins() + (get_world()->maxs() - get_world()->mins()) * vec2(_random.uniform_real(), _random.uniform_real()), true);
+            new_ship->set_position(vec2(_random.uniform_real(-320.f,320.f), _random.uniform_real(-240.f,240.f)), true);
             new_ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
         }
     }

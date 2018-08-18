@@ -310,8 +310,8 @@ void session::draw_world()
     // calculate view
     //
 
-    vec2 world_size = _world.maxs() - _world.mins();
-    vec2 world_center = _world.mins() + world_size * 0.5f;
+    vec2 world_size = vec2(640, 480);
+    vec2 world_center = vec2_zero;
 
     render::view view{};
     view.size = world_size;

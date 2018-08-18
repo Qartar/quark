@@ -20,10 +20,6 @@ std::array<world*, world::max_worlds> world::_singletons{};
 //------------------------------------------------------------------------------
 world::world()
     : _sequence(0)
-    , _border_material{0,0}
-    , _border_shapes{{vec2(0,0)}, {vec2(0,0)}}
-    , _arena_width("g_arenaWidth", 640, config::archive|config::server|config::reset, "arena width")
-    , _arena_height("g_arenaHeight", 480, config::archive|config::server|config::reset, "arena height")
     , _physics(
         std::bind(&world::physics_filter_callback, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&world::physics_collide_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
@@ -65,12 +61,7 @@ void world::reset()
 {
     clear_particles();
 
-    _mins = vec2(0,0);
-    _maxs = vec2(vec2i(_arena_width, _arena_height));
     _framenum = 0;
-
-    _border_shapes[0] = physics::box_shape(vec2(vec2i(_border_thickness + _arena_width, _border_thickness)));
-    _border_shapes[1] = physics::box_shape(vec2(vec2i(_border_thickness, _border_thickness + _arena_height)));
 
     _objects.clear();
     // swap with empty queue because std::queue has no clear method
@@ -84,7 +75,7 @@ void world::reset()
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>();
-        sh->set_position(vec2(vec2i(_arena_width, _arena_height)) * .5f - dir * 96.f, true);
+        sh->set_position(-dir * 96.f, true);
         sh->set_rotation(angle, true);
     }
 }
@@ -231,8 +222,6 @@ void world::write_snapshot(network::message& message) const
     // write frame
     message.write_byte(narrow_cast<uint8_t>(message_type::frame));
     message.write_long(_framenum);
-    message.write_vector(_mins);
-    message.write_vector(_maxs);
 
     // write active objects
     // ...

@@ -172,8 +172,6 @@ public:
 
     game::object* trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore = nullptr) const;
 
-    vec2 mins() const { return _mins; }
-    vec2 maxs() const { return _maxs; }
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
 
@@ -212,9 +210,6 @@ private:
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
 
-    config::integer _arena_width;
-    config::integer _arena_height;
-
     //
     // particle system
     //
@@ -226,16 +221,9 @@ private:
 
     void draw_particles(render::system* renderer, time_value time) const;
 
-    vec2        _mins;
-    vec2        _maxs;
-
     int _framenum;
 
     network::message_storage _message;
-
-    physics::material _border_material;
-    physics::box_shape _border_shapes[2];
-    constexpr static int _border_thickness = 512;
 
 protected:
     enum class message_type
