@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "g_module.h"
+#include "g_subsystem.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -29,7 +29,7 @@ struct weapon_info
 };
 
 //------------------------------------------------------------------------------
-class weapon : public module
+class weapon : public subsystem
 {
 public:
     weapon(game::ship* owner, weapon_info const& info, vec2 position);

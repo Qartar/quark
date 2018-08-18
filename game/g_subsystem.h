@@ -1,4 +1,4 @@
-// g_module.h
+// g_subsystem.h
 //
 
 #pragma once
@@ -9,27 +9,27 @@
 namespace game {
 
 /*
-    Ship Modules
+    Ship Subsystem
 
-    - Each module has its own maximum power level
+    - Each subsystem has its own maximum power level
     - Effective maximum power level is decreased by damage
-    - Active power level determines strength/capability of the module
-    - Active power level of the reactor module is equal to the sum of the
-        power level of all other modules
+    - Active power level determines strength/capability of the subsystem
+    - Active power level of the reactor subsystem is equal to the sum of the
+        power level of all other subsystems
     - Reactor power level can exceed maximum power level but will cause damage
-        to the reactor module over time proportional to the amount of overload
+        to the reactor subsystem over time proportional to the amount of overload
     - If the reactor is destroyed (brought to full damage) it will go critical
-        and destroy the ship, other modules can be repaired from full damage
+        and destroy the ship, other subsystems can be repaired from full damage
     - Warp drive and weapons should be expensive enough to be effectively
         mutually exclusive
-    - Charging/uncharging modules should take non-trivial time and be detectable
+    - Charging/uncharging subsystems should take non-trivial time and be detectable
         by other ships with suitable equipment (e.g. sensors)
 */
 
 class ship;
 
 //------------------------------------------------------------------------------
-enum class module_type
+enum class subsystem_type
 {
     reactor,
     engines,
@@ -58,21 +58,21 @@ enum class module_type
 };
 
 //------------------------------------------------------------------------------
-struct module_info
+struct subsystem_info
 {
-    module_type type;
+    subsystem_type type;
     int maximum_power;
 };
 
 //------------------------------------------------------------------------------
-class module : public object
+class subsystem : public object
 {
 public:
-    module(game::ship* owner, module_info info);
+    subsystem(game::ship* owner, subsystem_info info);
 
     virtual void think() override;
 
-    module_info const& info() const { return _module_info; }
+    subsystem_info const& info() const { return _subsystem_info; }
 
     void damage(float amount);
     float damage() const { return _damage; }
@@ -80,12 +80,12 @@ public:
 
     int current_power() const;
     int desired_power() const { return _desired_power; }
-    int maximum_power() const { return _module_info.maximum_power; }
+    int maximum_power() const { return _subsystem_info.maximum_power; }
     void increase_power(int amount);
     void decrease_power(int amount);
 
 protected:
-    module_info _module_info;
+    subsystem_info _subsystem_info;
 
     float _damage;
 

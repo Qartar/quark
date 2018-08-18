@@ -10,7 +10,7 @@ namespace game {
 
 class shield;
 class weapon;
-class module;
+class subsystem;
 
 //------------------------------------------------------------------------------
 class ship : public object
@@ -31,17 +31,17 @@ public:
     void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec2 point, float amount);
 
-    std::vector<module*> const& modules() const { return _modules; }
+    std::vector<subsystem*> const& subsystems() const { return _subsystems; }
 
     bool is_destroyed() const { return _is_destroyed; }
 
 protected:
     game::usercmd _usercmd;
 
-    std::vector<module*> _modules;
+    std::vector<subsystem*> _subsystems;
 
-    handle<module> _reactor;
-    handle<module> _engines;
+    handle<subsystem> _reactor;
+    handle<subsystem> _engines;
     handle<shield> _shield;
     std::vector<handle<weapon>> _weapons;
 

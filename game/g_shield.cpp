@@ -16,7 +16,7 @@ physics::material shield::_material(0.0f, 0.0f);
 
 //------------------------------------------------------------------------------
 shield::shield(physics::shape const* base, game::ship* owner)
-    : module(owner, {module_type::shields, 2})
+    : subsystem(owner, {subsystem_type::shields, 2})
     , _base(base)
     , _strength(2)
     , _damage_time(time_value::zero)
@@ -262,7 +262,7 @@ void shield::recharge(float strength_per_second)
 //------------------------------------------------------------------------------
 void shield::think()
 {
-    module::think();
+    subsystem::think();
     step_strength();
 
     if (_strength > current_power()) {

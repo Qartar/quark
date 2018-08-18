@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include "g_module.h"
+#include "g_subsystem.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
 //------------------------------------------------------------------------------
-class shield : public module
+class shield : public subsystem
 {
 public:
     shield(physics::shape const* base, game::ship* owner);

@@ -16,7 +16,7 @@ namespace game {
 
 //------------------------------------------------------------------------------
 weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
-    : module(owner, {module_type::weapons, 2})
+    : subsystem(owner, {subsystem_type::weapons, 2})
     , _info(info)
     , _last_attack_time(time_value::zero)
     , _target(nullptr)
@@ -62,9 +62,9 @@ void weapon::draw(render::system* renderer, time_value time) const
 //------------------------------------------------------------------------------
 void weapon::think()
 {
-    module::think();
+    subsystem::think();
 
-    // cancel pending attacks if weapon module has been damaged
+    // cancel pending attacks if weapon subsystem has been damaged
     if (current_power() < maximum_power()) {
         cancel();
     }

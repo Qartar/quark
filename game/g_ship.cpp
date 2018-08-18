@@ -7,7 +7,7 @@
 #include "g_ship.h"
 #include "g_shield.h"
 #include "g_weapon.h"
-#include "g_module.h"
+#include "g_subsystem.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -33,10 +33,10 @@ ship::~ship()
 {
     get_world()->remove_body(&_rigid_body);
 
-    for (auto& module : _modules) {
-        get_world()->remove(module);
+    for (auto& subsystem : _subsystems) {
+        get_world()->remove(subsystem);
     }
-    _modules.clear();
+    _subsystems.clear();
 }
 
 //------------------------------------------------------------------------------
@@ -46,14 +46,14 @@ void ship::spawn()
 
     get_world()->add_body(this, &_rigid_body);
 
-    _reactor = get_world()->spawn<module>(this, module_info{module_type::reactor, 8});
-    _modules.push_back(_reactor.get());
+    _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 8});
+    _subsystems.push_back(_reactor.get());
 
-    _engines = get_world()->spawn<module>(this, module_info{module_type::engines, 2});
-    _modules.push_back(_engines.get());
+    _engines = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::engines, 2});
+    _subsystems.push_back(_engines.get());
 
     _shield = get_world()->spawn<shield>(&_shape, this);
-    _modules.push_back(_shield.get());
+    _subsystems.push_back(_shield.get());
 
     for (int ii = 0; ii < 2; ++ii) {
         weapon_info info{};
@@ -89,7 +89,7 @@ void ship::spawn()
         info.reload_time = time_delta::from_seconds(4.f);
 
         _weapons.push_back(get_world()->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
-        _modules.push_back(_weapons.back().get());
+        _subsystems.push_back(_weapons.back().get());
     }
 }
 
@@ -99,7 +99,7 @@ void ship::draw(render::system* renderer, time_value time) const
     if (!_is_destroyed) {
         renderer->draw_model(_model, get_transform(time), _color);
 
-        constexpr color4 module_colors[2][2] = {
+        constexpr color4 subsystem_colors[2][2] = {
             { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f) },
             { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f) },
         };
@@ -126,7 +126,7 @@ void ship::draw(render::system* renderer, time_value time) const
                 bool damaged = ii >= _reactor->maximum_power() - std::ceil(_reactor->damage() - .2f);
                 bool powered = ii < _reactor->current_power();
 
-                color4 c = module_colors[powered][damaged]; c.a *= alpha;
+                color4 c = subsystem_colors[powered][damaged]; c.a *= alpha;
 
                 float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
                 float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
@@ -156,23 +156,23 @@ void ship::draw(render::system* renderer, time_value time) const
         }
 
         //
-        // draw modules ui
+        // draw subsystems ui
         //
 
-        vec2 position = get_position(time) - vec2(vec2i(8 * static_cast<int>(_modules.size() - 2) / 2, 40));
+        vec2 position = get_position(time) - vec2(vec2i(8 * static_cast<int>(_subsystems.size() - 2) / 2, 40));
 
-        for (auto const* module : _modules) {
-            // reactor module ui is drawn explicitly
-            if (module->info().type == module_type::reactor) {
+        for (auto const* subsystem : _subsystems) {
+            // reactor subsystem ui is drawn explicitly
+            if (subsystem->info().type == subsystem_type::reactor) {
                 continue;
             }
 
-            // draw power bar for each module power level
-            for (int ii = 0; ii < module->maximum_power(); ++ii) {
-                bool damaged = ii >= module->maximum_power() - std::ceil(module->damage() - .2f);
-                bool powered = ii < module->current_power();
+            // draw power bar for each subsystem power level
+            for (int ii = 0; ii < subsystem->maximum_power(); ++ii) {
+                bool damaged = ii >= subsystem->maximum_power() - std::ceil(subsystem->damage() - .2f);
+                bool powered = ii < subsystem->current_power();
 
-                color4 c = module_colors[powered][damaged]; c.a *= alpha;
+                color4 c = subsystem_colors[powered][damaged]; c.a *= alpha;
 
                 renderer->draw_box(vec2(7,3), position + vec2(vec2i(0,10 + 4 * ii)), c);
             }
@@ -212,9 +212,9 @@ void ship::think()
     }
 
     if (_dead_time > time) {
-        for (auto& module : _modules) {
-            if (module->damage()) {
-                module->repair(1.f / 15.f);
+        for (auto& subsystem : _subsystems) {
+            if (subsystem->damage()) {
+                subsystem->repair(1.f / 15.f);
                 break;
             }
         }
@@ -285,11 +285,11 @@ void ship::think()
             sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
             get_world()->add_sound(_sound_explosion, get_position());
 
-            // remove all modules
-            for (auto& module : _modules) {
-                get_world()->remove(module);
+            // remove all subsystems
+            for (auto& subsystem : _subsystems) {
+                get_world()->remove(subsystem);
             }
-            _modules.clear();
+            _subsystems.clear();
             _weapons.clear();
 
             _is_destroyed = true;
@@ -318,18 +318,18 @@ void ship::write_snapshot(network::message& /*message*/) const
 //------------------------------------------------------------------------------
 void ship::damage(object* /*inflictor*/, vec2 /*point*/, float amount)
 {
-    // get list of modules that can take additional damage
-    std::vector<module*> modules;
-    for (auto* module : _modules) {
-        if (module->damage() < module->maximum_power()) {
-            modules.push_back(module);
+    // get list of subsystems that can take additional damage
+    std::vector<subsystem*> subsystems;
+    for (auto* subsystem : _subsystems) {
+        if (subsystem->damage() < subsystem->maximum_power()) {
+            subsystems.push_back(subsystem);
         }
     }
 
-    // apply damage to a random module
-    if (modules.size()) {
-        int idx = rand() % modules.size();
-        modules[idx]->damage(amount * 6.f);
+    // apply damage to a random subsystem
+    if (subsystems.size()) {
+        int idx = rand() % subsystems.size();
+        subsystems[idx]->damage(amount * 6.f);
     }
 }
 
