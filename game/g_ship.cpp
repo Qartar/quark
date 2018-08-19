@@ -194,13 +194,23 @@ void ship::think()
     if (_engines && _engines->current_power()) {
         constexpr float radius = 128.f;
         constexpr float speed = 16.f;
+        constexpr float accel = 8.f;
         constexpr float angular_speed = (2.f * math::pi<float>) * speed / (2.f * math::pi<float> * radius);
+        float power = float(_engines->current_power()) / float(_engines->maximum_power());
         float t0 = -.5f * math::pi<float> + get_rotation();
         float t1 = -.5f * math::pi<float> + get_rotation() + FRAMETIME.to_seconds() * angular_speed;
         vec2 p0 = vec2(cos(t0), sin(t0)) * radius;
         vec2 p1 = vec2(cos(t1), sin(t1)) * radius;
-        set_linear_velocity((p1 - p0) / FRAMETIME.to_seconds());
-        set_angular_velocity(angular_speed);
+        vec2 dv = (p1 - p0) / FRAMETIME.to_seconds() - get_linear_velocity();
+        if (dv.length_sqr() > square(accel * power * FRAMETIME.to_seconds())) {
+            dv = dv.normalize() * accel * power * FRAMETIME.to_seconds();
+        }
+        set_linear_velocity(get_linear_velocity() + dv);
+        float dw = angular_speed - get_angular_velocity();
+        if (dw > .5f * angular_speed * power * FRAMETIME.to_seconds()) {
+            dw = .5f * angular_speed * power * FRAMETIME.to_seconds();
+        }
+        set_angular_velocity(get_angular_velocity() + dw);
     } else {
         set_linear_velocity(get_linear_velocity() * .99f);
         set_angular_velocity(get_angular_velocity() * .99f);
