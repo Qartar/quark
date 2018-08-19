@@ -97,7 +97,7 @@ void session::stop_server ()
 
     svs.socket.close();
 
-    _world.reset();
+    _world.clear();
 }
 
 //------------------------------------------------------------------------------

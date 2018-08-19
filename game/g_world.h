@@ -137,7 +137,11 @@ public:
 
     void init();
     void shutdown();
+
+    //! Reset world to initial playable state
     void reset();
+    //! Clear all allocated objects, particles, and internal data
+    void clear();
 
     void clear_particles();
 

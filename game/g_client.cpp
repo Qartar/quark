@@ -72,7 +72,7 @@ void session::stop_client ()
     cls.active = false;
     cls.socket.close();
 
-    _world.reset();
+    _world.clear();
 
     _menu_active = true;
 }

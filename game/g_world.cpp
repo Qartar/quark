@@ -50,25 +50,16 @@ void world::init()
 //------------------------------------------------------------------------------
 void world::shutdown()
 {
-    _objects.clear();
-    // swap with empty queue because std::queue has no clear method
-    std::queue<game::object*> empty;
-    _removed.swap(empty);
+    clear();
 }
 
 //------------------------------------------------------------------------------
 void world::reset()
 {
-    clear_particles();
-
-    _framenum = 0;
-
-    _objects.clear();
-    // swap with empty queue because std::queue has no clear method
-    std::queue<game::object*> empty;
-    _removed.swap(empty);
+    clear();
 
     _sequence = 0;
+    _framenum = 0;
 
     for (int ii = 0; ii < 3; ++ii) {
         float angle = float(ii) * (math::pi<float> * 2.f / 3.f);
@@ -78,6 +69,18 @@ void world::reset()
         sh->set_position(-dir * 96.f, true);
         sh->set_rotation(angle, true);
     }
+}
+
+//------------------------------------------------------------------------------
+void world::clear()
+{
+    _objects.clear();
+    // swap with empty queue because std::queue has no clear method
+    std::queue<game::object*> empty;
+    _removed.swap(empty);
+
+    _physics_objects.clear();
+    _particles.clear();
 }
 
 //------------------------------------------------------------------------------
