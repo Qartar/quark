@@ -31,14 +31,14 @@ public:
     void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec2 point, float amount);
 
-    std::vector<subsystem*> const& subsystems() const { return _subsystems; }
+    std::vector<unique_handle<subsystem>> const& subsystems() const { return _subsystems; }
 
     bool is_destroyed() const { return _is_destroyed; }
 
 protected:
     game::usercmd _usercmd;
 
-    std::vector<subsystem*> _subsystems;
+    std::vector<unique_handle<subsystem>> _subsystems;
 
     handle<subsystem> _reactor;
     handle<subsystem> _engines;

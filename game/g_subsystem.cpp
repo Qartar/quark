@@ -27,7 +27,7 @@ void subsystem::think()
         ship const* owner = static_cast<ship const*>(_owner.get());
         _current_power = 0.f;
         _desired_power = 0;
-        for (auto const* subsystem : owner->subsystems()) {
+        for (auto const& subsystem : owner->subsystems()) {
             if (subsystem->info().type != subsystem_type::reactor) {
                 _current_power += subsystem->_current_power;
                 _desired_power += subsystem->_desired_power;

@@ -32,11 +32,6 @@ ship::ship()
 ship::~ship()
 {
     get_world()->remove_body(&_rigid_body);
-
-    for (auto& subsystem : _subsystems) {
-        get_world()->remove(subsystem);
-    }
-    _subsystems.clear();
 }
 
 //------------------------------------------------------------------------------
@@ -47,13 +42,13 @@ void ship::spawn()
     get_world()->add_body(this, &_rigid_body);
 
     _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 8});
-    _subsystems.push_back(_reactor.get());
+    _subsystems.push_back(_reactor);
 
     _engines = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::engines, 2});
-    _subsystems.push_back(_engines.get());
+    _subsystems.push_back(_engines);
 
     _shield = get_world()->spawn<shield>(&_shape, this);
-    _subsystems.push_back(_shield.get());
+    _subsystems.push_back(_shield);
 
     for (int ii = 0; ii < 2; ++ii) {
         weapon_info info{};
@@ -89,7 +84,7 @@ void ship::spawn()
         info.reload_time = time_delta::from_seconds(4.f);
 
         _weapons.push_back(get_world()->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
-        _subsystems.push_back(_weapons.back().get());
+        _subsystems.push_back(_weapons.back());
     }
 }
 
@@ -161,7 +156,7 @@ void ship::draw(render::system* renderer, time_value time) const
 
         vec2 position = get_position(time) - vec2(vec2i(8 * static_cast<int>(_subsystems.size() - 2) / 2, 40));
 
-        for (auto const* subsystem : _subsystems) {
+        for (auto const& subsystem : _subsystems) {
             // reactor subsystem ui is drawn explicitly
             if (subsystem->info().type == subsystem_type::reactor) {
                 continue;
@@ -286,9 +281,6 @@ void ship::think()
             get_world()->add_sound(_sound_explosion, get_position());
 
             // remove all subsystems
-            for (auto& subsystem : _subsystems) {
-                get_world()->remove(subsystem);
-            }
             _subsystems.clear();
             _weapons.clear();
 
@@ -320,9 +312,9 @@ void ship::damage(object* /*inflictor*/, vec2 /*point*/, float amount)
 {
     // get list of subsystems that can take additional damage
     std::vector<subsystem*> subsystems;
-    for (auto* subsystem : _subsystems) {
+    for (auto& subsystem : _subsystems) {
         if (subsystem->damage() < subsystem->maximum_power()) {
-            subsystems.push_back(subsystem);
+            subsystems.push_back(subsystem.get());
         }
     }
 
