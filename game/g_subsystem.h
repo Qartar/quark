@@ -74,7 +74,7 @@ public:
 
     subsystem_info const& info() const { return _subsystem_info; }
 
-    void damage(float amount);
+    void damage(object* inflictor, float amount);
     float damage() const { return _damage; }
     void repair(float damage_per_second);
 

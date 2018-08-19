@@ -36,7 +36,7 @@ void subsystem::think()
 
         if (_current_power > _subsystem_info.maximum_power - _damage) {
             float overload = _current_power - (_subsystem_info.maximum_power - _damage);
-            damage(overload * overload_damage * FRAMETIME.to_seconds());
+            damage(this, overload * overload_damage * FRAMETIME.to_seconds());
         }
     } else {
         float decay_coeff = -std::expm1(-math::ln2<float> * FRAMETIME.to_seconds() / power_lambda);
@@ -45,7 +45,7 @@ void subsystem::think()
 }
 
 //------------------------------------------------------------------------------
-void subsystem::damage(float amount)
+void subsystem::damage(object* /*inflictor*/, float amount)
 {
     _damage_time = get_world()->frametime();
     _damage = std::min<float>(_damage + amount, static_cast<float>(_subsystem_info.maximum_power));

@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_ship.h"
+#include "g_character.h"
 #include "g_shield.h"
 #include "g_weapon.h"
 #include "g_subsystem.h"
@@ -40,6 +41,10 @@ void ship::spawn()
     object::spawn();
 
     get_world()->add_body(this, &_rigid_body);
+
+    for (int ii = 0; ii < 3; ++ii) {
+        _crew.push_back(get_world()->spawn<character>());
+    }
 
     _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 8});
     _subsystems.push_back(_reactor);
@@ -85,6 +90,15 @@ void ship::spawn()
 
         _weapons.push_back(get_world()->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
         _subsystems.push_back(_weapons.back());
+    }
+
+    std::vector<handle<subsystem>> assignments(_subsystems.begin(), _subsystems.end());
+    for (auto& ch : _crew) {
+        if (assignments.size()) {
+            int index = rand() % assignments.size();
+            ch->assign(assignments[index]);
+            assignments.erase(assignments.begin() + index);
+        }
     }
 }
 
@@ -171,6 +185,14 @@ void ship::draw(render::system* renderer, time_value time) const
 
                 renderer->draw_box(vec2(7,3), position + vec2(vec2i(0,10 + 4 * ii)), c);
             }
+
+            for (auto const& ch : _crew) {
+                if (ch->assignment() == subsystem) {
+                    color4 c = ch->health() ? color4(1,1,1,alpha) : color4(1,.2f,0,alpha);
+                    renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), c);
+                }
+            }
+
             position += vec2(8,0);
         }
     }
@@ -291,6 +313,7 @@ void ship::think()
             get_world()->add_sound(_sound_explosion, get_position());
 
             // remove all subsystems
+            _crew.clear();
             _subsystems.clear();
             _weapons.clear();
 
@@ -318,7 +341,7 @@ void ship::write_snapshot(network::message& /*message*/) const
 }
 
 //------------------------------------------------------------------------------
-void ship::damage(object* /*inflictor*/, vec2 /*point*/, float amount)
+void ship::damage(object* inflictor, vec2 /*point*/, float amount)
 {
     // get list of subsystems that can take additional damage
     std::vector<subsystem*> subsystems;
@@ -331,7 +354,12 @@ void ship::damage(object* /*inflictor*/, vec2 /*point*/, float amount)
     // apply damage to a random subsystem
     if (subsystems.size()) {
         int idx = rand() % subsystems.size();
-        subsystems[idx]->damage(amount * 6.f);
+        subsystems[idx]->damage(inflictor, amount * 6.f);
+        for (auto& ch : _crew) {
+            if (ch->assignment() == subsystems[idx]) {
+                ch->damage(inflictor, amount);
+            }
+        }
     }
 }
 

@@ -8,6 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+class character;
 class shield;
 class weapon;
 class subsystem;
@@ -38,6 +39,7 @@ public:
 protected:
     game::usercmd _usercmd;
 
+    std::vector<unique_handle<character>> _crew;
     std::vector<unique_handle<subsystem>> _subsystems;
 
     handle<subsystem> _reactor;

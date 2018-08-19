@@ -37,6 +37,7 @@ enum class object_type
     subsystem,
     shield,
     weapon,
+    character,
 };
 
 //------------------------------------------------------------------------------
