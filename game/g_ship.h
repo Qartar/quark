@@ -9,6 +9,7 @@
 namespace game {
 
 class character;
+class engines;
 class shield;
 class weapon;
 class subsystem;
@@ -34,6 +35,10 @@ public:
 
     std::vector<unique_handle<subsystem>> const& subsystems() const { return _subsystems; }
 
+    handle<subsystem> reactor() { return _reactor; }
+    handle<game::engines> engines() { return _engines; }
+    std::vector<handle<weapon>>& weapons() { return _weapons; }
+
     bool is_destroyed() const { return _is_destroyed; }
 
 protected:
@@ -43,7 +48,7 @@ protected:
     std::vector<unique_handle<subsystem>> _subsystems;
 
     handle<subsystem> _reactor;
-    handle<subsystem> _engines;
+    handle<game::engines> _engines;
     handle<shield> _shield;
     std::vector<handle<weapon>> _weapons;
 

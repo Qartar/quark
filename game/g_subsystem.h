@@ -100,4 +100,35 @@ protected:
     static constexpr float overload_damage = .1f; //!< damage per second per unit of overcharge
 };
 
+//------------------------------------------------------------------------------
+struct engines_info
+{
+    float maximum_linear_speed;
+    float maximum_angular_speed;
+    float maximum_linear_accel;
+    float maximum_angular_accel;
+    float linear_drag_lambda; //! half-life of linear velocity
+    float angular_drag_lambda; //! half-life of angular velocity
+};
+
+//------------------------------------------------------------------------------
+class engines : public subsystem
+{
+public:
+    engines(game::ship* owner, engines_info info);
+
+    virtual void think() override;
+
+    void set_move_target(vec2 move_target) { _move_target = move_target; }
+    void set_look_target(float look_target) { _look_target = look_target; }
+
+protected:
+    engines_info _engines_info;
+    float _linear_drag_coefficient;
+    float _angular_drag_coefficient;
+
+    vec2 _move_target;
+    float _look_target;
+};
+
 } // namespace game

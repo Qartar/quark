@@ -48,6 +48,8 @@ add_subdirectory(physics)
 add_subdirectory(network)
 
 set(QUARK_SOURCES
+    game/g_aicontroller.cpp
+    game/g_aicontroller.h
     game/g_button.cpp
     game/g_character.cpp
     game/g_character.h

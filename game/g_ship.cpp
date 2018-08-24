@@ -49,7 +49,7 @@ void ship::spawn()
     _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 8});
     _subsystems.push_back(_reactor);
 
-    _engines = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::engines, 2});
+    _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
     _subsystems.push_back(_engines);
 
     _shield = get_world()->spawn<shield>(&_shape, this);
@@ -213,31 +213,6 @@ void ship::think()
         _dead_time = time;
     }
 
-    if (_engines && _engines->current_power()) {
-        constexpr float radius = 128.f;
-        constexpr float speed = 16.f;
-        constexpr float accel = 8.f;
-        constexpr float angular_speed = (2.f * math::pi<float>) * speed / (2.f * math::pi<float> * radius);
-        float power = float(_engines->current_power()) / float(_engines->maximum_power());
-        float t0 = -.5f * math::pi<float> + get_rotation();
-        float t1 = -.5f * math::pi<float> + get_rotation() + FRAMETIME.to_seconds() * angular_speed;
-        vec2 p0 = vec2(cos(t0), sin(t0)) * radius;
-        vec2 p1 = vec2(cos(t1), sin(t1)) * radius;
-        vec2 dv = (p1 - p0) / FRAMETIME.to_seconds() - get_linear_velocity();
-        if (dv.length_sqr() > square(accel * power * FRAMETIME.to_seconds())) {
-            dv = dv.normalize() * accel * power * FRAMETIME.to_seconds();
-        }
-        set_linear_velocity(get_linear_velocity() + dv);
-        float dw = angular_speed - get_angular_velocity();
-        if (dw > .5f * angular_speed * power * FRAMETIME.to_seconds()) {
-            dw = .5f * angular_speed * power * FRAMETIME.to_seconds();
-        }
-        set_angular_velocity(get_angular_velocity() + dw);
-    } else {
-        set_linear_velocity(get_linear_velocity() * .99f);
-        set_angular_velocity(get_angular_velocity() * .99f);
-    }
-
     if (_dead_time > time) {
         for (auto& subsystem : _subsystems) {
             if (subsystem->damage()) {
@@ -246,41 +221,6 @@ void ship::think()
             }
         }
         _shield->recharge(1.f / 5.f);
-    }
-
-    for (auto& weapon : _weapons) {
-        if (_dead_time > time && _random.uniform_real() < .01f) {
-            // get a list of all ships in the world
-            std::vector<game::ship*> ships;
-            for (auto* object : get_world()->objects()) {
-                if (object != this && object->_type == object_type::ship) {
-                    if (!static_cast<ship*>(object)->is_destroyed()) {
-                        ships.push_back(static_cast<ship*>(object));
-                    }
-                }
-            }
-
-            // select a random target
-            if (ships.size()) {
-                game::ship* target = ships[_random.uniform_int(ships.size())];
-                if (weapon->info().type != weapon_type::laser) {
-                    weapon->attack_projectile(target, vec2_zero);
-                } else {
-                    float angle = _random.uniform_real(2.f * math::pi<float>);
-                    vec2 v = vec2(cosf(angle), sinf(angle));
-                    weapon->attack_beam(target, v * -4.f, v * 4.f);
-                }
-            }
-        }
-
-        if (_dead_time > time) {
-            // cancel pending attacks on targets that have been destroyed
-            if (weapon->target() && weapon->target()->_type == object_type::ship) {
-                if (static_cast<ship const*>(weapon->target())->is_destroyed()) {
-                    weapon->cancel();
-                }
-            }
-        }
     }
 
     //
@@ -318,14 +258,6 @@ void ship::think()
             _weapons.clear();
 
             _is_destroyed = true;
-        } else if (time - _dead_time > destruction_time + respawn_time) {
-            // remove this ship
-            get_world()->remove(this);
-
-            // spawn a new ship to take this ship's place
-            ship* new_ship = get_world()->spawn<ship>();
-            new_ship->set_position(vec2(_random.uniform_real(-320.f,320.f), _random.uniform_real(-240.f,240.f)), true);
-            new_ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
         }
     }
 }

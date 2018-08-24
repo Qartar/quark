@@ -4,6 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "g_aicontroller.h"
 #include "g_projectile.h"
 #include "g_ship.h"
 #include "p_collide.h"
@@ -68,6 +69,9 @@ void world::reset()
         ship* sh = spawn<ship>();
         sh->set_position(-dir * 96.f, true);
         sh->set_rotation(angle, true);
+
+        // spawn ai controller to control the ship
+        spawn<aicontroller>(sh);
     }
 }
 

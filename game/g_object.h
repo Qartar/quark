@@ -38,6 +38,7 @@ enum class object_type
     shield,
     weapon,
     character,
+    controller,
 };
 
 //------------------------------------------------------------------------------

@@ -375,14 +375,14 @@ void session::key_event(int key, bool down)
     if (down) {
         if (key >= '0' && key <= '9') {
             cls.number = key - '0' - 1;
-            std::vector<game::object const*> ships;
+            std::vector<game::object const*> controllers;
             for (auto const& obj : _world.objects()) {
-                if (obj->_type == object_type::ship) {
-                    ships.push_back(obj);
+                if (obj->_type == object_type::controller) {
+                    controllers.push_back(obj);
                 }
             }
-            if (cls.number >= 0 && cls.number < ships.size()) {
-                _player = ships[cls.number];
+            if (cls.number >= 0 && cls.number < controllers.size()) {
+                _player = controllers[cls.number];
             } else {
                 _player = nullptr;
             }
