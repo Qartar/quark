@@ -47,10 +47,13 @@ void subsystem::think()
 }
 
 //------------------------------------------------------------------------------
-void subsystem::damage(object* /*inflictor*/, float amount)
+void subsystem::damage(object* inflictor, float amount)
 {
-    _damage_time = get_world()->frametime();
-    _damage = std::min(_damage + amount, static_cast<float>(_subsystem_info.maximum_power));
+    // self-inflicted damage (e.g. overloading) does not reset damage timer
+    if (inflictor != this) {
+        _damage_time = get_world()->frametime();
+    }
+    _damage = std::min<float>(_damage + amount, static_cast<float>(_subsystem_info.maximum_power));
 }
 
 //------------------------------------------------------------------------------
@@ -59,6 +62,11 @@ void subsystem::repair(float damage_per_second)
     assert(damage_per_second >= 0.f);
     if (get_world()->frametime() - _damage_time > repair_delay) {
         float delta = damage_per_second * FRAMETIME.to_seconds();
+        // raise power level as the subsystem is repaired rather than waiting
+        float effective_maximum = _subsystem_info.maximum_power - _damage;
+        if (_current_power >= effective_maximum && _current_power < _desired_power) {
+            _current_power = std::min<float>(static_cast<float>(_desired_power), effective_maximum + delta);
+        }
         _damage = std::max(0.f, _damage - delta);
     }
 }

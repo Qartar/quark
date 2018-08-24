@@ -7,6 +7,7 @@
 #include "r_model.h"
 
 render::model ship_model({
+#if 1
     //  center          size        gamma
     {{  2.f,  0.f},  {18.f, 12.f}, 0.5f},
     {{  2.f,  0.f},  {16.f, 14.f}, 0.5f},
@@ -19,6 +20,75 @@ render::model ship_model({
     {{-16.f, -8.f},  { 2.f,  2.f}, 0.7f},
     {{ -8.f,  8.f},  {14.f,  4.f}, 0.6f},
     {{ -8.f, -8.f},  {14.f,  4.f}, 0.6f},
+});
+
+
+render::model constellation({
+#endif
+    {-2.f + -10.5f,   6.f},
+    {-2.f +  -8.5f,  12.f},
+    {-2.f +  -7.f,   14.f},
+    {-2.f +   0.f,   14.f},
+    {-2.f +   3.5f,  13.f},
+    {-2.f +   3.5f,  11.f},
+    {-2.f +   0.f,   11.f},
+    {-2.f +   0.f,    7.f},
+    {-2.f +   3.5f,   7.f},
+    {-2.f +  10.5f,   5.f},
+    {-2.f +  10.5f,   3.5f},
+    {-2.f +  14.f,    3.5f},
+    {-2.f +  14.f,    7.f},
+    {-2.f +  17.5f,   7.f},
+    {-2.f +  19.5f,   6.f},
+    {-2.f +  21.f,    2.f},
+    {-2.f +  21.f,   -2.f},
+    {-2.f +  19.5f,  -6.f},
+    {-2.f +  17.5f,  -7.f},
+    {-2.f +  14.f,   -7.f},
+    {-2.f +  14.f,   -3.5f},
+    {-2.f +  10.5f,  -3.5f},
+    {-2.f +  10.5f,  -5.f},
+    {-2.f +   3.5f,  -7.f},
+    {-2.f +   0.f,   -7.f},
+    {-2.f +   0.f,  -11.f},
+    {-2.f +   3.5f, -11.f},
+    {-2.f +   3.5f, -13.f},
+    {-2.f +   0.f,  -14.f},
+    {-2.f +  -7.f,  -14.f},
+    {-2.f +  -8.5f, -12.f},
+    {-2.f + -10.5f,  -6.f},
+},
+{
+    { 0,  1,  7, .5f},
+    { 1,  6,  7, .5f},
+    { 1,  2,  6, .5f},
+    { 2,  3,  6, .5f},
+    { 3,  4,  5, .5f},
+    { 3,  5,  6, .5f},
+    { 0,  7, 24, .5f},
+    { 0, 24, 31, .5f},
+    { 7,  8, 23, .5f},
+    { 7, 23, 24, .5f},
+    { 8, 10, 21, .5f},
+    { 8, 21, 23, .5f},
+    { 8,  9, 10, .5f},
+    {21, 22, 23, .5f},
+    {10, 11, 20, .5f},
+    {10, 20, 21, .5f},
+    {11, 12, 13, .5f},
+    {11, 13, 14, .5f},
+    {11, 14, 15, .5f},
+    {11, 15, 16, .5f},
+    {11, 16, 20, .5f},
+    {20, 19, 18, .5f},
+    {20, 18, 17, .5f},
+    {20, 17, 16, .5f},
+    {31, 30, 24, .5f},
+    {30, 25, 24, .5f},
+    {30, 29, 25, .5f},
+    {29, 28, 25, .5f},
+    {28, 27, 26, .5f},
+    {28, 26, 25, .5f},
 });
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,6 +120,42 @@ model::model(model::rect const* rects, std::size_t num_rects)
     }
 
     _bounds = bounds::from_points(_vertices.data(), _vertices.size());
+}
+
+//------------------------------------------------------------------------------
+model::model(vec2 const* vertices, std::size_t num_vertices, triangle const* triangles, std::size_t num_triangles)
+    : _mins(0,0)
+    , _maxs(0,0)
+{
+    for (std::size_t ii = 0; ii < num_triangles; ++ii) {
+        _indices.push_back(static_cast<uint16_t>(_vertices.size() + 0));
+        _indices.push_back(static_cast<uint16_t>(_vertices.size() + 1));
+        _indices.push_back(static_cast<uint16_t>(_vertices.size() + 2));
+
+        assert(triangles[ii].v0 < num_vertices);
+        assert(triangles[ii].v1 < num_vertices);
+        assert(triangles[ii].v2 < num_vertices);
+
+        _vertices.push_back(vertices[triangles[ii].v0]);
+        _vertices.push_back(vertices[triangles[ii].v1]);
+        _vertices.push_back(vertices[triangles[ii].v2]);
+
+        _colors.emplace_back(triangles[ii].gamma, triangles[ii].gamma, triangles[ii].gamma);
+        _colors.emplace_back(triangles[ii].gamma, triangles[ii].gamma, triangles[ii].gamma);
+        _colors.emplace_back(triangles[ii].gamma, triangles[ii].gamma, triangles[ii].gamma);
+    }
+
+    // calculate absolute mins/maxs
+    for (auto const& v : _vertices) {
+        for (int jj = 0; jj < 2; ++jj) {
+            if (_mins[jj] > v[jj]) {
+                _mins[jj] = v[jj];
+            }
+            if (_maxs[jj] < v[jj]) {
+                _maxs[jj] = v[jj];
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
