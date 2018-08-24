@@ -56,9 +56,167 @@ vec2 right_engine_vertices[] = {
     vec2(8, 8) + vec2{-7.0000000, -5.00000000 },
 };
 
+const ship_layout default_layout(
+    {
+        {7.f, 7.f}, {10.f, 5.f}, {10.f, -5.f}, {7.f, -7.f}, {7.f, -1.f}, {7.f, 1.f},
+        {6.f, 1.f}, {6.f, -1.f}, {6.f, -2.f}, {4.f, -2.f}, {2.f, -2.f}, {0.f, -2.f}, {0.f, -1.f}, {0.f, 1.f}, {0.f, 2.f}, {2.f, 2.f}, {4.f, 2.f}, {6.f, 2.f},
+        {0.f, -3.f}, {2.f, -3.f}, {4.f, -3.f}, {6.f, -3.f}, {6.f, -7.f}, {0.f, -8.f},
+        {6.f, 3.f}, {4.f, 3.f}, {2.f, 3.f}, {0.f, 3.f}, {0.f, 8.f}, {6.f, 7.f},
+        {-1.f, 1.f}, {-1.f, -1.f}, {-1.f, -3.f}, {-6.f, -3.f}, {-6.f, -1.f}, {-6.f, 1.f}, {-6.f, 3.f}, {-1.f, 3.f},
+        {-7.f, 1.f}, {-7.f, -1.f},
+    },
+    {
+        {0, 6},
+        {6, 12},
+        {18, 6},
+        {24, 6},
+        {30, 8},
+    },
+    {
+        {{0, 1}, {4, 5, 6, 7}},
+        {{1, 2}, {9, 10, 19, 20}},
+        {{1, 3}, {15, 16, 25, 26}},
+        {{1, 4}, {12, 13, 30, 31}},
+        {{4, ship_layout::invalid_compartment}, {34, 35, 38, 39}},
+    }
+);
+
+//------------------------------------------------------------------------------
+ship_layout::ship_layout(vec2 const* vertices, int num_vertices,
+                         compartment const* compartments, int num_compartments,
+                         connection const* connections, int num_connections)
+    : _vertices(vertices, vertices + num_vertices)
+    , _compartments(compartments, compartments + num_compartments)
+    , _connections(connections, connections + num_connections)
+{
+    for (auto& c : _compartments) {
+        vec2 v0 = _vertices[c.first_vertex];
+        c.area = 0.f;
+        for (int ii = 2; ii < c.num_vertices; ++ii) {
+            vec2 v1 = _vertices[c.first_vertex + ii - 1];
+            vec2 v2 = _vertices[c.first_vertex + ii - 0];
+            c.area += 0.5f * (v2 - v1).cross(v1 - v0);
+        }
+    }
+
+    for (auto& c : _connections) {
+        vec2 v0 = _vertices[c.vertices[1]] - _vertices[c.vertices[0]];
+        vec2 v1 = _vertices[c.vertices[3]] - _vertices[c.vertices[2]];
+        c.width = .5f * (v0.length() + v1.length());
+    }
+}
+
+//------------------------------------------------------------------------------
+ship_state::ship_state(ship_layout const& layout)
+    : _layout(layout)
+{
+    constexpr compartment_state default_compartment_state = {1.f, 0.f, {0.f, 0.f}};
+    _compartments.resize(_layout.compartments().size(), default_compartment_state);
+
+    constexpr connection_state default_connection_state = {false, 0.f};
+    _connections.resize(_layout.connections().size(), default_connection_state);
+}
+
+//------------------------------------------------------------------------------
+void ship_state::think()
+{
+    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
+        _compartments[ii].flow[0] = 0.f;
+        _compartments[ii].flow[1] = 0.f;
+
+        // calculate atmosphere loss through hull damage separately
+        float delta = -_compartments[ii].damage * FRAMETIME.to_seconds();
+        if (delta > _compartments[ii].atmosphere) {
+            _compartments[ii].atmosphere = 0.f;
+        } else {
+            _compartments[ii].atmosphere -= delta;
+        }
+    }
+
+    for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
+        uint16_t c0 = _layout.connections()[ii].compartments[0];
+        uint16_t c1 = _layout.connections()[ii].compartments[1];
+
+        // calculate pressure differential at each connection
+        if (c0 == ship_layout::invalid_compartment) {
+            assert(c1 != ship_layout::invalid_compartment);
+            _connections[ii].pressure = _compartments[c1].atmosphere;
+        } else if (c1 == ship_layout::invalid_compartment) {
+            assert(c0 != ship_layout::invalid_compartment);
+            _connections[ii].pressure = -_compartments[c0].atmosphere;
+        } else {
+            _connections[ii].pressure = _compartments[c1].atmosphere
+                                      - _compartments[c0].atmosphere;
+        }
+
+        // calculate flow in each compartment
+        if (_connections[ii].opened) {
+            float delta = 10.f * _connections[ii].pressure * _layout.connections()[ii].width * FRAMETIME.to_seconds();
+            if (c0 != ship_layout::invalid_compartment) {
+                _compartments[c0].flow[0] += min(0.f, delta); // outflow
+                _compartments[c0].flow[1] += max(0.f, delta); // inflow
+            }
+            if (c1 != ship_layout::invalid_compartment) {
+                _compartments[c1].flow[0] -= max(0.f, delta); // outflow
+                _compartments[c1].flow[1] -= min(0.f, delta); // inflow
+            }
+        }
+    }
+
+    // advect atmosphere between compartments
+    for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
+        uint16_t c0 = _layout.connections()[ii].compartments[0];
+        uint16_t c1 = _layout.connections()[ii].compartments[1];
+
+        if (_connections[ii].opened) {
+            float delta = 10.f * _connections[ii].pressure * _layout.connections()[ii].width * FRAMETIME.to_seconds();
+            float clamped = delta;
+            if (clamped < 0.f && c0 != ship_layout::invalid_compartment) {
+                float fraction = -delta / _compartments[c0].flow[0];
+                float limit = fraction * _compartments[c0].atmosphere * _layout.compartments()[c0].area;
+                assert(limit <= 0.f);
+                if (clamped < limit) {
+                    clamped = limit;
+                }
+            }
+            if (clamped > 0.f && c1 != ship_layout::invalid_compartment) {
+                float fraction = -delta / _compartments[c1].flow[0];
+                float limit = fraction * _compartments[c1].atmosphere * _layout.compartments()[c1].area;
+                assert(limit >= 0.f);
+                if (clamped > limit) {
+                    clamped = limit;
+                }
+            }
+
+            if (c0 != ship_layout::invalid_compartment) {
+                _compartments[c0].atmosphere += clamped / _layout.compartments()[c0].area;
+                assert(_compartments[c0].atmosphere >= -1e-6f);
+            }
+            if (c1 != ship_layout::invalid_compartment) {
+                _compartments[c1].atmosphere -= clamped / _layout.compartments()[c1].area;
+                assert(_compartments[c1].atmosphere >= -1e-6f);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void ship_state::recharge(float atmosphere_per_second)
+{
+    float delta = atmosphere_per_second * FRAMETIME.to_seconds();
+    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
+        if (_compartments[ii].atmosphere + delta > 1.f) {
+            _compartments[ii].atmosphere = 1.f;
+        } else {
+            _compartments[ii].atmosphere += delta;
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 ship::ship()
     : _usercmd{}
+    , _state(default_layout)
     , _shield(nullptr)
     , _dead_time(time_value::max)
     , _is_destroyed(false)
@@ -205,6 +363,73 @@ void ship::draw(render::system* renderer, time_value time) const
 
             position += vec2(8,0);
         }
+
+        //
+        // draw layout
+        //
+
+        ship_layout const& _layout = _state.layout();
+        mat3 transform = get_transform(time);
+        std::vector<vec2> positions;
+        std::vector<color4> colors;
+        std::vector<int> indices;
+
+        for (auto const& v : _layout.vertices()) {
+            positions.push_back(v * transform);
+            colors.push_back(color4(1,1,1,1));
+        }
+
+        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+            auto const& c = _layout.compartments()[ii];
+            auto const& s = _state.compartments()[ii];
+            color4 color(1, s.atmosphere, s.atmosphere, 1);
+            colors[c.first_vertex + 0] = color;
+            colors[c.first_vertex + 1] = color;
+            for (int jj = 2; jj < c.num_vertices; ++jj) {
+                colors[c.first_vertex + jj] = color;
+                indices.push_back(c.first_vertex);
+                indices.push_back(c.first_vertex + jj - 1);
+                indices.push_back(c.first_vertex + jj - 0);
+            }
+        }
+
+        renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
+
+        indices.clear();
+        for (std::size_t ii = 0, sz = _layout.connections().size(); ii < sz; ++ii) {
+            auto const& c = _layout.connections()[ii];
+            auto const& s = _state.connections()[ii];
+            if (s.opened) {
+                colors[c.vertices[0]] = color4(1,1,0,1);
+                colors[c.vertices[1]] = color4(1,1,0,1);
+                colors[c.vertices[2]] = color4(1,1,0,1);
+                colors[c.vertices[3]] = color4(1,1,0,1);
+            } else {
+                colors[c.vertices[0]] = color4(0,1,1,1);
+                colors[c.vertices[1]] = color4(0,1,1,1);
+                colors[c.vertices[2]] = color4(0,1,1,1);
+                colors[c.vertices[3]] = color4(0,1,1,1);
+            }
+            indices.push_back(c.vertices[0]);
+            indices.push_back(c.vertices[1]);
+            indices.push_back(c.vertices[2]);
+            indices.push_back(c.vertices[0]);
+            indices.push_back(c.vertices[2]);
+            indices.push_back(c.vertices[3]);
+        }
+
+        renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
+
+        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+            auto const& c = _layout.compartments()[ii];
+            auto const& s = _state.compartments()[ii];
+            vec2 p = vec2_zero;
+            for (int jj = 0; jj < c.num_vertices; ++jj) {
+                p += positions[c.first_vertex + jj];
+            }
+            p /= c.num_vertices;
+            renderer->draw_string(va("%.2f - %.2f", s.atmosphere, s.atmosphere * c.area), p, color4(.4f,.4f,.4f,1));
+        }
     }
 }
 
@@ -221,6 +446,14 @@ void ship::think()
 
     if (_dead_time > time && _reactor && _reactor->damage() == _reactor->maximum_power()) {
         _dead_time = time;
+    }
+
+    _state.recharge(1.f / 30.f);
+    _state.think();
+    for (std::size_t ii = 0, sz = _state.connections().size(); ii < sz; ++ii) {
+        if (_random.uniform_real() < .005f) {
+            _state.set_connection(narrow_cast<uint16_t>(ii), !_state.connections()[ii].opened);
+        }
     }
 
     if (_dead_time > time) {
