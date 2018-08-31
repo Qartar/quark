@@ -30,8 +30,9 @@ public:
     virtual mat3 get_transform(time_value time) const override;
 
 protected:
+public:
     handle<ship> _ship;
-
+protected:
     time_value _destroyed_time;
 
     static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);

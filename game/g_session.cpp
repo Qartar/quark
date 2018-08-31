@@ -419,6 +419,8 @@ void session::key_event(int key, bool down)
     }
 }
 
+vec2 g_cursor;
+
 //------------------------------------------------------------------------------
 void session::cursor_event(vec2 position)
 {
@@ -434,6 +436,7 @@ void session::cursor_event(vec2 position)
     if (_menu_active) {
         _menu.cursor_event(_cursor);
     }
+    g_cursor = position;
 }
 
 //------------------------------------------------------------------------------

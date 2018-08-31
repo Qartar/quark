@@ -50,6 +50,8 @@ public:
     std::vector<compartment> const& compartments() const { return _compartments; }
     std::vector<connection> const& connections() const { return _connections; }
 
+    uint16_t intersect_compartment(vec2 point) const;
+
 protected:
     std::vector<vec2> _vertices;
     std::vector<compartment> _compartments;
@@ -68,7 +70,9 @@ public:
 
     struct connection_state {
         bool opened;
-        float pressure;
+        float gradient;
+        float flow;
+        float velocity;
     };
 
     ship_state(ship_layout const& layout);
@@ -129,8 +133,10 @@ public:
 protected:
     game::usercmd _usercmd;
 
+public:
     ship_state _state;
 
+protected:
     std::vector<unique_handle<character>> _crew;
     std::vector<unique_handle<subsystem>> _subsystems;
 
