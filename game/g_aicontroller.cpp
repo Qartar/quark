@@ -75,7 +75,7 @@ void aicontroller::think()
     //
     // update navigation
     //
-
+#if 0
     if (!_ship->is_destroyed()) {
         constexpr float radius = 128.f;
         constexpr float speed = 16.f;
@@ -87,11 +87,14 @@ void aicontroller::think()
         _ship->engines()->set_target_linear_velocity(forward * linear_speed);
         _ship->engines()->set_target_angular_velocity(angular_speed);
     }
-
+#else
+        _ship->engines()->set_target_linear_velocity(vec2_zero);
+        _ship->engines()->set_target_angular_velocity(0.f);
+#endif
     //
     // update weapons
     //
-
+#if 0
     for (auto& weapon : _ship->weapons()) {
         if (!_ship->is_destroyed() && _random.uniform_real() < .01f) {
             // get a list of all ships in the world
@@ -126,7 +129,7 @@ void aicontroller::think()
             }
         }
     }
-
+#endif
     //
     // handle respawn
     //
