@@ -66,6 +66,8 @@ public:
         float atmosphere;
         float damage;
         float flow[2];
+
+        float history[256];
     };
 
     struct connection_state {
@@ -88,6 +90,7 @@ public:
     std::vector<compartment_state> const& compartments() const { return _compartments; }
     std::vector<connection_state> const& connections() const { return _connections; }
 
+    int framenum;
 protected:
     ship_layout const& _layout;
     std::vector<compartment_state> _compartments;
