@@ -132,6 +132,7 @@ uint16_t ship_layout::intersect_compartment(vec2 point) const
 //------------------------------------------------------------------------------
 ship_state::ship_state(ship_layout const& layout)
     : _layout(layout)
+    , framenum(0)
 {
     constexpr compartment_state default_compartment_state = {1.f, 0.f, {0.f, 0.f}};
     _compartments.resize(_layout.compartments().size(), default_compartment_state);
@@ -349,6 +350,11 @@ void ship_state::think()
                 assert(_compartments[c1].atmosphere >= -1e-3f);
             }
         }
+    }
+
+    int index = framenum++ % countof<decltype(compartment_state::history)>();
+    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
+        _compartments[ii].history[index] = _compartments[ii].atmosphere;
     }
 }
 
@@ -622,6 +628,22 @@ void ship::draw(render::system* renderer, time_value time) const
                     indices.push_back(jj - 0);
                 }
                 renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
+            }
+        }
+
+        {
+            constexpr std::size_t count = countof<decltype(ship_state::compartment_state::history)>();
+            for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+                auto const& s = _state.compartments()[ii];
+                vec2 scale = renderer->view().size * .95f;
+                vec2 bias = renderer->view().origin - scale * .5f;
+                for (int jj = 1; jj < _state.framenum && jj < count; ++jj) {
+                    float x0 = (count - jj - 1) / float(count);
+                    float x1 = (count - jj - 0) / float(count);
+                    float y0 = s.history[(_state.framenum - jj - 1) % count];
+                    float y1 = s.history[(_state.framenum - jj - 0) % count];
+                    renderer->draw_line(vec2(x0, y0) * scale + bias, vec2(x1, y1) * scale + bias, color4(1,1,1,1), color4(1,1,1,1));
+                }
             }
         }
     }
