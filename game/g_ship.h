@@ -20,6 +20,7 @@ class ship_layout
 {
 public:
     static constexpr uint16_t invalid_compartment = UINT16_MAX;
+    static constexpr uint16_t invalid_connection = UINT16_MAX;
 
     struct compartment {
         uint16_t first_vertex;
@@ -51,6 +52,7 @@ public:
     std::vector<connection> const& connections() const { return _connections; }
 
     uint16_t intersect_compartment(vec2 point) const;
+    int find_path(vec2 start, vec2 end, float radius, vec2* buffer, int buffer_size) const;
 
 protected:
     std::vector<vec2> _vertices;
