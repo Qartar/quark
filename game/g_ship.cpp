@@ -64,6 +64,8 @@ const ship_layout default_layout(
         {6.f, 3.f}, {4.f, 3.f}, {2.f, 3.f}, {0.f, 3.f}, {0.f, 8.f}, {6.f, 7.f},
         {-1.f, 1.f}, {-1.f, -1.f}, {-1.f, -3.f}, {-6.f, -3.f}, {-6.f, -1.f}, {-6.f, 1.f}, {-6.f, 3.f}, {-1.f, 3.f},
         {-7.f, 1.f}, {-7.f, -1.f},
+        {7.f, -4.f}, {7.f, -6.f}, {6.f, -6.f}, {6.f, -4.f},
+        {7.f, 6.f}, {7.f, 4.f}, {6.f, 4.f}, {6.f, 6.f},
     },
     {
         {0, 6},
@@ -78,403 +80,10 @@ const ship_layout default_layout(
         {{1, 3}, {15, 16, 25, 26}},
         {{1, 4}, {12, 13, 30, 31}},
         {{4, ship_layout::invalid_compartment}, {34, 35, 38, 39}},
+        {{0, 2}, {40, 41, 42, 43}},
+        {{0, 3}, {44, 45, 46, 47}},
     }
 );
-
-//------------------------------------------------------------------------------
-ship_layout::ship_layout(vec2 const* vertices, int num_vertices,
-                         compartment const* compartments, int num_compartments,
-                         connection const* connections, int num_connections)
-    : _vertices(vertices, vertices + num_vertices)
-    , _compartments(compartments, compartments + num_compartments)
-    , _connections(connections, connections + num_connections)
-{
-    for (auto& c : _compartments) {
-        vec2 v0 = _vertices[c.first_vertex];
-        c.area = 0.f;
-        for (int ii = 2; ii < c.num_vertices; ++ii) {
-            vec2 v1 = _vertices[c.first_vertex + ii - 1];
-            vec2 v2 = _vertices[c.first_vertex + ii - 0];
-            c.area += 0.5f * (v2 - v1).cross(v1 - v0);
-        }
-    }
-
-    for (auto& c : _connections) {
-        vec2 v0 = _vertices[c.vertices[1]] - _vertices[c.vertices[0]];
-        vec2 v1 = _vertices[c.vertices[3]] - _vertices[c.vertices[2]];
-        c.width = .5f * (v0.length() + v1.length());
-    }
-}
-
-//------------------------------------------------------------------------------
-uint16_t ship_layout::intersect_compartment(vec2 point) const
-{
-    // iterate over all compartments and return the first compartment that
-    // contains the given point (if any)
-    for (std::size_t ii = 0, jj, sz = _compartments.size(); ii < sz; ++ii) {
-        uint16_t base = _compartments[ii].first_vertex;
-        uint16_t size = _compartments[ii].num_vertices;
-        for (jj = 0; jj < size; ++jj) {
-            vec2 va = point - _vertices[base + jj];
-            vec2 vb = point - _vertices[base + (jj + 1) % size];
-            if (va.cross(vb) > 0.f) {
-                break;
-            }
-        }
-        if (jj == size) {
-            return narrow_cast<uint16_t>(ii);
-        }
-    }
-    // point is not contained by any compartment
-    return invalid_compartment;
-}
-
-//------------------------------------------------------------------------------
-int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, int buffer_size) const
-{
-    uint16_t start_idx = intersect_compartment(start);
-    uint16_t end_idx = intersect_compartment(end);
-
-    // if either point is invalid then return no path
-    if (start_idx == invalid_compartment || end_idx == invalid_compartment) {
-        return 0;
-    // if start and end are in the same compartment then return a direct path
-    } else if (start_idx == end_idx) {
-        if (buffer_size >= 2) {
-            buffer[0] = start;
-            buffer[1] = end;
-        }
-        return 2;
-    }
-
-    struct search_state {
-        vec2 position;
-        float distance;
-        float heuristic;
-        int previous;
-        uint16_t compartment;
-        uint16_t connection;
-    };
-
-    std::array<search_state, 256> search;
-    search[0] = {start, 0.f, (start - end).length(), -1, start_idx, invalid_connection};
-    int search_size = 0;
-
-    struct search_comparator {
-        decltype(search) const& _search;
-        vec2 _end;
-        bool operator()(int lhs, int rhs) const {
-            float d1 = _search[lhs].distance + _search[lhs].heuristic;
-            float d2 = _search[rhs].distance + _search[rhs].heuristic;
-            return d1 < d2;
-        };
-    };
-
-    std::priority_queue<int, std::vector<int>, search_comparator> queue{{search, end}};
-    queue.push(search_size++);
-
-    while (queue.size() && search_size < search.size()) {
-        int idx = queue.top(); queue.pop();
-
-        if (search[idx].compartment == end_idx) {
-            // search succeeded
-            int depth = 1;
-            for (int ii = idx; ii != -1; ii = search[ii].previous) {
-                ++depth;
-            }
-
-            // if buffer doesn't have room just return the path length
-            if (depth > buffer_size) {
-                return depth;
-            }
-
-            // copy path into buffer and return path length
-            vec2* buffer_ptr = buffer + depth - 1;
-            *buffer_ptr-- = end;
-            for (int ii = idx; ii != -1; ii = search[ii].previous) {
-                *buffer_ptr-- = search[ii].position;
-            }
-            return depth;
-        }
-
-        for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-            auto& s = search[search_size];
-
-            if (ii == search[idx].connection) {
-                continue;
-            }
-            if (_connections[ii].width < 2.f * radius) {
-                continue;
-            }
-
-            if (_connections[ii].compartments[0] == search[idx].compartment) {
-                s.compartment = _connections[ii].compartments[1];
-            } else if (_connections[ii].compartments[1] == search[idx].compartment) {
-                s.compartment = _connections[ii].compartments[0];
-            } else {
-                continue;
-            }
-
-            auto const& c = _connections[ii];
-            s.position =  _vertices[c.vertices[0]];
-            for (int jj = 1; jj < countof(c.vertices); ++jj) {
-                s.position += _vertices[c.vertices[jj]];
-            }
-            s.position /= static_cast<float>(countof(c.vertices));
-
-            s.distance = search[idx].distance + (s.position - search[idx].position).length();
-            s.heuristic = (s.position - end).length();
-            s.previous = idx;
-            s.connection = narrow_cast<uint16_t>(ii);
-            queue.push(search_size++);
-        }
-    }
-
-    // search failed
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-ship_state::ship_state(ship_layout const& layout)
-    : _layout(layout)
-    , framenum(0)
-{
-    constexpr compartment_state default_compartment_state = {1.f, 0.f, {0.f, 0.f}};
-    _compartments.resize(_layout.compartments().size(), default_compartment_state);
-
-    constexpr connection_state default_connection_state = {false, 0.f, 0.f, 0.f};
-    _connections.resize(_layout.connections().size(), default_connection_state);
-}
-
-//------------------------------------------------------------------------------
-void ship_state::think()
-{
-#if 0
-    struct simulation {
-        float density;
-        float static_pressure;
-        float dynamic_pressure;
-        float temperature;
-        float velocity;
-    };
-
-    std::vector<simulation> s(_compartments.size());
-
-    constexpr float R = 8.314459848; // J/mol/K
-    constexpr float M = 28.97; // g/mol (dry air)
-    constexpr float rho0 = 1.225e3f; // g/m^3 (dry air at STP)
-
-    //
-    //  initialization
-    //
-
-    for (uint16_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
-        s[ii].density = _compartments[ii].atmosphere * rho0;
-        s[ii].velocity = 0.f;
-        s[ii].temperature = 295.f; // approx. room temperature in kelvin
-        s[ii].static_pressure = s[ii].density * s[ii].temperature * (R / M);
-        s[ii].dynamic_pressure = .5f * s[ii].density * square(s[ii].velocity);
-    }
-
-    //
-    //  simulation
-    //
-
-    for (uint16_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-        uint16_t c0 = _layout.connections()[ii].compartments[0];
-        uint16_t c1 = _layout.connections()[ii].compartments[1];
-
-        // calculate pressure gradient at each connection
-        float gradient = 0.f;
-        if (c0 != ship_layout::invalid_compartment) {
-            gradient -= s[c0].static_pressure + s[c0].dynamic_pressure;
-        }
-        if (c1 != ship_layout::invalid_compartment) {
-            gradient += s[c1].static_pressure + s[c1].dynamic_pressure;
-        }
-
-        // calculate acceleration at each connection
-        // P = F / A
-
-        // a = F / m
-        //   = PA / m
-        //   = PA / rho / V
-        //   = P / rho / z
-
-    }
-
-    for (uint16_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
-        s[ii].static_pressure = s[ii].density * s[ii].temperature * (R / M);
-        s[ii].dynamic_pressure = .5f * s[ii].density * square(s[ii].velocity);
-    }
-#endif
-
-    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
-        _compartments[ii].flow[0] = 0.f;
-        _compartments[ii].flow[1] = 0.f;
-
-        // calculate atmosphere loss through hull damage separately
-        float delta = -_compartments[ii].damage * FRAMETIME.to_seconds();
-        if (delta > _compartments[ii].atmosphere) {
-            _compartments[ii].atmosphere = 0.f;
-        } else {
-            _compartments[ii].atmosphere -= delta;
-        }
-    }
-
-    for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-        uint16_t c0 = _layout.connections()[ii].compartments[0];
-        uint16_t c1 = _layout.connections()[ii].compartments[1];
-
-        // calculate pressure differential at each connection
-        if (c0 == ship_layout::invalid_compartment) {
-            assert(c1 != ship_layout::invalid_compartment);
-            _connections[ii].gradient = _compartments[c1].atmosphere;
-        } else if (c1 == ship_layout::invalid_compartment) {
-            assert(c0 != ship_layout::invalid_compartment);
-            _connections[ii].gradient = -_compartments[c0].atmosphere;
-        } else {
-            _connections[ii].gradient = _compartments[c1].atmosphere
-                                      - _compartments[c0].atmosphere;
-        }
-    }
-
-    for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-        uint16_t c0 = _layout.connections()[ii].compartments[0];
-        uint16_t c1 = _layout.connections()[ii].compartments[1];
-
-        float mass = 0.f;
-        if (c0 != ship_layout::invalid_compartment) {
-            mass += _compartments[c0].atmosphere * _layout.compartments()[c0].area;
-        }
-        if (c1 != ship_layout::invalid_compartment) {
-            mass += _compartments[c1].atmosphere * _layout.compartments()[c1].area;
-        }
-
-        _connections[ii].velocity *= .95f;
-
-        if (_connections[ii].opened) {
-            _connections[ii].velocity += _connections[ii].gradient * mass * FRAMETIME.to_seconds();
-        } else {
-            _connections[ii].velocity = 0.f;
-        }
-    }
-
-    for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-        if (_connections[ii].opened) {
-            _connections[ii].flow = _connections[ii].velocity * _layout.connections()[ii].width * FRAMETIME.to_seconds();
-        } else {
-            _connections[ii].flow = 0.f;
-        }
-    }
-
-    std::vector<std::vector<float>> flow;
-    flow.resize(5);
-    flow[0].resize(_connections.size());
-    for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-        flow[0][ii] = _connections[ii].flow;
-    }
-
-    for (int iter = 0; iter < 32; ++iter) {
-        bool clamped = false;
-
-        for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
-            _compartments[ii].flow[0] = 0.f;
-            _compartments[ii].flow[1] = 0.f;
-        }
-
-        for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-            uint16_t c0 = _layout.connections()[ii].compartments[0];
-            uint16_t c1 = _layout.connections()[ii].compartments[1];
-            // calculate flow in each compartment
-            if (_connections[ii].opened) {
-                float delta = _connections[ii].flow;
-                if (c0 != ship_layout::invalid_compartment) {
-                    _compartments[c0].flow[0] += min(0.f, delta); // outflow
-                    _compartments[c0].flow[1] += max(0.f, delta); // inflow
-                }
-                if (c1 != ship_layout::invalid_compartment) {
-                    _compartments[c1].flow[0] -= max(0.f, delta); // outflow
-                    _compartments[c1].flow[1] -= min(0.f, delta); // inflow
-                }
-            }
-        }
-
-        // advect atmosphere between compartments
-        for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-            uint16_t c0 = _layout.connections()[ii].compartments[0];
-            uint16_t c1 = _layout.connections()[ii].compartments[1];
-
-            if (_connections[ii].opened) {
-                if ( _connections[ii].flow < 0.f && c0 != ship_layout::invalid_compartment) {
-                    float fraction = -_connections[ii].flow / _compartments[c0].flow[0];
-                    float limit = fraction * (_compartments[c0].flow[1] + _compartments[c0].atmosphere * _layout.compartments()[c0].area);
-                    assert(limit <= 0.f);
-                    if ( _connections[ii].flow < limit) {
-                         _connections[ii].flow = limit;
-                         clamped = true;
-                    }
-                }
-                if ( _connections[ii].flow > 0.f && c1 != ship_layout::invalid_compartment) {
-                    float fraction = -_connections[ii].flow / _compartments[c1].flow[0];
-                    float limit = fraction * (_compartments[c1].flow[1] + _compartments[c1].atmosphere * _layout.compartments()[c1].area);
-                    assert(limit >= 0.f);
-                    if ( _connections[ii].flow > limit) {
-                         _connections[ii].flow = limit;
-                         clamped = true;
-                    }
-                }
-                assert(!isnan(_connections[ii].flow));
-            }
-        }
-
-        flow[iter + 1].resize(_connections.size());
-        for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-            flow[iter + 1][ii] = _connections[ii].flow;
-        }
-
-        if (!clamped) {
-            break;
-        }
-    }
-
-    // advect atmosphere between compartments
-    for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-        uint16_t c0 = _layout.connections()[ii].compartments[0];
-        uint16_t c1 = _layout.connections()[ii].compartments[1];
-
-        if (_connections[ii].opened) {
-            if (c0 != ship_layout::invalid_compartment) {
-                float delta = _connections[ii].flow / _layout.compartments()[c0].area;
-                _compartments[c0].atmosphere += delta;
-                assert(_compartments[c0].atmosphere >= -1e-3f);
-            }
-            if (c1 != ship_layout::invalid_compartment) {
-                float delta = _connections[ii].flow / _layout.compartments()[c1].area;
-                _compartments[c1].atmosphere -= delta;
-                assert(_compartments[c1].atmosphere >= -1e-3f);
-            }
-        }
-    }
-
-    int index = framenum++ % countof<decltype(compartment_state::history)>();
-    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
-        _compartments[ii].history[index] = _compartments[ii].atmosphere;
-    }
-}
-
-//------------------------------------------------------------------------------
-void ship_state::recharge(float atmosphere_per_second)
-{
-    float delta = atmosphere_per_second * FRAMETIME.to_seconds();
-    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
-        if (_compartments[ii].atmosphere + delta > 1.f) {
-            _compartments[ii].atmosphere = 1.f;
-        } else {
-            _compartments[ii].atmosphere += delta;
-        }
-    }
-}
 
 //------------------------------------------------------------------------------
 ship::ship()
@@ -725,18 +334,14 @@ void ship::draw(render::system* renderer, time_value time) const
 
             uint16_t idx = _state.layout().intersect_compartment(local_cursor);
             if (idx != ship_layout::invalid_compartment) {
-                indices.clear();
                 auto const& c = _layout.compartments()[idx];
                 for (int jj = 0; jj < c.num_vertices; ++jj) {
-                    colors[jj] = color4(1, 1, 0, .2f);
                     positions[jj] = _state.layout().vertices()[c.first_vertex + jj] * transform;
                 }
-                for (int jj = 2; jj < c.num_vertices; ++jj) {
-                    indices.push_back(0);
-                    indices.push_back(jj - 1);
-                    indices.push_back(jj - 0);
+                for (int jj = 1; jj < c.num_vertices; ++jj) {
+                    renderer->draw_line(positions[jj-1], positions[jj], color4(0,0,0,1), color4(0,0,0,1));
                 }
-                renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
+                renderer->draw_line(positions[c.num_vertices - 1], positions[0], color4(0,0,0,1), color4(0,0,0,1));
             }
 
             //
@@ -754,9 +359,17 @@ void ship::draw(render::system* renderer, time_value time) const
                 }
 
                 vec2 buffer[64];
-                std::size_t len = _layout.find_path(local_cursor, goal, .1f, buffer, narrow_cast<int>(countof(buffer)));
+                std::size_t len = _layout.find_path(local_cursor, goal, .3f, buffer, narrow_cast<int>(countof(buffer)));
                 for (std::size_t ii = 1; ii < len; ++ii) {
                     renderer->draw_line(buffer[ii - 1] * tx, buffer[ii] * tx, color4(1,0,0,1), color4(1,0,0,1));
+                }
+
+                {
+                    vec2 end = goal * tx;
+                    vec2 v1 = vec2( d, d) * (1.f / math::sqrt2<float>);
+                    vec2 v2 = vec2(-d, d) * (1.f / math::sqrt2<float>);
+                    renderer->draw_line(end - v1, end + v1, color4(1,0,0,1), color4(1,0,0,1));
+                    renderer->draw_line(end - v2, end + v2, color4(1,0,0,1), color4(1,0,0,1));
                 }
             }
         }
