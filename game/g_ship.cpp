@@ -130,6 +130,111 @@ uint16_t ship_layout::intersect_compartment(vec2 point) const
 }
 
 //------------------------------------------------------------------------------
+int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, int buffer_size) const
+{
+    uint16_t start_idx = intersect_compartment(start);
+    uint16_t end_idx = intersect_compartment(end);
+
+    // if either point is invalid then return no path
+    if (start_idx == invalid_compartment || end_idx == invalid_compartment) {
+        return 0;
+    // if start and end are in the same compartment then return a direct path
+    } else if (start_idx == end_idx) {
+        if (buffer_size >= 2) {
+            buffer[0] = start;
+            buffer[1] = end;
+        }
+        return 2;
+    }
+
+    struct search_state {
+        vec2 position;
+        float distance;
+        float heuristic;
+        int previous;
+        uint16_t compartment;
+        uint16_t connection;
+    };
+
+    std::array<search_state, 256> search;
+    search[0] = {start, 0.f, (start - end).length(), -1, start_idx, invalid_connection};
+    int search_size = 0;
+
+    struct search_comparator {
+        decltype(search) const& _search;
+        vec2 _end;
+        bool operator()(int lhs, int rhs) const {
+            float d1 = _search[lhs].distance + _search[lhs].heuristic;
+            float d2 = _search[rhs].distance + _search[rhs].heuristic;
+            return d1 < d2;
+        };
+    };
+
+    std::priority_queue<int, std::vector<int>, search_comparator> queue{{search, end}};
+    queue.push(search_size++);
+
+    while (queue.size() && search_size < search.size()) {
+        int idx = queue.top(); queue.pop();
+
+        if (search[idx].compartment == end_idx) {
+            // search succeeded
+            int depth = 1;
+            for (int ii = idx; ii != -1; ii = search[ii].previous) {
+                ++depth;
+            }
+
+            // if buffer doesn't have room just return the path length
+            if (depth > buffer_size) {
+                return depth;
+            }
+
+            // copy path into buffer and return path length
+            vec2* buffer_ptr = buffer + depth - 1;
+            *buffer_ptr-- = end;
+            for (int ii = idx; ii != -1; ii = search[ii].previous) {
+                *buffer_ptr-- = search[ii].position;
+            }
+            return depth;
+        }
+
+        for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
+            auto& s = search[search_size];
+
+            if (ii == search[idx].connection) {
+                continue;
+            }
+            if (_connections[ii].width < 2.f * radius) {
+                continue;
+            }
+
+            if (_connections[ii].compartments[0] == search[idx].compartment) {
+                s.compartment = _connections[ii].compartments[1];
+            } else if (_connections[ii].compartments[1] == search[idx].compartment) {
+                s.compartment = _connections[ii].compartments[0];
+            } else {
+                continue;
+            }
+
+            auto const& c = _connections[ii];
+            s.position =  _vertices[c.vertices[0]];
+            for (int jj = 1; jj < countof(c.vertices); ++jj) {
+                s.position += _vertices[c.vertices[jj]];
+            }
+            s.position /= static_cast<float>(countof(c.vertices));
+
+            s.distance = search[idx].distance + (s.position - search[idx].position).length();
+            s.heuristic = (s.position - end).length();
+            s.previous = idx;
+            s.connection = narrow_cast<uint16_t>(ii);
+            queue.push(search_size++);
+        }
+    }
+
+    // search failed
+    return 0;
+}
+
+//------------------------------------------------------------------------------
 ship_state::ship_state(ship_layout const& layout)
     : _layout(layout)
     , framenum(0)
@@ -601,6 +706,10 @@ void ship::draw(render::system* renderer, time_value time) const
             renderer->draw_string(va("%.2f - %.2f", s.flow, s.velocity), p, color4(.4f,.3f,.2f,1));
         }
 
+        //
+        //  draw cursor and highlight compartment
+        //
+
         {
             vec2 scale = renderer->view().size / vec2(renderer->window()->size());
             vec2 s = vec2(scale.x, -scale.y), b = vec2(0.f, static_cast<float>(renderer->window()->size().y)) * scale;
@@ -629,7 +738,32 @@ void ship::draw(render::system* renderer, time_value time) const
                 }
                 renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
             }
+
+            //
+            //  draw path from cursor to random point in ship
+            //
+
+            {
+                static random r;
+                mat3 tx = get_transform(time);
+                static vec2 goal = vec2_zero;
+                if (get_world()->framenum() % 100 == 0) {
+                    do {
+                        goal = vec2(r.uniform_real(), r.uniform_real()) * (_model->maxs() - _model->mins()) + _model->mins();
+                    } while (_layout.intersect_compartment(goal) == ship_layout::invalid_compartment);
+                }
+
+                vec2 buffer[64];
+                std::size_t len = _layout.find_path(local_cursor, goal, .1f, buffer, narrow_cast<int>(countof(buffer)));
+                for (std::size_t ii = 1; ii < len; ++ii) {
+                    renderer->draw_line(buffer[ii - 1] * tx, buffer[ii] * tx, color4(1,0,0,1), color4(1,0,0,1));
+                }
+            }
         }
+
+        //
+        //  draw compartment state line graph
+        //
 
         {
             constexpr std::size_t count = countof<decltype(ship_state::compartment_state::history)>();
