@@ -112,15 +112,6 @@ object_range<object> world::objects()
 //------------------------------------------------------------------------------
 void world::remove(handle<object> object)
 {
-#if _DEBUG
-    std::queue<game::object*> swap;
-    while (_removed.size()) {
-        assert(_removed.front() != object);
-        swap.push(_removed.front());
-        _removed.pop();
-    }
-    _removed.swap(swap);
-#endif
     _removed.push(object);
 }
 

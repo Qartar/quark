@@ -316,6 +316,19 @@ void ship::draw(render::system* renderer, time_value time) const
         }
 
         //
+        //  draw crew
+        //
+
+        {
+            mat3 tx = get_transform(time);
+            for (auto const& ch : _crew) {
+                renderer->draw_arc(ch->get_position(time) * tx, .25f, .15f, -math::pi<float>, math::pi<float>, color4(.4f,.5f,.6f,1.f));
+                vec2 sz = renderer->string_size(ch->name());
+                renderer->draw_string(ch->name(), ch->get_position(time) * tx - sz * .5f - vec2(0, .4f), ch->health() ? color4(0,0,1,1) : color4(1,0,0,1));
+            }
+        }
+
+        //
         //  draw cursor and highlight compartment
         //
 
@@ -354,7 +367,7 @@ void ship::draw(render::system* renderer, time_value time) const
                 static vec2 goal = vec2_zero;
                 if (get_world()->framenum() % 100 == 0) {
                     do {
-                        goal = vec2(r.uniform_real(), r.uniform_real()) * (_model->maxs() - _model->mins()) + _model->mins();
+                        goal = vec2(r.uniform_real(), r.uniform_real()) * (_model->bounds().maxs() - _model->bounds().mins()) + _model->bounds().mins();
                     } while (_layout.intersect_compartment(goal) == ship_layout::invalid_compartment);
                 }
 

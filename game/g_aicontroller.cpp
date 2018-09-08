@@ -5,9 +5,11 @@
 #pragma hdrstop
 
 #include "g_aicontroller.h"
+#include "g_character.h"
 #include "g_ship.h"
 #include "g_subsystem.h"
 #include "g_weapon.h"
+#include "r_model.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -27,6 +29,13 @@ aicontroller::~aicontroller()
 //------------------------------------------------------------------------------
 void aicontroller::spawn()
 {
+    for (auto& ch : _ship->crew()) {
+        vec2 goal = vec2_zero;
+        do {
+            goal = vec2(_random.uniform_real(), _random.uniform_real()) * (_ship->_model->bounds().maxs() - _ship->_model->bounds().mins()) + _ship->_model->bounds().mins();
+        } while (_ship->layout().intersect_compartment(goal) == ship_layout::invalid_compartment);
+        ch->set_position(_ship, goal, true);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -36,6 +45,20 @@ void aicontroller::think()
 
     if (!_ship) {
         return;
+    }
+
+    //
+    // update crew
+    //
+
+    for (auto& ch : _ship->crew()) {
+        if (_random.uniform_real() < .01f) {
+            vec2 goal = vec2_zero;
+            do {
+                goal = vec2(_random.uniform_real(), _random.uniform_real()) * (_ship->_model->bounds().maxs() - _ship->_model->bounds().mins()) + _ship->_model->bounds().mins();
+            } while (_ship->layout().intersect_compartment(goal) == ship_layout::invalid_compartment);
+            ch->set_goal(goal);
+        }
     }
 
     //
@@ -146,6 +169,14 @@ void aicontroller::think()
             _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
             _ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
 
+            // place crew at random places in the ship
+            for (auto& ch : _ship->crew()) {
+                vec2 goal = vec2_zero;
+                do {
+                    goal = vec2(_random.uniform_real(), _random.uniform_real()) * (_ship->_model->bounds().maxs() - _ship->_model->bounds().mins()) + _ship->_model->bounds().mins();
+                } while (_ship->layout().intersect_compartment(goal) == ship_layout::invalid_compartment);
+                ch->set_position(_ship, goal, true);
+            }
         }
     }
 }

@@ -39,8 +39,14 @@ public:
     void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec2 point, float amount);
 
+    std::vector<unique_handle<character>>& crew() { return _crew; }
+    std::vector<unique_handle<character>> const& crew() const { return _crew; }
+
     std::vector<unique_handle<subsystem>>& subsystems() { return _subsystems; }
     std::vector<unique_handle<subsystem>> const& subsystems() const { return _subsystems; }
+
+    ship_layout const& layout() const { return _state.layout(); }
+    ship_state& state() { return _state; }
 
     handle<subsystem> reactor() { return _reactor; }
     handle<game::engines> engines() { return _engines; }
@@ -55,12 +61,11 @@ public:
 protected:
     game::usercmd _usercmd;
 
-public:
-    ship_state _state;
-
 protected:
     std::vector<unique_handle<character>> _crew;
     std::vector<unique_handle<subsystem>> _subsystems;
+
+    ship_state _state;
 
     handle<subsystem> _reactor;
     handle<game::engines> _engines;
