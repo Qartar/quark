@@ -124,8 +124,6 @@ model::model(model::rect const* rects, std::size_t num_rects)
 
 //------------------------------------------------------------------------------
 model::model(vec2 const* vertices, std::size_t num_vertices, triangle const* triangles, std::size_t num_triangles)
-    : _mins(0,0)
-    , _maxs(0,0)
 {
     for (std::size_t ii = 0; ii < num_triangles; ++ii) {
         _indices.push_back(static_cast<uint16_t>(_vertices.size() + 0));
@@ -145,17 +143,7 @@ model::model(vec2 const* vertices, std::size_t num_vertices, triangle const* tri
         _colors.emplace_back(triangles[ii].gamma, triangles[ii].gamma, triangles[ii].gamma);
     }
 
-    // calculate absolute mins/maxs
-    for (auto const& v : _vertices) {
-        for (int jj = 0; jj < 2; ++jj) {
-            if (_mins[jj] > v[jj]) {
-                _mins[jj] = v[jj];
-            }
-            if (_maxs[jj] < v[jj]) {
-                _maxs[jj] = v[jj];
-            }
-        }
-    }
+    _bounds = bounds::from_points(_vertices.data(), _vertices.size());
 }
 
 //------------------------------------------------------------------------------
