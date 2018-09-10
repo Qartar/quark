@@ -108,8 +108,8 @@ std::vector<weapon_info> weapon::_types = {
 };
 
 //------------------------------------------------------------------------------
-weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
-    : subsystem(owner, {subsystem_type::weapons, 2})
+weapon::weapon(game::ship* owner, int compartment, weapon_info const& info, vec2 position)
+    : subsystem(owner, compartment, {subsystem_type::weapons, 2})
     , _info(info)
     , _last_attack_time(time_value::zero)
     , _target(nullptr)
