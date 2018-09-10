@@ -320,11 +320,86 @@ void ship::draw(render::system* renderer, time_value time) const
         //
 
         {
+            struct text_layout {
+                string::view text;
+                color4 color;
+                vec2 origin;
+                vec2 offset;
+                vec2 size;
+            };
+
+            std::vector<text_layout> layout;
+
             mat3 tx = get_transform(time);
             for (auto const& ch : _crew) {
                 renderer->draw_arc(ch->get_position(time) * tx, .25f, .15f, -math::pi<float>, math::pi<float>, color4(.4f,.5f,.6f,1.f));
                 vec2 sz = renderer->string_size(ch->name());
-                renderer->draw_string(ch->name(), ch->get_position(time) * tx - sz * .5f - vec2(0, .4f), ch->health() ? color4(0,0,1,1) : color4(1,0,0,1));
+                layout.push_back({
+                    ch->name(),
+                    ch->health() ? color4(0,0,1,1) : color4(1,0,0,1),
+                    ch->get_position(time) * tx,
+                    vec2(0, -.4f),
+                    sz
+                });
+            }
+#if 1
+            for (int iter = 0; iter < 64; ++iter) {
+                uint64_t overlap_mask = 0;
+                bool has_overlap = false;
+                float minscale = FLT_MAX;
+                for (std::size_t ii = 0, sz = layout.size(); ii < sz; ++ii) {
+                    bounds b0(layout[ii].origin + layout[ii].offset - layout[ii].size * .5f, layout[ii].origin + layout[ii].offset + layout[ii].size * .5f);
+                    for (std::size_t jj = ii + 1; jj < sz; ++jj) {
+                        bounds b1(layout[jj].origin + layout[jj].offset - layout[jj].size * .5f, layout[jj].origin + layout[jj].offset + layout[jj].size * .5f);
+                        bounds overlap = b0 & b1;
+                        if (!overlap.empty()) {
+                            has_overlap = true;
+                            overlap_mask |= (1LL << ii);
+                            overlap_mask |= (1LL << jj);
+                            vec2 s0 = overlap.size();
+                            vec2 s1 = vec2(std::abs(layout[ii].origin.x + layout[ii].offset.x - layout[jj].origin.x - layout[jj].offset.x),
+                                           std::abs(layout[ii].origin.y + layout[ii].offset.y - layout[jj].origin.y - layout[jj].offset.y));
+                            float s = std::min((s0.x + s1.x) / s1.x, (s0.y + s1.y) / s1.y);
+                            minscale = std::min(s * (1.f + 1e-3f), minscale);
+                        }
+                    }
+                }
+#if 0
+                for (int ii = 0, sz = layout.size(); ii < sz; ++ii) {
+                    text_layout const& ll = layout[ii];
+                    color4 color = (overlap_mask & (1LL << ii)) ? color4(1,0,0,.1f) : color4(0,0,1,.1f);
+
+                    vec2 v[4] = {
+                        ll.origin + ll.offset + ll.size * vec2(-.5f, -.5f),
+                        ll.origin + ll.offset + ll.size * vec2(+.5f, -.5f),
+                        ll.origin + ll.offset + ll.size * vec2(+.5f, +.5f),
+                        ll.origin + ll.offset + ll.size * vec2(-.5f, +.5f),
+                    };
+                    renderer->draw_line(v[0], v[1], color, color);
+                    renderer->draw_line(v[1], v[2], color, color);
+                    renderer->draw_line(v[2], v[3], color, color);
+                    renderer->draw_line(v[3], v[0], color, color);
+                }
+#endif
+                if (!has_overlap) {
+                    break;
+                }
+                vec2 midpoint = vec2_zero;
+                for (std::size_t ii = 0, sz = layout.size(); ii < sz; ++ii) {
+                    if (overlap_mask & (1LL << ii)) {
+                        midpoint += layout[ii].origin + layout[ii].offset;
+                    }
+                }
+                midpoint /= static_cast<float>(__popcnt64(overlap_mask));
+                for (std::size_t ii = 0, sz = layout.size(); ii < sz; ++ii) {
+                    if (overlap_mask & (1LL << ii)) {
+                        layout[ii].offset = (layout[ii].origin + layout[ii].offset - midpoint) * minscale + midpoint - layout[ii].origin;
+                    }
+                }
+            }
+#endif
+            for (auto const& elem : layout) {
+                renderer->draw_string(elem.text, elem.origin + elem.offset - elem.size * .5f, elem.color);
             }
         }
 
