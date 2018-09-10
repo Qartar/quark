@@ -16,8 +16,8 @@ const object_type shield::_type(subsystem::_type);
 physics::material shield::_material(0.0f, 0.0f);
 
 //------------------------------------------------------------------------------
-shield::shield(physics::shape const* base, game::ship* owner)
-    : subsystem(owner, {subsystem_type::shields, 2})
+shield::shield(physics::shape const* base, game::ship* owner, int compartment)
+    : subsystem(owner, compartment, {subsystem_type::shields, 2})
     , _base(base)
     , _strength(2)
     , _damage_time(time_value::zero)

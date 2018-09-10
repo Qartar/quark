@@ -71,7 +71,7 @@ public:
     static const object_type _type;
 
 public:
-    subsystem(game::ship* owner, subsystem_info info);
+    subsystem(game::ship* owner, int compartment, subsystem_info info);
 
     virtual object_type const& type() const override { return _type; }
     virtual void think() override;
@@ -82,6 +82,8 @@ public:
     float damage() const { return _damage; }
     void repair(float damage_per_second);
 
+    int compartment() const { return _compartment; }
+
     int current_power() const;
     int desired_power() const { return _desired_power; }
     int maximum_power() const { return _subsystem_info.maximum_power; }
@@ -90,6 +92,8 @@ public:
 
 protected:
     subsystem_info _subsystem_info;
+
+    int _compartment;
 
     float _damage;
 
@@ -122,7 +126,7 @@ public:
     static const object_type _type;
 
 public:
-    engines(game::ship* owner, engines_info info);
+    engines(game::ship* owner, int compartment, engines_info info);
 
     virtual object_type const& type() const override { return _type; }
     virtual void think() override;

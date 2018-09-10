@@ -15,7 +15,7 @@ public:
     static const object_type _type;
 
 public:
-    shield(physics::shape const* base, game::ship* owner);
+    shield(physics::shape const* base, game::ship* owner, int compartment);
     ~shield();
 
     void spawn();

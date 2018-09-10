@@ -11,6 +11,9 @@
 #include "g_subsystem.h"
 #include "r_model.h"
 
+#include <intrin.h>
+#include <random>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -119,18 +122,25 @@ void ship::spawn()
         _crew.push_back(get_world()->spawn<character>());
     }
 
-    _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 8});
+    std::vector<int> compartments(_state.compartments().size());
+    for (std::size_t ii = 0, sz = compartments.size(); ii < sz; ++ii) {
+        compartments[ii] = narrow_cast<int>(ii);
+    }
+
+    std::shuffle(compartments.begin(), compartments.end(), std::random_device());
+
+    _reactor = get_world()->spawn<subsystem>(this, compartments[0], subsystem_info{subsystem_type::reactor, 8});
     _subsystems.push_back(_reactor);
 
-    _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
-    _subsystems.push_back(_engines);
-
-    _shield = get_world()->spawn<game::shield>(&_shape, this);
+    _shield = get_world()->spawn<game::shield>(&_shape, this, compartments[1]);
     _subsystems.push_back(_shield);
+
+    _engines = get_world()->spawn<game::engines>(this, compartments[2], engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
+    _subsystems.push_back(_engines);
 
     for (int ii = 0; ii < 2; ++ii) {
         weapon_info info = weapon::by_random(_random);
-        _weapons.push_back(get_world()->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
+        _weapons.push_back(get_world()->spawn<weapon>(this, compartments[3 + ii], info, vec2(11.f, ii ? 6.f : -6.f)));
         _subsystems.push_back(_weapons.back());
     }
 
@@ -313,6 +323,39 @@ void ship::draw(render::system* renderer, time_value time) const
                 p += positions[c.vertices[jj]] * .25f;
             }
             renderer->draw_string(va("%.2f - %.2f", s.flow, s.velocity), p, color4(.4f,.3f,.2f,1));
+        }
+
+        //
+        //  draw subsystem icons
+        //
+
+        {
+            mat3 tx = get_transform(time);
+
+            for (auto const& ss : _subsystems) {
+                auto const& c = layout().compartments()[ss->compartment()];
+                vec2 pt = vec2_zero;
+                for (int ii = 0; ii < c.num_vertices; ++ii) {
+                    pt += layout().vertices()[c.first_vertex + ii];
+                }
+                pt /= c.num_vertices;
+                string::literal text = "";
+                if (ss == _reactor) {
+                    text = "R";
+                } else if (ss == _engines) {
+                    text = "E";
+                } else if (ss == _shield) {
+                    text = "S";
+                } else if (ss == _weapons[0] || ss == _weapons[1]) {
+                    text = "W";
+                }
+
+                vec2 sz = renderer->string_size(text);
+                float t = sz.length_sqr() / (_model->bounds().maxs() - _model->bounds().mins()).length_sqr();
+                float a = alpha * clamp(1.f - 8.f * t, 0.f, 1.f);
+                color4 color = ss->damage() < ss->maximum_power() ? color4(.09f,.225f,.045f,a) : color4(.333f,.0666f,0,a);
+                renderer->draw_string(text, pt * tx - sz * .5f, color);
+            }
         }
 
         //
