@@ -38,6 +38,7 @@ public:
     void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec2 point, float amount);
 
+    std::vector<unique_handle<subsystem>>& subsystems() { return _subsystems; }
     std::vector<unique_handle<subsystem>> const& subsystems() const { return _subsystems; }
 
     handle<subsystem> reactor() { return _reactor; }
