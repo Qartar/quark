@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_weapon.h"
+#include "cm_geometry.h"
 #include "g_projectile.h"
 #include "g_shield.h"
 #include "g_ship.h"
@@ -102,7 +103,10 @@ void weapon::think()
             }
 
             // lead target based on relative velocity
-            end += relative_velocity * (end - start).length() / _info.projectile_speed;
+            float dt = intercept_time(end - start, relative_velocity, _info.projectile_speed);
+            if (dt > 0.f) {
+                end += relative_velocity * dt;
+            }
 
             vec2 dir = (end - start).normalize();
 
