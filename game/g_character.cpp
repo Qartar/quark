@@ -62,6 +62,16 @@ void character::think()
         _subsystem->repair(repair_rate);
     }
 
+    {
+        uint16_t comp = _ship->layout().intersect_compartment(get_position());
+        float atmosphere = comp == ship_layout::invalid_compartment ? 1.f
+                         :  _ship->state().compartments()[comp].atmosphere;
+
+        // map [0,.5] -> [1, 0]
+        float frac = sqrt(clamp(1.f - 2.f * atmosphere, 0.f, 1.f));
+        damage(nullptr, (1.f / 30.f) * frac * FRAMETIME.to_seconds());
+    }
+
     if (_health) {
         constexpr float speed = 1.5f;
         vec2 position = get_position();
@@ -83,7 +93,7 @@ void character::think()
 //------------------------------------------------------------------------------
 void character::damage(object* /*inflictor*/, float amount)
 {
-    _health = max(0.f, _health - amount);
+    _health = clamp(_health - amount, 0.f, 1.f);
 }
 
 //------------------------------------------------------------------------------

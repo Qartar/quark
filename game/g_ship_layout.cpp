@@ -427,11 +427,7 @@ void ship_state::recharge(float atmosphere_per_second)
 {
     float delta = atmosphere_per_second * FRAMETIME.to_seconds();
     for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
-        if (_compartments[ii].atmosphere + delta > 1.f) {
-            _compartments[ii].atmosphere = 1.f;
-        } else {
-            _compartments[ii].atmosphere += delta;
-        }
+        _compartments[ii].atmosphere = clamp(_compartments[ii].atmosphere + delta, 0.f, 1.f);
     }
 }
 
