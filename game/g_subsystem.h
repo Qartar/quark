@@ -51,6 +51,7 @@ enum class subsystem_type
 
     // needs crew / compartments:
 
+    life_support,
     security,
     medical_bay,
     armory,

@@ -69,6 +69,12 @@ const ship_layout default_layout(
         {-7.f, 1.f}, {-7.f, -1.f},
         {7.f, -4.f}, {7.f, -6.f}, {6.f, -6.f}, {6.f, -4.f},
         {7.f, 6.f}, {7.f, 4.f}, {6.f, 4.f}, {6.f, 6.f},
+        {-1.f, 4.f}, {-6.f, 4.f}, {-7.f, 7.f}, {-7.f, 9.f}, {-3.f, 9.f}, {-1.f, 8.f},
+        {-1.f, -4.f}, {-1.f, -8.f}, {-3.f, -9.f}, {-7.f, -9.f}, {-7.f, -7.f}, {-6.f, -4.f},
+        {-2.5f, 4.f}, {-4.5f, 4.f}, {-4.5f, 3.f}, {-2.5f, 3.f},
+        {-4.5f, -4.f}, {-2.5f, -4.f}, {-2.5f, -3.f}, {-4.5f, -3.f},
+        {-8.f, 7.f}, {-14.f, 7.f}, {-14.f, 9.f}, {-8.f, 9.f},
+        {-14.f, -7.f}, {-8.f, -7.f}, {-8.f, -9.f}, {-14.f, -9.f},
     },
     {
         {0, 6},
@@ -76,6 +82,10 @@ const ship_layout default_layout(
         {18, 6},
         {24, 6},
         {30, 8},
+        {48, 6},
+        {54, 6},
+        {68, 4},
+        {72, 4},
     },
     {
         {{0, 1}, {4, 5, 6, 7}},
@@ -85,6 +95,10 @@ const ship_layout default_layout(
         {{4, ship_layout::invalid_compartment}, {34, 35, 38, 39}},
         {{0, 2}, {40, 41, 42, 43}},
         {{0, 3}, {44, 45, 46, 47}},
+        {{4, 5}, {60, 61, 62, 63}},
+        {{4, 6}, {64, 65, 66, 67}},
+        {{5, 7}, {50, 51, 71, 68}},
+        {{6, 8}, {57, 58, 73, 74}},
     }
 );
 
@@ -129,7 +143,7 @@ void ship::spawn()
 
     std::shuffle(compartments.begin(), compartments.end(), std::random_device());
 
-    _reactor = get_world()->spawn<subsystem>(this, compartments[0], subsystem_info{subsystem_type::reactor, 8});
+    _reactor = get_world()->spawn<subsystem>(this, compartments[0], subsystem_info{subsystem_type::reactor, 10});
     _subsystems.push_back(_reactor);
 
     _shield = get_world()->spawn<game::shield>(&_shape, this, compartments[1]);
@@ -143,6 +157,9 @@ void ship::spawn()
         _weapons.push_back(get_world()->spawn<weapon>(this, compartments[3 + ii], info, vec2(11.f, ii ? 6.f : -6.f)));
         _subsystems.push_back(_weapons.back());
     }
+
+    _subsystems.push_back(get_world()->spawn<subsystem>(this, compartments[5], subsystem_info{subsystem_type::life_support, 1}));
+    _subsystems.push_back(get_world()->spawn<subsystem>(this, compartments[6], subsystem_info{subsystem_type::medical_bay, 1}));
 
     std::vector<handle<subsystem>> assignments(_subsystems.begin(), _subsystems.end());
     for (auto& ch : _crew) {
@@ -340,14 +357,18 @@ void ship::draw(render::system* renderer, time_value time) const
                 }
                 pt /= c.num_vertices;
                 string::literal text = "";
-                if (ss == _reactor) {
+                if (ss->info().type == subsystem_type::reactor) {
                     text = "R";
-                } else if (ss == _engines) {
+                } else if (ss->info().type == subsystem_type::engines) {
                     text = "E";
-                } else if (ss == _shield) {
+                } else if (ss->info().type == subsystem_type::shields) {
                     text = "S";
-                } else if (ss == _weapons[0] || ss == _weapons[1]) {
+                } else if (ss->info().type == subsystem_type::weapons) {
                     text = "W";
+                } else if (ss->info().type == subsystem_type::life_support) {
+                    text = "L";
+                } else if (ss->info().type == subsystem_type::medical_bay) {
+                    text = "M";
                 }
 
                 vec2 sz = renderer->string_size(text);
@@ -542,7 +563,6 @@ void ship::think()
         _dead_time = time;
     }
 
-    //_state.recharge(1.f / 300.f);
     _state.think();
 #if 0
     for (std::size_t ii = 0, sz = _state.connections().size(); ii < sz; ++ii) {

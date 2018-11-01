@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_subsystem.h"
+#include "g_character.h"
 #include "g_ship.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,6 +45,24 @@ void subsystem::think()
     } else {
         float decay_coeff = -std::expm1(-math::ln2<float> * FRAMETIME.to_seconds() / power_lambda);
         _current_power += (_desired_power - _damage - _current_power) * decay_coeff;
+
+        if (_subsystem_info.type == subsystem_type::medical_bay) {
+            static constexpr float heal_rate = 1.f / 30.f;
+            ship* owner = static_cast<ship*>(_owner.get());
+            for (auto& ch : owner->crew()) {
+                int compartment = owner->layout().intersect_compartment(ch->get_position());
+                if (compartment == _compartment) {
+                    ch->damage(this, -heal_rate * _current_power * FRAMETIME.to_seconds());
+                }
+            }
+        } else if (_subsystem_info.type == subsystem_type::life_support) {
+            ship* owner = static_cast<ship*>(_owner.get());
+            if (_current_power > .5f) {
+                owner->state().recharge((1.0f / 90.f) * (_current_power - .5f));
+            } else {
+                owner->state().recharge(-1.0f / 90.f);
+            }
+        }
     }
 }
 
