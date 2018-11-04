@@ -65,6 +65,7 @@ public:
 
     struct connection_state {
         bool opened;
+        bool opened_automatic;
         float gradient;
         float flow;
         float velocity;
@@ -77,6 +78,10 @@ public:
 
     void set_connection(uint16_t index, bool opened) {
         _connections[index].opened = opened;
+    }
+
+    void set_connection_automatic(uint16_t index, bool opened) {
+        _connections[index].opened_automatic = opened;
     }
 
     ship_layout const& layout() const { return _layout; }

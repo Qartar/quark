@@ -98,7 +98,7 @@ void aicontroller::think()
     //
     // update navigation
     //
-#if 0
+#if 1
     if (!_ship->is_destroyed()) {
         constexpr float radius = 128.f;
         constexpr float speed = 16.f;
@@ -117,7 +117,7 @@ void aicontroller::think()
     //
     // update weapons
     //
-#if 0
+#if 1
     for (auto& weapon : _ship->weapons()) {
         if (!_ship->is_destroyed() && _random.uniform_real() < .01f) {
             // get a list of all ships in the world
