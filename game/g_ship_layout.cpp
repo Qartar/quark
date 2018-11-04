@@ -312,7 +312,7 @@ void ship_state::think()
 
         _connections[ii].velocity *= .95f;
 
-        if (_connections[ii].opened) {
+        if (_connections[ii].opened || _connections[ii].opened_automatic) {
             _connections[ii].velocity += _connections[ii].gradient * mass * FRAMETIME.to_seconds();
         } else {
             _connections[ii].velocity = 0.f;
@@ -320,7 +320,7 @@ void ship_state::think()
     }
 
     for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
-        if (_connections[ii].opened) {
+        if (_connections[ii].opened || _connections[ii].opened_automatic) {
             _connections[ii].flow = _connections[ii].velocity * _layout.connections()[ii].width * FRAMETIME.to_seconds();
         } else {
             _connections[ii].flow = 0.f;
@@ -346,7 +346,7 @@ void ship_state::think()
             uint16_t c0 = _layout.connections()[ii].compartments[0];
             uint16_t c1 = _layout.connections()[ii].compartments[1];
             // calculate flow in each compartment
-            if (_connections[ii].opened) {
+            if (_connections[ii].opened || _connections[ii].opened_automatic) {
                 float delta = _connections[ii].flow;
                 if (c0 != ship_layout::invalid_compartment) {
                     _compartments[c0].flow[0] += min(0.f, delta); // outflow
@@ -364,7 +364,7 @@ void ship_state::think()
             uint16_t c0 = _layout.connections()[ii].compartments[0];
             uint16_t c1 = _layout.connections()[ii].compartments[1];
 
-            if (_connections[ii].opened) {
+            if (_connections[ii].opened || _connections[ii].opened_automatic) {
                 if ( _connections[ii].flow < 0.f && c0 != ship_layout::invalid_compartment) {
                     float fraction = -_connections[ii].flow / _compartments[c0].flow[0];
                     float limit = fraction * (_compartments[c0].flow[1] + _compartments[c0].atmosphere * _layout.compartments()[c0].area);
@@ -402,7 +402,7 @@ void ship_state::think()
         uint16_t c0 = _layout.connections()[ii].compartments[0];
         uint16_t c1 = _layout.connections()[ii].compartments[1];
 
-        if (_connections[ii].opened) {
+        if (_connections[ii].opened || _connections[ii].opened_automatic) {
             if (c0 != ship_layout::invalid_compartment) {
                 float delta = _connections[ii].flow / _layout.compartments()[c0].area;
                 _compartments[c0].atmosphere += delta;

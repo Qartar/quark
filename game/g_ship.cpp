@@ -60,6 +60,7 @@ vec2 right_engine_vertices[] = {
 };
 
 const ship_layout default_layout(
+#if 1
     {
         {7.f, 7.f}, {10.f, 5.f}, {10.f, -5.f}, {7.f, -7.f}, {7.f, -1.f}, {7.f, 1.f},
         {6.f, 1.f}, {6.f, -1.f}, {6.f, -2.f}, {4.f, -2.f}, {2.f, -2.f}, {0.f, -2.f}, {0.f, -1.f}, {0.f, 1.f}, {0.f, 2.f}, {2.f, 2.f}, {4.f, 2.f}, {6.f, 2.f},
@@ -100,6 +101,35 @@ const ship_layout default_layout(
         {{5, 7}, {50, 51, 71, 68}},
         {{6, 8}, {57, 58, 73, 74}},
     }
+#else
+    {
+        {7.1f, 3.9f}, {9.5f, 3.9f}, {10.f, 3.f}, {10.5f, 1.f}, {10.5f, -1.f}, {10.f, -3.f}, {9.5f, -3.9f}, {7.1f, -3.9f},
+        {9.f, 4.1f}, {5.f, 4.1f}, {3.f, 6.f}, {3.f, 7.f}, {6.5f, 7.f}, {8.f, 6.f},
+        {5.1f, 3.9f}, {6.9f, 3.9f}, {6.9f, -3.9f}, {5.1f, -3.9f},
+        {-.9f, .9f}, {4.9f, .9f}, {4.9f, -.9f}, {-.9f, -.9f},
+        {-2.9f, 9.9f}, {-1.1f, 9.9f}, {-1.1f, -9.9f}, {-2.9f, -9.9f},
+        {-6.9f, 2.9f}, {-3.1f, 2.9f}, {-3.1f, -2.9f}, {-6.9f, -2.9f},
+            // connections
+        {6.9f, .7f}, {7.1f, .7f}, {7.1f, -.7f}, {6.9f, -.7f},
+        {4.9f, .7f}, {5.1f, .7f}, {5.1f, -.7f}, {4.9f, -.7f},
+        {-1.1f, .7f}, {-.9f, .7f}, {-.9f, -.7f}, {-1.1f, -.7f},
+        {-3.1f, .7f}, {-2.9f, .7f}, {-2.9f, -.7f}, {-3.1f, -.7f},
+    },
+    {
+        {0, 8},
+        {8, 6},
+        {14, 4},
+        {18, 4},
+        {22, 4},
+        {26, 4},
+    },
+    {
+        {{0, 2}, {30, 31, 32, 33}},
+        {{2, 3}, {34, 35, 36, 37}},
+        {{3, 4}, {38, 39, 40, 41}},
+        {{4, 5}, {42, 43, 44, 45}},
+    }
+#endif
 );
 
 //------------------------------------------------------------------------------
@@ -114,7 +144,7 @@ ship::ship()
         {std::make_unique<physics::convex_shape>(left_engine_vertices), vec2(-8, 8)},
         {std::make_unique<physics::convex_shape>(right_engine_vertices), vec2(-8, -8)}})
 {
-    _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
+    _rigid_body = physics::rigid_body(&_shape, &_material, 10.f);
 
     _model = &ship_model;
 }
@@ -255,13 +285,22 @@ void ship::draw(render::system* renderer, time_value time) const
                 renderer->draw_box(vec2(7,3), position + vec2(0, 10.f + 4.f * ii), c);
             }
 
-            for (auto const& ch : _crew) {
-                if (ch->assignment() == subsystem) {
-                    color4 c = ch->health() ? color4(1,1,1,alpha) : color4(1,.2f,0,alpha);
-                    renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), c);
-                }
-            }
+            position += vec2(8,0);
+        }
 
+        position = get_position(time) - vec2(4.f * (_crew.size() - 1), -24.f);
+
+        for (auto const& ch : _crew) {
+            color4 c = ch->health() ? color4(1,1,1,alpha) : color4(1,.2f,0,alpha);
+            if (ch->health() == 0.f) {
+                renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), color4(1,.2f,0,alpha));
+            } else if (ch->health() == 1.f) {
+                renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), color4(1,1,1,alpha));
+            } else {
+                float t = ch->health();
+                renderer->draw_box(vec2(7*(1.f-t),3), position + vec2(3.5f*t,10 - 4), color4(1,.2f,0,alpha));
+                renderer->draw_box(vec2(7*t,3), position + vec2(-3.5f*(1.f-t),10 - 4), color4(1,1,1,alpha));
+            }
             position += vec2(8,0);
         }
 
@@ -305,6 +344,11 @@ void ship::draw(render::system* renderer, time_value time) const
                 colors[c.vertices[1]] = color4(1,1,0,1);
                 colors[c.vertices[2]] = color4(1,1,0,1);
                 colors[c.vertices[3]] = color4(1,1,0,1);
+            } else if (s.opened_automatic) {
+                colors[c.vertices[0]] = color4(0,1,0,1);
+                colors[c.vertices[1]] = color4(0,1,0,1);
+                colors[c.vertices[2]] = color4(0,1,0,1);
+                colors[c.vertices[3]] = color4(0,1,0,1);
             } else {
                 colors[c.vertices[0]] = color4(0,1,1,1);
                 colors[c.vertices[1]] = color4(0,1,1,1);
@@ -321,6 +365,7 @@ void ship::draw(render::system* renderer, time_value time) const
 
         renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
 
+#if 0
         for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
             auto const& c = _layout.compartments()[ii];
             auto const& s = _state.compartments()[ii];
@@ -341,6 +386,7 @@ void ship::draw(render::system* renderer, time_value time) const
             }
             renderer->draw_string(va("%.2f - %.2f", s.flow, s.velocity), p, color4(.4f,.3f,.2f,1));
         }
+#endif
 
         //
         //  draw subsystem icons
@@ -373,7 +419,7 @@ void ship::draw(render::system* renderer, time_value time) const
 
                 vec2 sz = renderer->string_size(text);
                 float t = sz.length_sqr() / (_model->bounds().maxs() - _model->bounds().mins()).length_sqr();
-                float a = alpha * clamp(1.f - 8.f * t, 0.f, 1.f);
+                float a = alpha * clamp(1.f - 16.f * t, 0.f, 1.f);
                 color4 color = ss->damage() < ss->maximum_power() ? color4(.09f,.225f,.045f,a) : color4(.333f,.0666f,0,a);
                 renderer->draw_string(text, pt * tx - sz * .5f, color);
             }
@@ -394,13 +440,16 @@ void ship::draw(render::system* renderer, time_value time) const
 
             std::vector<text_layout> layout;
 
+            float t = renderer->view().size.length_sqr() / (_model->bounds().maxs() - _model->bounds().mins()).length_sqr();
+            float a = alpha * clamp(1.f - t * (1.f / 16.f), 0.f, 1.f);
+
             mat3 tx = get_transform(time);
             for (auto const& ch : _crew) {
                 renderer->draw_arc(ch->get_position(time) * tx, .25f, .15f, -math::pi<float>, math::pi<float>, color4(.4f,.5f,.6f,1.f));
                 vec2 sz = renderer->string_size(ch->name());
                 layout.push_back({
                     ch->name(),
-                    ch->health() ? color4(0,0,1,1) : color4(1,0,0,1),
+                    ch->health() ? color4(0,0,1,a) : color4(1,0,0,a),
                     ch->get_position(time) * tx,
                     vec2(0, -.4f),
                     sz
@@ -500,6 +549,7 @@ void ship::draw(render::system* renderer, time_value time) const
             //  draw path from cursor to random point in ship
             //
 
+#if 0
             {
                 static random r;
                 mat3 tx = get_transform(time);
@@ -524,12 +574,14 @@ void ship::draw(render::system* renderer, time_value time) const
                     renderer->draw_line(end - v2, end + v2, color4(1,0,0,1), color4(1,0,0,1));
                 }
             }
+#endif
         }
 
         //
         //  draw compartment state line graph
         //
 
+#if 0
         {
             constexpr std::size_t count = countof<decltype(ship_state::compartment_state::history)>();
             for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
@@ -545,6 +597,20 @@ void ship::draw(render::system* renderer, time_value time) const
                 }
             }
         }
+#endif
+#if 0
+        {
+            mat3 tx = get_transform(lerp);
+            mat2 rot = mat2::rotate(get_rotation(lerp));
+            renderer->draw_line(get_position(lerp), get_position(lerp) + get_linear_velocity() * 2.f, color4(1,0,0,1), color4(1,0,0,1));
+            renderer->draw_line(get_position(lerp), get_position(lerp) + _engines->get_move_target().normalize() * 32.f, color4(0,1,0,1), color4(0,1,0,1));
+
+            mat2 lt = mat2::rotate(get_rotation(lerp) + _engines->get_look_target());
+            renderer->draw_line(get_position(lerp), get_position(lerp) + vec2(32,0) * lt, color4(1,1,0,1), color4(1,1,0,1));
+            renderer->draw_line(get_position(lerp), get_position(lerp) + vec2(32,0) * rot, color4(1,.5,0,1), color4(1,.5,0,1));
+            renderer->draw_line(get_position(lerp) + vec2(32,0) * rot, get_position(lerp) + vec2(32,get_angular_velocity()*32) * rot, color4(1,.5,0,1), color4(1,.5,0,1));
+        }
+#endif
     }
 }
 
@@ -580,6 +646,31 @@ void ship::think()
             }
         }
         _shield->recharge(1.f / 5.f);
+    }
+
+    //
+    // Update doors
+    //
+
+    {
+        std::vector<bool> open(_state.connections().size(), false);
+        for (std::size_t ii = 0; ii < _state.connections().size(); ++ii) {
+            auto const& conn = _state.layout().connections()[ii];
+            for (auto const& ch : _crew) {
+                if (!ch->get_path_length()) {
+                    continue;
+                }
+                uint16_t c0 = _state.layout().intersect_compartment(ch->get_path(-1));
+                uint16_t c1 = _state.layout().intersect_compartment(ch->get_path(0));
+                if (conn.compartments[0] == c0 && conn.compartments[1] == c1
+                        || conn.compartments[0] == c1 && conn.compartments[1] == c0) {
+                    open[ii] = true;
+                }
+            }
+        }
+        for (std::size_t ii = 0; ii < _state.connections().size(); ++ii) {
+            _state.set_connection_automatic(narrow_cast<uint16_t>(ii), open[ii]);
+        }
     }
 
     //

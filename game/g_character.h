@@ -36,6 +36,8 @@ public:
     handle<subsystem> assignment() const { return _subsystem; }
 
     void set_goal(vec2 goal);
+    vec2 get_path(int index) const { return _path[_path_start + index]; }
+    int get_path_length() const { return _path_end - _path_start; }
 
 protected:
     string::buffer _name;

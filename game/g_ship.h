@@ -76,7 +76,7 @@ protected:
 
     bool _is_destroyed;
 
-    static constexpr time_delta destruction_time = time_delta::from_seconds(3.f);
+    static constexpr time_delta destruction_time = time_delta::from_seconds(9.f);
     static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
 
     static physics::material _material;
