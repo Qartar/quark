@@ -209,9 +209,9 @@ void ship::draw(render::system* renderer, time_value time) const
     if (!_is_destroyed) {
         renderer->draw_model(_model, get_transform(time), _color);
 
-        constexpr color4 subsystem_colors[2][2] = {
-            { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f) },
-            { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f) },
+        constexpr color4 subsystem_colors[2][3] = {
+            { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f), color4(1.f, .8f, .1f, .300f), },
+            { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f), color4(1.f, .8f, .1f, 1.00f), },
         };
 
         float alpha = 1.f;
@@ -233,10 +233,20 @@ void ship::draw(render::system* renderer, time_value time) const
             vec2 pos = get_position(time);
 
             for (int ii = 0; ii < _reactor->maximum_power(); ++ii) {
-                bool damaged = ii >= _reactor->maximum_power() - std::ceil(_reactor->damage() - .2f);
-                bool powered = ii < _reactor->current_power();
+                int repaired = 0;
+                for (auto const& ch : _crew) {
+                    if (ch->is_repairing(_reactor)) {
+                        ++repaired;
+                    }
+                }
+                int damaged = static_cast<int>(_reactor->maximum_power() - std::ceil(_reactor->damage() - .2f));
+                int powered = ii < _reactor->current_power() ? 1 : 0;
+                int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
+                if (status == 2 && ii < _reactor->desired_power()) {
+                    powered = true;
+                }
 
-                color4 c = subsystem_colors[powered][damaged]; c.a *= alpha;
+                color4 c = subsystem_colors[powered][status]; c.a *= alpha;
 
                 float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
                 float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
@@ -277,10 +287,20 @@ void ship::draw(render::system* renderer, time_value time) const
 
             // draw power bar for each subsystem power level
             for (int ii = 0; ii < subsystem->maximum_power(); ++ii) {
-                bool damaged = ii >= subsystem->maximum_power() - std::ceil(subsystem->damage() - .2f);
-                bool powered = ii < subsystem->current_power();
+                int repaired = 0;
+                for (auto const& ch : _crew) {
+                    if (ch->is_repairing(subsystem)) {
+                        ++repaired;
+                    }
+                }
+                int damaged = static_cast<int>(subsystem->maximum_power() - std::ceil(subsystem->damage() - .2f));
+                int powered = ii < subsystem->current_power() ? 1 : 0;
+                int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
+                if (status == 2 && ii < subsystem->desired_power()) {
+                    powered = true;
+                }
 
-                color4 c = subsystem_colors[powered][damaged]; c.a *= alpha;
+                color4 c = subsystem_colors[powered][status]; c.a *= alpha;
 
                 renderer->draw_box(vec2(7,3), position + vec2(0, 10.f + 4.f * ii), c);
             }
