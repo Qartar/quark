@@ -195,7 +195,7 @@ void ship::spawn()
     for (auto& ch : _crew) {
         if (assignments.size()) {
             std::size_t index = _random.uniform_int(assignments.size());
-            ch->assign(assignments[index]);
+            ch->operate(assignments[index]);
             assignments.erase(assignments.begin() + index);
         }
     }
@@ -738,7 +738,7 @@ void ship::damage(object* inflictor, vec2 /*point*/, float amount)
         std::size_t idx = _random.uniform_int(subsystems.size());
         subsystems[idx]->damage(inflictor, amount * 6.f);
         for (auto& ch : _crew) {
-            if (ch->assignment() == subsystems[idx]) {
+            if (ch->compartment() == subsystems[idx]->compartment()) {
                 ch->damage(inflictor, amount);
             }
         }
