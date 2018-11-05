@@ -52,12 +52,8 @@ void aicontroller::think()
     //
 
     for (auto& ch : _ship->crew()) {
-        if (_random.uniform_real() < .01f) {
-            vec2 goal = vec2_zero;
-            do {
-                goal = vec2(_random.uniform_real(), _random.uniform_real()) * (_ship->_model->bounds().maxs() - _ship->_model->bounds().mins()) + _ship->_model->bounds().mins();
-            } while (_ship->layout().intersect_compartment(goal) == ship_layout::invalid_compartment);
-            ch->set_goal(goal);
+        if (_random.uniform_real() < .005f) {
+            ch->move(narrow_cast<uint16_t>(_random.uniform_int(_ship->layout().compartments().size())));
         }
     }
 
