@@ -44,6 +44,7 @@ protected:
 
     time_value _damage_time; //!< last time the shield received damage
     static constexpr time_delta recharge_delay = time_delta::from_seconds(0.5f); //!< delay after damage before shield recharge
+    static constexpr float recharge_rate = 1.f / 10.f; //!< strength per second per unit of module power
     static constexpr float discharge_rate = 1.f; //!< strength per second discharged when current strength exceeds power level
 
     static constexpr int kNumVertices = 64;
