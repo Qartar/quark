@@ -288,6 +288,8 @@ void shield::think()
     _prev_strength = _strength;
     memcpy(_prev_flux, _flux, sizeof(_prev_flux));
 
+    recharge(recharge_rate * current_power());
+
     step_strength();
 
     if (_strength > current_power()) {

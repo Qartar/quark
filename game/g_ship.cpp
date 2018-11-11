@@ -658,16 +658,6 @@ void ship::think()
     }
 #endif
 
-    if (_dead_time > time) {
-        for (auto& subsystem : _subsystems) {
-            if (subsystem->damage()) {
-                subsystem->repair(1.f / 15.f);
-                break;
-            }
-        }
-        _shield->recharge(1.f / 5.f);
-    }
-
     //
     // Update doors
     //
