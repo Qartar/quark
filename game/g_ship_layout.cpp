@@ -11,13 +11,25 @@
 namespace game {
 
 //------------------------------------------------------------------------------
-ship_layout::ship_layout(vec2 const* vertices, int num_vertices,
-                         compartment const* compartments, int num_compartments,
+ship_layout::ship_layout(std::initializer_list<vec2> const* compartments, int num_compartments,
                          connection const* connections, int num_connections)
-    : _vertices(vertices, vertices + num_vertices)
-    , _compartments(compartments, compartments + num_compartments)
+    : _compartments(num_compartments)
     , _connections(connections, connections + num_connections)
 {
+    int total_vertices = 0;
+    for (int ii = 0; ii < num_compartments; ++ii) {
+        _compartments[ii].first_vertex = narrow_cast<uint16_t>(total_vertices);
+        _compartments[ii].num_vertices = narrow_cast<uint16_t>(compartments[ii].size());
+        total_vertices += _compartments[ii].num_vertices;
+    }
+
+    _vertices.resize(total_vertices);
+    for (int ii = 0; ii < num_compartments; ++ii) {
+        memcpy(_vertices.data() + _compartments[ii].first_vertex,
+               compartments[ii].begin(),
+               compartments[ii].size() * sizeof(vec2));
+    }
+
     for (auto& c : _compartments) {
         vec2 v0 = _vertices[c.first_vertex];
         c.area = 0.f;
@@ -26,12 +38,32 @@ ship_layout::ship_layout(vec2 const* vertices, int num_vertices,
             vec2 v2 = _vertices[c.first_vertex + ii - 0];
             c.area += 0.5f * (v2 - v1).cross(v1 - v0);
         }
+        c.shape = physics::convex_shape(_vertices.data() + c.first_vertex, c.num_vertices);
+        c.inner_shape = c.shape.shrink_by_radius(0.3f);
     }
 
     for (auto& c : _connections) {
-        vec2 v0 = _vertices[c.vertices[1]] - _vertices[c.vertices[0]];
-        vec2 v1 = _vertices[c.vertices[3]] - _vertices[c.vertices[2]];
-        c.width = .5f * (v0.length() + v1.length());
+        // TODO: determine boundary vertices for external connection
+        c.width = 2.f;
+        if (c.compartments[0] == invalid_compartment || c.compartments[1] == invalid_compartment) {
+            c.vertices[0] = 0;
+            c.vertices[1] = 0;
+            continue;
+        }
+        auto* cm0 = &_compartments[c.compartments[0]];
+        auto* cm1 = &_compartments[c.compartments[1]];
+        if (cm0->num_vertices > cm1->num_vertices) {
+            std::swap(cm0, cm1);
+        }
+        for (int ii = 0, jj = 0; ii < cm0->num_vertices && jj < 2; ++ii) {
+            if (cm1->shape.contains_point(_vertices[cm0->first_vertex + ii])) {
+                c.vertices[jj] = static_cast<uint16_t>(cm0->first_vertex + ii);
+                jj++;
+                if (jj == 2) {
+                    c.width = (_vertices[c.vertices[0]] - _vertices[c.vertices[1]]).length();
+                }
+            }
+        }
     }
 }
 
@@ -40,17 +72,8 @@ uint16_t ship_layout::intersect_compartment(vec2 point) const
 {
     // iterate over all compartments and return the first compartment that
     // contains the given point (if any)
-    for (std::size_t ii = 0, jj, sz = _compartments.size(); ii < sz; ++ii) {
-        uint16_t base = _compartments[ii].first_vertex;
-        uint16_t size = _compartments[ii].num_vertices;
-        for (jj = 0; jj < size; ++jj) {
-            vec2 va = point - _vertices[base + jj];
-            vec2 vb = point - _vertices[base + (jj + 1) % size];
-            if (va.cross(vb) > 0.f) {
-                break;
-            }
-        }
-        if (jj == size) {
+    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
+        if (_compartments[ii].shape.contains_point(point)) {
             return narrow_cast<uint16_t>(ii);
         }
     }
@@ -138,15 +161,13 @@ int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, int
             // insert two vertices for each connection, one on each side
             for (int ii = idx; search[ii].previous != -1; ii = search[ii].previous) {
                 auto const& c = _connections[search[ii].connection];
-                vec2 n = _vertices[c.vertices[0]] - _vertices[c.vertices[2]]
-                        + _vertices[c.vertices[1]] - _vertices[c.vertices[3]];
-                float l = .25f * n.normalize_length();
+                vec2 n = (_vertices[c.vertices[1]] - _vertices[c.vertices[0]]).cross(1.f) / c.width;
                 // check direction of connection against direction of path
                 if (n.dot(search[ii].position - buffer_ptr[1]) < .0f) {
                     n *= -1.f;
                 }
-                *buffer_ptr-- = search[ii].position - n * (l + radius);
-                *buffer_ptr-- = search[ii].position + n * (l + radius);
+                *buffer_ptr-- = search[ii].position - n * radius;
+                *buffer_ptr-- = search[ii].position + n * radius;
             }
             *buffer_ptr-- = start;
             return num_vertices;

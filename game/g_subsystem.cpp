@@ -45,6 +45,7 @@ void subsystem::think()
     } else {
         float decay_coeff = -std::expm1(-math::ln2<float> * FRAMETIME.to_seconds() / power_lambda);
         _current_power += (_desired_power - _damage - _current_power) * decay_coeff;
+        _current_power = max(0.f, _current_power);
 
         if (_subsystem_info.type == subsystem_type::medical_bay) {
             static constexpr float heal_rate = 1.f / 30.f;

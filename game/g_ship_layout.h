@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "physics/p_shape.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -18,24 +20,24 @@ public:
         uint16_t num_vertices;
         // derived properties
         float area;
+        physics::convex_shape shape;
+        physics::convex_shape inner_shape;
     };
 
     struct connection {
         uint16_t compartments[2];
-        uint16_t vertices[4];
         // derived properties
+        uint16_t vertices[2];
         float width;
     };
 
-    template<int num_vertices, int num_compartments, int num_connections>
-    ship_layout(vec2 const (&vertices)[num_vertices],
-                compartment const (&compartments)[num_compartments],
+    template<int num_compartments, int num_connections>
+    ship_layout(std::initializer_list<vec2> const (&compartments)[num_compartments],
                 connection const (&connections)[num_connections])
-        : ship_layout(vertices, num_vertices, compartments, num_compartments, connections, num_connections)
+        : ship_layout(compartments, num_compartments, connections, num_connections)
     {}
 
-    ship_layout(vec2 const* vertices, int num_vertices,
-                compartment const* compartments, int num_compartments,
+    ship_layout(std::initializer_list<vec2> const* compartments, int num_compartments,
                 connection const* connections, int num_connections);
 
     std::vector<vec2> const& vertices() const { return _vertices; }

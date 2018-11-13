@@ -51,9 +51,55 @@ void aicontroller::think()
     // update crew
     //
 
-    for (auto& ch : _ship->crew()) {
-        if (_random.uniform_real() < .005f) {
-            ch->move(narrow_cast<uint16_t>(_random.uniform_int(_ship->layout().compartments().size())));
+    {
+        subsystem* medical_bay = nullptr;
+
+        for (auto& ss : _ship->subsystems()) {
+            if (ss->info().type == subsystem_type::medical_bay) {
+                medical_bay = ss.get();
+                break;
+            }
+        }
+
+        for (auto& ss : _ship->subsystems()) {
+            if (ss->damage()) {
+                for (auto& ch : _ship->crew()) {
+                    // ignore character if low health
+                    if (medical_bay && ch->health() < .5f) {
+                        continue;
+                    }
+                    // ignore character if currently healing at medical bay
+                    else if (medical_bay && ch->health() < 1.f && medical_bay->compartment() == ch->compartment()) {
+                        continue;
+                    }
+                    // order character to repair the damaged subsystem if idle
+                    else if (ch->is_idle()) {
+                        ch->repair(ss);
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (auto& ch : _ship->crew()) {
+            // move to medical bay if character is idle and not at full health
+            if (medical_bay && ch->is_idle() && ch->health() < 1.f) {
+                ch->move(narrow_cast<uint16_t>(medical_bay->compartment()));
+            }
+            // move to medical bay even if not idle when health is low
+            else if (medical_bay && ch->health() < .5f) {
+                if (ch->compartment() != medical_bay->compartment()) {
+                    if (!medical_bay->damage() && ch->action() != character::action_type::move) {
+                        ch->move(narrow_cast<uint16_t>(medical_bay->compartment()));
+                    }
+                } else if (medical_bay->damage() && ch->action() != character::action_type::repair) {
+                    ch->repair(medical_bay);
+                }
+            }
+            // randomly wander if idle
+            else if (ch->is_idle() && _random.uniform_real() < .01f) {
+                ch->move(narrow_cast<uint16_t>(rand() % _ship->layout().compartments().size()));
+            }
         }
     }
 

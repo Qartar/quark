@@ -46,6 +46,9 @@ public:
     //! return the current action type
     action_type action() const { return _action; }
 
+    //! return true if the character is not performing any action
+    bool is_idle() const;
+
     //! return true if the character is moving regardless of current action type
     bool is_moving() const;
 
@@ -80,7 +83,7 @@ protected:
 
     handle<ship> _ship;
 
-    static constexpr float repair_rate = 1.f / 5.f; //!< damage per second
+    static constexpr float repair_rate = 1.f / 15.f; //!< damage per second
 };
 
 } // namespace game
