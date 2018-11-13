@@ -160,6 +160,10 @@ public:
 
     static convex_shape from_planes(vec3 const* planes, std::size_t num_planes);
 
+    vec2 const* vertices() const { return _vertices; }
+
+    std::size_t num_vertices() const { return _num_vertices; }
+
 protected:
     static constexpr std::size_t kMaxVertices = 64;
     std::size_t _num_vertices;

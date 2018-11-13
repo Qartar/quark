@@ -60,76 +60,42 @@ vec2 right_engine_vertices[] = {
 };
 
 const ship_layout default_layout(
-#if 1
     {
-        {7.f, 7.f}, {10.f, 5.f}, {10.f, -5.f}, {7.f, -7.f}, {7.f, -1.f}, {7.f, 1.f},
-        {6.f, 1.f}, {6.f, -1.f}, {6.f, -2.f}, {4.f, -2.f}, {2.f, -2.f}, {0.f, -2.f}, {0.f, -1.f}, {0.f, 1.f}, {0.f, 2.f}, {2.f, 2.f}, {4.f, 2.f}, {6.f, 2.f},
-        {0.f, -3.f}, {2.f, -3.f}, {4.f, -3.f}, {6.f, -3.f}, {6.f, -7.f}, {0.f, -8.f},
-        {6.f, 3.f}, {4.f, 3.f}, {2.f, 3.f}, {0.f, 3.f}, {0.f, 8.f}, {6.f, 7.f},
-        {-1.f, 1.f}, {-1.f, -1.f}, {-1.f, -3.f}, {-6.f, -3.f}, {-6.f, -1.f}, {-6.f, 1.f}, {-6.f, 3.f}, {-1.f, 3.f},
-        {-7.f, 1.f}, {-7.f, -1.f},
-        {7.f, -4.f}, {7.f, -6.f}, {6.f, -6.f}, {6.f, -4.f},
-        {7.f, 6.f}, {7.f, 4.f}, {6.f, 4.f}, {6.f, 6.f},
-        {-1.f, 4.f}, {-6.f, 4.f}, {-7.f, 7.f}, {-7.f, 9.f}, {-3.f, 9.f}, {-1.f, 8.f},
-        {-1.f, -4.f}, {-1.f, -8.f}, {-3.f, -9.f}, {-7.f, -9.f}, {-7.f, -7.f}, {-6.f, -4.f},
-        {-2.5f, 4.f}, {-4.5f, 4.f}, {-4.5f, 3.f}, {-2.5f, 3.f},
-        {-4.5f, -4.f}, {-2.5f, -4.f}, {-2.5f, -3.f}, {-4.5f, -3.f},
-        {-8.f, 7.f}, {-14.f, 7.f}, {-14.f, 9.f}, {-8.f, 9.f},
-        {-14.f, -7.f}, {-8.f, -7.f}, {-8.f, -9.f}, {-14.f, -9.f},
+        /*  0 */ {{7.f, 7.f}, {10.f, 5.f}, {10.f, -5.f}, {7.f, -7.f}, {7.f, -1.f}, {7.f, 1.f}},
+        /*  1 */ {{6.f, 1.f}, {6.f, -1.f}, {6.f, -2.f}, {4.f, -2.f}, {2.f, -2.f}, {0.f, -2.f}, {0.f, -1.f}, {0.f, 1.f}, {0.f, 2.f}, {2.f, 2.f}, {4.f, 2.f}, {6.f, 2.f}},
+        /*  2 */ {{0.f, -3.f}, {2.f, -3.f}, {4.f, -3.f}, {6.f, -3.f}, {6.f, -7.f}, {0.f, -8.f}},
+        /*  3 */ {{6.f, 3.f}, {4.f, 3.f}, {2.f, 3.f}, {0.f, 3.f}, {0.f, 8.f}, {6.f, 7.f}},
+        /*  4 */ {{-1.f, 1.f}, {-1.f, -1.f}, {-1.f, -3.f}, {-6.f, -3.f}, {-6.f, -1.f}, {-6.f, 1.f}, {-6.f, 3.f}, {-1.f, 3.f}},
+        /*  5 */ {{-1.f, 4.f}, {-6.f, 4.f}, {-7.f, 7.f}, {-7.f, 9.f}, {-3.f, 9.f}, {-1.f, 8.f}},
+        /*  6 */ {{-1.f, -4.f}, {-1.f, -8.f}, {-3.f, -9.f}, {-7.f, -9.f}, {-7.f, -7.f}, {-6.f, -4.f}},
+        /*  7 */ {{-8.f, 7.f}, {-14.f, 7.f}, {-14.f, 9.f}, {-8.f, 9.f}},
+        /*  8 */ {{-14.f, -7.f}, {-8.f, -7.f}, {-8.f, -9.f}, {-14.f, -9.f}},
+
+        /*  9 */ {{7.f, 1.f}, {7.f, -1.f}, {6.f, -1.f}, {6.f, 1.f}},
+        /* 10 */ {{7.f, -4.f}, {7.f, -6.f}, {6.f, -6.f}, {6.f, -4.f}},
+        /* 11 */ {{7.f, 6.f}, {7.f, 4.f}, {6.f, 4.f}, {6.f, 6.f}},
+        /* 12 */ {{-2.5f, 4.f}, {-2.5f, 3.f}, {-4.5f, 3.f}, {-4.5f, 4.f}},
+        /* 13 */ {{-4.5f, -4.f}, {-4.5f, -3.f}, {-2.5f, -3.f}, {-2.5f, -4.f}},
+        /* 14 */ {{0.f, 1.f}, {0.f, -1.f}, {-1.f, -1.f}, {-1.f, 1.f}},
+        /* 15 */ {{4.f, -2.f}, {4.f, -3.f}, {2.f, -3.f}, {2.f, -2.f}},
+        /* 16 */ {{4.f, 3.f}, {4.f, 2.f}, {2.f, 2.f}, {2.f, 3.f}},
+        /* 17 */ {{-7.f, 9.f}, {-7.f, 7.f}, {-8.f, 7.f}, {-8.f, 9.f}},
+        /* 18 */ {{-7.f, -7.f}, {-7.f, -9.f}, {-8.f, -9.f}, {-8.f, -7.f}},
+        /* 19 */ {{-6.f, 1.f}, {-6.f, -1.f}, {-7.f, -1.f}, {-7.f, 1.f}},
     },
     {
-        {0, 6},
-        {6, 12},
-        {18, 6},
-        {24, 6},
-        {30, 8},
-        {48, 6},
-        {54, 6},
-        {68, 4},
-        {72, 4},
-    },
-    {
-        {{0, 1}, {4, 5, 6, 7}},
-        {{1, 2}, {9, 10, 19, 20}},
-        {{1, 3}, {15, 16, 25, 26}},
-        {{1, 4}, {12, 13, 30, 31}},
-        {{4, ship_layout::invalid_compartment}, {34, 35, 38, 39}},
-        {{0, 2}, {40, 41, 42, 43}},
-        {{0, 3}, {44, 45, 46, 47}},
-        {{4, 5}, {60, 61, 62, 63}},
-        {{4, 6}, {64, 65, 66, 67}},
-        {{5, 7}, {50, 51, 71, 68}},
-        {{6, 8}, {57, 58, 73, 74}},
+        /* X - 4 */ {{ ship_layout::invalid_compartment, 19}}, {{4, 19}},
+        /* 0 - 1 */ {{ 0,  9}}, {{ 1,  9}},
+        /* 0 - 2 */ {{ 0, 10}}, {{ 2, 10}},
+        /* 0 - 3 */ {{ 0, 11}}, {{ 3, 11}},
+        /* 1 - 2 */ {{ 1, 15}}, {{ 2, 15}},
+        /* 1 - 3 */ {{ 1, 16}}, {{ 3, 16}},
+        /* 1 - 4 */ {{ 1, 14}}, {{ 4, 14}},
+        /* 4 - 5 */ {{ 4, 12}}, {{ 5, 12}},
+        /* 4 - 6 */ {{ 4, 13}}, {{ 6, 13}},
+        /* 5 - 7 */ {{ 5, 17}}, {{ 7, 17}},
+        /* 6 - 8 */ {{ 6, 18}}, {{ 8, 18}},
     }
-#else
-    {
-        {7.1f, 3.9f}, {9.5f, 3.9f}, {10.f, 3.f}, {10.5f, 1.f}, {10.5f, -1.f}, {10.f, -3.f}, {9.5f, -3.9f}, {7.1f, -3.9f},
-        {9.f, 4.1f}, {5.f, 4.1f}, {3.f, 6.f}, {3.f, 7.f}, {6.5f, 7.f}, {8.f, 6.f},
-        {5.1f, 3.9f}, {6.9f, 3.9f}, {6.9f, -3.9f}, {5.1f, -3.9f},
-        {-.9f, .9f}, {4.9f, .9f}, {4.9f, -.9f}, {-.9f, -.9f},
-        {-2.9f, 9.9f}, {-1.1f, 9.9f}, {-1.1f, -9.9f}, {-2.9f, -9.9f},
-        {-6.9f, 2.9f}, {-3.1f, 2.9f}, {-3.1f, -2.9f}, {-6.9f, -2.9f},
-            // connections
-        {6.9f, .7f}, {7.1f, .7f}, {7.1f, -.7f}, {6.9f, -.7f},
-        {4.9f, .7f}, {5.1f, .7f}, {5.1f, -.7f}, {4.9f, -.7f},
-        {-1.1f, .7f}, {-.9f, .7f}, {-.9f, -.7f}, {-1.1f, -.7f},
-        {-3.1f, .7f}, {-2.9f, .7f}, {-2.9f, -.7f}, {-3.1f, -.7f},
-    },
-    {
-        {0, 8},
-        {8, 6},
-        {14, 4},
-        {18, 4},
-        {22, 4},
-        {26, 4},
-    },
-    {
-        {{0, 2}, {30, 31, 32, 33}},
-        {{2, 3}, {34, 35, 36, 37}},
-        {{3, 4}, {38, 39, 40, 41}},
-        {{4, 5}, {42, 43, 44, 45}},
-    }
-#endif
 );
 
 //------------------------------------------------------------------------------
@@ -166,9 +132,13 @@ void ship::spawn()
         _crew.push_back(get_world()->spawn<character>());
     }
 
-    std::vector<int> compartments(_state.compartments().size());
-    for (std::size_t ii = 0, sz = compartments.size(); ii < sz; ++ii) {
-        compartments[ii] = narrow_cast<int>(ii);
+    std::vector<int> compartments;
+    compartments.reserve(_state.compartments().size());
+    for (std::size_t ii = 0, sz = _state.compartments().size(); ii < sz; ++ii) {
+        if (_state.layout().compartments()[ii].area < 3.f) {
+            continue;
+        }
+        compartments.push_back(narrow_cast<int>(ii));
     }
 
     std::shuffle(compartments.begin(), compartments.end(), std::random_device());
@@ -338,7 +308,7 @@ void ship::draw(render::system* renderer, time_value time) const
             positions.push_back(v * transform);
             colors.push_back(color4(1,1,1,1));
         }
-
+#if 1
         for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
             auto const& c = _layout.compartments()[ii];
             auto const& s = _state.compartments()[ii];
@@ -355,35 +325,76 @@ void ship::draw(render::system* renderer, time_value time) const
 
         renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
 
+#endif
+#if 1
+        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+            auto const& c = _layout.compartments()[ii];
+            std::vector<vec2> vtx;
+            std::vector<color4> col;
+            std::vector<int> idx;
+            vtx.push_back(c.shape.vertices()[0] * transform);
+            col.push_back(color4(1,1,1,1));
+            for (int jj = 1; jj < c.shape.num_vertices(); ++jj) {
+                vtx.push_back(c.shape.vertices()[jj] * transform);
+                col.push_back(color4(1,1,1,1));
+                idx.push_back(0);
+                idx.push_back(jj);
+                idx.push_back(jj+1);
+            }
+            vtx.push_back(c.shape.vertices()[0] * transform);
+            col.push_back(color4(1,1,1,1));
+            //renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.shape.num_vertices() - 2) * 3);
+            vtx[0] = c.inner_shape.vertices()[0] * transform;
+            col[0] = color4(0.f,0.f,0.f,.1f);
+            for (int jj = 1; jj < c.inner_shape.num_vertices(); ++jj) {
+                vtx[jj] = c.inner_shape.vertices()[jj] * transform;
+                col[jj] = color4(0.f,0.f,0.f,.1f);
+            }
+            vtx[c.inner_shape.num_vertices()] = c.inner_shape.vertices()[0] * transform;
+            col[c.inner_shape.num_vertices()] = color4(0.f,0.f,0.f,.1f);
+            renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.inner_shape.num_vertices() - 2) * 3);
+        }
+#endif
+#if 1
+        positions.clear();
+        colors.clear();
         indices.clear();
         for (std::size_t ii = 0, sz = _layout.connections().size(); ii < sz; ++ii) {
             auto const& c = _layout.connections()[ii];
             auto const& s = _state.connections()[ii];
+            indices.push_back(narrow_cast<int>(ii * 4 + 0));
+            indices.push_back(narrow_cast<int>(ii * 4 + 1));
+            indices.push_back(narrow_cast<int>(ii * 4 + 2));
+            indices.push_back(narrow_cast<int>(ii * 4 + 1));
+            indices.push_back(narrow_cast<int>(ii * 4 + 3));
+            indices.push_back(narrow_cast<int>(ii * 4 + 2));
+            vec2 v0 = _layout.vertices()[c.vertices[0]] * transform;
+            vec2 v1 = _layout.vertices()[c.vertices[1]] * transform;
+            vec2 n = (v1 - v0).cross(1.f).normalize();
+            positions.push_back(v0 - n * .1f);
+            positions.push_back(v0 + n * .1f);
+            positions.push_back(v1 - n * .1f);
+            positions.push_back(v1 + n * .1f);
             if (s.opened) {
-                colors[c.vertices[0]] = color4(1,1,0,1);
-                colors[c.vertices[1]] = color4(1,1,0,1);
-                colors[c.vertices[2]] = color4(1,1,0,1);
-                colors[c.vertices[3]] = color4(1,1,0,1);
+                colors.push_back(color4(1,1,0,1));
+                colors.push_back(color4(1,1,0,1));
+                colors.push_back(color4(1,1,0,1));
+                colors.push_back(color4(1,1,0,1));
             } else if (s.opened_automatic) {
-                colors[c.vertices[0]] = color4(0,1,0,1);
-                colors[c.vertices[1]] = color4(0,1,0,1);
-                colors[c.vertices[2]] = color4(0,1,0,1);
-                colors[c.vertices[3]] = color4(0,1,0,1);
+                colors.push_back(color4(0,1,0,1));
+                colors.push_back(color4(0,1,0,1));
+                colors.push_back(color4(0,1,0,1));
+                colors.push_back(color4(0,1,0,1));
             } else {
-                colors[c.vertices[0]] = color4(0,1,1,1);
-                colors[c.vertices[1]] = color4(0,1,1,1);
-                colors[c.vertices[2]] = color4(0,1,1,1);
-                colors[c.vertices[3]] = color4(0,1,1,1);
+                colors.push_back(color4(0,1,1,1));
+                colors.push_back(color4(0,1,1,1));
+                colors.push_back(color4(0,1,1,1));
+                colors.push_back(color4(0,1,1,1));
             }
-            indices.push_back(c.vertices[0]);
-            indices.push_back(c.vertices[1]);
-            indices.push_back(c.vertices[2]);
-            indices.push_back(c.vertices[0]);
-            indices.push_back(c.vertices[2]);
-            indices.push_back(c.vertices[3]);
         }
 
         renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
+#endif
 
 #if 0
         for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
@@ -412,7 +423,7 @@ void ship::draw(render::system* renderer, time_value time) const
         //  draw subsystem icons
         //
 
-        {
+        if (1) {
             mat3 tx = get_transform(time);
 
             for (auto const& ss : _subsystems) {
@@ -442,6 +453,23 @@ void ship::draw(render::system* renderer, time_value time) const
                 float a = alpha * clamp(1.f - 16.f * t, 0.f, 1.f);
                 color4 color = ss->damage() < ss->maximum_power() ? color4(.09f,.225f,.045f,a) : color4(.333f,.0666f,0,a);
                 renderer->draw_string(text, pt * tx - sz * .5f, color);
+            }
+        } else if (1) {
+            mat3 tx = get_transform(time);
+
+            for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+                auto const& c = layout().compartments()[ii];
+                vec2 pt = vec2_zero;
+                for (int jj = 0; jj < c.num_vertices; ++jj) {
+                    pt += layout().vertices()[c.first_vertex + jj];
+                }
+                pt /= c.num_vertices;
+                string::view text = va("%d", ii);
+
+                vec2 txsz = renderer->string_size(text);
+                float t = txsz.length_sqr() / (_model->maxs() - _model->mins()).length_sqr();
+                float a = alpha * clamp(1.f - 16.f * t, 0.f, 1.f);
+                renderer->draw_string(text, pt * tx - txsz * .5f, color4(.09f,.225f,.045f,a));
             }
         }
 

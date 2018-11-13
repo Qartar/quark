@@ -185,6 +185,13 @@ uint16_t character::compartment() const
 }
 
 //------------------------------------------------------------------------------
+bool character::is_idle() const
+{
+    // FIXME: check for effective actions
+    return _action == action_type::idle;
+}
+
+//------------------------------------------------------------------------------
 bool character::is_moving() const
 {
     return _path_start < _path_end;
@@ -276,13 +283,13 @@ bool character::move(uint16_t compartment)
     vec2 goal;
     {
         auto const& c = _ship->layout().compartments()[compartment];
-        vec2 v0 = _ship->layout().vertices()[c.first_vertex];
+        vec2 v0 = c.inner_shape.vertices()[0];
         float triangle_running_total[64];
         float area = 0;
-        for (std::size_t ii = 2, sz = c.num_vertices; ii < sz; ++ii) {
-            vec2 v1 = _ship->layout().vertices()[c.first_vertex + ii - 1];
-            vec2 v2 = _ship->layout().vertices()[c.first_vertex + ii - 0];
-            float triangle_area = 0.5f * (v2 - v1).cross(v1 - v0);
+        for (std::size_t ii = 2, sz = c.inner_shape.num_vertices(); ii < sz; ++ii) {
+            vec2 v1 = c.inner_shape.vertices()[ii - 1];
+            vec2 v2 = c.inner_shape.vertices()[ii - 0];
+            float triangle_area = std::abs(0.5f * (v2 - v1).cross(v1 - v0));
             triangle_running_total[ii - 2] = area + triangle_area;
             area += triangle_area;
         }
@@ -293,11 +300,12 @@ bool character::move(uint16_t compartment)
         while (triangle_running_total[triangle_index] < r) {
             ++triangle_index;
         }
+        assert(triangle_index < c.inner_shape.num_vertices() - 2);
 
         // select a random point on the triangle using barycentric coordinates
         {
-            vec2 v1 = _ship->layout().vertices()[c.first_vertex + triangle_index + 1];
-            vec2 v2 = _ship->layout().vertices()[c.first_vertex + triangle_index + 2];
+            vec2 v1 = c.inner_shape.vertices()[triangle_index + 1];
+            vec2 v2 = c.inner_shape.vertices()[triangle_index + 2];
 
             float u = _random.uniform_real();
             float v = _random.uniform_real();
