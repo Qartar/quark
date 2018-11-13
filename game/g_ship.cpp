@@ -465,7 +465,6 @@ void ship::draw(render::system* renderer, time_value time) const
 
             mat3 tx = get_transform(time);
             for (auto const& ch : _crew) {
-                renderer->draw_arc(ch->get_position(time) * tx, .25f, .15f, -math::pi<float>, math::pi<float>, color4(.4f,.5f,.6f,1.f));
                 vec2 sz = renderer->string_size(ch->name());
                 layout.push_back({
                     ch->name(),
