@@ -116,6 +116,12 @@ public:
 
     virtual bounds calculate_bounds(vec2 position, float rotation) const override;
 
+    convex_shape shrink_by_radius(float radius) const;
+
+    convex_shape expand_by_radius(float radius) const;
+
+    static convex_shape from_planes(vec3 const* planes, std::size_t num_planes);
+
 protected:
     static constexpr std::size_t kMaxVertices = 64;
     std::size_t _num_vertices;

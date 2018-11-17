@@ -163,4 +163,100 @@ std::size_t convex_shape::_decimate_convex_hull(vec2* vertices, std::size_t num_
     return num_vertices;
 }
 
+//------------------------------------------------------------------------------
+convex_shape convex_shape::from_planes(vec3 const* planes, std::size_t num_planes)
+{
+    constexpr std::size_t max_enumerated = 8192;
+    vec2 enumerated[max_enumerated];
+    std::size_t num_enumerated = 0;
+
+    for (std::size_t ii = 0; ii < num_planes; ++ii) {
+        vec2 v = planes[ii].to_vec2().cross(1.f);
+        vec2 vmin = v * -1e+30f;
+        vec2 vmax = v * +1e+30f;
+
+        for (std::size_t jj = 0; jj < num_planes; ++jj) {
+            vec3 p = planes[ii].cross(planes[jj]);
+            if (p.z) {
+                vec2 u = planes[jj].to_vec2();
+                vec2 x = vec2(p.x, p.y) / p.z;
+                float s = u.dot(v);
+                if (s < 0.f && u.dot(vmin - x) > 0.f) {
+                    vmin = x;
+                }
+                if (s > 0.f && u.dot(vmax - x) > 0.f) {
+                    vmax = x;
+                }
+                if (v.dot(vmax - vmin) < 0.f) {
+                    break;
+                }
+            }
+        }
+        float d = v.dot(vmax - vmin);
+        if (d > 0.f) {
+            enumerated[num_enumerated++] = vmin;
+            enumerated[num_enumerated++] = vmax;
+        } else if (d == 0.f) {
+            enumerated[num_enumerated++] = vmin;
+        }
+    }
+
+    return convex_shape(enumerated, num_enumerated);
+}
+
+//------------------------------------------------------------------------------
+convex_shape convex_shape::shrink_by_radius(float radius) const
+{
+    vec3 planes[kMaxVertices];
+
+    // in order to robustly handle self-penetration we calculate the edge planes
+    // after shrinking and rebuild the convex hull via vertex enumeration.
+    for (std::size_t ii = 0; ii < _num_vertices; ++ii) {
+        vec2 n = (_vertices[ii + 1] - _vertices[ii]).cross(1.f);
+        planes[ii] = vec3(n.x, n.y, radius * n.length() - n.dot(_vertices[ii]));
+    }
+
+    return from_planes(planes, _num_vertices);
+}
+
+//------------------------------------------------------------------------------
+convex_shape convex_shape::expand_by_radius(float radius) const
+{
+    vec2 normals[kMaxVertices + 1];
+
+    normals[0] = (_vertices[0] - _vertices[_num_vertices - 1]).cross(1.f).normalize();
+    for (std::size_t ii = 1; ii < _num_vertices; ++ii) {
+        normals[ii] = (_vertices[ii] - _vertices[ii - 1]).cross(1.f).normalize();
+        assert(normals[ii] != normals[ii - 1] && "non-convex (collinear) faces detected");
+    }
+    normals[_num_vertices] = normals[0];
+
+    // replace each vertex with the intersection of the translated edges
+    convex_shape out = *this;
+
+    for (std::size_t ii = 0; ii < _num_vertices; ++ii) {
+        vec2 n1 = normals[ii];
+        vec2 n2 = normals[ii + 1];
+
+        vec3 u = vec3(n1.x, n1.y, -radius - n1.dot(_vertices[ii]));
+        vec3 v = vec3(n2.x, n2.y, -radius - n2.dot(_vertices[ii]));
+        vec3 p = u.cross(v);
+
+        out._vertices[ii] = vec2(p.x, p.y) / p.z;
+    }
+    out._vertices[_num_vertices] = out._vertices[0];
+
+    // re-calculate center of mass and area
+    out._area = 0;
+    out._center_of_mass = vec2(0,0);
+    for (std::size_t ii = 0; ii < out._num_vertices; ++ii) {
+        float cross = out._vertices[ii].cross(out._vertices[ii + 1]) * .5f;
+        out._center_of_mass += (out._vertices[ii] + out._vertices[ii + 1]) * cross;
+        out._area += cross;
+    }
+    out._center_of_mass /= 3.f * out._area;
+
+    return out;
+}
+
 } // namespace physics
