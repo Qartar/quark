@@ -20,6 +20,7 @@ shield::shield(physics::shape const* base, game::ship* owner)
     , _base(base)
     , _strength(2)
     , _damage_time(time_value::zero)
+    , _prev_strength(_strength)
 {
     _type = object_type::shield;
 
@@ -29,6 +30,7 @@ shield::shield(physics::shape const* base, game::ship* owner)
         float a = ii * (2.f * math::pi<float> / kNumVertices);
         _vertices[ii] = vec2(std::cos(a), std::sin(a)) * radius;
         _flux[ii] = 0.f;
+        _prev_flux[ii] = 0.f;
     }
 
     for (int ii = 0; ii < 4; ++ii) {
@@ -80,48 +82,76 @@ void shield::spawn()
 //------------------------------------------------------------------------------
 void shield::draw(render::system* renderer, time_value time) const
 {
-    vec2 draw_vertices[kNumVertices * 2 + 1];
-    color4 draw_colors[kNumVertices * 2 + 1];
-    int draw_indices[kNumVertices * 9];
+    float lerp = (time - get_world()->frametime()) / FRAMETIME;
+
+    vec2 draw_vertices[kNumVertices * 3 + 1];
+    color4 draw_colors[kNumVertices * 3 + 1];
+    int draw_indices[kNumVertices * 15];
 
     vec2 pos = get_position(time);
     mat2 rot; rot.set_rotation(get_rotation(time));
 
-
     for (int ii = 0; ii < kNumVertices; ++ii) {
-        float s = _flux[ii] / (.1f + _flux[ii]);
+        float f = _flux[ii] * lerp + _prev_flux[ii] * (1.f - lerp);
+        float strength = _strength * lerp + _prev_strength * (1.f - lerp);
+        float s = f / (.1f + f);
 
-        draw_vertices[ii * 2 + 0] = _vertices[ii] * rot + pos;
-        draw_vertices[ii * 2 + 1] = _vertices[ii] * rot * (.9f * s + .8f * (1.f - s)) + pos;
+        draw_vertices[ii * 3 + 0] = _vertices[ii] * rot + pos;
+        draw_vertices[ii * 3 + 2] = _vertices[ii] * rot * (.9f * s + .8f * (1.f - s)) + pos;
+        draw_vertices[ii * 3 + 1] = (draw_vertices[ii * 3 + 0] + draw_vertices[ii * 3 + 2]) * .5f;
 
-        draw_colors[ii * 2 + 0] = _colors[0] * s + _colors[1] * (1.f - s);
-        draw_colors[ii * 2 + 1] = _colors[1] * s + _colors[2] * (1.f - s);
+        draw_colors[ii * 3 + 0] = _colors[0] * s + _colors[1] * (1.f - s);
+        draw_colors[ii * 3 + 2] = _colors[1] * s + _colors[2] * (1.f - s);
 
-        draw_colors[ii * 2 + 0].a *= std::max(s, _strength + s);
-        draw_colors[ii * 2 + 1].a *= std::max(0.f, _strength);
+        draw_colors[ii * 3 + 0].a *= std::max(s, strength + s);
+        draw_colors[ii * 3 + 2].a *= std::max(0.f, strength);
 
-        draw_indices[ii * 9 +  0] = ii * 2 + 0;
-        draw_indices[ii * 9 +  1] = ii * 2 + 1;
-        draw_indices[ii * 9 +  2] = ii * 2 + 2;
+        draw_colors[ii * 3 + 0].a = std::min(1.f, draw_colors[ii * 3 + 0].a);
+        draw_colors[ii * 3 + 2].a = std::min(1.f, draw_colors[ii * 3 + 2].a);
 
-        draw_indices[ii * 9 +  3] = ii * 2 + 1;
-        draw_indices[ii * 9 +  4] = ii * 2 + 3;
-        draw_indices[ii * 9 +  5] = ii * 2 + 2;
+        draw_colors[ii * 3 + 1] = (draw_colors[ii * 3 + 0] + draw_colors[ii * 3 + 2]) * .5f;
 
-        draw_indices[ii * 9 +  6] = ii * 2 + 1;
-        draw_indices[ii * 9 +  7] = kNumVertices * 2;
-        draw_indices[ii * 9 +  8] = ii * 2 + 3;
+        // 0---2   0---3
+        // | / |   | / |
+        // 1---3   1---4
+        //  \ /    | / |
+        //   x     2---5
+        //          \ /
+        //           x
+
+        draw_indices[ii * 15 +  0] = ii * 3 + 0;
+        draw_indices[ii * 15 +  1] = ii * 3 + 1;
+        draw_indices[ii * 15 +  2] = ii * 3 + 3;
+
+        draw_indices[ii * 15 +  3] = ii * 3 + 1;
+        draw_indices[ii * 15 +  4] = ii * 3 + 4;
+        draw_indices[ii * 15 +  5] = ii * 3 + 3;
+
+        draw_indices[ii * 15 +  6] = ii * 3 + 1;
+        draw_indices[ii * 15 +  7] = ii * 3 + 2;
+        draw_indices[ii * 15 +  8] = ii * 3 + 4;
+
+        draw_indices[ii * 15 +  9] = ii * 3 + 2;
+        draw_indices[ii * 15 + 10] = ii * 3 + 5;
+        draw_indices[ii * 15 + 11] = ii * 3 + 4;
+
+        draw_indices[ii * 15 + 12] = ii * 3 + 2;
+        draw_indices[ii * 15 + 13] = kNumVertices * 3;
+        draw_indices[ii * 15 + 14] = ii * 3 + 5;
     }
 
-    draw_vertices[kNumVertices * 2] = pos;
-    draw_colors[kNumVertices * 2] = _colors[3];
+    draw_vertices[kNumVertices * 3] = pos;
+    draw_colors[kNumVertices * 3] = _colors[3];
 
-    draw_indices[kNumVertices * 9 - 7] = 0;
-    draw_indices[kNumVertices * 9 - 5] = 1;
-    draw_indices[kNumVertices * 9 - 4] = 0;
-    draw_indices[kNumVertices * 9 - 1] = 1;
+    draw_indices[kNumVertices * 15 - 13] = 0;
+    draw_indices[kNumVertices * 15 - 11] = 1;
+    draw_indices[kNumVertices * 15 - 10] = 0;
+    draw_indices[kNumVertices * 15 -  7] = 1;
+    draw_indices[kNumVertices * 15 -  5] = 2;
+    draw_indices[kNumVertices * 15 -  4] = 1;
+    draw_indices[kNumVertices * 15 -  1] = 2;
 
-    renderer->draw_triangles(draw_vertices, draw_colors, draw_indices, kNumVertices * 9);
+    renderer->draw_triangles(draw_vertices, draw_colors, draw_indices, kNumVertices * 15);
 }
 
 //------------------------------------------------------------------------------
@@ -263,6 +293,10 @@ void shield::recharge(float strength_per_second)
 void shield::think()
 {
     subsystem::think();
+
+    _prev_strength = _strength;
+    memcpy(_prev_flux, _flux, sizeof(_prev_flux));
+
     step_strength();
 
     if (_strength > current_power()) {

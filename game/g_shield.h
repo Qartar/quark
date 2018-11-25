@@ -46,6 +46,10 @@ protected:
     vec2 _vertices[kNumVertices];
     float _flux[kNumVertices];
 
+    // for draw interpolation
+    float _prev_strength;
+    float _prev_flux[kNumVertices];
+
 protected:
     void step_vertices();
     void step_strength();
