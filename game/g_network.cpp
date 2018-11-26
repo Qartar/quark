@@ -167,7 +167,7 @@ void session::write_info(network::message& message, std::size_t client)
     message.write_float( svs.clients[client].info.color.g );
     message.write_float( svs.clients[client].info.color.b );
 
-    message.write_byte( narrow_cast<uint8_t>(svs.clients[client].info.weapon ) );
+    message.write_byte( narrow_cast<uint8_t>(svs.clients[client].info.weapon) );
 }
 
 //------------------------------------------------------------------------------
