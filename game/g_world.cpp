@@ -67,7 +67,7 @@ void world::reset()
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>();
-        sh->set_position(-dir * 96.f, true);
+        sh->set_position(-dir * 192.f, true);
         sh->set_rotation(angle, true);
 
         // spawn ai controller to control the ship
