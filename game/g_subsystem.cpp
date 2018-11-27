@@ -48,7 +48,7 @@ void subsystem::think()
 void subsystem::damage(object* /*inflictor*/, float amount)
 {
     _damage_time = get_world()->frametime();
-    _damage = std::min<float>(_damage + amount, static_cast<float>(_subsystem_info.maximum_power));
+    _damage = std::min(_damage + amount, static_cast<float>(_subsystem_info.maximum_power));
 }
 
 //------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ void subsystem::repair(float damage_per_second)
 //------------------------------------------------------------------------------
 int subsystem::current_power() const
 {
-    return static_cast<int>(std::floor(_current_power + power_epsilon));
+    return static_cast<int>(_current_power + power_epsilon);
 }
 
 //------------------------------------------------------------------------------

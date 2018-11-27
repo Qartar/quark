@@ -168,7 +168,7 @@ void ship::draw(render::system* renderer, time_value time) const
         // draw subsystems ui
         //
 
-        vec2 position = get_position(time) - vec2(vec2i(8 * static_cast<int>(_subsystems.size() - 2) / 2, 40));
+        vec2 position = get_position(time) - vec2(8.f * (_subsystems.size() - 2.f) * .5f, 40.f);
 
         for (auto const& subsystem : _subsystems) {
             // reactor subsystem ui is drawn explicitly
@@ -183,7 +183,7 @@ void ship::draw(render::system* renderer, time_value time) const
 
                 color4 c = subsystem_colors[powered][damaged]; c.a *= alpha;
 
-                renderer->draw_box(vec2(7,3), position + vec2(vec2i(0,10 + 4 * ii)), c);
+                renderer->draw_box(vec2(7,3), position + vec2(0, 10.f + 4.f * ii), c);
             }
 
             for (auto const& ch : _crew) {
