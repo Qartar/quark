@@ -128,7 +128,16 @@ void ship::spawn()
 
     get_world()->add_body(this, &_rigid_body);
 
+    enum style_t {
+        extra_crewmember,
+        extra_shields,
+        extra_weapon,
+    } style = (style_t)(rand() % 3);
+
     for (int ii = 0; ii < 3; ++ii) {
+        _crew.push_back(get_world()->spawn<character>());
+    }
+    if (style == extra_crewmember) {
         _crew.push_back(get_world()->spawn<character>());
     }
 
@@ -142,24 +151,28 @@ void ship::spawn()
     }
 
     std::shuffle(compartments.begin(), compartments.end(), std::random_device());
+    std::size_t num_subsystems = 0;
 
-    _reactor = get_world()->spawn<subsystem>(this, compartments[0], subsystem_info{subsystem_type::reactor, 10});
+    _reactor = get_world()->spawn<subsystem>(this, compartments[num_subsystems++], subsystem_info{subsystem_type::reactor, 11});
     _subsystems.push_back(_reactor);
 
-    _shield = get_world()->spawn<game::shield>(&_shape, this, compartments[1]);
+    _shield = get_world()->spawn<game::shield>(&_shape, this, compartments[num_subsystems++], style == extra_shields ? 3 : 2);
     _subsystems.push_back(_shield);
 
-    _engines = get_world()->spawn<game::engines>(this, compartments[2], engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
+    _engines = get_world()->spawn<game::engines>(this, compartments[num_subsystems++], engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
     _subsystems.push_back(_engines);
 
-    for (int ii = 0; ii < 2; ++ii) {
+    int num_weapons = style == extra_weapon ? 3 : 2;
+    for (int ii = 0; ii < num_weapons; ++ii) {
         weapon_info info = weapon::by_random(_random);
-        _weapons.push_back(get_world()->spawn<weapon>(this, compartments[3 + ii], info, vec2(11.f, ii ? 6.f : -6.f)));
+        _weapons.push_back(get_world()->spawn<weapon>(this, compartments[num_subsystems++], info, vec2(11.f, ii ? 6.f : -6.f)));
         _subsystems.push_back(_weapons.back());
     }
 
-    _subsystems.push_back(get_world()->spawn<subsystem>(this, compartments[5], subsystem_info{subsystem_type::life_support, 1}));
-    _subsystems.push_back(get_world()->spawn<subsystem>(this, compartments[6], subsystem_info{subsystem_type::medical_bay, 1}));
+    _subsystems.push_back(get_world()->spawn<subsystem>(this, compartments[num_subsystems++], subsystem_info{subsystem_type::life_support, 1}));
+    if (style != extra_weapon) {
+        _subsystems.push_back(get_world()->spawn<subsystem>(this, compartments[num_subsystems++], subsystem_info{subsystem_type::medical_bay, 1}));
+    }
 
     std::vector<handle<subsystem>> assignments(_subsystems.begin(), _subsystems.end());
     for (auto& ch : _crew) {
@@ -467,7 +480,7 @@ void ship::draw(render::system* renderer, time_value time) const
                 string::view text = va("%d", ii);
 
                 vec2 txsz = renderer->string_size(text);
-                float t = txsz.length_sqr() / (_model->maxs() - _model->mins()).length_sqr();
+                float t = txsz.length_sqr() / (_model->bounds().maxs() - _model->bounds().mins()).length_sqr();
                 float a = alpha * clamp(1.f - 16.f * t, 0.f, 1.f);
                 renderer->draw_string(text, pt * tx - txsz * .5f, color4(.09f,.225f,.045f,a));
             }
