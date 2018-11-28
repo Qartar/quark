@@ -14,7 +14,7 @@ namespace game {
 const object_type subsystem::_type(object::_type);
 
 //------------------------------------------------------------------------------
-subsystem::subsystem(game::ship* owner, int compartment, subsystem_info info)
+subsystem::subsystem(game::ship* owner, uint16_t compartment, subsystem_info info)
     : object(owner)
     , _subsystem_info(info)
     , _compartment(compartment)
@@ -114,7 +114,7 @@ void subsystem::decrease_power(int amount)
 const object_type engines::_type(subsystem::_type);
 
 //------------------------------------------------------------------------------
-engines::engines(game::ship* owner, int compartment, engines_info info)
+engines::engines(game::ship* owner, uint16_t compartment, engines_info info)
     : subsystem(owner, compartment, {subsystem_type::engines, 2})
     , _engines_info(info)
     , _linear_velocity_target(vec2_zero)

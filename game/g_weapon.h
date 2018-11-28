@@ -61,7 +61,7 @@ public:
     static const object_type _type;
 
 public:
-    weapon(game::ship* owner, int compartment, weapon_info const& info, vec2 position);
+    weapon(game::ship* owner, uint16_t compartment, weapon_info const& info, vec2 position);
     virtual ~weapon();
 
     virtual object_type const& type() const override { return _type; }

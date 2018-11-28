@@ -82,7 +82,7 @@ uint16_t ship_layout::intersect_compartment(vec2 point) const
 }
 
 //------------------------------------------------------------------------------
-int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, int buffer_size) const
+int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std::size_t buffer_size) const
 {
     uint16_t start_idx = intersect_compartment(start);
     uint16_t end_idx = intersect_compartment(end);
