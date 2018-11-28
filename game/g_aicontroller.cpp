@@ -84,16 +84,22 @@ void aicontroller::think()
         for (auto& ch : _ship->crew()) {
             // move to medical bay if character is idle and not at full health
             if (medical_bay && ch->is_idle() && ch->health() < 1.f) {
-                ch->move(medical_bay->compartment());
+                if (ch->compartment() != medical_bay->compartment()) {
+                    if (ch->move_target() != medical_bay->compartment()) {
+                        ch->move(medical_bay->compartment());
+                    }
+                }
             }
             // move to medical bay even if not idle when health is low
             else if (medical_bay && ch->health() < .5f) {
-                if (ch->compartment() != medical_bay->compartment()) {
-                    if (!medical_bay->damage() && ch->action() != character::action_type::move) {
+                if (medical_bay->damage()) {
+                    if (ch->repair_target() != medical_bay) {
+                        ch->repair(medical_bay);
+                    }
+                } else if (ch->compartment() != medical_bay->compartment()) {
+                    if (ch->move_target() != medical_bay->compartment()) {
                         ch->move(medical_bay->compartment());
                     }
-                } else if (medical_bay->damage() && ch->action() != character::action_type::repair) {
-                    ch->repair(medical_bay);
                 }
             }
             // randomly wander if idle

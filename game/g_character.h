@@ -46,6 +46,12 @@ public:
     //! return the current action type
     action_type action() const { return _action; }
 
+    //! return the subsystem this character is repairing (or moving to repair)
+    handle<game::subsystem> repair_target() const;
+
+    //! return the compartment this character is moving towards
+    uint16_t move_target() const;
+
     //! return true if the character is not performing any action
     bool is_idle() const;
 
@@ -75,6 +81,8 @@ protected:
     float _health;
 
     action_type _action;
+    handle<game::subsystem> _target_subsystem;
+    uint16_t _target_compartment;
 
     static constexpr int path_size = 32;
     vec2 _path[path_size];
