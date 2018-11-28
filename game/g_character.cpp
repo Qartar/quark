@@ -128,6 +128,7 @@ void character::think()
         // automatically become idle after reaching destination
         else if (_action == action_type::move) {
             _action = action_type::idle;
+            effective_action = action_type::idle;
         }
 
         game::subsystem* subsystem = nullptr;
@@ -185,6 +186,18 @@ uint16_t character::compartment() const
 }
 
 //------------------------------------------------------------------------------
+handle<game::subsystem> character::repair_target() const
+{
+    return _action == action_type::repair ? _target_subsystem : nullptr;
+}
+
+//------------------------------------------------------------------------------
+uint16_t character::move_target() const
+{
+    return _action == action_type::move ? _target_compartment : ship_layout::invalid_compartment;
+}
+
+//------------------------------------------------------------------------------
 bool character::is_idle() const
 {
     // FIXME: check for effective actions
@@ -227,6 +240,7 @@ bool character::operate(handle<game::subsystem> subsystem)
     if (move(compartment)) {
         // keep path but override action type
         _action = action_type::operate;
+        _target_subsystem = subsystem;
         return true;
     } else {
         return false;
@@ -246,6 +260,7 @@ bool character::repair(handle<game::subsystem> subsystem)
     if (move(compartment)) {
         // keep path but override action type
         _action = action_type::repair;
+        _target_subsystem = subsystem;
         return true;
     } else {
         return false;
@@ -274,6 +289,7 @@ bool character::move(uint16_t compartment)
     // already inside the given compartment
     if (compartment == _ship->layout().intersect_compartment(get_position())) {
         _action = action_type::move;
+        _target_compartment = compartment;
         _path_start = 0;
         _path_end = 0;
         return true;
@@ -318,7 +334,12 @@ bool character::move(uint16_t compartment)
     }
 
     // move to a random point in the compartment
-    return move(goal);
+    if (move(goal)) {
+        _target_compartment = compartment;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 } // namespace game
