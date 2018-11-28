@@ -84,13 +84,13 @@ void aicontroller::think()
         for (auto& ch : _ship->crew()) {
             // move to medical bay if character is idle and not at full health
             if (medical_bay && ch->is_idle() && ch->health() < 1.f) {
-                ch->move(narrow_cast<uint16_t>(medical_bay->compartment()));
+                ch->move(medical_bay->compartment());
             }
             // move to medical bay even if not idle when health is low
             else if (medical_bay && ch->health() < .5f) {
                 if (ch->compartment() != medical_bay->compartment()) {
                     if (!medical_bay->damage() && ch->action() != character::action_type::move) {
-                        ch->move(narrow_cast<uint16_t>(medical_bay->compartment()));
+                        ch->move(medical_bay->compartment());
                     }
                 } else if (medical_bay->damage() && ch->action() != character::action_type::repair) {
                     ch->repair(medical_bay);

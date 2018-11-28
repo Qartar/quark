@@ -132,13 +132,13 @@ void ship::spawn()
         _crew.push_back(get_world()->spawn<character>());
     }
 
-    std::vector<int> compartments;
+    std::vector<uint16_t> compartments;
     compartments.reserve(_state.compartments().size());
     for (std::size_t ii = 0, sz = _state.compartments().size(); ii < sz; ++ii) {
         if (_state.layout().compartments()[ii].area < 3.f) {
             continue;
         }
-        compartments.push_back(narrow_cast<int>(ii));
+        compartments.push_back(narrow_cast<uint16_t>(ii));
     }
 
     std::shuffle(compartments.begin(), compartments.end(), std::random_device());

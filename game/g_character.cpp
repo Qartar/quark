@@ -224,7 +224,7 @@ bool character::operate(handle<game::subsystem> subsystem)
         return false;
     }
 
-    if (move(narrow_cast<uint16_t>(compartment))) {
+    if (move(compartment)) {
         // keep path but override action type
         _action = action_type::operate;
         return true;
@@ -243,7 +243,7 @@ bool character::repair(handle<game::subsystem> subsystem)
         return false;
     }
 
-    if (move(narrow_cast<uint16_t>(compartment))) {
+    if (move(compartment)) {
         // keep path but override action type
         _action = action_type::repair;
         return true;

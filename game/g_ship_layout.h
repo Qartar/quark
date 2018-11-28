@@ -45,7 +45,7 @@ public:
     std::vector<connection> const& connections() const { return _connections; }
 
     uint16_t intersect_compartment(vec2 point) const;
-    int find_path(vec2 start, vec2 end, float radius, vec2* buffer, int buffer_size) const;
+    int find_path(vec2 start, vec2 end, float radius, vec2* buffer, std::size_t buffer_size) const;
 
 protected:
     std::vector<vec2> _vertices;
