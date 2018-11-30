@@ -29,6 +29,8 @@ aicontroller::~aicontroller()
 //------------------------------------------------------------------------------
 void aicontroller::spawn()
 {
+    object::spawn();
+
     for (auto& ch : _ship->crew()) {
         vec2 goal = vec2_zero;
         do {
@@ -104,7 +106,7 @@ void aicontroller::think()
             }
             // randomly wander if idle
             else if (ch->is_idle() && _random.uniform_real() < .01f) {
-                ch->move(narrow_cast<uint16_t>(rand() % _ship->layout().compartments().size()));
+                ch->move(narrow_cast<uint16_t>(_random.uniform_int(_ship->layout().compartments().size())));
             }
         }
     }

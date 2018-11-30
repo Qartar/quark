@@ -57,6 +57,14 @@ character::~character()
 }
 
 //------------------------------------------------------------------------------
+void character::spawn()
+{
+    object::spawn();
+
+    _name = string::buffer(names[_random.uniform_int(countof(names))]);
+}
+
+//------------------------------------------------------------------------------
 void character::draw(render::system* renderer, time_value time) const
 {
     mat3 tx = _ship ? _ship->get_transform(time) : mat3_identity;
@@ -311,7 +319,7 @@ bool character::move(uint16_t compartment)
         }
 
         // select a random triangle uniformly by area
-        float r = _random.uniform_real() * area;
+        float r = _random.uniform_real(area);
         std::size_t triangle_index = 0;
         while (triangle_running_total[triangle_index] < r) {
             ++triangle_index;

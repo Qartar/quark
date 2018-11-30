@@ -29,6 +29,8 @@ public:
     character();
     virtual ~character();
 
+    void spawn();
+
     virtual object_type const& type() const override { return _type; }
     virtual void draw(render::system* renderer, time_value time) const override;
     virtual void think() override;

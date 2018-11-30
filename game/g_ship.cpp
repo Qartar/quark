@@ -132,7 +132,7 @@ void ship::spawn()
         extra_crewmember,
         extra_shields,
         extra_weapon,
-    } style = (style_t)(rand() % 3);
+    } style = (style_t)(_random.uniform_int(3));
 
     for (int ii = 0; ii < 3; ++ii) {
         _crew.push_back(get_world()->spawn<character>());
@@ -150,7 +150,7 @@ void ship::spawn()
         compartments.push_back(narrow_cast<uint16_t>(ii));
     }
 
-    std::shuffle(compartments.begin(), compartments.end(), std::random_device());
+    std::shuffle(compartments.begin(), compartments.end(), _random.engine());
     std::size_t num_subsystems = 0;
 
     _reactor = get_world()->spawn<subsystem>(this, compartments[num_subsystems++], subsystem_info{subsystem_type::reactor, 11});
