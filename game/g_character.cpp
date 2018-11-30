@@ -42,7 +42,6 @@ const std::string names[] = {
 //------------------------------------------------------------------------------
 character::character()
     : object(object_type::character)
-    , _name(names[rand() % countof(names)])
     , _health(1.f)
 {
 }

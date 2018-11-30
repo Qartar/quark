@@ -58,7 +58,7 @@ void ship::spawn()
     for (int ii = 0; ii < 2; ++ii) {
         weapon_info info{};
 
-        int c = rand() % 4;
+        int c = _random.uniform_int(4);
         if (c == 0) {
             info.type = weapon_type::blaster;
             info.projectile_speed = 768.f;
@@ -95,7 +95,7 @@ void ship::spawn()
     std::vector<handle<subsystem>> assignments(_subsystems.begin(), _subsystems.end());
     for (auto& ch : _crew) {
         if (assignments.size()) {
-            int index = rand() % assignments.size();
+            std::size_t index = _random.uniform_int(assignments.size());
             ch->assign(assignments[index]);
             assignments.erase(assignments.begin() + index);
         }
@@ -229,7 +229,7 @@ void ship::think()
 
     if (time > _dead_time) {
         if (time - _dead_time < destruction_time) {
-            float t = (time - _dead_time) / destruction_time;
+            float t = min(.8f, (time - _dead_time) / destruction_time);
             float s = powf(_random.uniform_real(), 6.f * (1.f - t));
 
             // random explosion at a random point on the ship
@@ -285,7 +285,7 @@ void ship::damage(object* inflictor, vec2 /*point*/, float amount)
 
     // apply damage to a random subsystem
     if (subsystems.size()) {
-        int idx = rand() % subsystems.size();
+        std::size_t idx = _random.uniform_int(subsystems.size());
         subsystems[idx]->damage(inflictor, amount * 6.f);
         for (auto& ch : _crew) {
             if (ch->assignment() == subsystems[idx]) {

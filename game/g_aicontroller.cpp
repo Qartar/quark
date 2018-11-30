@@ -68,7 +68,7 @@ void aicontroller::think()
 
             // select a random target
             if (ships.size()) {
-                game::ship* target = ships[rand() % ships.size()];
+                game::ship* target = ships[_random.uniform_int(ships.size())];
                 if (weapon->info().type != weapon_type::laser) {
                     weapon->attack_projectile(target, vec2_zero);
                 } else {

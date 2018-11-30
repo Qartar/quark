@@ -192,6 +192,9 @@ private:
     //! Sequence id of most recently spawned object
     uint64_t _sequence;
 
+    //! Random number generator
+    random _random;
+
     template<typename T> friend class handle;
 
     //! Maximum number of objects that can be referenced by handle
@@ -207,9 +210,6 @@ private:
 
     physics::world _physics;
     std::map<physics::rigid_body const*, game::object*> _physics_objects;
-
-    //! Random number generator
-    random _random;
 
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
