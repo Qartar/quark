@@ -4,18 +4,10 @@
 #pragma once
 
 #include "g_object.h"
+#include "g_weapon.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
-
-//------------------------------------------------------------------------------
-enum class weapon_type
-{
-    cannon,
-    missile,
-    blaster,
-    laser,
-};
 
 //------------------------------------------------------------------------------
 class projectile : public object

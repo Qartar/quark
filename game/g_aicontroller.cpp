@@ -69,9 +69,9 @@ void aicontroller::think()
             // select a random target
             if (ships.size()) {
                 game::ship* target = ships[_random.uniform_int(ships.size())];
-                if (weapon->info().type != weapon_type::laser) {
+                if (std::holds_alternative<projectile_weapon_info>(weapon->info())) {
                     weapon->attack_projectile(target, vec2_zero);
-                } else {
+                } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
                     float angle = _random.uniform_real(2.f * math::pi<float>);
                     vec2 v = vec2(cosf(angle), sinf(angle));
                     weapon->attack_beam(target, v * -4.f, v * 4.f);

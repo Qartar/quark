@@ -5,28 +5,51 @@
 
 #include "g_subsystem.h"
 
+#include <variant>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
 class shield;
 class ship;
 
-struct weapon_info
+//------------------------------------------------------------------------------
+enum class weapon_type
 {
+    cannon,
+    missile,
+    blaster,
+    laser,
+};
+
+//------------------------------------------------------------------------------
+struct base_weapon_info
+{
+    std::string name;
     weapon_type type;
-
-    float projectile_speed; //!< launch speed of projectiles
-    time_delta projectile_delay; //!< time between each projectile in an attack
-    int projectile_count; //!< number of projectiles in each attack
-    float projectile_damage; //!< damage per projectile
-    bool projectile_inertia; //!< projectile inherits owner velocity
-
-    time_delta beam_duration; //!< duration of beam attack
-    float beam_sweep; //!< length of beam sweep
-    float beam_damage; //!< beam damage per second
-
     time_delta reload_time; //!< time between firing
 };
+
+//------------------------------------------------------------------------------
+struct projectile_weapon_info : base_weapon_info
+{
+    float speed; //!< launch speed of projectiles
+    time_delta delay; //!< time between each projectile in an attack
+    int count; //!< number of projectiles in each attack
+    float damage; //!< damage per projectile
+    bool inertia; //!< projectile inherits owner velocity
+};
+
+//------------------------------------------------------------------------------
+struct beam_weapon_info : base_weapon_info
+{
+    time_delta duration; //!< duration of beam attack
+    float sweep; //!< length of beam sweep
+    float damage; //!< beam damage per second
+};
+
+//------------------------------------------------------------------------------
+using weapon_info = std::variant<projectile_weapon_info, beam_weapon_info>;
 
 //------------------------------------------------------------------------------
 class weapon : public subsystem
@@ -49,6 +72,8 @@ public:
 
     object const* target() const { return _target.get(); }
 
+    static weapon_info const& by_random(random& r);
+
 protected:
     weapon_info _info;
 
@@ -68,6 +93,8 @@ protected:
     vec2 _beam_sweep_start;
     vec2 _beam_sweep_end;
     game::handle<shield> _beam_shield; //!< beam weapons need to track whether it's hitting shields or not
+
+    static std::vector<weapon_info> _types;
 };
 
 } // namespace game
