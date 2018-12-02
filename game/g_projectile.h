@@ -39,7 +39,7 @@ public:
     static const object_type _type;
 
 public:
-    projectile(object* owner, projectile_info info);
+    projectile(object* owner, projectile_info info, handle<game::object> target);
     ~projectile();
 
     void spawn();
@@ -59,6 +59,8 @@ public:
 
 protected:
     projectile_info _info;
+
+    handle<game::object> _target;
 
     time_value _impact_time;
 

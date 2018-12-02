@@ -17,9 +17,10 @@ physics::circle_shape projectile::_shape(1.0f);
 physics::material projectile::_material(0.5f, 1.0f);
 
 //------------------------------------------------------------------------------
-projectile::projectile(object* owner, projectile_info info)
+projectile::projectile(object* owner, projectile_info info, handle<game::object> target)
     : object(owner)
     , _info(info)
+    , _target(target)
     , _impact_time(time_value::max)
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1e-3f);
@@ -136,6 +137,11 @@ void projectile::update_sound()
 //------------------------------------------------------------------------------
 bool projectile::touch(object *other, physics::collision const* collision)
 {
+    bool is_target = other && (other == _target || (other->owner() && other->owner() == _target));
+    if (!is_target) {
+        return false;
+    }
+
     if (other && !other->is_type<projectile>() && !other->touch(this, collision)) {
         return false;
     }

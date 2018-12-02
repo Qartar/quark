@@ -106,6 +106,9 @@ public:
     //! Get frame-interpolated inverse transform matrix
     virtual mat3 get_inverse_transform(time_value time) const;
 
+    //! Get owner object, or empty handle if none
+    handle<object> owner() const { return _owner; }
+
     physics::rigid_body const& rigid_body() const { return _rigid_body; }
 
     void set_position(vec2 position, bool teleport = false);

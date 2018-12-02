@@ -226,7 +226,7 @@ void weapon::think()
 
         if (_projectile_target && time - _last_attack_time <= projectile_info.count * projectile_info.delay) {
             if (_projectile_count < projectile_info.count && _projectile_count * projectile_info.delay <= time - _last_attack_time) {
-                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.projectile);
+                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.projectile, _random.uniform_real() < .8f ? _projectile_target : nullptr);
                 vec2 start = get_position() * _owner->rigid_body().get_transform();
                 vec2 end = _projectile_target_pos * _projectile_target->rigid_body().get_transform();
 
