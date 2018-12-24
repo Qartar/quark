@@ -93,8 +93,8 @@ void world::reset()
 object_range<object const> world::objects() const
 {
     return object_range<object const>(
-        &_objects[0],
-        &_objects[0] + _objects.size()
+        _objects.data(),
+        _objects.data() + _objects.size()
     );
 }
 
@@ -102,8 +102,8 @@ object_range<object const> world::objects() const
 object_range<object> world::objects()
 {
     return object_range<object>(
-        &_objects[0],
-        &_objects[0] + _objects.size()
+        _objects.data(),
+        _objects.data() + _objects.size()
     );
 }
 

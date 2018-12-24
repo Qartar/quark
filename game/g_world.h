@@ -86,10 +86,14 @@ protected:
     template<typename> friend class object_range;
 
     object_iterator(pointer_type begin, pointer_type end)
-        : _begin(begin - 1)
+        : _begin(begin)
         , _end(end)
     {
-        next(); // advance to the first active object
+        // advance to the first active object
+        if (_begin < _end) {
+            --_begin;
+            next();
+        }
     }
 
     object_iterator& next() {
