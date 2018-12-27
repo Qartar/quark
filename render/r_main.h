@@ -148,6 +148,12 @@ public:
 
 private:
 
+    config::boolean _show_fps;
+    config::boolean _show_stats;
+
+    time_value _prev_time[64];
+    std::size_t _prev_index;
+
     // More font stuff (r_font.cpp)
 
     std::unique_ptr<render::font> _default_font;

@@ -7,6 +7,8 @@ set(SHARED_SOURCES
     cm_console.h
     cm_enumflag.h
     cm_error.h
+    cm_expression.cpp
+    cm_expression.h
     cm_filesystem.cpp
     cm_filesystem.h
     cm_geometry.h

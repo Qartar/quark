@@ -12,7 +12,9 @@ namespace render {
 
 //------------------------------------------------------------------------------
 system::system(render::window* window)
-    : _framebuffer_width("r_width", 0, config::archive, "framebuffer width, or 0 to use window width")
+    : _show_fps("r_fps", 0, 0, "")
+    , _show_stats("r_stats", 0, 0, "")
+    , _framebuffer_width("r_width", 0, config::archive, "framebuffer width, or 0 to use window width")
     , _framebuffer_height("r_height", 0, config::archive, "framebuffer height, or 0 to use window height")
     , _framebuffer_scale("r_scale", 1, config::archive, "framebuffer scale if using window dimensions")
     , _framebuffer_samples("r_samples", -1, config::archive, "framebuffer samples, or -1 to use maximum supported")
@@ -95,6 +97,15 @@ void system::end_frame()
         draw_timers();
     }
 
+    if (_show_fps && _prev_index > 2) {
+        std::size_t n = std::min(_prev_index, 63llu);
+        time_delta delta = _prev_time[(_prev_index - 1) % 64]
+                         - _prev_time[(_prev_index - n) % 64];
+        string::view buf = va("%.2f fps ", float(n - 1) / delta.to_seconds());
+        vec2 size = monospace_size(buf);
+        draw_monospace(buf, vec2(_view.size.x - size.x, size.y), color4(1,1,1,1));
+    }
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
@@ -123,6 +134,8 @@ void system::end_frame()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+    _prev_time[_prev_index++ % 64] = time_value::current();
 }
 
 //------------------------------------------------------------------------------

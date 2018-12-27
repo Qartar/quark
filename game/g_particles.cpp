@@ -4,8 +4,80 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "g_particles.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
+//------------------------------------------------------------------------------
+int particle_effect::layer::evaluate_count(
+    random& r,
+    vec2 pos,
+    vec2 vel,
+    vec2 dir,
+    float str,
+    float idx) const
+{
+    std::array<float, 1024> values;
+    std::array<float, 8> inputs;
+    assert(expr.num_values() <= values.size());
+    assert(expr.num_inputs() == inputs.size());
+
+    inputs = { pos.x, pos.y, vel.x, vel.y, dir.x, dir.y, str, idx };
+
+    expr.evaluate_one(count, r, inputs.data(), values.data());
+    return static_cast<int>(values[count]);
+}
+
+//------------------------------------------------------------------------------
+void particle_effect::layer::evaluate(
+    render::particle& p,
+    random& r,
+    vec2 pos,
+    vec2 vel,
+    vec2 dir,
+    float str,
+    float idx) const
+{
+    std::array<float, 1024> buffer;
+    std::array<float, 8> inputs;
+    assert(expr.num_values() <= buffer.size());
+    assert(expr.num_inputs() == inputs.size());
+
+    inputs = { pos.x, pos.y, vel.x, vel.y, dir.x, dir.y, str, idx };
+
+    float* values = expr.evaluate(r, inputs.data(), buffer.data());
+
+    p.size = values[size];
+    p.size_velocity = values[size_velocity];
+
+    p.position = vec2(
+        values[position[0]],
+        values[position[1]]);
+
+    p.velocity = vec2(
+        values[velocity[0]],
+        values[velocity[1]]);
+
+    p.acceleration = vec2(
+        values[acceleration[0]],
+        values[acceleration[1]]);
+
+    p.drag = values[drag];
+
+    p.color = color4(
+        values[color[0]],
+        values[color[1]],
+        values[color[2]],
+        values[color[3]]);
+
+    p.color_velocity = color4(
+        values[color_velocity[0]],
+        values[color_velocity[1]],
+        values[color_velocity[2]],
+        values[color_velocity[3]]);
+
+    p.flags = flags;
+}
 
 //------------------------------------------------------------------------------
 render::particle* world::add_particle (time_value time)

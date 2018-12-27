@@ -109,6 +109,10 @@ public:
     explicit buffer(char const* c_str);
     //! Explicit conversion from string view
     explicit buffer(view s);
+    //! Implicit conversion from string literal
+    template<std::size_t size> constexpr buffer(char const (&s)[size])
+        : buffer(view{s, s + size})
+    {}
     buffer(buffer&& s);
     buffer(buffer const& s);
     buffer& operator=(buffer&& s);

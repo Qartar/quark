@@ -123,4 +123,66 @@ text& text::operator=(text&& other)
     return *this;
 }
 
+//------------------------------------------------------------------------------
+result<tokenized> tokenize(char const* str)
+{
+    std::vector<token> tokens;
+    while (true) {
+        // skip leading whitespace
+        while (*str <= ' ') {
+            if (!*str) {
+                return tokens;
+            }
+            ++str;
+        }
+
+        token t{str, str};
+        switch (*str) {
+            case '=':
+            case '+':
+            case '-':
+            case '*':
+            case '/':
+            case '^':
+            case '(':
+            case ')':
+            case ',':
+                ++t.end;
+                ++str;
+                tokens.push_back(t);
+                continue;
+        }
+
+        if (*str >= '0' && *str <= '9' || *str == '.') {
+            bool has_dot = false;
+            while (*str >= '0' && *str <= '9' || (!has_dot && *str == '.')) {
+                if (*str == '.') {
+                    if (has_dot) {
+                        return error{{str, str+1}, "invalid literal"};
+                    }
+                    has_dot = true;
+                }
+                ++t.end;
+                ++str;
+            }
+            tokens.push_back(t);
+            continue;
+        }
+
+        if (*str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z') {
+            while (*str == '_' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z') {
+                ++t.end;
+                ++str;
+            }
+            tokens.push_back(t);
+            continue;
+        }
+
+        return error{{str, str+1}, string::buffer(va("invalid character '%c'", *str))};
+    }
+
+    // never gets here
+}
+
+
 } // namespace parser
