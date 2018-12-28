@@ -140,6 +140,14 @@ public:
     //! Returns the character at the given index
     char operator[](std::size_t index) const { return _begin[index]; }
 
+    template<std::size_t size> buffer operator+(char const (&)[size]) const { return *this; }
+
+    buffer operator+(view) const { return *this; }
+
+    template<std::size_t size> buffer& operator+=(char const (&)[size]) { return *this; }
+
+    buffer& operator+=(view) { return *this; }
+
     //! Returns the last character in the string
     char back() const { assert(_end > _begin); return *(_end - 1); }
 

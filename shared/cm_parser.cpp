@@ -178,7 +178,7 @@ result<tokenized> tokenize(char const* str)
             continue;
         }
 
-        return error{{str, str+1}, string::buffer(va("invalid character '%c'", *str))};
+        return error{{str, str+1}, "invalid character '" + token{str, str+1} + "'"};
     }
 
     // never gets here

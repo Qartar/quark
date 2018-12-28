@@ -4,10 +4,12 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "cm_expression.h"
 #include "cm_keys.h"
 #include "cm_parser.h"
 #include "g_aicontroller.h"
 #include "g_player.h"
+
 #include "resource.h"
 #include "version.h"
 
@@ -51,6 +53,7 @@ session::session()
     , _command_quit("quit", &session::command_quit)
     , _command_disconnect("disconnect", this, &session::command_disconnect)
     , _command_connect("connect", this, &session::command_connect)
+    , _command_eval("eval", this, &session::command_eval)
 {
     log::set(this);
     g_Game = this;
@@ -725,6 +728,26 @@ void session::command_connect(parser::text const& args)
         connect_to_server(args.tokens()[1]);
     } else {
         connect_to_server(-1);
+    }
+}
+
+//------------------------------------------------------------------------------
+void session::command_eval(parser::text const& args)
+{
+    if (args.tokens().size() < 2) {
+        log::message("usage: eval <^fffexpression^xxx>\n");
+    } else {
+        string::buffer expr(args.tokens()[1]);
+        for (std::size_t ii = 2; ii < args.tokens().size(); ++ii) {
+            expr += " ";
+            expr += args.tokens()[ii];
+        }
+
+        expression_parser parser(nullptr, 0);
+        expression::value v = parser.parse(expr.c_str(), expr.c_str() + expr.length());
+        std::vector<float> values(parser.num_values());
+        static random r;
+        log::message("'^fff%s^xxx' = %0g\n", expr.c_str(), parser.evaluate_one(v, r, nullptr, values.data()));
     }
 }
 

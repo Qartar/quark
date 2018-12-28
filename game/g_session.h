@@ -279,11 +279,13 @@ public:
     console_command _command_quit;
     console_command _command_disconnect;
     console_command _command_connect;
+    console_command _command_eval;
 
 private:
     static void command_quit(parser::text const& args);
     void command_disconnect(parser::text const& args);
     void command_connect(parser::text const& args);
+    void command_eval(parser::text const& args);
 
     void get_packets ();
     void read_snapshot(network::message& message);
