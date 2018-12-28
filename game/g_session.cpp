@@ -732,6 +732,20 @@ void session::command_connect(parser::text const& args)
 }
 
 //------------------------------------------------------------------------------
+void print_error(char const* str, parser::error const& err)
+{
+    std::ptrdiff_t offset = err.tok.begin - str;
+    std::ptrdiff_t length = err.tok.end - err.tok.begin;
+    for (std::ptrdiff_t ii = 0; ii < offset; ++ii) {
+        log::message(" ");
+    }
+    for (std::ptrdiff_t ii = 0; ii < length; ++ii) {
+        log::message("^");
+    }
+    log::message(" %s\n", err.msg.c_str());
+}
+
+//------------------------------------------------------------------------------
 void session::command_eval(parser::text const& args)
 {
     if (args.tokens().size() < 2) {
@@ -743,11 +757,33 @@ void session::command_eval(parser::text const& args)
             expr += args.tokens()[ii];
         }
 
+        parser::result<parser::tokenized> result = parser::tokenize(expr.c_str());
+        if (std::holds_alternative<parser::error>(result)) {
+            log::message("%s\n", expr.c_str());
+            print_error(expr.c_str(), std::get<parser::error>(result));
+            return;
+        }
+
+        parser::tokenized const& tokens = std::get<parser::tokenized>(result);
+        parser::token const* begin = &tokens[0];
+
         expression_parser parser(nullptr, 0);
-        expression::value v = parser.parse(expr.c_str(), expr.c_str() + expr.length());
+        auto v = parser.parse_expression(begin, begin + tokens.size());
+        if (std::holds_alternative<parser::error>(v)) {
+            log::message("%s\n", expr.c_str());
+            print_error(expr.c_str(), std::get<parser::error>(v));
+            return;
+        }
+
         std::vector<float> values(parser.num_values());
         static random r;
-        log::message("'^fff%s^xxx' = %0g\n", expr.c_str(), parser.evaluate_one(v, r, nullptr, values.data()));
+        log::message("^fff%s^xxx = %0g\n",
+                     expr.c_str(),
+                     parser.evaluate_one(
+                         std::get<expression::value>(v),
+                         r,
+                         nullptr,
+                         values.data()));
     }
 }
 

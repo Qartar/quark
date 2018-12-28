@@ -117,8 +117,9 @@ void expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) c
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-expression_parser::expression_parser(char const* const* inputs, std::size_t num_inputs)
+expression_builder::expression_builder(char const* const* inputs, std::size_t num_inputs)
 {
     for (std::size_t ii = 0; ii < num_inputs; ++ii) {
         _symbols[inputs[ii]] = ii;
@@ -128,37 +129,7 @@ expression_parser::expression_parser(char const* const* inputs, std::size_t num_
 }
 
 //------------------------------------------------------------------------------
-void expression_parser::assign(char const* name, expression::value value)
-{
-    if (_symbols.find(name) != _symbols.cend()) {
-        //log::warning("
-    } else {
-        _symbols[name] = value;
-    }
-}
-
-//------------------------------------------------------------------------------
-expression::value expression_parser::parse(char const* begin, char const* end)
-{
-    end;
-    result<parser::tokenized> tokens = parser::tokenize(begin);
-    if (std::holds_alternative<parser::error>(tokens)) {
-        log::message("%s\n", std::get<parser::error>(tokens).msg.c_str());
-        return 0;
-    }
-    token const* tbegin = &std::get<parser::tokenized>(tokens)[0];
-    token const* tend = tbegin + std::get<parser::tokenized>(tokens).size();
-    result<expression::value> value = parse_expression(tbegin, tend);
-    if (std::holds_alternative<parser::error>(value)) {
-        log::message("%s\n", std::get<parser::error>(value).msg.c_str());
-        return 0;
-    }
-
-    return std::get<expression::value>(value);
-}
-
-//------------------------------------------------------------------------------
-expression::value expression_parser::add_constant(float value)
+expression::value expression_builder::add_constant(float value)
 {
     auto it = _constants.find(value);
     if (it != _constants.cend()) {
@@ -172,7 +143,7 @@ expression::value expression_parser::add_constant(float value)
 }
 
 //------------------------------------------------------------------------------
-expression::value expression_parser::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
+expression::value expression_builder::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
 {
     _expression._constants.push_back(0.f);
     _expression._ops.push_back({type, lhs, rhs});
@@ -180,15 +151,30 @@ expression::value expression_parser::add_op(expression::op_type type, expression
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-using namespace parser;
+//------------------------------------------------------------------------------
+expression_parser::expression_parser(char const* const* inputs, std::size_t num_inputs)
+    : expression_builder(inputs, num_inputs)
+{
+}
 
+//------------------------------------------------------------------------------
+void expression_parser::assign(char const* name, expression::value value)
+{
+    if (_symbols.find(name) != _symbols.cend()) {
+        //log::warning("
+    } else {
+        _symbols[name] = value;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
 parser::result<expression::op_type> expression_parser::parse_operator(token const*& tokens, token const* end)
 {
     if (tokens >= end) {
-        return error{*(tokens - 1), "expected operator after '" + *(tokens - 1) + "'"};
+        return parser::error{*(tokens - 1), "expected operator after '" + *(tokens - 1) + "'"};
     } else if (*tokens == ')' || *tokens == ',') {
-        return error{*tokens, "expected operator after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
+        return parser::error{*tokens, "expected operator after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
     }
 
     if (tokens[0] == '=') {
@@ -210,7 +196,7 @@ parser::result<expression::op_type> expression_parser::parse_operator(token cons
         ++tokens;
         return expression::op_type::exponent;
     } else {
-        return error{*tokens, "expected operator, found '" + *tokens + "'"};
+        return parser::error{*tokens, "expected operator, found '" + *tokens + "'"};
     }
 }
 
@@ -258,8 +244,8 @@ parser::result<expression::op_type> expression_parser::parse_operator(token cons
 parser::result<expression::value> expression_parser::parse_unary_function(token const*& tokens, token const* end, expression::op_type type, expression::value rhs)
 {
     result<expression::value> arg = parse_operand(tokens, end);
-    if (std::holds_alternative<error>(arg)) {
-        return std::get<error>(arg);
+    if (std::holds_alternative<parser::error>(arg)) {
+        return std::get<parser::error>(arg);
     }
     return add_op(type, std::get<expression::value>(arg), rhs);
 }
@@ -268,20 +254,20 @@ parser::result<expression::value> expression_parser::parse_unary_function(token 
 parser::result<expression::value> expression_parser::parse_operand_explicit(token const*& tokens, token const* end)
 {
     if (tokens >= end) {
-        return error{*(tokens - 1), "expected expression after '" + *(tokens - 1) + "'"};
+        return parser::error{*(tokens - 1), "expected expression after '" + *(tokens - 1) + "'"};
     } else if (*tokens == ')' || *tokens == ',') {
-        return error{*tokens, "expected expression after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
+        return parser::error{*tokens, "expected expression after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
     }
 
     if (*tokens == '(') {
         result<expression::value> expr = parse_expression(++tokens, end);
-        if (std::holds_alternative<error>(expr)) {
-            return std::get<error>(expr);
+        if (std::holds_alternative<parser::error>(expr)) {
+            return std::get<parser::error>(expr);
         }
         if (tokens >= end) {
-            return error{*(tokens - 1), "expected ')' after '" + *(tokens - 1) + "'"};
+            return parser::error{*(tokens - 1), "expected ')' after '" + *(tokens - 1) + "'"};
         } else if (*tokens != ')') {
-            return error{*tokens, "expected ')' after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
+            return parser::error{*tokens, "expected ')' after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
         }
         ++tokens;
         return std::get<expression::value>(expr);
@@ -349,13 +335,13 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(toke
     } else if (*tokens[0].begin >= 'a' && *tokens[0].begin <= 'z' || *tokens[0].begin >= 'A' && *tokens[0].begin <= 'Z') {
         auto s = _symbols.find(std::string(tokens[0].begin, tokens[0].end));
         if (s == _symbols.cend()) {
-            return error{*tokens, "unrecognized symbol: '" + *tokens + "'"};
+            return parser::error{*tokens, "unrecognized symbol: '" + *tokens + "'"};
         }
         ++tokens;
         return s->second;
 
     } else {
-        return error{*tokens, "syntax error: '" + *tokens + "'"};
+        return parser::error{*tokens, "syntax error: '" + *tokens + "'"};
     }
 }
 
@@ -377,9 +363,9 @@ constexpr int op_precedence(expression::op_type t)
 parser::result<expression::value> expression_parser::parse_operand(token const*& tokens, token const* end)
 {
     if (tokens >= end) {
-        return error{*(tokens - 1), "expected expression after '" + *(tokens - 1) + "'"};
+        return parser::error{*(tokens - 1), "expected expression after '" + *(tokens - 1) + "'"};
     } else if (*tokens == ')' || *tokens == ',') {
-        return error{*tokens, "expected expression after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
+        return parser::error{*tokens, "expected expression after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
     }
 
     expression::value out;
@@ -392,8 +378,8 @@ parser::result<expression::value> expression_parser::parse_operand(token const*&
     }
 
     result<expression::value> operand = parse_operand_explicit(tokens, end);
-    if (std::holds_alternative<error>(operand)) {
-        return std::get<error>(operand);
+    if (std::holds_alternative<parser::error>(operand)) {
+        return std::get<parser::error>(operand);
     } else {
         out = std::get<expression::value>(operand);
     }
@@ -426,16 +412,16 @@ parser::result<expression::value> expression_parser::parse_operand(token const*&
 parser::result<expression::value> expression_parser::parse_expression(token const*& tokens, token const* end, int precedence)
 {
     result<expression::value> lhs = parse_operand(tokens, end);
-    if (std::holds_alternative<error>(lhs)) {
-        return std::get<error>(lhs);
+    if (std::holds_alternative<parser::error>(lhs)) {
+        return std::get<parser::error>(lhs);
     }
 
     while (tokens < end && *tokens != ')' && *tokens != ',') {
         token const* saved = tokens;
 
         result<expression::op_type> lhs_op = parse_operator(tokens, end);
-        if (std::holds_alternative<error>(lhs_op)) {
-            return std::get<error>(lhs_op);
+        if (std::holds_alternative<parser::error>(lhs_op)) {
+            return std::get<parser::error>(lhs_op);
         }
 
         int lhs_precedence = op_precedence(std::get<expression::op_type>(lhs_op));
@@ -445,8 +431,8 @@ parser::result<expression::value> expression_parser::parse_expression(token cons
         }
 
         result<expression::value> rhs = parse_expression(tokens, end, lhs_precedence);
-        if (std::holds_alternative<error>(rhs)) {
-            return std::get<error>(rhs);
+        if (std::holds_alternative<parser::error>(rhs)) {
+            return std::get<parser::error>(rhs);
         } else {
             lhs = add_op(std::get<expression::op_type>(lhs_op), std::get<expression::value>(lhs), std::get<expression::value>(rhs));
         }
