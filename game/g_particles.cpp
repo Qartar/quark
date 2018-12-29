@@ -38,14 +38,14 @@ void particle_effect::layer::evaluate(
     float str,
     float idx) const
 {
-    std::array<float, 1024> buffer;
+    std::array<float, 1024> values;
     std::array<float, 8> inputs;
-    assert(expr.num_values() <= buffer.size());
+    assert(expr.num_values() <= values.size());
     assert(expr.num_inputs() == inputs.size());
 
     inputs = { pos.x, pos.y, vel.x, vel.y, dir.x, dir.y, str, idx };
 
-    float* values = expr.evaluate(r, inputs.data(), buffer.data());
+    expr.evaluate(r, inputs.data(), values.data());
 
     p.size = values[size];
     p.size_velocity = values[size_velocity];

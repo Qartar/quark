@@ -9,15 +9,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 //------------------------------------------------------------------------------
-float* expression::evaluate(random& r, float const* inputs, float* values) const
+void expression::evaluate(random& r, float const* inputs, float* values) const
 {
     memcpy(values, _constants.data(), sizeof(float) * _constants.size());
     memcpy(values + _constants.size(), inputs, sizeof(float) * _num_inputs);
 
     for (std::size_t ii = 0, sz = _ops.size(); ii < sz; ++ii) {
-        evaluate_op(ii, r, values);
+        if (_ops[ii].type != op_type::none && _ops[ii].type != op_type::constant) {
+            values[ii] = evaluate_op(r, _ops[ii].type, values[_ops[ii].lhs], values[_ops[ii].rhs]);
+        }
     }
-    return values + _constants.size();
 }
 
 //------------------------------------------------------------------------------
@@ -26,73 +27,66 @@ float expression::evaluate_one(value val, random& r, float const* inputs, float*
     memcpy(values, _constants.data(), sizeof(float) * _constants.size());
     memcpy(values + _constants.size(), inputs, sizeof(float) * _num_inputs);
 
-    evaluate_op_r(val, r, values);
-    return *(values + val);
+    return evaluate_op_r(val, r, values);
 }
 
 //------------------------------------------------------------------------------
-void expression::evaluate_op(std::ptrdiff_t index, random& r, float* values) const
+float expression::evaluate_op(random& r, op_type type, float lhs, float rhs)
 {
-    expression::op const& op = _ops[index];
-    switch (op.type) {
-        case op_type::none:
-            break;
-
+    switch (type) {
         case op_type::sum:
-            values[index] = values[op.lhs] + values[op.rhs];
-            break;
+            return lhs + rhs;
 
         case op_type::difference:
-            values[index] = values[op.lhs] - values[op.rhs];
-            break;
+            return lhs - rhs;
 
         case op_type::negative:
-            values[index] = -values[op.lhs];
-            break;
+            return -lhs;
 
         case op_type::product:
-            values[index] = values[op.lhs] * values[op.rhs];
-            break;
+            return lhs * rhs;
 
         case op_type::quotient:
-            values[index] = values[op.lhs] / values[op.rhs];
-            break;
+            return lhs / rhs;
 
         case op_type::exponent:
-            values[index] = std::pow(values[op.lhs], values[op.rhs]);
-            break;
+            return std::pow(lhs, rhs);
 
         case op_type::sqrt:
-            values[index] = std::sqrt(values[op.lhs]);
-            break;
+            return std::sqrt(lhs);
 
         case op_type::sine:
-            values[index] = std::sin(values[op.lhs]);
-            break;
+            return std::sin(lhs);
 
         case op_type::cosine:
-            values[index] = std::cos(values[op.lhs]);
-            break;
+            return std::cos(lhs);
 
         case op_type::random:
-            values[index] = r.uniform_real();
-            break;
+            return r.uniform_real();
+
+        case op_type::constant:
+        case op_type::none:
+        default:
+            assert(false);
+            return 0.f;
     }
 }
 
 //------------------------------------------------------------------------------
-void expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) const
+float expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) const
 {
-    if (index < 0) {
-        return;
-    }
-
     expression::op const& op = _ops[index];
+    float lhs = 0.f;
+    float rhs = 0.f;
+
     switch (op.type) {
-        // independent ops
+        // no-op
         case op_type::none:
+        case op_type::constant:
+            return values[index];
+
+        // independent ops
         case op_type::random:
-            evaluate_op(index, r, values);
             break;
 
         // binary ops
@@ -101,9 +95,8 @@ void expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) c
         case op_type::product:
         case op_type::quotient:
         case op_type::exponent:
-            evaluate_op_r(op.lhs, r, values);
-            evaluate_op_r(op.rhs, r, values);
-            evaluate_op(index, r, values);
+            lhs = evaluate_op_r(op.lhs, r, values);
+            rhs = evaluate_op_r(op.rhs, r, values);
             break;
 
         // unary ops
@@ -111,10 +104,11 @@ void expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) c
         case op_type::sqrt:
         case op_type::sine:
         case op_type::cosine:
-            evaluate_op_r(op.lhs, r, values);
-            evaluate_op(index, r, values);
+            lhs = evaluate_op_r(op.lhs, r, values);
             break;
     }
+
+    return evaluate_op(r, op.type, lhs, rhs);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,13 +123,82 @@ expression_builder::expression_builder(char const* const* inputs, std::size_t nu
 }
 
 //------------------------------------------------------------------------------
+expression expression_builder::compile(expression::value* map) const
+{
+    expression out;
+    out._num_inputs = _expression._num_inputs;
+    std::vector<bool> used(_expression._ops.size(), false);
+    for (std::size_t ii = 0, sz = used.size(); ii < sz; ++ii) {
+        expression::op const& op = _expression._ops[ii];
+        switch (op.type) {
+            // no-op
+            case expression::op_type::none:
+            case expression::op_type::constant:
+            case expression::op_type::random:
+                break;
+
+            // binary ops
+            case expression::op_type::sum:
+            case expression::op_type::difference:
+            case expression::op_type::product:
+            case expression::op_type::quotient:
+            case expression::op_type::exponent:
+                used[op.lhs] = true;
+                used[op.rhs] = true;
+                used[ii] = true;
+                break;
+
+            // unary ops
+            case expression::op_type::negative:
+            case expression::op_type::sqrt:
+            case expression::op_type::sine:
+            case expression::op_type::cosine:
+                used[op.lhs] = true;
+                used[ii] = true;
+                break;
+        }
+    }
+
+    std::size_t num_used = 0;
+    // always use all inputs, even if they aren't referenced
+    for (std::size_t ii = 0, sz = _expression.num_inputs(); ii < sz; ++ii) {
+        map[ii] = num_used++;
+    }
+    // make sure all constants are placed in front of the calculated values
+    for (std::size_t ii = _expression.num_inputs(), sz = used.size(); ii < sz; ++ii) {
+        if (used[ii] && _expression._ops[ii].type == expression::op_type::constant) {
+            out._constants.push_back(_expression._constants[ii]);
+            map[ii] = num_used++;
+        }
+    }
+
+    for (std::size_t ii = _expression.num_inputs(), sz = used.size(); ii < sz; ++ii) {
+        if (used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
+            map[ii] = num_used++;
+        }
+    }
+
+    out._ops.resize(num_used);
+    for (std::size_t ii = 0, jj = 0; jj < num_used; ++ii) {
+        if (used[ii]) {
+            out._ops[jj].type = _expression._ops[ii].type;
+            out._ops[jj].lhs = map[_expression._ops[ii].lhs];
+            out._ops[jj].rhs = map[_expression._ops[ii].rhs];
+            ++jj;
+        }
+    }
+
+    return out;
+}
+
+//------------------------------------------------------------------------------
 expression::value expression_builder::add_constant(float value)
 {
     auto it = _constants.find(value);
     if (it != _constants.cend()) {
         return it->second;
     } else {
-        _expression._ops.push_back({expression::op_type::none, 0, 0});
+        _expression._ops.push_back({expression::op_type::constant, 0, 0});
         _expression._constants.push_back(value);
         _constants[value] = _expression._ops.size() - 1;
         return _expression._ops.size() - 1;
@@ -145,9 +208,20 @@ expression::value expression_builder::add_constant(float value)
 //------------------------------------------------------------------------------
 expression::value expression_builder::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
 {
-    _expression._constants.push_back(0.f);
-    _expression._ops.push_back({type, lhs, rhs});
-    return _expression._ops.size() - 1;
+    if (_expression._ops[lhs].type == expression::op_type::constant
+            && _expression._ops[rhs].type == expression::op_type::constant) {
+        static random r; // not used
+        return add_constant(
+            expression::evaluate_op(
+                r,
+                type,
+                _expression._constants[lhs],
+                _expression._constants[rhs]));
+    } else {
+        _expression._constants.push_back(0.f);
+        _expression._ops.push_back({type, lhs, rhs});
+        return _expression._ops.size() - 1;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -300,9 +374,9 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(toke
     //  constants
     //
 
-    //} else if (tokens[0] == "pi") {
-    //    ++tokens;
-    //    return constant::pi;
+    } else if (tokens[0] == "pi") {
+        ++tokens;
+        return add_constant(math::pi<float>);
     //} else if (tokens[0] == 'e') {
     //    ++tokens;
     //    return constant::e;
@@ -434,7 +508,9 @@ parser::result<expression::value> expression_parser::parse_expression(token cons
         if (std::holds_alternative<parser::error>(rhs)) {
             return std::get<parser::error>(rhs);
         } else {
-            lhs = add_op(std::get<expression::op_type>(lhs_op), std::get<expression::value>(lhs), std::get<expression::value>(rhs));
+            lhs = add_op(std::get<expression::op_type>(lhs_op),
+                         std::get<expression::value>(lhs),
+                         std::get<expression::value>(rhs));
         }
     }
 

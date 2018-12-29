@@ -20,6 +20,7 @@ public:
 
     enum class op_type {
         none,
+        constant,
         equality,
         sum,
         difference,
@@ -42,7 +43,7 @@ public:
     std::size_t num_inputs() const { return _num_inputs; }
     std::size_t num_values() const { return _ops.size(); }
 
-    float* evaluate(random& r, float const* inputs, float* values) const;
+    void evaluate(random& r, float const* inputs, float* values) const;
     float evaluate_one(value val, random& r, float const* inputs, float* values) const;
 
 protected:
@@ -54,8 +55,8 @@ protected:
     std::vector<float> _constants;
 
 protected:
-    void evaluate_op(std::ptrdiff_t index, random& r, float* values) const;
-    void evaluate_op_r(std::ptrdiff_t index, random& r, float* values) const;
+    static float evaluate_op(random& r, op_type type, float lhs, float rhs);
+    float evaluate_op_r(std::ptrdiff_t index, random& r, float* values) const;
 };
 
 //------------------------------------------------------------------------------
@@ -66,7 +67,7 @@ public:
     template<std::size_t num_inputs> explicit expression_builder(char const* (&inputs)[num_inputs])
         : expression_builder(inputs, num_inputs) {}
 
-    expression compile() const;
+    expression compile(expression::value* map) const;
 
     expression::value add_constant(float value);
     expression::value add_op(expression::op_type type, expression::value lhs, expression::value rhs);

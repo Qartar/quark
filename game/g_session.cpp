@@ -774,13 +774,21 @@ void session::command_eval(parser::text const& args)
             print_error(expr.c_str(), std::get<parser::error>(v));
             return;
         }
-
-        std::vector<float> values(parser.num_values());
+#if 0
+        std::vector<expression::value> map(parser.num_values());
+        expression ex = parser.compile(map.data());
+        std::vector<float> values(ex.num_values());
+        auto idx = map[std::get<expression::value>(v)];
+#else
+        auto& ex = parser;
+        std::vector<float> values(ex.num_values());
+        auto idx = std::get<expression::value>(v);
+#endif
         static random r;
         log::message("^fff%s^xxx = %0g\n",
                      expr.c_str(),
-                     parser.evaluate_one(
-                         std::get<expression::value>(v),
+                     ex.evaluate_one(
+                         idx,
                          r,
                          nullptr,
                          values.data()));
