@@ -72,6 +72,10 @@ public:
     expression::value add_constant(float value);
     expression::value add_op(expression::op_type type, expression::value lhs, expression::value rhs);
 
+    bool is_constant(expression::value value) const {
+        return _expression._ops[value].type == expression::op_type::constant;
+    }
+
 protected:
     expression _expression;
 

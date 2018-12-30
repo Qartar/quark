@@ -147,6 +147,7 @@ result<tokenized> tokenize(char const* str)
             case '(':
             case ')':
             case ',':
+            case ';':
                 ++t.end;
                 ++str;
                 tokens.push_back(t);

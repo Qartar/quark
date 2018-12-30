@@ -208,8 +208,7 @@ expression::value expression_builder::add_constant(float value)
 //------------------------------------------------------------------------------
 expression::value expression_builder::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
 {
-    if (_expression._ops[lhs].type == expression::op_type::constant
-            && _expression._ops[rhs].type == expression::op_type::constant) {
+    if (is_constant(lhs) && is_constant(rhs)) {
         static random r; // not used
         return add_constant(
             expression::evaluate_op(
@@ -329,7 +328,7 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(toke
 {
     if (tokens >= end) {
         return parser::error{*(tokens - 1), "expected expression after '" + *(tokens - 1) + "'"};
-    } else if (*tokens == ')' || *tokens == ',') {
+    } else if (*tokens == ')' || *tokens == ',' || *tokens == ';') {
         return parser::error{*tokens, "expected expression after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
     }
 
@@ -377,12 +376,9 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(toke
     } else if (tokens[0] == "pi") {
         ++tokens;
         return add_constant(math::pi<float>);
-    //} else if (tokens[0] == 'e') {
-    //    ++tokens;
-    //    return constant::e;
-    //} else if (tokens[0] == 'i') {
-    //    ++tokens;
-    //    return constant::i;
+    } else if (tokens[0] == 'e') {
+        ++tokens;
+        return add_constant(math::e<float>);
 
     //
     //  values
@@ -392,15 +388,6 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(toke
         expression::value v = add_constant((float)std::atof(tokens[0].begin));
         ++tokens;
         return v;
-
-    //
-    // derivative
-    //
-
-    //} else if (end - tokens > 2 && tokens[0] == 'd' && tokens[1] == '/' && tokens[2][0] == 'd') {
-    //    symbol s{tokens[2].begin + 1, tokens[2].end};
-    //    tokens += 3;
-    //    return parse_unary_function(tokens, end, op_type::derivative, s);
 
     //
     //  symbols
@@ -438,7 +425,7 @@ parser::result<expression::value> expression_parser::parse_operand(token const*&
 {
     if (tokens >= end) {
         return parser::error{*(tokens - 1), "expected expression after '" + *(tokens - 1) + "'"};
-    } else if (*tokens == ')' || *tokens == ',') {
+    } else if (*tokens == ')' || *tokens == ',' || *tokens == ';') {
         return parser::error{*tokens, "expected expression after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
     }
 
@@ -459,20 +446,19 @@ parser::result<expression::value> expression_parser::parse_operand(token const*&
     }
 
     // check for implicit multiplication, e.g. `3x`
-    //if (std::holds_alternative<value>(out) || std::holds_alternative<constant>(out)) {
-    //    token const* saved = tokens;
+    if (is_constant(out)) {
+        token const* saved = tokens;
 
-    //    // do not parse `3-x` as `(3)(-x)`
-    //    if (tokens < end && *tokens != '-') {
-    //        result<expression> next = parse_expression(tokens, end, op_precedence(op_type::product));
-    //        if (std::holds_alternative<error>(next)
-    //            || std::holds_alternative<value>(std::get<expression>(next))) {
-    //            tokens = saved;
-    //        } else {
-    //            out = op{op_type::product, out, std::get<expression>(next)};
-    //        }
-    //    }
-    //}
+        // do not parse `3-x` as `(3)(-x)`
+        if (tokens < end && *tokens != '-') {
+            result<expression::value> next = parse_expression(tokens, end, op_precedence(expression::op_type::product));
+            if (std::holds_alternative<parser::error>(next)) {
+                tokens = saved;
+            } else {
+                out = add_op(expression::op_type::product, out, std::get<expression::value>(next));
+            }
+        }
+    }
 
     // apply negation after implicit multiplication
     if (is_negative) {
@@ -490,7 +476,7 @@ parser::result<expression::value> expression_parser::parse_expression(token cons
         return std::get<parser::error>(lhs);
     }
 
-    while (tokens < end && *tokens != ')' && *tokens != ',') {
+    while (tokens < end && *tokens != ')' && *tokens != ',' && *tokens != ';') {
         token const* saved = tokens;
 
         result<expression::op_type> lhs_op = parse_operator(tokens, end);

@@ -32,6 +32,8 @@ template<typename T> constexpr T ln2 = T(0.693147180559945309417);
 
 template<typename T> constexpr T pi = T(3.14159265358979323846);
 
+template<typename T> constexpr T e = T(2.71828182845904523536);
+
 template<typename T> constexpr T sqrt2 = T(1.41421356237309504880);
 
 template<typename T> constexpr T deg2rad(T value) { return value * pi<T> / T(180.0); }
