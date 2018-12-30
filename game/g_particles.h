@@ -4,6 +4,7 @@
 #pragma once
 
 #include "cm_expression.h"
+#include "cm_parser.h"
 #include "cm_random.h"
 #include "cm_vector.h"
 #include "r_particle.h"
@@ -31,8 +32,7 @@ struct particle_effect {
                            vec2 position,
                            vec2 velocity,
                            vec2 direction,
-                           float strength,
-                           float index) const;
+                           float strength) const;
         void evaluate(render::particle& p,
                       random& r,
                       vec2 position,
@@ -47,6 +47,9 @@ struct particle_effect {
     std::string name;
     std::string definition;
     std::vector<layer> layers;
+
+    bool parse(std::string definition);
+    parser::result<layer> parse_layer(parser::token const*& tokens, parser::token const* end) const;
 };
 
 } // namespace game

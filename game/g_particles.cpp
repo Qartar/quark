@@ -8,21 +8,21 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
+
 //------------------------------------------------------------------------------
 int particle_effect::layer::evaluate_count(
     random& r,
     vec2 pos,
     vec2 vel,
     vec2 dir,
-    float str,
-    float idx) const
+    float str) const
 {
     std::array<float, 1024> values;
     std::array<float, 8> inputs;
     assert(expr.num_values() <= values.size());
     assert(expr.num_inputs() == inputs.size());
 
-    inputs = { pos.x, pos.y, vel.x, vel.y, dir.x, dir.y, str, idx };
+    inputs = { pos.x, pos.y, vel.x, vel.y, dir.x, dir.y, str, 0.f };
 
     expr.evaluate_one(count, r, inputs.data(), values.data());
     return static_cast<int>(values[count]);
@@ -77,6 +77,131 @@ void particle_effect::layer::evaluate(
         values[color_velocity[3]]);
 
     p.flags = flags;
+}
+
+//------------------------------------------------------------------------------
+parser::result<particle_effect::layer> particle_effect::parse_layer(parser::token const*& tokens, parser::token const* end) const
+{
+    expression_parser parser({
+        "posx", "posy", "velx", "vely", "dirx", "diry", "str", "idx",
+    });
+
+    layer out{};
+
+#if 1
+    while (tokens < end) {
+        if (*tokens == "flags") {
+            if (++tokens >= end) {
+                return parser::error{*(tokens - 1), "expected '=' after '" + *(tokens - 1) + "'"};
+            } else if (*tokens++ != '=') {
+                return parser::error{*(tokens - 1), "expected '=' after '" + *(tokens - 2) + "', found '" + *(tokens - 1) + "'"};
+            }
+            while (tokens < end) {
+                if (*tokens == "invert") {
+                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::invert);
+                    ++tokens;
+                } else if (*tokens == "tail") {
+                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::tail);
+                    ++tokens;
+                } else {
+                    return parser::error{*tokens, "unrecognized flag '" + *tokens + "'"};
+                }
+                if (*tokens == ";") {
+                    break;
+                } else if (tokens >= end) {
+                    return parser::error{*(tokens - 1), "expected '|' after '" + *(tokens - 1) + "'"};
+                } else if (*tokens++ != '|') {
+                    return parser::error{*(tokens - 1), "expected '|' after '" + *(tokens - 2) + "', found '" + *(tokens - 1) + "'"};
+                }
+            }
+            if (tokens >= end || *tokens++ != ';') {
+                return parser::error{*(tokens - 1), ""};
+            }
+        }
+    }
+#else
+    parser::context context;
+    while (context.has_token()) {
+        if (context.check_token("flags")) {
+            if (!context.expect_token("=")) {
+                return {};
+            }
+            while (context.has_token()) {
+                if (context.check_token("invert")) {
+                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::invert);
+                } else if (context.check_token("tail")) {
+                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::tail);
+                } else {
+                    return {};
+                }
+                if (context.peek_token(";")) {
+                    break;
+                } else if (!context.expect_token("|")) {
+                    return {};
+                }
+            }
+            if (!context.expect_token(";")) {
+                return {};
+            }
+        }
+    }
+#endif
+
+    return out;
+}
+
+//------------------------------------------------------------------------------
+bool particle_effect::parse(std::string str)
+{
+    definition = str;
+    auto result = parser::tokenize(str.c_str(), str.c_str() + str.size());
+    if (std::holds_alternative<parser::error>(result)) {
+        return false;
+    }
+
+    parser::token const* tokens = std::get<parser::tokenized>(result).data();
+    parser::token const* end = tokens + std::get<parser::tokenized>(result).size();
+
+    while (tokens < end) {
+        if (*tokens == "layer") {
+            if (++tokens >= end) {
+                return false;
+            }
+            parser::token const* layer_name = tokens;
+            if (++tokens >= end || *tokens != '{') {
+                return false;
+            }
+            auto layer = parse_layer(++tokens, end);
+            if (std::holds_alternative<parser::error>(layer)) {
+                return false;
+            }
+            if (++tokens >= end || *tokens != '}') {
+                return false;
+            }
+            layers.push_back(std::get<particle_effect::layer>(layer));
+            layers.back().name = std::string(layer_name->begin, layer_name->end);
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+void world::add_particle_effect(particle_effect const* effect, time_value time, vec2 pos, vec2 vel, vec2 dir, float str)
+{
+    render::particle* p = nullptr;
+
+    for (auto const& layer : effect->layers) {
+        int count = layer.evaluate_count(_random, pos, vel, dir, str);
+        for (int ii = 0; ii < count; ++ii) {
+            if (!(p = add_particle(time))) {
+                return;
+            }
+            layer.evaluate(*p, _random, pos, vel, dir, str, float(ii));
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

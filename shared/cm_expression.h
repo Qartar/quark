@@ -64,7 +64,7 @@ class expression_builder
 {
 public:
     expression_builder(char const* const* inputs, std::size_t num_inputs);
-    template<std::size_t num_inputs> explicit expression_builder(char const* (&inputs)[num_inputs])
+    template<std::size_t num_inputs> explicit expression_builder(char const* (&&inputs)[num_inputs])
         : expression_builder(inputs, num_inputs) {}
 
     expression compile(expression::value* map) const;
@@ -91,7 +91,7 @@ public:
     template<typename T> using result = parser::result<T>;
 
     expression_parser(char const* const* inputs, std::size_t num_inputs);
-    template<std::size_t num_inputs> explicit expression_parser(char const* (&inputs)[num_inputs])
+    template<std::size_t num_inputs> explicit expression_parser(char const* (&&inputs)[num_inputs])
         : expression_parser(inputs, num_inputs) {}
 
     std::size_t num_values() const { return _expression.num_values(); }

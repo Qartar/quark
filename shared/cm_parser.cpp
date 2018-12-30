@@ -124,16 +124,20 @@ text& text::operator=(text&& other)
 }
 
 //------------------------------------------------------------------------------
-result<tokenized> tokenize(char const* str)
+result<tokenized> tokenize(char const* str, char const* end)
 {
+    assert(str && end || str == end);
+
     std::vector<token> tokens;
     while (true) {
         // skip leading whitespace
-        while (*str <= ' ') {
-            if (!*str) {
-                return tokens;
-            }
+        while (str < end && *str <= ' ') {
+            assert(*str);
             ++str;
+        }
+
+        if (str >= end) {
+            return tokens;
         }
 
         token t{str, str};
@@ -147,6 +151,8 @@ result<tokenized> tokenize(char const* str)
             case '(':
             case ')':
             case ',':
+            case '{':
+            case '}':
             case ';':
                 ++t.end;
                 ++str;
@@ -156,7 +162,7 @@ result<tokenized> tokenize(char const* str)
 
         if (*str >= '0' && *str <= '9' || *str == '.') {
             bool has_dot = false;
-            while (*str >= '0' && *str <= '9' || (!has_dot && *str == '.')) {
+            while (str < end && (*str >= '0' && *str <= '9' || (!has_dot && *str == '.'))) {
                 if (*str == '.') {
                     if (has_dot) {
                         return error{{str, str+1}, "invalid literal"};
@@ -171,7 +177,7 @@ result<tokenized> tokenize(char const* str)
         }
 
         if (*str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z') {
-            while (*str == '_' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z') {
+            while (str < end && (*str == '_' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z')) {
                 ++t.end;
                 ++str;
             }
@@ -184,6 +190,5 @@ result<tokenized> tokenize(char const* str)
 
     // never gets here
 }
-
 
 } // namespace parser

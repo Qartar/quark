@@ -87,6 +87,43 @@ template<typename T> using result = std::variant<error, T>;
 using tokenized = std::vector<token>;
 
 //------------------------------------------------------------------------------
-result<tokenized> tokenize(char const* str);
+result<tokenized> tokenize(char const* begin, char const* end);
+
+//------------------------------------------------------------------------------
+class context
+{
+public:
+    bool has_token() const {
+        return _cursor < _tokens.data() + _tokens.size();
+    }
+
+    bool skip_token();
+
+    template<std::size_t size> bool peek_token(char const (&string)[size]) const {
+        return peek_token(string, string + size);
+    }
+
+    template<std::size_t size> bool check_token(char const (&string)[size]) {
+        return check_token(string, string + size);
+    }
+
+    template<std::size_t size> bool expect_token(char const (&string)[size]) {
+        return expect_token(string, string + size);
+    }
+
+    result<token> expect_any_token();
+
+protected:
+    string::buffer _filename;
+    std::size_t _linenumber;
+
+    tokenized _tokens;
+    token* _cursor;
+
+protected:
+    bool peek_token(char const* begin, char const* end) const;
+    bool check_token(char const* begin, char const* end);
+    bool expect_token(char const* begin, char const* end);
+};
 
 } // namespace parser

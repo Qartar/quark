@@ -30,6 +30,7 @@ namespace game {
 
 class object;
 class world;
+struct particle_effect;
 
 //------------------------------------------------------------------------------
 enum class effect_type
@@ -218,6 +219,8 @@ private:
     //
 
     mutable std::vector<render::particle> _particles;
+
+    void add_particle_effect(particle_effect const* effect, time_value time, vec2 position, vec2 velocity, vec2 direction, float strength);
 
     render::particle* add_particle(time_value time);
     void free_particle (render::particle* particle) const;
