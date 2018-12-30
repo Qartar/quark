@@ -96,8 +96,11 @@ void weapon::draw(render::system* renderer, time_value time) const
             vec2 beam_end = (_beam_sweep_end * t + _beam_sweep_start * (1.f - t)) * mat3::rotate<2>(_beam_target->get_rotation(time)) + _beam_target->get_position(time);
 
             if (_beam_shield) {
-                // Note: the traced rigid body does not use the interpolated position/rotation
-                auto tr = physics::trace(&_beam_shield->rigid_body(), beam_start, beam_end);
+                // Trace rigid body using the interpolated position/rotation
+                physics::rigid_body shield_proxy = _beam_shield->rigid_body();
+                shield_proxy.set_position(_beam_shield->get_position(time));
+                shield_proxy.set_rotation(_beam_shield->get_rotation(time));
+                auto tr = physics::trace(&shield_proxy, beam_start, beam_end);
                 renderer->draw_line(2.f, beam_start, tr.get_contact().point, color4(1, 0.5, 0, 0.5), color4(1, 0, 0, 0.1f));
             } else {
                 renderer->draw_line(2.f, beam_start, beam_end, color4(1, 0.5, 0, 0.5), color4(1, 0, 0, 0.1f));
