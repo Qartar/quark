@@ -51,16 +51,28 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
 
     glColor4fv(color);
 
-    glBegin(GL_TRIANGLE_STRIP);
-        for (int ii = 0; ii <= n; ++ii) {
-            float a = float(ii) * step + min_angle;
-            float s = sinf(a);
-            float c = cosf(a);
+    if (width == 0.f) {
+        glBegin(GL_LINE_STRIP);
+            for (int ii = 0; ii <= n; ++ii) {
+                float a = float(ii) * step + min_angle;
+                float s = sinf(a);
+                float c = cosf(a);
 
-            glVertex2fv(center + vec2(c, s) * (radius + width * .5f));
-            glVertex2fv(center + vec2(c, s) * (radius - width * .5f));
-        }
-    glEnd();
+                glVertex2fv(center + vec2(c, s) * radius);
+            }
+        glEnd();
+    } else {
+        glBegin(GL_TRIANGLE_STRIP);
+            for (int ii = 0; ii <= n; ++ii) {
+                float a = float(ii) * step + min_angle;
+                float s = sinf(a);
+                float c = cosf(a);
+
+                glVertex2fv(center + vec2(c, s) * (radius + width * .5f));
+                glVertex2fv(center + vec2(c, s) * (radius - width * .5f));
+            }
+        glEnd();
+    }
 }
 
 //------------------------------------------------------------------------------
