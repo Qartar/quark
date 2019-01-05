@@ -83,8 +83,8 @@ void subsystem::decrease_power(int amount)
 engines::engines(game::ship* owner, engines_info info)
     : subsystem(owner, {subsystem_type::engines, 2})
     , _engines_info(info)
-    , _move_target(owner->get_position())
-    , _look_target(owner->get_rotation())
+    , _linear_velocity_target(vec2_zero)
+    , _angular_velocity_target(0)
 {
     _linear_drag_coefficient = std::exp(-math::ln2<float> * FRAMETIME.to_seconds() / _engines_info.linear_drag_lambda);
     _angular_drag_coefficient = std::exp(-math::ln2<float> * FRAMETIME.to_seconds() / _engines_info.angular_drag_lambda);
@@ -97,30 +97,49 @@ void engines::think()
 
     float power = float(current_power()) / float(maximum_power());
     if (power) {
-        if (_move_target != vec2_zero) {
-            vec2 linear_velocity = _owner->get_linear_velocity();
-            vec2 target_velocity = _move_target.normalize() * _engines_info.maximum_linear_speed * power;
-            if (target_velocity != linear_velocity) {
-                vec2 target_accel = target_velocity - linear_velocity;
-                float linear_accel = _engines_info.maximum_linear_accel * power;
-                vec2 delta_velocity = target_accel.normalize() * linear_accel * FRAMETIME.to_seconds();
-                if (delta_velocity.length_sqr() < target_accel.length_sqr()) {
-                    linear_velocity += delta_velocity;
-                } else {
-                    linear_velocity = target_velocity;
-                }
+        //
+        // update linear velocity
+        //
+        {
+            vec2 current_velocity = _owner->get_linear_velocity();
+            vec2 target_velocity = _linear_velocity_target;
+            vec2 maximum_velocity = target_velocity.normalize() * _engines_info.maximum_linear_speed * power;
+            // check if target velocity exceeds maximum velocity
+            if (target_velocity.dot(target_velocity - maximum_velocity) > 0.f) {
+                target_velocity = maximum_velocity;
             }
-            _owner->set_linear_velocity(linear_velocity);
-        }
 
-        if (_look_target != 0.f) {
-            float angular_velocity = _owner->get_angular_velocity();
-            float angular_accel = _engines_info.maximum_angular_accel * power;
-            angular_velocity += std::copysign(angular_accel * FRAMETIME.to_seconds(), _look_target);
-            if (std::abs(angular_velocity) > _engines_info.maximum_angular_speed * power) {
-                angular_velocity = std::copysign(_engines_info.maximum_angular_speed * power, angular_velocity);
+            vec2 delta_velocity = target_velocity - current_velocity;
+            vec2 maximum_acceleration = delta_velocity.normalize() * _engines_info.maximum_linear_accel * power;
+            // check if change in velocity exceeds maximum acceleration
+            if (delta_velocity.dot(delta_velocity - maximum_acceleration * FRAMETIME.to_seconds()) > 0.f) {
+                current_velocity += maximum_acceleration * FRAMETIME.to_seconds();
+            } else {
+                current_velocity = target_velocity;
             }
-            _owner->set_angular_velocity(angular_velocity);
+            _owner->set_linear_velocity(current_velocity);
+        }
+        //
+        // update angular velocity
+        //
+        {
+            float current_velocity = _owner->get_angular_velocity();
+            float target_velocity = _angular_velocity_target;
+            float maximum_velocity = std::copysign(_engines_info.maximum_angular_speed * power, target_velocity);
+            // check if target velocity exceeds maximum velocity
+            if (target_velocity * (target_velocity - maximum_velocity) > 0.f) {
+                target_velocity = maximum_velocity;
+            }
+
+            float delta_velocity = target_velocity - current_velocity;
+            float maximum_acceleration = std::copysign(_engines_info.maximum_angular_accel * power, delta_velocity);
+            // check if change in velocity exceeds maximum acceleration
+            if (delta_velocity * (delta_velocity - maximum_acceleration * FRAMETIME.to_seconds()) > 0.f) {
+                current_velocity += maximum_acceleration * FRAMETIME.to_seconds();
+            } else {
+                current_velocity = target_velocity;
+            }
+            _owner->set_angular_velocity(current_velocity);
         }
     }
 
@@ -131,6 +150,41 @@ void engines::think()
     if (std::abs(_owner->get_angular_velocity()) > _engines_info.maximum_angular_speed * power) {
         _owner->set_angular_velocity(_owner->get_angular_velocity() * _angular_drag_coefficient);
     }
+}
+
+//------------------------------------------------------------------------------
+void engines::set_target_velocity(vec2 linear_velocity, float angular_velocity)
+{
+    set_target_linear_velocity(linear_velocity);
+    set_target_angular_velocity(angular_velocity);
+}
+
+//------------------------------------------------------------------------------
+void engines::set_target_linear_velocity(vec2 linear_velocity)
+{
+    assert(!isnan(linear_velocity));
+    _linear_velocity_target = linear_velocity;
+}
+
+//------------------------------------------------------------------------------
+void engines::set_target_angular_velocity(float angular_velocity)
+{
+    assert(!isnan(angular_velocity));
+    _angular_velocity_target = angular_velocity;
+}
+
+//------------------------------------------------------------------------------
+float engines::maximum_linear_speed() const
+{
+    float power = float(current_power()) / float(maximum_power());
+    return _engines_info.maximum_linear_speed * power;
+}
+
+//------------------------------------------------------------------------------
+float engines::maximum_angular_speed() const
+{
+    float power = float(current_power()) / float(maximum_power());
+    return _engines_info.maximum_angular_speed * power;
 }
 
 } // namespace game

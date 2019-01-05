@@ -46,8 +46,11 @@ void aicontroller::think()
         constexpr float speed = 16.f;
         constexpr float angular_speed = speed / radius;
 
-        _ship->engines()->set_move_target(mat2::rotate(_ship->get_rotation())[0]);
-        _ship->engines()->set_look_target(angular_speed);
+        float linear_speed = _ship->engines()->maximum_linear_speed();
+        vec2 forward = (vec3(1,0,0) * _ship->get_transform()).to_vec2();
+
+        _ship->engines()->set_target_linear_velocity(forward * linear_speed);
+        _ship->engines()->set_target_angular_velocity(angular_speed);
     }
 
     //

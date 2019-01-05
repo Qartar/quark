@@ -119,16 +119,23 @@ public:
 
     virtual void think() override;
 
-    void set_move_target(vec2 move_target) { _move_target = move_target; }
-    void set_look_target(float look_target) { _look_target = look_target; }
+    void set_target_velocity(vec2 linear_velocity, float angular_velocity);
+    void set_target_linear_velocity(vec2 linear_velocity);
+    void set_target_angular_velocity(float angular_velocity);
+
+    vec2 target_linear_velocity() const { return _linear_velocity_target; }
+    float target_angular_velocity() const { return _angular_velocity_target; }
+
+    float maximum_linear_speed() const;
+    float maximum_angular_speed() const;
 
 protected:
     engines_info _engines_info;
     float _linear_drag_coefficient;
     float _angular_drag_coefficient;
 
-    vec2 _move_target;
-    float _look_target;
+    vec2 _linear_velocity_target;
+    float _angular_velocity_target;
 };
 
 } // namespace game
