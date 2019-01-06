@@ -53,6 +53,33 @@ public:
         return std::normal_distribution<value_type>(mu, sigma)(_engine);
     }
 
+    //! Returns a uniformly distributed point on the n-sphere
+    template<typename value_type> value_type uniform_nsphere() {
+        constexpr int N = value_type::dimension - 1;
+        using element_type = decltype(value_type::x);
+        std::normal_distribution<element_type> D(0, 1);
+
+        value_type X;
+        element_type L = 0;
+        for (int ii = 0; ii <= N; ++ii) {
+            X[ii] = D(_engine);
+            L += X[ii] * X[ii];
+        }
+
+        return X / std::sqrt(L);
+    }
+
+    //! Returns a uniformly distributed point in the n-ball
+    template<typename value_type> value_type uniform_nball() {
+        constexpr int N = value_type::dimension;
+        using element_type = decltype(value_type::x);
+
+        element_type P = element_type(1) / element_type(N);
+        element_type R = std::pow(uniform_real(), P);
+
+        return uniform_nsphere<value_type>() * R;
+    }
+
 protected:
     engine_type _engine;
 };

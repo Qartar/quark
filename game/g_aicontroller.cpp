@@ -75,8 +75,7 @@ void aicontroller::think()
                 if (std::holds_alternative<projectile_weapon_info>(weapon->info())) {
                     weapon->attack_projectile(target, vec2_zero);
                 } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
-                    float angle = _random.uniform_real(2.f * math::pi<float>);
-                    vec2 v = vec2(cosf(angle), sinf(angle));
+                    vec2 v = _random.uniform_nsphere<vec2>();
                     weapon->attack_beam(target, v * -4.f, v * 4.f);
                 }
             }

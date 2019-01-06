@@ -17,6 +17,8 @@ class vec4;
 class vec2
 {
 public:
+    static constexpr int dimension = 2;
+
     float   x;
     float   y;
 
@@ -70,6 +72,8 @@ public:
 class vec3
 {
 public:
+    static constexpr int dimension = 3;
+
     float   x;
     float   y;
     float   z;
@@ -126,6 +130,8 @@ public:
 class vec4
 {
 public:
+    static constexpr int dimension = 4;
+
     float   x;
     float   y;
     float   z;
