@@ -4,6 +4,7 @@
 #pragma once
 
 #include "g_object.h"
+#include "p_compound.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -60,7 +61,7 @@ protected:
     static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
 
     static physics::material _material;
-    physics::convex_shape _shape;
+    physics::compound_shape _shape;
 };
 
 } // namespace game

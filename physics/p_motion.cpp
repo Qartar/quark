@@ -30,7 +30,7 @@ mat3 motion::get_inverse_transform() const
 //------------------------------------------------------------------------------
 bounds motion::get_bounds() const
 {
-    return _shape->calculate_bounds(_position, _rotation);
+    return _shape->calculate_bounds(get_transform());
 }
 
 } // namespace physics

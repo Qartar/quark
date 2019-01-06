@@ -2,6 +2,7 @@
 //
 
 #include "p_collide.h"
+#include "p_compound.h"
 #include "p_material.h"
 #include "p_rigidbody.h"
 #include "p_shape.h"
@@ -26,11 +27,30 @@ collide::motion_data::motion_data(motion const& motion)
 vec2 collide::closest_point(shape const* shape, vec2 point)
 {
     static circle_shape point_shape(0.f);
-    motion shape_motion{shape};
     motion point_motion{&point_shape, point};
 
-    collide c(shape_motion, point_motion);
-    return c.get_contact().point;
+    if (shape->type() == shape_type::compound) {
+        float best_distance = FLT_MAX;
+        vec2 best_point = vec2_zero;
+        for (auto& child : *static_cast<compound_shape const*>(shape)) {
+            motion shape_motion{
+                child.shape.get(),
+                child.position,
+                child.rotation
+            };
+            collide c(shape_motion, point_motion);
+            float distance = (c.get_contact().point - point).length_sqr();
+            if (distance < best_distance) {
+                best_distance = distance;
+                best_point = c.get_contact().point;
+            }
+        }
+        return best_point;
+    } else {
+        motion shape_motion{shape};
+        collide c(shape_motion, point_motion);
+        return c.get_contact().point;
+    }
 }
 
 //------------------------------------------------------------------------------

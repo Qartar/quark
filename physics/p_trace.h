@@ -31,6 +31,14 @@ protected:
 
     constexpr static int max_iterations = 64;
     constexpr static float epsilon = 1e-6f;
+
+protected:
+    static float dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time);
+    static float compound_compound_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time);
+    static float compound_convex_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time);
+    static float convex_compound_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time);
+    static float convex_convex_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time);
+    static float convex_point_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time);
 };
 
 } // namespace physics

@@ -100,9 +100,8 @@ void convex_shape::calculate_mass_properties(float inverse_mass, vec2& center_of
 }
 
 //------------------------------------------------------------------------------
-bounds convex_shape::calculate_bounds(vec2 position, float rotation) const
+bounds convex_shape::calculate_bounds(mat3 transform) const
 {
-    mat3 transform = mat3::transform(position, rotation);
     vec2 initial = _vertices[0] * transform;
     bounds out(initial, initial);
     for (std::size_t ii = 1; ii < _num_vertices; ++ii) {

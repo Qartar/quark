@@ -1,6 +1,8 @@
 set(PHYSICS_SOURCES
     p_collide.cpp
     p_collide.h
+    p_compound.cpp
+    p_compound.h
     p_material.h
     p_motion.cpp
     p_motion.h

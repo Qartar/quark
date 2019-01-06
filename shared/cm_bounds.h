@@ -107,6 +107,18 @@ public:
         return b | (b + t);
     }
 
+    static bounds from_points(vec2 const* points, std::size_t num_points) {
+        bounds out = bounds(points[0], points[0]);
+        for (std::size_t ii = 1; ii < num_points; ++ii) {
+            out.add(points[ii]);
+        }
+        return out;
+    }
+
+    template<std::size_t N> static bounds from_points(vec2 const (&points)[N]) {
+        return from_points(points, N);
+    }
+
 protected:
     vec2 _mins;
     vec2 _maxs;
