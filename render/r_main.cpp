@@ -21,6 +21,7 @@ system::system(render::window* window)
     , _window(window)
     , _view{}
     , _draw_tris("r_tris", 0, 0, "draw triangle edges")
+    , _graph("r_graph", false, 0, "draw frame timing graph")
 {}
 
 //------------------------------------------------------------------------------
@@ -65,6 +66,9 @@ result system::init()
         _costbl[ii] = std::cos(k * ii);
     }
 
+    _timers.resize((_window->size().x >> 1));
+    _timer_index = 0;
+
     return result::success;
 }
 
@@ -78,12 +82,18 @@ void system::shutdown()
 //------------------------------------------------------------------------------
 void system::begin_frame()
 {
+    _timers[_timer_index % _timers.size()].begin_frame = time_value::current();
+
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
 //------------------------------------------------------------------------------
 void system::end_frame()
 {
+    if (_graph) {
+        draw_timers();
+    }
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
@@ -95,7 +105,12 @@ void system::end_frame()
         GL_COLOR_BUFFER_BIT, GL_LINEAR
     );
 
+    _timers[_timer_index % _timers.size()].end_frame = time_value::current();
+
     _window->end_frame();
+
+    _timers[_timer_index % _timers.size()].swap_buffer = time_value::current();
+    ++_timer_index;
 
     if (_framebuffer_width.modified()
             || _framebuffer_height.modified()
@@ -252,6 +267,76 @@ void system::destroy_framebuffer()
 {
     glDeleteRenderbuffers(2, _rbo);
     glDeleteFramebuffers(1, &_fbo);
+}
+
+//------------------------------------------------------------------------------
+void system::draw_timers() const
+{
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    float dx = time_delta::from_hertz(60).to_seconds() * _timers.size();
+    float dy = time_delta::from_hertz(60).to_seconds();
+
+    glTranslatef(1.f, -1.f, 0);
+    glScalef(-2.f / dx, (1.f / 6.f) / dy, 1);
+
+    // red - render time (begin_frame -> end_frame)
+    glBegin(GL_LINE_STRIP);
+        glColor4f(1,0,0,.8f);
+        for (std::size_t ii = 0, sz = _timers.size(); ii < _timer_index && ii < sz; ++ii) {
+            time_delta tx = _timers[(_timer_index - 1) % sz].end_frame
+                            - _timers[(_timer_index - ii - 1) % sz].end_frame;
+            time_delta ty = _timers[(_timer_index - ii - 1) % sz].end_frame
+                            - _timers[(_timer_index - ii - 1) % sz].begin_frame;
+
+            glVertex2f(tx.to_seconds(), ty.to_seconds());
+        }
+    glEnd();
+
+    // green - game time (previous swap_buffer -> begin_frame)
+    glBegin(GL_LINE_STRIP);
+        glColor4f(0,1,0,.8f);
+        for (std::size_t ii = 0, sz = _timers.size(); ii + 1 < _timer_index && ii + 1 < sz; ++ii) {
+            time_delta tx = _timers[(_timer_index - 1) % sz].end_frame
+                            - _timers[(_timer_index - ii - 1) % sz].end_frame;
+            time_delta ty = _timers[(_timer_index - ii - 1) % sz].begin_frame
+                            - _timers[(_timer_index - ii - 2) % sz].swap_buffer;
+
+            glVertex2f(tx.to_seconds(), ty.to_seconds());
+        }
+    glEnd();
+
+    // blue - frame time (previous swap_buffer -> swap_buffer)
+    glBegin(GL_LINE_STRIP);
+        glColor4f(0,.5f,1,.8f);
+        for (std::size_t ii = 0, sz = _timers.size(); ii + 1 < _timer_index && ii + 1 < sz; ++ii) {
+            time_delta tx = _timers[(_timer_index - 1) % sz].end_frame
+                            - _timers[(_timer_index - ii - 1) % sz].end_frame;
+            time_delta ty = _timers[(_timer_index - ii - 1) % sz].swap_buffer
+                            - _timers[(_timer_index - ii - 2) % sz].swap_buffer;
+
+            glVertex2f(tx.to_seconds(), ty.to_seconds());
+        }
+    glEnd();
+
+    // white - 60 Hz marker
+    glBegin(GL_LINES);
+        glColor4f(1,1,1,.8f);
+        glVertex2f(0.f, dy);
+        glVertex2f(dx, dy);
+    glEnd();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
 }
 
 } // namespace render

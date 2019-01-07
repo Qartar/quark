@@ -179,6 +179,17 @@ private:
 
     config::boolean _draw_tris;
 
+    config::boolean _graph;
+    struct timing {
+        time_value begin_frame;
+        time_value end_frame;
+        time_value swap_buffer;
+    };
+    std::vector<timing> _timers;
+    std::size_t _timer_index;
+
+    void draw_timers() const;
+
     std::vector<vec3> _starfield_points;
     std::vector<color3> _starfield_colors;
 
