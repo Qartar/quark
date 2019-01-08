@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!-- game::handle<T> -->
+  <Type Name="game::handle&lt;*&gt;">
+    <Intrinsic Name="get_index" Expression="(_value &amp; index_mask) &gt;&gt; index_shift"/>
+    <Intrinsic Name="get_system" Expression="(_value &amp; system_mask) &gt;&gt; system_shift"/>
+    <Intrinsic Name="get_sequence" Expression="(_value &amp; sequence_mask) &gt;&gt; sequence_shift"/>
+    <Intrinsic Name="get_world" Expression="game::world::_singletons[get_system()]"/>
+    <Intrinsic Name="is_valid" Expression="get_world() &amp;&amp; get_index() &lt; get_world()-&gt;_objects.size()"/>
+    <Intrinsic Name="get" Expression="($T1*)get_world()-&gt;_objects[get_index()]._Mypair._Myval2"/>
+    <DisplayString Condition="is_valid() == true">{get()}</DisplayString>
+    <DisplayString Condition="is_valid() != true">empty</DisplayString>
+    <Expand>
+      <ExpandedItem>get()</ExpandedItem>
+    </Expand>
+  </Type>
+</AutoVisualizer>
