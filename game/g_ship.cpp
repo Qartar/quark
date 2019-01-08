@@ -136,9 +136,11 @@ void ship::spawn()
 
     for (int ii = 0; ii < 3; ++ii) {
         _crew.push_back(get_world()->spawn<character>());
+        _crew.back()->set_position(this, vec2_zero, true);
     }
     if (style == extra_crewmember) {
         _crew.push_back(get_world()->spawn<character>());
+        _crew.back()->set_position(this, vec2_zero, true);
     }
 
     std::vector<uint16_t> compartments;
