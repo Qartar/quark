@@ -2,6 +2,7 @@
 //
 
 #include <cassert>
+#include <climits>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -58,7 +59,7 @@ public:
     //! retrieve a pointer to referenced object from the game world
     T const* get() const {
         if (get_world()) {
-            return get_world()->get<T>(*this);
+            return get_world()->template get<T>(*this);
         } else {
             return nullptr;
         }
@@ -67,7 +68,7 @@ public:
     //! retrieve a pointer to referenced object from the game world
     T* get() {
         if (get_world()) {
-            return get_world()->get<T>(*this);
+            return get_world()->template get<T>(*this);
         } else {
             return nullptr;
         }

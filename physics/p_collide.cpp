@@ -6,6 +6,7 @@
 #include "p_rigidbody.h"
 #include "p_shape.h"
 #include <cassert>
+#include <cfloat>
 
 #include <algorithm>
 #include <array>

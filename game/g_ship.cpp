@@ -120,8 +120,6 @@ void ship::draw(render::system* renderer, time_value time) const
             constexpr float mint = (-1.f / 4.f) * math::pi<float>;
             constexpr float maxt = (1.f / 4.f) * math::pi<float>;
             constexpr float radius = 40.f;
-            constexpr float edge_width = 1.f;
-            constexpr float edge = edge_width / radius;
 
             float midt =  mint + (maxt - mint) * (_shield->strength() / _shield->info().maximum_power);
 

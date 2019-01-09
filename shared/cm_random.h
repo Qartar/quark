@@ -28,7 +28,7 @@ public:
 
     //! Returns a uniformly distributed real number in the range [min, max]
     template<typename value_type> value_type uniform_real(value_type min, value_type max) {
-        static_assert(std::is_floating_point_v<value_type>, "value_type must be a floating-point type");
+        static_assert(std::is_floating_point<value_type>::value, "value_type must be a floating-point type");
         return std::uniform_real_distribution<value_type>(min, max)(_engine);
     }
 
@@ -37,7 +37,7 @@ public:
 
     //! Returns a uniformly distributed integer in the range [min, max)
     template<typename value_type> value_type uniform_int(value_type min, value_type max) {
-        static_assert(std::is_integral_v<value_type>, "value_type must be an integer type");
+        static_assert(std::is_integral<value_type>::value, "value_type must be an integer type");
         return std::uniform_int_distribution<value_type>(min, max - 1)(_engine);
     }
 
@@ -49,7 +49,7 @@ public:
 
     //! Returns a normal-distributed real number with mean value of `mu` and standard deviation of `sigma`
     template<typename value_type> value_type normal_real(value_type sigma, value_type mu) {
-        static_assert(std::is_floating_point_v<value_type>, "value_type must be a floating-point type");
+        static_assert(std::is_floating_point<value_type>::value, "value_type must be a floating-point type");
         return std::normal_distribution<value_type>(mu, sigma)(_engine);
     }
 

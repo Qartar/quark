@@ -165,10 +165,11 @@ void weapon_button::draw(render::system* renderer) const
 ////////////////////////////////////////////////////////////////////////////////
 client_button::client_button(string::view text, vec2i position, vec2i size, color3* color_ptr)
     : button(text, position, size)
-    , _text_rectangle(rect::from_center(position + vec2i(0, size.y / 2 - 12), vec2i(size.x - 16, 14)))
     , _color_ptr(color_ptr)
     , _color_index(0)
     , _text_down(false)
+    , _text_over(false)
+    , _text_rectangle(rect::from_center(position + vec2i(0, size.y / 2 - 12), vec2i(size.x - 16, 14)))
     , _weapons({
         weapon_button{game::weapon_type::cannon, position + vec2i(size.x / 2 + 24 + 4, (size.y / 3 - 4) / 2 - size.y / 2), vec2i(48, size.y / 3 - 4)},
         weapon_button{game::weapon_type::missile, position + vec2i(size.x / 2 + 24 + 4, 0), vec2i(48, size.y / 3 - 4)},
@@ -249,10 +250,10 @@ void client_button::draw(render::system* renderer) const
 ////////////////////////////////////////////////////////////////////////////////
 server_button::server_button(vec2i position, vec2i size, char const* name_ptr, time_delta const* ping_ptr, std::function<void()>&& op_click)
     : button("", position, size, std::move(op_click))
-    , _join_rectangle(rect::from_center(position + vec2i(size.x / 2 - 18, 0), vec2i(32, size.y - 4)))
-    , _text_rectangle(rect::from_center(position - vec2i(17, 0), size - vec2i(38, 4)))
     , _name_ptr(name_ptr)
     , _ping_ptr(ping_ptr)
+    , _join_rectangle(rect::from_center(position + vec2i(size.x / 2 - 18, 0), vec2i(32, size.y - 4)))
+    , _text_rectangle(rect::from_center(position - vec2i(17, 0), size - vec2i(38, 4)))
 {}
 
 //------------------------------------------------------------------------------
@@ -307,10 +308,10 @@ host_button::host_button(vec2i position, vec2i size, std::function<void()>&& op_
     : button("Host", position, size, std::move(op_click))
     , _create_rectangle(rect::from_center(position + vec2i(size.x / 2 - 18, 0), vec2i(32, size.y - 4)))
     , _text_rectangle(rect::from_center(position - vec2i(17, 0), size - vec2i(38, 4)))
-    , _create_down(false)
-    , _text_down(false)
     , _create_over(false)
     , _text_over(false)
+    , _create_down(false)
+    , _text_down(false)
 {}
 
 //------------------------------------------------------------------------------

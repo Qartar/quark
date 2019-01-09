@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include "cm_error.h"
 #include "cm_string.h"
+#include "cm_vector.h"
 
 #ifndef _WINDOWS_
 typedef struct HWND__ *HWND;

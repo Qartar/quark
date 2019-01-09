@@ -38,7 +38,6 @@ enum flags
 };
 
 enum class value_type { string, integer, boolean, scalar };
-static constexpr string_literal type_strings[] = { "string", "integer", "boolean", "scalar" };
 
 //------------------------------------------------------------------------------
 class variable_base
@@ -46,10 +45,10 @@ class variable_base
 public:
     variable_base(string_view name, string_view value, value_type type, int flags, string_view description)
         : _name(name)
-        , _value(value)
-        , _type(type)
-        , _flags(flags)
         , _description(description)
+        , _value(value)
+        , _flags(flags)
+        , _type(type)
     {}
     variable_base(string_view name, string_view value, string_view type_string, string_view flags_string, string_view description);
 
@@ -94,7 +93,7 @@ class variable
 public:
     string_view name() const { return _base->name(); }
     string_view description() const { return _base->description(); }
-    string_view value() const { _base->value(); }
+    string_view value() const { return _base->value(); }
     int flags() const { return _base->flags(); }
     value_type type() const { return _base->type(); }
     bool modified() const { return _base->modified(); }

@@ -178,7 +178,7 @@ vec2 world::collision_impulse(
     float dpy = inv_det * (-gy * dvx + gx * dvy);
 
     // Clamp friction impulse by friction coefficient
-    if (abs(dpy) > mu * abs(dpx)) {
+    if (std::abs(dpy) > mu * std::abs(dpx)) {
         // Find clamped vy using the original vector equation with dpy := mu * dpx
         float dvy0 = (gy + mu * hy) / (gx + mu * hx) * dvx;
 

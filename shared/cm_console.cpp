@@ -164,7 +164,7 @@ void console_buffer::append_endline(bool keep_color)
         char const* s = &_buffer[prev_row & buffer_mask];
 
         char const* prev_color = nullptr;
-        while (s = strchr(s, '^')) {
+        while ((s = strchr(s, '^'))) {
             if (is_color(s)) {
                 prev_color = s;
             }
@@ -365,8 +365,8 @@ console_command* console_command::_head = nullptr;
 //------------------------------------------------------------------------------
 console_command::console_command(string::view name, callback_type callback)
     : _name(name)
-    , _next(_head)
     , _func(callback)
+    , _next(_head)
 {
     if (console::_singleton) {
         assert(_head == nullptr);

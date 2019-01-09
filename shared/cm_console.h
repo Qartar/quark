@@ -6,9 +6,11 @@
 #include "cm_string.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <array>
 #include <functional>
 #include <map>
+#include <string>
 #include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -163,16 +165,6 @@ public:
 protected:
     friend class console_command;
 
-    console_buffer _buffer;
-    console_input _input;
-    console_input _saved;
-    console_history _history;
-
-    float _height;
-    std::size_t _scroll_offset;
-    std::size_t _history_offset;
-    bool _control;
-
     struct insensitive_compare {
         using is_transparent = void;
         bool operator()(string::view lhs, string::view rhs) const {
@@ -185,6 +177,16 @@ protected:
     console_command _command_set;
     console_command _command_list;
     console_command _command_list_vars;
+
+    console_buffer _buffer;
+    console_input _input;
+    console_input _saved;
+    console_history _history;
+
+    float _height;
+    std::size_t _scroll_offset;
+    std::size_t _history_offset;
+    bool _control;
 
     static console* _singleton;
 

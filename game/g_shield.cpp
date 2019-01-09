@@ -59,7 +59,7 @@ shield::shield(physics::shape const* base, game::ship* owner)
     };
 
     static int style = 0;
-    for (int ii = 0; ii < _colors.size(); ++ii) {
+    for (std::size_t ii = 0; ii < _colors.size(); ++ii) {
         _colors[ii] = schemes[(style % 3) * 4 + ii];
     }
     ++style;
@@ -235,10 +235,6 @@ void shield::step_vertices()
         }
 
         for (int ii = 0; ii < kNumVertices; ++ii) {
-            vec2 va = _vertices[(ii + kNumVertices - 1) % kNumVertices];
-            vec2 vb = _vertices[(ii + kNumVertices + 1) % kNumVertices];
-            vec2 vc = _vertices[ii];
-
             int ia = (ii + kNumVertices - 1) % kNumVertices;
             int ib = (ii + kNumVertices + 1) % kNumVertices;
 

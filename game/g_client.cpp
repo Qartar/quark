@@ -204,7 +204,7 @@ void session::connect_ack(string::view message_string)
     _clients[0].usercmd_time = time_value::zero;
 
     svs.clients[cls.number].active = true;
-    svs.clients[cls.number].info.name, cls.info.name;
+    svs.clients[cls.number].info.name = cls.info.name;
     svs.clients[cls.number].info.color = cls.info.color;
     svs.clients[cls.number].info.weapon = cls.info.weapon;
 

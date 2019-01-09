@@ -209,10 +209,10 @@ public:
     template<typename T, typename... Args>
     void add_button(Args&& ...args);
 
-    virtual bool key_event(int key, bool down);
-    virtual bool cursor_event(vec2i position);
+    bool key_event(int key, bool down);
+    bool cursor_event(vec2i position);
 
-    virtual void draw(render::system* renderer) const;
+    void draw(render::system* renderer) const;
 
     bool activate(submenu_button* button, menu::window* submenu);
 

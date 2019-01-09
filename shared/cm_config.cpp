@@ -16,6 +16,8 @@ system* system::_singleton = nullptr;
 
 namespace {
 
+static constexpr string_literal type_strings[] = { "string", "integer", "boolean", "scalar" };
+
 //------------------------------------------------------------------------------
 value_type type_from_string(string_view type_string)
 {
@@ -32,10 +34,10 @@ value_type type_from_string(string_view type_string)
 //------------------------------------------------------------------------------
 variable_base::variable_base(string_view name, string_view value, string_view type_string, string_view flags_string, string_view description)
     : _name(name)
-    , _value(value)
-    , _type(type_from_string(type_string))
-    , _flags(atoi(flags_string.c_str()))
     , _description(description)
+    , _value(value)
+    , _flags(atoi(flags_string.c_str()))
+    , _type(type_from_string(type_string))
 {}
 
 //------------------------------------------------------------------------------
