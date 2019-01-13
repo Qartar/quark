@@ -74,6 +74,8 @@ public:
 
     void spawn(); //!< Note: not virtual
 
+    render::model const* model() const { return _model; }
+
     uint64_t get_sequence() const { return _self.get_sequence(); }
 
     //! Returns `true` if this type is derived from `other_type`
@@ -126,15 +128,15 @@ public:
     void apply_impulse(vec2 impulse) { _rigid_body.apply_impulse(impulse); }
     void apply_impulse(vec2 impulse, vec2 position) { _rigid_body.apply_impulse(impulse, position); }
 
+protected:
+    friend world;
+    template<typename> friend class handle;
+
     render::model const* _model;
     color4 _color;
 
     vec2 _old_position;
     float _old_rotation;
-
-protected:
-    friend world;
-    template<typename> friend class handle;
 
     handle<object> _owner;
     handle<object> _self;
