@@ -165,9 +165,16 @@ void ship::spawn()
     _subsystems.push_back(_engines);
 
     int num_weapons = style == extra_weapon ? 3 : 2;
+
+    constexpr vec2 weapon_origin[] = {
+        vec2(10.f, -7.f),
+        vec2(10.f, +7.f),
+        vec2(11.f, 0.f),
+    };
+
     for (int ii = 0; ii < num_weapons; ++ii) {
         weapon_info info = weapon::by_random(_random);
-        _weapons.push_back(get_world()->spawn<weapon>(this, compartments[num_subsystems++], info, vec2(11.f, ii ? 6.f : -6.f)));
+        _weapons.push_back(get_world()->spawn<weapon>(this, compartments[num_subsystems++], info, weapon_origin[ii]));
         _subsystems.push_back(_weapons.back());
     }
 
