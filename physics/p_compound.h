@@ -16,7 +16,7 @@ class compound_shape : public shape
 {
 public:
     struct child_shape {
-        std::unique_ptr<physics::shape> shape;
+        physics::shape const* shape;
         vec2 position;
         float rotation;
         mat3 transform;

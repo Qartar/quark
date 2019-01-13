@@ -34,7 +34,7 @@ vec2 collide::closest_point(shape const* shape, vec2 point)
         vec2 best_point = vec2_zero;
         for (auto& child : *static_cast<compound_shape const*>(shape)) {
             motion shape_motion{
-                child.shape.get(),
+                child.shape,
                 child.position,
                 child.rotation
             };

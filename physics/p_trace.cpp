@@ -85,7 +85,7 @@ float trace::compound_compound_dispatch(contact& contact, motion motion_a, motio
 
     for (auto& child : *static_cast<compound_shape const*>(motion_b.get_shape())) {
         motion child_motion{
-            child.shape.get(),
+            child.shape,
             child.position * transform,
             child.rotation + motion_b.get_rotation(),
             motion_b.get_linear_velocity(),
@@ -119,7 +119,7 @@ float trace::compound_convex_dispatch(contact& contact, motion motion_a, motion 
 
     for (auto& child : *static_cast<compound_shape const*>(motion_a.get_shape())) {
         motion child_motion{
-            child.shape.get(),
+            child.shape,
             child.position * transform,
             child.rotation + motion_a.get_rotation(),
             motion_a.get_linear_velocity(),

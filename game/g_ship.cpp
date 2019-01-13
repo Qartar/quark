@@ -20,7 +20,7 @@ namespace game {
 const object_type ship::_type(object::_type);
 physics::material ship::_material(0.5f, 1.0f, 5.0f);
 
-vec2 main_body_vertices[] = {
+static const vec2 main_body_vertices[] = {
     {11.0000000, 6.00000000 },
     {10.0000000, 7.00000000 },
     {8.00000000, 8.00000000 },
@@ -36,8 +36,9 @@ vec2 main_body_vertices[] = {
     {11.0000000, -6.00000000 },
     {11.0000000, 6.00000000 },
 };
+static physics::convex_shape main_body_shape{main_body_vertices};
 
-vec2 left_engine_vertices[] = {
+static const vec2 left_engine_vertices[] = {
     vec2(8, -8) + vec2{-1.00000000, 9.0000000 },
     vec2(8, -8) + vec2{-1.00000000, 10.0000000 },
     vec2(8, -8) + vec2{-16.0000000, 10.0000000 },
@@ -47,8 +48,9 @@ vec2 left_engine_vertices[] = {
     vec2(8, -8) + vec2{-9.0000000, 5.00000000 },
     vec2(8, -8) + vec2{-7.0000000, 5.00000000 },
 };
+static physics::convex_shape left_engine_shape{left_engine_vertices};
 
-vec2 right_engine_vertices[] = {
+static const vec2 right_engine_vertices[] = {
     vec2(8, 8) + vec2{-1.00000000, -9.0000000 },
     vec2(8, 8) + vec2{-1.00000000, -10.0000000 },
     vec2(8, 8) + vec2{-16.0000000, -10.0000000 },
@@ -58,6 +60,7 @@ vec2 right_engine_vertices[] = {
     vec2(8, 8) + vec2{-9.0000000, -5.00000000 },
     vec2(8, 8) + vec2{-7.0000000, -5.00000000 },
 };
+static physics::convex_shape right_engine_shape{right_engine_vertices};
 
 const ship_layout default_layout(
     {
@@ -106,9 +109,9 @@ ship::ship()
     , _dead_time(time_value::max)
     , _is_destroyed(false)
     , _shape({
-        {std::make_unique<physics::convex_shape>(main_body_vertices)},
-        {std::make_unique<physics::convex_shape>(left_engine_vertices), vec2(-8, 8)},
-        {std::make_unique<physics::convex_shape>(right_engine_vertices), vec2(-8, -8)}})
+        {&main_body_shape},
+        {&left_engine_shape, vec2(-8, 8)},
+        {&right_engine_shape, vec2(-8, -8)}})
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 10.f);
 
