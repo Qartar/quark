@@ -58,5 +58,3 @@ protected:
 };
 
 } // namespace render
-
-extern render::model ship_model;

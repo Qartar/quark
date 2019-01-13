@@ -18,7 +18,7 @@ namespace game {
 const object_type weapon::_type(subsystem::_type);
 
 //------------------------------------------------------------------------------
-std::vector<weapon_info> weapon::_types = {
+const std::vector<weapon_info> weapon::_types = {
     projectile_weapon_info{
         /* name */              "blaster",
         /* reload_time */       time_delta::from_seconds(8.f),

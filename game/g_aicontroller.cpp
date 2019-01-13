@@ -217,7 +217,7 @@ void aicontroller::think()
             get_world()->remove(_ship.get());
 
             // spawn a new ship to replace the destroyed ship's place
-            _ship = get_world()->spawn<ship>();
+            _ship = get_world()->spawn<ship>(ship::by_random(_random));
             _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
             _ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
 
