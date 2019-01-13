@@ -67,7 +67,7 @@ void world::reset()
         float angle = float(ii) * (math::pi<float> * 2.f / 6.f);
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
-        ship* sh = spawn<ship>();
+        ship* sh = spawn<ship>(ship::by_random(_random));
         sh->set_position(-dir * 256.f, true);
         sh->set_rotation(angle, true);
 

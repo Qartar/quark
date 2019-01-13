@@ -4,8 +4,9 @@
 #pragma once
 
 #include "g_object.h"
-#include "p_compound.h"
 #include "g_ship_layout.h"
+#include "p_compound.h"
+#include "r_model.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -17,13 +18,23 @@ class weapon;
 class subsystem;
 
 //------------------------------------------------------------------------------
+struct ship_info
+{
+    std::string name;
+    render::model model; //!< rendering model
+    physics::compound_shape shape; //!< physics shape
+    game::ship_layout layout; //!< compartment layout
+    std::vector<vec2> hardpoints; //!< weapon hardpoints
+};
+
+//------------------------------------------------------------------------------
 class ship : public object
 {
 public:
     static const object_type _type;
 
 public:
-    ship();
+    ship(ship_info const& info);
     ~ship();
 
     void spawn();
@@ -61,10 +72,14 @@ public:
 
     bool is_destroyed() const { return _is_destroyed; }
 
+    static ship_info const& by_random(random& r);
+
 protected:
     game::usercmd _usercmd;
 
 protected:
+    ship_info const& _info;
+
     std::vector<unique_handle<character>> _crew;
     std::vector<unique_handle<subsystem>> _subsystems;
 
@@ -83,7 +98,8 @@ protected:
     static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
 
     static physics::material _material;
-    physics::compound_shape _shape;
+
+    static const std::vector<ship_info> _types;
 };
 
 } // namespace game

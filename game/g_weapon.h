@@ -108,7 +108,7 @@ protected:
     int _pulse_count;
     game::handle<shield> _pulse_shield;
 
-    static std::vector<weapon_info> _types;
+    static const std::vector<weapon_info> _types;
 };
 
 } // namespace game

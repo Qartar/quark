@@ -62,60 +62,90 @@ static const vec2 right_engine_vertices[] = {
 };
 static physics::convex_shape right_engine_shape{right_engine_vertices};
 
-const ship_layout default_layout(
-    {
-        /*  0 */ {{7.f, 7.f}, {10.f, 5.f}, {10.f, -5.f}, {7.f, -7.f}, {7.f, -1.f}, {7.f, 1.f}},
-        /*  1 */ {{6.f, 1.f}, {6.f, -1.f}, {6.f, -2.f}, {4.f, -2.f}, {2.f, -2.f}, {0.f, -2.f}, {0.f, -1.f}, {0.f, 1.f}, {0.f, 2.f}, {2.f, 2.f}, {4.f, 2.f}, {6.f, 2.f}},
-        /*  2 */ {{0.f, -3.f}, {2.f, -3.f}, {4.f, -3.f}, {6.f, -3.f}, {6.f, -7.f}, {0.f, -8.f}},
-        /*  3 */ {{6.f, 3.f}, {4.f, 3.f}, {2.f, 3.f}, {0.f, 3.f}, {0.f, 8.f}, {6.f, 7.f}},
-        /*  4 */ {{-1.f, 1.f}, {-1.f, -1.f}, {-1.f, -3.f}, {-6.f, -3.f}, {-6.f, -1.f}, {-6.f, 1.f}, {-6.f, 3.f}, {-1.f, 3.f}},
-        /*  5 */ {{-1.f, 4.f}, {-6.f, 4.f}, {-7.f, 7.f}, {-7.f, 9.f}, {-3.f, 9.f}, {-1.f, 8.f}},
-        /*  6 */ {{-1.f, -4.f}, {-1.f, -8.f}, {-3.f, -9.f}, {-7.f, -9.f}, {-7.f, -7.f}, {-6.f, -4.f}},
-        /*  7 */ {{-8.f, 7.f}, {-14.f, 7.f}, {-14.f, 9.f}, {-8.f, 9.f}},
-        /*  8 */ {{-14.f, -7.f}, {-8.f, -7.f}, {-8.f, -9.f}, {-14.f, -9.f}},
+//------------------------------------------------------------------------------
+const std::vector<ship_info> ship::_types = {
+    ship_info{
+        // name
+        "standard",
+        // rendering model
+        render::model{{
+            //  center          size        gamma
+            {{  2.f,  0.f},  {18.f, 12.f}, 0.5f},
+            {{  2.f,  0.f},  {16.f, 14.f}, 0.5f},
+            {{  2.f,  0.f},  {12.f, 16.f}, 0.5f},
+            {{ -2.f,  7.f},  {14.f,  4.f}, 0.5f},
+            {{ -2.f, -7.f},  {14.f,  4.f}, 0.5f},
+            {{-15.f,  8.f},  { 2.f,  4.f}, 0.8f},
+            {{-15.f, -8.f},  { 2.f,  4.f}, 0.8f},
+            {{-16.f,  8.f},  { 2.f,  2.f}, 0.7f},
+            {{-16.f, -8.f},  { 2.f,  2.f}, 0.7f},
+            {{ -8.f,  8.f},  {14.f,  4.f}, 0.6f},
+            {{ -8.f, -8.f},  {14.f,  4.f}, 0.6f},
+        }},
+        // physics shape
+        physics::compound_shape{{
+            {&main_body_shape},
+            {&left_engine_shape, vec2(-8, 8)},
+            {&right_engine_shape, vec2(-8, -8)}
+        }},
+        // compartment layout
+        game::ship_layout{
+            {
+                /*  0 */ {{7.f, 7.f}, {10.f, 5.f}, {10.f, -5.f}, {7.f, -7.f}, {7.f, -1.f}, {7.f, 1.f}},
+                /*  1 */ {{6.f, 1.f}, {6.f, -1.f}, {6.f, -2.f}, {4.f, -2.f}, {2.f, -2.f}, {0.f, -2.f}, {0.f, -1.f}, {0.f, 1.f}, {0.f, 2.f}, {2.f, 2.f}, {4.f, 2.f}, {6.f, 2.f}},
+                /*  2 */ {{0.f, -3.f}, {2.f, -3.f}, {4.f, -3.f}, {6.f, -3.f}, {6.f, -7.f}, {0.f, -8.f}},
+                /*  3 */ {{6.f, 3.f}, {4.f, 3.f}, {2.f, 3.f}, {0.f, 3.f}, {0.f, 8.f}, {6.f, 7.f}},
+                /*  4 */ {{-1.f, 1.f}, {-1.f, -1.f}, {-1.f, -3.f}, {-6.f, -3.f}, {-6.f, -1.f}, {-6.f, 1.f}, {-6.f, 3.f}, {-1.f, 3.f}},
+                /*  5 */ {{-1.f, 4.f}, {-6.f, 4.f}, {-7.f, 7.f}, {-7.f, 9.f}, {-3.f, 9.f}, {-1.f, 8.f}},
+                /*  6 */ {{-1.f, -4.f}, {-1.f, -8.f}, {-3.f, -9.f}, {-7.f, -9.f}, {-7.f, -7.f}, {-6.f, -4.f}},
+                /*  7 */ {{-8.f, 7.f}, {-14.f, 7.f}, {-14.f, 9.f}, {-8.f, 9.f}},
+                /*  8 */ {{-14.f, -7.f}, {-8.f, -7.f}, {-8.f, -9.f}, {-14.f, -9.f}},
 
-        /*  9 */ {{7.f, 1.f}, {7.f, -1.f}, {6.f, -1.f}, {6.f, 1.f}},
-        /* 10 */ {{7.f, -4.f}, {7.f, -6.f}, {6.f, -6.f}, {6.f, -4.f}},
-        /* 11 */ {{7.f, 6.f}, {7.f, 4.f}, {6.f, 4.f}, {6.f, 6.f}},
-        /* 12 */ {{-2.5f, 4.f}, {-2.5f, 3.f}, {-4.5f, 3.f}, {-4.5f, 4.f}},
-        /* 13 */ {{-4.5f, -4.f}, {-4.5f, -3.f}, {-2.5f, -3.f}, {-2.5f, -4.f}},
-        /* 14 */ {{0.f, 1.f}, {0.f, -1.f}, {-1.f, -1.f}, {-1.f, 1.f}},
-        /* 15 */ {{4.f, -2.f}, {4.f, -3.f}, {2.f, -3.f}, {2.f, -2.f}},
-        /* 16 */ {{4.f, 3.f}, {4.f, 2.f}, {2.f, 2.f}, {2.f, 3.f}},
-        /* 17 */ {{-7.f, 9.f}, {-7.f, 7.f}, {-8.f, 7.f}, {-8.f, 9.f}},
-        /* 18 */ {{-7.f, -7.f}, {-7.f, -9.f}, {-8.f, -9.f}, {-8.f, -7.f}},
-        /* 19 */ {{-6.f, 1.f}, {-6.f, -1.f}, {-7.f, -1.f}, {-7.f, 1.f}},
+                /*  9 */ {{7.f, 1.f}, {7.f, -1.f}, {6.f, -1.f}, {6.f, 1.f}},
+                /* 10 */ {{7.f, -4.f}, {7.f, -6.f}, {6.f, -6.f}, {6.f, -4.f}},
+                /* 11 */ {{7.f, 6.f}, {7.f, 4.f}, {6.f, 4.f}, {6.f, 6.f}},
+                /* 12 */ {{-2.5f, 4.f}, {-2.5f, 3.f}, {-4.5f, 3.f}, {-4.5f, 4.f}},
+                /* 13 */ {{-4.5f, -4.f}, {-4.5f, -3.f}, {-2.5f, -3.f}, {-2.5f, -4.f}},
+                /* 14 */ {{0.f, 1.f}, {0.f, -1.f}, {-1.f, -1.f}, {-1.f, 1.f}},
+                /* 15 */ {{4.f, -2.f}, {4.f, -3.f}, {2.f, -3.f}, {2.f, -2.f}},
+                /* 16 */ {{4.f, 3.f}, {4.f, 2.f}, {2.f, 2.f}, {2.f, 3.f}},
+                /* 17 */ {{-7.f, 9.f}, {-7.f, 7.f}, {-8.f, 7.f}, {-8.f, 9.f}},
+                /* 18 */ {{-7.f, -7.f}, {-7.f, -9.f}, {-8.f, -9.f}, {-8.f, -7.f}},
+                /* 19 */ {{-6.f, 1.f}, {-6.f, -1.f}, {-7.f, -1.f}, {-7.f, 1.f}},
+            },
+            {
+                /* X - 4 */ {{ ship_layout::invalid_compartment, 19}}, {{4, 19}},
+                /* 0 - 1 */ {{ 0,  9}}, {{ 1,  9}},
+                /* 0 - 2 */ {{ 0, 10}}, {{ 2, 10}},
+                /* 0 - 3 */ {{ 0, 11}}, {{ 3, 11}},
+                /* 1 - 2 */ {{ 1, 15}}, {{ 2, 15}},
+                /* 1 - 3 */ {{ 1, 16}}, {{ 3, 16}},
+                /* 1 - 4 */ {{ 1, 14}}, {{ 4, 14}},
+                /* 4 - 5 */ {{ 4, 12}}, {{ 5, 12}},
+                /* 4 - 6 */ {{ 4, 13}}, {{ 6, 13}},
+                /* 5 - 7 */ {{ 5, 17}}, {{ 7, 17}},
+                /* 6 - 8 */ {{ 6, 18}}, {{ 8, 18}},
+            }
+        },
+        // weapon hardpoints
+        {
+            vec2(10.f, -7.f), vec2(10.f, +7.f), vec2(11.f, 0.f),
+        },
     },
-    {
-        /* X - 4 */ {{ ship_layout::invalid_compartment, 19}}, {{4, 19}},
-        /* 0 - 1 */ {{ 0,  9}}, {{ 1,  9}},
-        /* 0 - 2 */ {{ 0, 10}}, {{ 2, 10}},
-        /* 0 - 3 */ {{ 0, 11}}, {{ 3, 11}},
-        /* 1 - 2 */ {{ 1, 15}}, {{ 2, 15}},
-        /* 1 - 3 */ {{ 1, 16}}, {{ 3, 16}},
-        /* 1 - 4 */ {{ 1, 14}}, {{ 4, 14}},
-        /* 4 - 5 */ {{ 4, 12}}, {{ 5, 12}},
-        /* 4 - 6 */ {{ 4, 13}}, {{ 6, 13}},
-        /* 5 - 7 */ {{ 5, 17}}, {{ 7, 17}},
-        /* 6 - 8 */ {{ 6, 18}}, {{ 8, 18}},
-    }
-);
+};
 
 //------------------------------------------------------------------------------
-ship::ship()
-    : _usercmd{}
-    , _state(default_layout)
+ship::ship(ship_info const& info)
+    : _info(info)
+    , _usercmd{}
+    , _state(info.layout)
     , _shield(nullptr)
     , _dead_time(time_value::max)
     , _is_destroyed(false)
-    , _shape({
-        {&main_body_shape},
-        {&left_engine_shape, vec2(-8, 8)},
-        {&right_engine_shape, vec2(-8, -8)}})
 {
-    _rigid_body = physics::rigid_body(&_shape, &_material, 10.f);
+    _rigid_body = physics::rigid_body(&info.shape, &_material, 10.f);
 
-    _model = &ship_model;
+    _model = &_info.model;
 }
 
 //------------------------------------------------------------------------------
@@ -161,7 +191,7 @@ void ship::spawn()
     _reactor = get_world()->spawn<subsystem>(this, compartments[num_subsystems++], subsystem_info{subsystem_type::reactor, 11});
     _subsystems.push_back(_reactor);
 
-    _shield = get_world()->spawn<game::shield>(&_shape, this, compartments[num_subsystems++], style == extra_shields ? 3 : 2);
+    _shield = get_world()->spawn<game::shield>(&_info.shape, this, compartments[num_subsystems++], style == extra_shields ? 3 : 2);
     _subsystems.push_back(_shield);
 
     _engines = get_world()->spawn<game::engines>(this, compartments[num_subsystems++], engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
@@ -169,15 +199,9 @@ void ship::spawn()
 
     int num_weapons = style == extra_weapon ? 3 : 2;
 
-    constexpr vec2 weapon_origin[] = {
-        vec2(10.f, -7.f),
-        vec2(10.f, +7.f),
-        vec2(11.f, 0.f),
-    };
-
     for (int ii = 0; ii < num_weapons; ++ii) {
         weapon_info info = weapon::by_random(_random);
-        _weapons.push_back(get_world()->spawn<weapon>(this, compartments[num_subsystems++], info, weapon_origin[ii]));
+        _weapons.push_back(get_world()->spawn<weapon>(this, compartments[num_subsystems++], info, _info.hardpoints[ii]));
         _subsystems.push_back(_weapons.back());
     }
 
@@ -829,6 +853,12 @@ void ship::damage(object* inflictor, vec2 /*point*/, float amount)
 void ship::update_usercmd(game::usercmd usercmd)
 {
     _usercmd = usercmd;
+}
+
+//------------------------------------------------------------------------------
+ship_info const& ship::by_random(random& r)
+{
+    return _types[r.uniform_int(_types.size())];
 }
 
 } // namespace game
