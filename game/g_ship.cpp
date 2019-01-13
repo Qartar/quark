@@ -225,128 +225,132 @@ extern vec2 g_cursor;
 //------------------------------------------------------------------------------
 void ship::draw(render::system* renderer, time_value time) const
 {
-    if (!_is_destroyed) {
-        renderer->draw_model(_model, get_transform(time), _color);
+    if (_is_destroyed) {
+        return;
+    }
 
-        constexpr color4 subsystem_colors[2][3] = {
-            { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f), color4(1.f, .8f, .1f, .300f), },
-            { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f), color4(1.f, .8f, .1f, 1.00f), },
-        };
+    renderer->draw_model(_model, get_transform(time), _color);
 
-        float alpha = 1.f;
-        if (time > _dead_time && time - _dead_time < destruction_time) {
-            alpha = 1.f - (time - _dead_time) / destruction_time;
-        }
+    constexpr color4 subsystem_colors[2][3] = {
+        { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f), color4(1.f, .8f, .1f, .300f), },
+        { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f), color4(1.f, .8f, .1f, 1.00f), },
+    };
 
-        //
-        // draw reactor ui
-        //
+    float alpha = 1.f;
+    if (time > _dead_time && time - _dead_time < destruction_time) {
+        alpha = 1.f - (time - _dead_time) / destruction_time;
+    }
 
-        if (_reactor) {
-            constexpr float mint = (3.f / 4.f) * math::pi<float>;
-            constexpr float maxt = (5.f / 4.f) * math::pi<float>;
-            constexpr float radius = 40.f;
-            constexpr float edge_width = 1.f;
-            constexpr float edge = edge_width / radius;
+    //
+    // draw reactor ui
+    //
 
-            vec2 pos = get_position(time);
+    if (_reactor) {
+        constexpr float mint = (3.f / 4.f) * math::pi<float>;
+        constexpr float maxt = (5.f / 4.f) * math::pi<float>;
+        constexpr float radius = 40.f;
+        constexpr float edge_width = 1.f;
+        constexpr float edge = edge_width / radius;
 
-            for (int ii = 0; ii < _reactor->maximum_power(); ++ii) {
-                int repaired = 0;
-                for (auto const& ch : _crew) {
-                    if (ch->is_repairing(_reactor)) {
-                        ++repaired;
-                    }
+        vec2 pos = get_position(time);
+
+        for (int ii = 0; ii < _reactor->maximum_power(); ++ii) {
+            int repaired = 0;
+            for (auto const& ch : _crew) {
+                if (ch->is_repairing(_reactor)) {
+                    ++repaired;
                 }
-                int damaged = static_cast<int>(_reactor->maximum_power() - std::ceil(_reactor->damage() - .2f));
-                int powered = ii < _reactor->current_power() ? 1 : 0;
-                int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
-                if (status == 2 && ii < _reactor->desired_power()) {
-                    powered = true;
-                }
-
-                color4 c = subsystem_colors[powered][status]; c.a *= alpha;
-
-                float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
-                float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
-                renderer->draw_arc(pos, radius, 3.f, t0 + .5f * edge, t1 - .5f * edge, c);
             }
-        }
-
-        //
-        // draw shield ui
-        //
-
-        if (_shield) {
-            constexpr float mint = (-1.f / 4.f) * math::pi<float>;
-            constexpr float maxt = (1.f / 4.f) * math::pi<float>;
-            constexpr float radius = 40.f;
-
-            float midt =  mint + (maxt - mint) * (_shield->strength() / _shield->info().maximum_power);
-
-            vec2 pos = get_position(time);
-
-            color4 c0 = _shield->colors()[1]; c0.a *= 1.5f * alpha;
-            color4 c1 = _shield->colors()[1]; c1.a = alpha;
-            renderer->draw_arc(pos, radius, 3.f, mint, maxt, c0);
-            renderer->draw_arc(pos, radius, 3.f, mint, midt, c1);
-        }
-
-        //
-        // draw subsystems ui
-        //
-
-        vec2 position = get_position(time) - vec2(8.f * (_subsystems.size() - 2.f) * .5f, 40.f);
-
-        for (auto const& subsystem : _subsystems) {
-            // reactor subsystem ui is drawn explicitly
-            if (subsystem->info().type == subsystem_type::reactor) {
-                continue;
+            int damaged = static_cast<int>(_reactor->maximum_power() - std::ceil(_reactor->damage() - .2f));
+            int powered = ii < _reactor->current_power() ? 1 : 0;
+            int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
+            if (status == 2 && ii < _reactor->desired_power()) {
+                powered = true;
             }
 
-            // draw power bar for each subsystem power level
-            for (int ii = 0; ii < subsystem->maximum_power(); ++ii) {
-                int repaired = 0;
-                for (auto const& ch : _crew) {
-                    if (ch->is_repairing(subsystem)) {
-                        ++repaired;
-                    }
-                }
-                int damaged = static_cast<int>(subsystem->maximum_power() - std::ceil(subsystem->damage() - .2f));
-                int powered = ii < subsystem->current_power() ? 1 : 0;
-                int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
-                if (status == 2 && ii < subsystem->desired_power()) {
-                    powered = true;
-                }
+            color4 c = subsystem_colors[powered][status]; c.a *= alpha;
 
-                color4 c = subsystem_colors[powered][status]; c.a *= alpha;
+            float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
+            float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
+            renderer->draw_arc(pos, radius, 3.f, t0 + .5f * edge, t1 - .5f * edge, c);
+        }
+    }
 
-                renderer->draw_box(vec2(7,3), position + vec2(0, 10.f + 4.f * ii), c);
-            }
+    //
+    // draw shield ui
+    //
 
-            position += vec2(8,0);
+    if (_shield) {
+        constexpr float mint = (-1.f / 4.f) * math::pi<float>;
+        constexpr float maxt = (1.f / 4.f) * math::pi<float>;
+        constexpr float radius = 40.f;
+
+        float midt =  mint + (maxt - mint) * (_shield->strength() / _shield->info().maximum_power);
+
+        vec2 pos = get_position(time);
+
+        color4 c0 = _shield->colors()[1]; c0.a *= 1.5f * alpha;
+        color4 c1 = _shield->colors()[1]; c1.a = alpha;
+        renderer->draw_arc(pos, radius, 3.f, mint, maxt, c0);
+        renderer->draw_arc(pos, radius, 3.f, mint, midt, c1);
+    }
+
+    //
+    // draw subsystems ui
+    //
+
+    vec2 position = get_position(time) - vec2(8.f * (_subsystems.size() - 2.f) * .5f, 40.f);
+
+    for (auto const& subsystem : _subsystems) {
+        // reactor subsystem ui is drawn explicitly
+        if (subsystem->info().type == subsystem_type::reactor) {
+            continue;
         }
 
-        position = get_position(time) - vec2(4.f * (_crew.size() - 1), -24.f);
-
-        for (auto const& ch : _crew) {
-            color4 c = ch->health() ? color4(1,1,1,alpha) : color4(1,.2f,0,alpha);
-            if (ch->health() == 0.f) {
-                renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), color4(1,.2f,0,alpha));
-            } else if (ch->health() == 1.f) {
-                renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), color4(1,1,1,alpha));
-            } else {
-                float t = ch->health();
-                renderer->draw_box(vec2(7*(1.f-t),3), position + vec2(3.5f*t,10 - 4), color4(1,.2f,0,alpha));
-                renderer->draw_box(vec2(7*t,3), position + vec2(-3.5f*(1.f-t),10 - 4), color4(1,1,1,alpha));
+        // draw power bar for each subsystem power level
+        for (int ii = 0; ii < subsystem->maximum_power(); ++ii) {
+            int repaired = 0;
+            for (auto const& ch : _crew) {
+                if (ch->is_repairing(subsystem)) {
+                    ++repaired;
+                }
             }
-            position += vec2(8,0);
+            int damaged = static_cast<int>(subsystem->maximum_power() - std::ceil(subsystem->damage() - .2f));
+            int powered = ii < subsystem->current_power() ? 1 : 0;
+            int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
+            if (status == 2 && ii < subsystem->desired_power()) {
+                powered = true;
+            }
+
+            color4 c = subsystem_colors[powered][status]; c.a *= alpha;
+
+            renderer->draw_box(vec2(7,3), position + vec2(0, 10.f + 4.f * ii), c);
         }
 
-        //
-        // draw layout
-        //
+        position += vec2(8,0);
+    }
 
+    position = get_position(time) - vec2(4.f * (_crew.size() - 1), -24.f);
+
+    for (auto const& ch : _crew) {
+        color4 c = ch->health() ? color4(1,1,1,alpha) : color4(1,.2f,0,alpha);
+        if (ch->health() == 0.f) {
+            renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), color4(1,.2f,0,alpha));
+        } else if (ch->health() == 1.f) {
+            renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), color4(1,1,1,alpha));
+        } else {
+            float t = ch->health();
+            renderer->draw_box(vec2(7*(1.f-t),3), position + vec2(3.5f*t,10 - 4), color4(1,.2f,0,alpha));
+            renderer->draw_box(vec2(7*t,3), position + vec2(-3.5f*(1.f-t),10 - 4), color4(1,1,1,alpha));
+        }
+        position += vec2(8,0);
+    }
+
+    //
+    // draw layout
+    //
+
+    if (true) {
         ship_layout const& _layout = _state.layout();
         mat3 transform = get_transform(time);
         std::vector<vec2> positions;
@@ -357,7 +361,7 @@ void ship::draw(render::system* renderer, time_value time) const
             positions.push_back(v * transform);
             colors.push_back(color4(1,1,1,1));
         }
-#if 1
+
         for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
             auto const& c = _layout.compartments()[ii];
             auto const& s = _state.compartments()[ii];
@@ -374,8 +378,6 @@ void ship::draw(render::system* renderer, time_value time) const
 
         renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
 
-#endif
-#if 1
         for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
             auto const& c = _layout.compartments()[ii];
             std::vector<vec2> vtx;
@@ -403,8 +405,7 @@ void ship::draw(render::system* renderer, time_value time) const
             col[c.inner_shape.num_vertices()] = color4(0.f,0.f,0.f,.1f);
             renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.inner_shape.num_vertices() - 2) * 3);
         }
-#endif
-#if 1
+
         positions.clear();
         colors.clear();
         indices.clear();
@@ -420,10 +421,11 @@ void ship::draw(render::system* renderer, time_value time) const
             vec2 v0 = _layout.vertices()[c.vertices[0]] * transform;
             vec2 v1 = _layout.vertices()[c.vertices[1]] * transform;
             vec2 n = (v1 - v0).cross(1.f).normalize();
-            positions.push_back(v0 - n * .1f);
-            positions.push_back(v0 + n * .1f);
-            positions.push_back(v1 - n * .1f);
-            positions.push_back(v1 + n * .1f);
+            vec2 t = n.cross(1.f);
+            positions.push_back(v0 - n * .1f + t * .1f);
+            positions.push_back(v0 + n * .1f + t * .1f);
+            positions.push_back(v1 - n * .1f - t * .1f);
+            positions.push_back(v1 + n * .1f - t * .1f);
             if (s.opened) {
                 colors.push_back(color4(1,1,0,1));
                 colors.push_back(color4(1,1,0,1));
@@ -435,44 +437,47 @@ void ship::draw(render::system* renderer, time_value time) const
                 colors.push_back(color4(0,1,0,1));
                 colors.push_back(color4(0,1,0,1));
             } else {
-                colors.push_back(color4(0,1,1,1));
-                colors.push_back(color4(0,1,1,1));
-                colors.push_back(color4(0,1,1,1));
-                colors.push_back(color4(0,1,1,1));
+                colors.push_back(color4(.4f,.4f,.4f,1));
+                colors.push_back(color4(.4f,.4f,.4f,1));
+                colors.push_back(color4(.4f,.4f,.4f,1));
+                colors.push_back(color4(.4f,.4f,.4f,1));
             }
         }
 
         renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
-#endif
 
-#if 0
-        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
-            auto const& c = _layout.compartments()[ii];
-            auto const& s = _state.compartments()[ii];
-            vec2 p = vec2_zero;
-            for (int jj = 0; jj < c.num_vertices; ++jj) {
-                p += positions[c.first_vertex + jj];
-            }
-            p /= c.num_vertices;
-            renderer->draw_string(va("%.2f - %.2f", s.atmosphere, s.atmosphere * c.area), p, color4(.4f,.4f,.4f,1));
-        }
+        //
+        //  draw compartment state
+        //
 
-        for (std::size_t ii = 0, sz = _layout.connections().size(); ii < sz; ++ii) {
-            auto const& c = _layout.connections()[ii];
-            auto const& s = _state.connections()[ii];
-            vec2 p = vec2_zero;
-            for (int jj = 0; jj < 4; ++jj) {
-                p += positions[c.vertices[jj]] * .25f;
+        if (false) {
+            for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+                auto const& c = _layout.compartments()[ii];
+                auto const& s = _state.compartments()[ii];
+                vec2 p = vec2_zero;
+                for (int jj = 0; jj < c.num_vertices; ++jj) {
+                    p += positions[c.first_vertex + jj];
+                }
+                p /= c.num_vertices;
+                renderer->draw_string(va("%.2f - %.2f", s.atmosphere, s.atmosphere * c.area), p, color4(.4f,.4f,.4f,1));
             }
-            renderer->draw_string(va("%.2f - %.2f", s.flow, s.velocity), p, color4(.4f,.3f,.2f,1));
+
+            for (std::size_t ii = 0, sz = _layout.connections().size(); ii < sz; ++ii) {
+                auto const& c = _layout.connections()[ii];
+                auto const& s = _state.connections()[ii];
+                vec2 p = vec2_zero;
+                for (int jj = 0; jj < 4; ++jj) {
+                    p += positions[c.vertices[jj]] * .25f;
+                }
+                renderer->draw_string(va("%.2f - %.2f", s.flow, s.velocity), p, color4(.4f,.3f,.2f,1));
+            }
         }
-#endif
 
         //
         //  draw subsystem icons
         //
 
-        if (1) {
+        if (true) {
             mat3 tx = get_transform(time);
 
             for (auto const& ss : _subsystems) {
@@ -503,7 +508,7 @@ void ship::draw(render::system* renderer, time_value time) const
                 color4 color = ss->damage() < ss->maximum_power() ? color4(.09f,.225f,.045f,a) : color4(.333f,.0666f,0,a);
                 renderer->draw_string(text, pt * tx - sz * .5f, color);
             }
-        } else if (1) {
+        } else if (true) {
             mat3 tx = get_transform(time);
 
             for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
@@ -551,7 +556,7 @@ void ship::draw(render::system* renderer, time_value time) const
                     sz
                 });
             }
-#if 1
+
             for (int iter = 0; iter < 64; ++iter) {
                 uint64_t overlap_mask = 0;
                 bool has_overlap = false;
@@ -567,29 +572,35 @@ void ship::draw(render::system* renderer, time_value time) const
                             overlap_mask |= (1LL << jj);
                             vec2 s0 = overlap.size();
                             vec2 s1 = vec2(std::abs(layout[ii].origin.x + layout[ii].offset.x - layout[jj].origin.x - layout[jj].offset.x),
-                                           std::abs(layout[ii].origin.y + layout[ii].offset.y - layout[jj].origin.y - layout[jj].offset.y));
+                                            std::abs(layout[ii].origin.y + layout[ii].offset.y - layout[jj].origin.y - layout[jj].offset.y));
                             float s = std::min((s0.x + s1.x) / s1.x, (s0.y + s1.y) / s1.y);
                             minscale = std::min(s * (1.f + 1e-3f), minscale);
                         }
                     }
                 }
-#if 0
-                for (int ii = 0, sz = layout.size(); ii < sz; ++ii) {
-                    text_layout const& ll = layout[ii];
-                    color4 color = (overlap_mask & (1LL << ii)) ? color4(1,0,0,.1f) : color4(0,0,1,.1f);
 
-                    vec2 v[4] = {
-                        ll.origin + ll.offset + ll.size * vec2(-.5f, -.5f),
-                        ll.origin + ll.offset + ll.size * vec2(+.5f, -.5f),
-                        ll.origin + ll.offset + ll.size * vec2(+.5f, +.5f),
-                        ll.origin + ll.offset + ll.size * vec2(-.5f, +.5f),
-                    };
-                    renderer->draw_line(v[0], v[1], color, color);
-                    renderer->draw_line(v[1], v[2], color, color);
-                    renderer->draw_line(v[2], v[3], color, color);
-                    renderer->draw_line(v[3], v[0], color, color);
+                //
+                //  draw text layout debugging
+                //
+
+                if (false) {
+                    for (std::size_t ii = 0, sz = layout.size(); ii < sz; ++ii) {
+                        text_layout const& ll = layout[ii];
+                        color4 color = (overlap_mask & (1LL << ii)) ? color4(1,0,0,.1f) : color4(0,0,1,.1f);
+
+                        vec2 v[4] = {
+                            ll.origin + ll.offset + ll.size * vec2(-.5f, -.5f),
+                            ll.origin + ll.offset + ll.size * vec2(+.5f, -.5f),
+                            ll.origin + ll.offset + ll.size * vec2(+.5f, +.5f),
+                            ll.origin + ll.offset + ll.size * vec2(-.5f, +.5f),
+                        };
+                        renderer->draw_line(v[0], v[1], color, color);
+                        renderer->draw_line(v[1], v[2], color, color);
+                        renderer->draw_line(v[2], v[3], color, color);
+                        renderer->draw_line(v[3], v[0], color, color);
+                    }
                 }
-#endif
+
                 if (!has_overlap) {
                     break;
                 }
@@ -606,7 +617,7 @@ void ship::draw(render::system* renderer, time_value time) const
                     }
                 }
             }
-#endif
+
             for (auto const& elem : layout) {
                 renderer->draw_string(elem.text, elem.origin + elem.offset - elem.size * .5f, elem.color);
             }
@@ -616,15 +627,18 @@ void ship::draw(render::system* renderer, time_value time) const
         //  draw cursor and highlight compartment
         //
 
-        {
+        if (true) {
             vec2 scale = renderer->view().size / vec2(renderer->window()->size());
             vec2 s = vec2(scale.x, -scale.y), b = vec2(0.f, static_cast<float>(renderer->window()->size().y)) * scale;
             // cursor position in world space
             vec2 world_cursor = g_cursor * s + b + renderer->view().origin - renderer->view().size * 0.5f;
 
+            // draw cursor
             float d = renderer->view().size.y * (1.f / 50.f);
-            renderer->draw_line(world_cursor - vec2(d,0), world_cursor + vec2(d,0), color4(1,0,0,1), color4(1,0,0,1));
-            renderer->draw_line(world_cursor - vec2(0,d), world_cursor + vec2(0,d), color4(1,0,0,1), color4(1,0,0,1));
+            if (false) {
+                renderer->draw_line(world_cursor - vec2(d,0), world_cursor + vec2(d,0), color4(1,0,0,1), color4(1,0,0,1));
+                renderer->draw_line(world_cursor - vec2(0,d), world_cursor + vec2(0,d), color4(1,0,0,1), color4(1,0,0,1));
+            }
 
             // cursor position in ship-local space
             vec2 local_cursor = world_cursor * get_inverse_transform(time);
@@ -645,8 +659,7 @@ void ship::draw(render::system* renderer, time_value time) const
             //  draw path from cursor to random point in ship
             //
 
-#if 0
-            {
+            if (false) {
                 static random r;
                 mat3 tx = get_transform(time);
                 static vec2 goal = vec2_zero;
@@ -670,15 +683,13 @@ void ship::draw(render::system* renderer, time_value time) const
                     renderer->draw_line(end - v2, end + v2, color4(1,0,0,1), color4(1,0,0,1));
                 }
             }
-#endif
         }
 
         //
         //  draw compartment state line graph
         //
 
-#if 0
-        {
+        if (false) {
             constexpr std::size_t count = countof<decltype(ship_state::compartment_state::history)>();
             for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
                 auto const& s = _state.compartments()[ii];
@@ -693,20 +704,22 @@ void ship::draw(render::system* renderer, time_value time) const
                 }
             }
         }
-#endif
-#if 0
-        {
-            mat3 tx = get_transform(lerp);
-            mat2 rot = mat2::rotate(get_rotation(lerp));
-            renderer->draw_line(get_position(lerp), get_position(lerp) + get_linear_velocity() * 2.f, color4(1,0,0,1), color4(1,0,0,1));
-            renderer->draw_line(get_position(lerp), get_position(lerp) + _engines->get_move_target().normalize() * 32.f, color4(0,1,0,1), color4(0,1,0,1));
+    }
 
-            mat2 lt = mat2::rotate(get_rotation(lerp) + _engines->get_look_target());
-            renderer->draw_line(get_position(lerp), get_position(lerp) + vec2(32,0) * lt, color4(1,1,0,1), color4(1,1,0,1));
-            renderer->draw_line(get_position(lerp), get_position(lerp) + vec2(32,0) * rot, color4(1,.5,0,1), color4(1,.5,0,1));
-            renderer->draw_line(get_position(lerp) + vec2(32,0) * rot, get_position(lerp) + vec2(32,get_angular_velocity()*32) * rot, color4(1,.5,0,1), color4(1,.5,0,1));
-        }
-#endif
+    //
+    //  draw engine targets
+    //
+
+    if (false) {
+        mat3 tx = get_transform(time);
+        mat2 rot = mat2::rotate(get_rotation(time));
+        renderer->draw_line(get_position(time), get_position(time) + get_linear_velocity() * 2.f, color4(1,0,0,1), color4(1,0,0,1));
+        renderer->draw_line(get_position(time), get_position(time) + _engines->target_linear_velocity().normalize() * 32.f, color4(0,1,0,1), color4(0,1,0,1));
+
+        mat2 lt = mat2::rotate(get_rotation(time) + _engines->target_angular_velocity());
+        renderer->draw_line(get_position(time), get_position(time) + vec2(32,0) * lt, color4(1,1,0,1), color4(1,1,0,1));
+        renderer->draw_line(get_position(time), get_position(time) + vec2(32,0) * rot, color4(1,.5,0,1), color4(1,.5,0,1));
+        renderer->draw_line(get_position(time) + vec2(32,0) * rot, get_position(time) + vec2(32,get_angular_velocity()*32) * rot, color4(1,.5,0,1), color4(1,.5,0,1));
     }
 }
 
