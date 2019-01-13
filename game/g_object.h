@@ -113,8 +113,8 @@ public:
 
     physics::rigid_body const& rigid_body() const { return _rigid_body; }
 
-    void set_position(vec2 position, bool teleport = false);
-    void set_rotation(float rotation, bool teleport = false);
+    virtual void set_position(vec2 position, bool teleport = false);
+    virtual void set_rotation(float rotation, bool teleport = false);
     void set_linear_velocity(vec2 linear_velocity) { _rigid_body.set_linear_velocity(linear_velocity); }
     void set_angular_velocity(float angular_velocity) { _rigid_body.set_angular_velocity(angular_velocity); }
 

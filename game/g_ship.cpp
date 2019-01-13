@@ -775,6 +775,24 @@ void ship::write_snapshot(network::message& /*message*/) const
 }
 
 //------------------------------------------------------------------------------
+void ship::set_position(vec2 position, bool teleport)
+{
+    object::set_position(position, teleport);
+    if (_shield) {
+        _shield->set_position(position, teleport);
+    }
+}
+
+//------------------------------------------------------------------------------
+void ship::set_rotation(float rotation, bool teleport)
+{
+    object::set_rotation(rotation, teleport);
+    if (_shield) {
+        _shield->set_rotation(rotation, teleport);
+    }
+}
+
+//------------------------------------------------------------------------------
 void ship::damage(object* inflictor, vec2 /*point*/, float amount)
 {
     // get list of subsystems that can take additional damage
