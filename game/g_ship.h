@@ -36,6 +36,9 @@ public:
     virtual void read_snapshot(network::message const& message) override;
     virtual void write_snapshot(network::message& message) const override;
 
+    virtual void set_position(vec2 position, bool teleport = false) override;
+    virtual void set_rotation(float rotation, bool teleport = false) override;
+
     void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec2 point, float amount);
 
