@@ -44,7 +44,7 @@ ship_layout::ship_layout(std::initializer_list<vec2> const* compartments, int nu
 
     for (auto& c : _connections) {
         // TODO: determine boundary vertices for external connection
-        c.width = 2.f;
+        c.width = 0.f;
         if (c.compartments[0] == invalid_compartment || c.compartments[1] == invalid_compartment) {
             c.vertices[0] = 0;
             c.vertices[1] = 0;
@@ -52,11 +52,13 @@ ship_layout::ship_layout(std::initializer_list<vec2> const* compartments, int nu
         }
         auto* cm0 = &_compartments[c.compartments[0]];
         auto* cm1 = &_compartments[c.compartments[1]];
-        if (cm0->num_vertices > cm1->num_vertices) {
+        if (cm0->area > cm1->area) {
             std::swap(cm0, cm1);
         }
         for (int ii = 0, jj = 0; ii < cm0->num_vertices && jj < 2; ++ii) {
-            if (cm1->shape.contains_point(_vertices[cm0->first_vertex + ii])) {
+            vec2 v0 = _vertices[cm0->first_vertex + ii];
+            vec2 v1 = physics::collide::closest_point(&cm1->shape, v0);
+            if ((v0 - v1).length_sqr() < square(.1f)) {
                 c.vertices[jj] = static_cast<uint16_t>(cm0->first_vertex + ii);
                 jj++;
                 if (jj == 2) {
@@ -64,6 +66,7 @@ ship_layout::ship_layout(std::initializer_list<vec2> const* compartments, int nu
                 }
             }
         }
+        assert(c.width);
     }
 }
 
