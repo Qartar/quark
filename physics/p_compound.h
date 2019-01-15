@@ -46,6 +46,10 @@ public:
 
     virtual bounds calculate_bounds(mat3 transform) const override;
 
+    std::size_t size() const { return _children.size(); }
+
+    child_shape const& operator[](std::size_t index) const { return _children[index]; }
+
     child_shape const* begin() const { return _children.data(); }
 
     child_shape const* end() const { return _children.data() + _children.size(); }
