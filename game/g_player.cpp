@@ -87,6 +87,24 @@ void player::draw(render::system* renderer, time_value time) const
             }
         }
 
+        for (std::size_t ii = 0, sz = _ship->crew().size(); ii < sz; ++ii) {
+            auto const& ch = _ship->crew()[ii];
+            float t = ch->health();
+            vec2 offset = vec2(0, (ii + 2) * 22.f) * transform;
+            if (t <= 0.f) {
+                renderer->draw_box(box_size, offset, color4(1,.2f,0,1));
+            } else if (t >= 1.f) {
+                renderer->draw_box(box_size, offset, color4(1,1,1,1));
+            } else {
+                renderer->draw_box(box_size * vec2(1.f-t,1), vec2(box_size.x * .5f * t, 0) + offset, color4(1,.2f,0,1));
+                renderer->draw_box(box_size * vec2(t,1), vec2(box_size.x * -.5f * (1.f - t), 0) + offset, color4(1,1,1,1));
+            }
+
+            if (_crew_selection & (1 << ii)) {
+                renderer->draw_box(box_size * vec2(.2f, 1), vec2(25.6f, (ii + 2) * 22.f) * transform, color4(.4f,1.f,.2f,1));
+            }
+        }
+
         if (_cursor_selection) {
             bounds selection = bounds::from_points({
                 (_selection_start - vec2(.5f, .5f)) * _view.size + get_position(time),
