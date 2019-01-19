@@ -35,6 +35,7 @@ struct usercmd
     {
         none,
         select,
+        command,
         move,
         weapon_1,
         weapon_2,

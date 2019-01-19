@@ -50,7 +50,10 @@ protected:
     std::vector<vec2> _waypoints;
     bool _move_selection;
     bool _move_appending;
+    int _crew_selection;
     int _weapon_selection;
+    bool _cursor_selection;
+    vec2 _selection_start;
 
     time_value _destroyed_time;
 
@@ -58,6 +61,8 @@ protected:
 
 protected:
     bool attack(vec2 position, bool repeat);
+    void select(bounds selection, bool add);
+    void command(vec2 position);
     void toggle_weapon(int weapon_index, bool toggle_power);
 };
 
