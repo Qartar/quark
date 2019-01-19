@@ -98,6 +98,7 @@ result session::init (string::view cmdline)
         {K_CTRL, usercmd::modifier::control},
         {K_SHIFT, usercmd::modifier::shift},
         {K_MOUSE1, usercmd::button::select},
+        {K_MOUSE2, usercmd::action::command},
         {'m', usercmd::action::move},
         {'1', usercmd::action::weapon_1},
         {'2', usercmd::action::weapon_2},

@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_player.h"
+#include "g_character.h"
 #include "g_shield.h"
 #include "g_ship.h"
 
@@ -18,7 +19,9 @@ player::player(ship* target)
     : _ship(target)
     , _move_selection(0)
     , _move_appending(0)
+    , _crew_selection(0)
     , _weapon_selection(0)
+    , _cursor_selection(0)
     , _destroyed_time(time_value::max)
 {
     _view.origin = _ship ? _ship->get_position() : vec2_zero;
@@ -81,6 +84,50 @@ void player::draw(render::system* renderer, time_value time) const
             }
             if (_weapon_selection & (1 << ii)) {
                 renderer->draw_box(sel_size, vec2(40.f * (ii + 1), 16) * transform, color4(.4f,1.f,.2f,1));
+            }
+        }
+
+        if (_cursor_selection) {
+            bounds selection = bounds::from_points({
+                (_selection_start - vec2(.5f, .5f)) * _view.size + get_position(time),
+                (_usercmd.cursor - vec2(.5f, .5f)) * _view.size + get_position(time),
+            });
+
+            vec2 points[4] = {
+                {selection[0][0], selection[0][1]},
+                {selection[1][0], selection[0][1]},
+                {selection[0][0], selection[1][1]},
+                {selection[1][0], selection[1][1]},
+            };
+
+            // draw thin black outline for extra contrast
+            renderer->draw_line(1.f * scale[1], points[0], points[2], color4(0,0,0,1), color4(0,0,0,1));
+            renderer->draw_line(1.f * scale[1], points[2], points[3], color4(0,0,0,1), color4(0,0,0,1));
+            renderer->draw_line(1.f * scale[1], points[3], points[1], color4(0,0,0,1), color4(0,0,0,1));
+            renderer->draw_line(1.f * scale[1], points[1], points[0], color4(0,0,0,1), color4(0,0,0,1));
+
+            // draw green selection rectangle
+            renderer->draw_line(points[0], points[2], color4(.4f,1.f,.2f,1), color4(.4f,1.f,.2f,1));
+            renderer->draw_line(points[2], points[3], color4(.4f,1.f,.2f,1), color4(.4f,1.f,.2f,1));
+            renderer->draw_line(points[3], points[1], color4(.4f,1.f,.2f,1), color4(.4f,1.f,.2f,1));
+            renderer->draw_line(points[1], points[0], color4(.4f,1.f,.2f,1), color4(.4f,1.f,.2f,1));
+
+            for (auto const& ch : _ship->crew()) {
+                vec2 crew_pos = ch->get_position(time) * get_transform(time);
+                if (selection.contains(crew_pos)) {
+                    renderer->draw_arc(crew_pos, .4f, 1.f * scale[1], 0, 2.f * math::pi<float>, color4(0,0,0,1));
+                    renderer->draw_arc(crew_pos, .4f, 0.f, 0, 2.f * math::pi<float>, color4(.4f,1.f,.2f,1));
+                }
+            }
+        }
+
+        if (_crew_selection) {
+            for (std::size_t ii = 0, sz = _ship->crew().size(); ii < sz; ++ii) {
+                if (_crew_selection & (1 << ii)) {
+                    vec2 crew_pos = _ship->crew()[ii]->get_position(time) * get_transform(time);
+                    renderer->draw_arc(crew_pos, .4f, 1.f * scale[1], 0, 2.f * math::pi<float>, color4(0,0,0,1));
+                    renderer->draw_arc(crew_pos, .4f, 0.f, 0, 2.f * math::pi<float>, color4(.4f,1.f,.2f,1));
+                }
             }
         }
     }
@@ -236,14 +283,38 @@ void player::update_usercmd(usercmd cmd, time_value time)
                 if (attack(world_cursor, !!(cmd.modifiers & usercmd::modifier::control))) {
                     _weapon_selection = 0;
                 }
+            } else {
+                _cursor_selection = true;
+                _selection_start = cmd.cursor;
+            }
+        }
+
+        usercmd::button unpressed = _usercmd.buttons & ~cmd.buttons;
+        if (!!(unpressed & usercmd::button::select)) {
+            if (_cursor_selection) {
+                bounds selection = bounds::from_points({
+                    (_selection_start - vec2(.5f, .5f)) * _view.size + _ship->get_position(),
+                    (_usercmd.cursor - vec2(.5f, .5f)) * _view.size + _ship->get_position(),
+                });
+                select(selection, !!(cmd.modifiers & usercmd::modifier::shift));
+                _cursor_selection = false;
             }
         }
     }
 
     switch (cmd.action) {
+        case usercmd::action::command: {
+            vec2 world_cursor = (cmd.cursor - vec2(.5f, .5f)) * _view.size + _view.origin;
+            vec2 ship_cursor = world_cursor * _ship->get_inverse_transform();
+            command(ship_cursor);
+            break;
+        }
+
         case usercmd::action::move:
             _move_selection = !_move_selection;
             _weapon_selection = 0;
+            _crew_selection = 0;
+            _cursor_selection = false;
             break;
 
         case usercmd::action::weapon_1:
@@ -328,6 +399,35 @@ bool player::attack(vec2 position, bool repeat)
 }
 
 //------------------------------------------------------------------------------
+void player::select(bounds selection, bool add)
+{
+    int new_selection = 0;
+    mat3 transform = _ship->get_transform();
+    for (std::size_t ii = 0, sz = _ship->crew().size(); ii < sz; ++ii) {
+        vec2 crew_pos = _ship->crew()[ii]->get_position() * transform;
+        if (selection.contains(crew_pos)) {
+            new_selection |= (1 << ii);
+        }
+    }
+
+    if (add) {
+        _crew_selection |= new_selection;
+    } else {
+        _crew_selection = new_selection;
+    }
+}
+
+//------------------------------------------------------------------------------
+void player::command(vec2 position)
+{
+    for (std::size_t ii = 0, sz = _ship->crew().size(); ii < sz; ++ii) {
+        if (_crew_selection & (1 << ii)) {
+            _ship->crew()[ii]->move(position);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 void player::toggle_weapon(int weapon_index, bool toggle_power)
 {
     if (_ship->weapons().size() > weapon_index) {
@@ -340,6 +440,8 @@ void player::toggle_weapon(int weapon_index, bool toggle_power)
             }
         } else {
             _move_selection = false;
+            _crew_selection = 0;
+            _cursor_selection = false;
             _weapon_selection ^= (1 << weapon_index);
         }
     }
