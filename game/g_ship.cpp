@@ -338,11 +338,11 @@ void ship::spawn()
 
     for (int ii = 0; ii < 3; ++ii) {
         _crew.push_back(get_world()->spawn<character>());
-        _crew.back()->set_position(this, vec2_zero, true);
+        _crew.back()->set_position(this, _state.layout().random_point(_random), true);
     }
     if (style == extra_crewmember) {
         _crew.push_back(get_world()->spawn<character>());
-        _crew.back()->set_position(this, vec2_zero, true);
+        _crew.back()->set_position(this, _state.layout().random_point(_random), true);
     }
 
     std::vector<uint16_t> compartments;
@@ -383,6 +383,9 @@ void ship::spawn()
     for (auto& ch : _crew) {
         if (assignments.size()) {
             std::size_t index = _random.uniform_int(assignments.size());
+            uint16_t compartment = assignments[index]->compartment();
+            vec2 position = _state.layout().random_point(_random, compartment);
+            ch->set_position(position, true);
             ch->operate(assignments[index]);
             assignments.erase(assignments.begin() + index);
         }

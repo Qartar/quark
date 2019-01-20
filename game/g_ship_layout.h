@@ -47,6 +47,11 @@ public:
     uint16_t intersect_compartment(vec2 point) const;
     int find_path(vec2 start, vec2 end, float radius, vec2* buffer, std::size_t buffer_size) const;
 
+    //! Return a random point within the ship layout, uniformly distributed by area
+    vec2 random_point(random& r) const;
+    //! Return a random point within the given compartment, uniformly distributed by area
+    vec2 random_point(random& r, uint16_t compartment) const;
+
 protected:
     std::vector<vec2> _vertices;
     std::vector<compartment> _compartments;
