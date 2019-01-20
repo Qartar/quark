@@ -164,7 +164,7 @@ public:
 
     random& get_random() { return _random; }
 
-    void remove(object* object);
+    void remove(handle<object> object);
 
     void add_sound(sound::asset sound_asset, vec2 position, float volume = 1.0f);
     void add_effect(time_value time, effect_type type, vec2 position, vec2 direction = vec2(0,0), float strength = 1);
@@ -183,7 +183,7 @@ private:
     std::vector<std::unique_ptr<object>> _objects;
 
     //! Objects pending removal
-    std::queue<object*> _removed;
+    std::queue<handle<object>> _removed;
 
     //! World index in singletons array
     uint64_t _index;

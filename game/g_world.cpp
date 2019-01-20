@@ -84,9 +84,8 @@ void world::reset()
 void world::clear()
 {
     _objects.clear();
-    // swap with empty queue because std::queue has no clear method
-    std::queue<game::object*> empty;
-    _removed.swap(empty);
+    // assign with empty queue because std::queue has no clear method
+    _removed = std::queue<handle<game::object>>{};
 
     _physics_objects.clear();
     _particles.clear();
@@ -111,7 +110,7 @@ object_range<object> world::objects()
 }
 
 //------------------------------------------------------------------------------
-void world::remove(game::object* object)
+void world::remove(handle<object> object)
 {
     _removed.push(object);
 }
@@ -140,8 +139,9 @@ void world::run_frame()
     ++_framenum;
 
     while (_removed.size()) {
-        assert(_objects[_removed.front()->_self.get_index()].get() == _removed.front()->_self.get());
-        _objects[_removed.front()->_self.get_index()] = nullptr;
+        if (_removed.front()) {
+            _objects[_removed.front().get_index()] = nullptr;
+        }
         _removed.pop();
     }
 
@@ -169,8 +169,9 @@ void world::run_frame()
 void world::read_snapshot(network::message& message)
 {
     while (_removed.size()) {
-        assert(_objects[_removed.front()->_self.get_index()].get() == _removed.front()->_self.get());
-        _objects[_removed.front()->_self.get_index()] = nullptr;
+        if (_removed.front()) {
+            _objects[_removed.front().get_index()] = nullptr;
+        }
         _removed.pop();
     }
 

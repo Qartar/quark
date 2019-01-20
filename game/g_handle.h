@@ -188,14 +188,14 @@ public:
     //! destruction, removes object from world
     ~unique_handle() {
         if (handle<T>::get()) {
-            handle<T>::get_world()->remove(handle<T>::get());
+            handle<T>::get_world()->remove(*this);
         }
     }
 
     //! copy-assignment from raw object pointer
     unique_handle& operator=(T* object) {
         if (handle<T>::get()) {
-            handle<T>::get_world()->remove(handle<T>::get());
+            handle<T>::get_world()->remove(*this);
         }
         if (object) {
             handle<T>::_value = object->_self._value;
@@ -209,7 +209,7 @@ public:
     template<typename Y> unique_handle& operator=(handle<Y> const& object) {
         static_assert(std::is_base_of<T, Y>::value, "cannot implicitly convert handle to unrelated type");
         if (handle<T>::get()) {
-            handle<T>::get_world()->remove(handle<T>::get());
+            handle<T>::get_world()->remove(*this);
         }
         handle<T>::_value = object._value;
         return *this;
