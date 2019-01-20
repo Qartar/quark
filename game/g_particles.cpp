@@ -476,7 +476,7 @@ void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position,
                 r = _random.uniform_real(2.f * math::pi<float>);
                 d = _random.uniform_real();
 
-                p->position = position + vec2(std::cos(r),std::sin(r))*d + lerp * static_cast<float>(ii) / static_cast<float>(count);
+                p->position = position + vec2(std::cos(r),std::sin(r))*d + lerp * t;
 
                 r = _random.uniform_real(2.f * math::pi<float>);
                 d = _random.uniform_real(64.f);
