@@ -147,6 +147,16 @@ void system::draw_triangles(vec2 const* position, color4 const* color, int const
 
     glDrawElements(GL_TRIANGLES, (GLsizei)num_indices, GL_UNSIGNED_INT, indices);
 
+    if (_draw_tris) {
+        glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        glDrawElements(GL_TRIANGLES, (GLsizei)num_indices, GL_UNSIGNED_INT, indices);
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
 }
