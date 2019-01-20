@@ -30,16 +30,6 @@ aicontroller::~aicontroller()
 void aicontroller::spawn()
 {
     object::spawn();
-
-    for (auto& ch : _ship->crew()) {
-        vec2 mins = _ship->model()->bounds().mins();
-        vec2 maxs = _ship->model()->bounds().maxs();
-        vec2 goal = vec2_zero;
-        do {
-            goal = vec2(_random.uniform_real(), _random.uniform_real()) * (maxs - mins) + mins;
-        } while (_ship->layout().intersect_compartment(goal) == ship_layout::invalid_compartment);
-        ch->set_position(_ship, goal, true);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -220,17 +210,6 @@ void aicontroller::think()
             _ship = get_world()->spawn<ship>(ship::by_random(_random));
             _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
             _ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
-
-            // place crew at random places in the ship
-            for (auto& ch : _ship->crew()) {
-                vec2 mins = _ship->model()->bounds().mins();
-                vec2 maxs = _ship->model()->bounds().maxs();
-                vec2 goal = vec2_zero;
-                do {
-                    goal = vec2(_random.uniform_real(), _random.uniform_real()) * (maxs - mins) + mins;
-                } while (_ship->layout().intersect_compartment(goal) == ship_layout::invalid_compartment);
-                ch->set_position(_ship, goal, true);
-            }
         }
     }
 }

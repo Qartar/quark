@@ -218,6 +218,67 @@ int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std
 }
 
 //------------------------------------------------------------------------------
+vec2 ship_layout::random_point(random& r) const
+{
+    float area = 0.f;
+    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
+        area += _compartments[ii].inner_shape.calculate_area();
+    }
+
+    // select a random compartment uniformly by area
+    float t = r.uniform_real(area);
+    area = 0.f;
+    for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
+        area += _compartments[ii].inner_shape.calculate_area();
+        if (t <= area) {
+            return random_point(r, narrow_cast<uint16_t>(ii));
+        }
+    }
+
+    assert(false);
+    __assume(false);
+}
+
+//------------------------------------------------------------------------------
+vec2 ship_layout::random_point(random& r, uint16_t compartment) const
+{
+    assert(compartment < _compartments.size());
+    auto const& c = _compartments[compartment];
+    vec2 v0 = c.inner_shape.vertices()[0];
+    std::array<float, 64> triangle_running_total;
+    float area = 0;
+    for (std::size_t ii = 2, sz = c.inner_shape.num_vertices(); ii < sz; ++ii) {
+        vec2 v1 = c.inner_shape.vertices()[ii - 1];
+        vec2 v2 = c.inner_shape.vertices()[ii - 0];
+        float triangle_area = std::abs(0.5f * (v2 - v1).cross(v1 - v0));
+        triangle_running_total[ii - 2] = area + triangle_area;
+        area += triangle_area;
+    }
+
+    // select a random triangle uniformly by area
+    float t = r.uniform_real(area);
+    std::size_t triangle_index = 0;
+    while (triangle_running_total[triangle_index] < t) {
+        ++triangle_index;
+    }
+    assert(triangle_index < c.inner_shape.num_vertices() - 2);
+
+    // select a random point on the triangle using barycentric coordinates
+    {
+        vec2 v1 = c.inner_shape.vertices()[triangle_index + 1];
+        vec2 v2 = c.inner_shape.vertices()[triangle_index + 2];
+
+        float u = r.uniform_real();
+        float v = r.uniform_real();
+        if (u + v < 1.f) {
+            return v0 * u + v1 * v + v2 * (1.f - u - v);
+        } else {
+            return v0 * (1.f - u) + v1 * (1.f - v) + v2 * (u + v - 1.f);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 ship_state::ship_state(ship_layout const& layout)
     : _layout(layout)
     , framenum(0)
