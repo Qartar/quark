@@ -43,6 +43,8 @@ public:
     handle<subsystem> reactor() { return _reactor; }
     handle<game::engines> engines() { return _engines; }
     handle<game::engines const> engines() const { return _engines; }
+    handle<game::shield> shield() { return _shield; }
+    handle<game::shield const> shield() const { return _shield; }
     std::vector<handle<weapon>>& weapons() { return _weapons; }
     std::vector<handle<weapon>> const& weapons() const { return _weapons; }
 
@@ -56,7 +58,7 @@ protected:
 
     handle<subsystem> _reactor;
     handle<game::engines> _engines;
-    handle<shield> _shield;
+    handle<game::shield> _shield;
     std::vector<handle<weapon>> _weapons;
 
     time_value _dead_time;

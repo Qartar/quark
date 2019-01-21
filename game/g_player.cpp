@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_player.h"
+#include "g_shield.h"
 #include "g_ship.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +256,17 @@ void player::update_usercmd(usercmd cmd, time_value time)
 
         case usercmd::action::weapon_3:
             toggle_weapon(2, !!(cmd.modifiers & usercmd::modifier::control));
+            break;
+
+        case usercmd::action::toggle_shield:
+            if (!!(cmd.modifiers & usercmd::modifier::control)) {
+                handle<shield> shield = _ship->shield();
+                if (shield && shield->desired_power() < shield->maximum_power()) {
+                    shield->increase_power(shield->maximum_power());
+                } else if (shield) {
+                    shield->decrease_power(shield->maximum_power());
+                }
+            }
             break;
 
         case usercmd::action::zoom_in:

@@ -103,6 +103,7 @@ result session::init (string::view cmdline)
         {'1', usercmd::action::weapon_1},
         {'2', usercmd::action::weapon_2},
         {'3', usercmd::action::weapon_3},
+        {'s', usercmd::action::toggle_shield},
         {'=', usercmd::action::zoom_in},
         {'-', usercmd::action::zoom_out},
         {K_MWHEELUP, usercmd::action::zoom_in},

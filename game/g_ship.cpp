@@ -95,7 +95,7 @@ void ship::spawn()
     _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
     _subsystems.push_back(_engines);
 
-    _shield = get_world()->spawn<shield>(&_shape, this);
+    _shield = get_world()->spawn<game::shield>(&_shape, this);
     _subsystems.push_back(_shield);
 
     for (int ii = 0; ii < 2; ++ii) {
