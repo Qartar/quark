@@ -86,6 +86,7 @@ public:
     uint16_t compartment() const { return _compartment; }
 
     int current_power() const;
+    float power() const { return _current_power; }
     int desired_power() const { return _desired_power; }
     int maximum_power() const { return _subsystem_info.maximum_power; }
     void increase_power(int amount);
