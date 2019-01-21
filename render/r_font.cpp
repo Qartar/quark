@@ -37,7 +37,7 @@ font::font(string::view name, int size)
     MAT2 m;
 
     // allocate lists
-    _list_base = glGenLists(kNumChars);
+    _list_base = glGenLists(2048);
 
     // create font
     _handle = CreateFontA(
@@ -67,9 +67,9 @@ font::font(string::view name, int size)
     m.eM21.value = 0;
     m.eM22.value = 1;
 
-    wglUseFontBitmapsA(application::singleton()->window()->hdc(), 0, kNumChars-1, _list_base);
+    wglUseFontBitmapsW(application::singleton()->window()->hdc(), 0, 2048, _list_base);
     for (int ii = 0; ii < kNumChars; ++ii) {
-        GetGlyphOutlineA(application::singleton()->window()->hdc(), ii, GGO_METRICS, &gm, 0, NULL, &m);
+        GetGlyphOutlineW(application::singleton()->window()->hdc(), ii, GGO_METRICS, &gm, 0, NULL, &m);
         _char_width[ii] = gm.gmCellIncX;
     }
 
@@ -144,13 +144,41 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
                    narrow_cast<uint8_t>(b),
                    narrow_cast<uint8_t>(a));
         glRasterPos2f(position.x + xoffs * scale.x, position.y);
-        glCallLists(static_cast<GLsizei>(next - cursor), GL_UNSIGNED_BYTE, cursor);
+
+        char const* mbcs = cursor;
+        while (!(*mbcs & 0x80) && mbcs < next) {
+            ++mbcs;
+        }
+
+        next = mbcs;
+
+        if (*cursor & 0x80) {
+            int mb = 0;
+            xoffs += _char_width[(uint8_t)*cursor];
+            if ((*cursor & 0xf8) == 0xf0) {
+                mb = ((*cursor++ & 0x07) << 18)
+                   | ((*cursor++ & 0x3f) << 12)
+                   | ((*cursor++ & 0x3f) <<  6)
+                   | ((*cursor++ & 0x3f) <<  0);
+            } else if ((*cursor & 0xf0) == 0xe0) {
+                mb = ((*cursor++ & 0x0f) << 12)
+                   | ((*cursor++ & 0x3f) <<  6)
+                   | ((*cursor++ & 0x3f) <<  0);
+            } else if ((*cursor & 0xe0) == 0xc0) {
+                mb = ((*cursor++ & 0x1f) <<  6)
+                   | ((*cursor++ & 0x3f) <<  0);
+            }
+            glCallLists(1, GL_INT, &mb);
+            next = cursor;
+        } else {
+            glCallLists(static_cast<GLsizei>(next - cursor), GL_UNSIGNED_BYTE, cursor);
+        }
 
         while (cursor < next) {
             xoffs += _char_width[(uint8_t)*cursor++];
         }
 
-        if (cursor < end) {
+        if (cursor < end && is_color(cursor)) {
             if (!get_color(cursor, r, g, b)) {
                 r = static_cast<int>(color.r * 255.5f);
                 g = static_cast<int>(color.g * 255.5f);
