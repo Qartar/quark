@@ -8,6 +8,162 @@
 #include <GL/gl.h>
 
 ////////////////////////////////////////////////////////////////////////////////
+//namespace {
+
+struct unicode_block {
+    int from;
+    int to;
+    char const* name;
+};
+
+constexpr unicode_block unicode_blocks[] = {
+    { 0x0000, 0x007f, "Basic Latin" },
+    { 0x0080, 0x00ff, "Latin-1 Supplement" },
+    { 0x0100, 0x017f, "Latin Extended-A" },
+    { 0x0180, 0x024f, "Latin Extended-B" },
+    // { 0x0250, 0x02af, "IPA Extensions" },
+    // { 0x02b0, 0x02ff, "Spacing Modifier Letters" },
+    // { 0x0300, 0x036f, "Combining Diacritic Marks" },
+    { 0x0370, 0x03ff, "Greek and Coptic" },
+    { 0x0400, 0x04ff, "Cyrillic" },
+    { 0x0500, 0x052f, "Cyrillic Supplement" },
+    { 0x0530, 0x058f, "Armenian" },
+    { 0x0590, 0x05ff, "Hebrew" },
+    { 0x0600, 0x06ff, "Arabic" },
+    // ...
+    { 0xfe70, 0xfeff, "Arabic Presentation Forms-B" },
+};
+
+template<int size>
+constexpr int unicode_block_size(int index, unicode_block const (&blocks)[size])
+{
+    return blocks[index].to - blocks[index].from + 1;
+}
+
+template<int size>
+constexpr int unicode_block_offset(int index, unicode_block const (&blocks)[size])
+{
+    return index > 0
+        ? unicode_block_offset(index - 1, blocks) + unicode_block_size(index - 1, blocks)
+        : 0;
+}
+
+template<int... Is> struct seq{};
+template<int N, int... Is> struct gen_seq : gen_seq<N - 1, N - 1, Is...>{};
+template<int... Is> struct gen_seq<0, Is...> : seq<Is...>{};
+
+struct unicode_block_info : unicode_block {
+    int size;
+    int offset;
+};
+
+template<int size>
+constexpr unicode_block_info make_unicode_block_info(int index)
+{
+    return {
+        unicode_blocks[index].from,
+        unicode_blocks[index].to,
+        unicode_blocks[index].name,
+        unicode_block_size(index, unicode_blocks),
+        unicode_block_offset(index, unicode_blocks),
+    };
+}
+
+template<int size, int... Is>
+constexpr std::array<unicode_block_info, size> make_unicode_blocks(seq<Is...>)
+{
+    return {{ make_unicode_block_info<size>(Is)... }};
+}
+
+template<int size>
+constexpr std::array<unicode_block_info, size> make_unicode_blocks(unicode_block const (&)[size])
+{
+    return make_unicode_blocks<size>(gen_seq<size>{});
+}
+
+constexpr auto unicode_data_lol = make_unicode_blocks(unicode_blocks);
+
+//------------------------------------------------------------------------------
+template<std::size_t S, std::size_t N = 0>
+constexpr int character_count(unicode_block const (&c)[S])
+{
+    if constexpr (N < S) {
+        return (c[N].to - c[N].from + 1) + character_count<S, N + 1>(c);
+    } else {
+        return 0;
+    }
+}
+
+constexpr int character_max = unicode_blocks[countof(unicode_blocks) - 1].to - unicode_blocks[0].from;
+constexpr int character_num = character_count(unicode_blocks);
+
+constexpr int block_search(int min_index, int max_index, int codepoint)
+{
+    // Binary search
+    int mid_index = (max_index + min_index) / 2;
+    if (min_index == max_index) {
+        return min_index;
+    } else {
+        if (codepoint >= unicode_blocks[mid_index].to) {
+            return block_search(mid_index, max_index, codepoint);
+        } else if (codepoint < unicode_blocks[mid_index].from) {
+            return block_search(min_index, max_index, codepoint);
+        } else {
+            return mid_index;
+        }
+    }
+}
+
+constexpr int character_block(int codepoint)
+{
+    return block_search(0, int(countof(unicode_blocks) - 1), codepoint);
+}
+
+constexpr int block_size(int block_index)
+{
+    return unicode_blocks[block_index].to
+         - unicode_blocks[block_index].from
+         + 1;
+}
+
+constexpr int block_offset(int block_index)
+{
+    if (block_index > 0) {
+        return block_size(block_index - 1) + block_offset(block_index - 1);
+    } else {
+        return 0;
+    }
+}
+
+constexpr int character_index(int codepoint)
+{
+    int block = character_block(codepoint);
+    int offset = block_offset(block);
+    return codepoint - unicode_blocks[block].from + offset;
+}
+
+constexpr int block_search_index(int min_index, int max_index, int index)
+{
+    // Linear search
+    if (index >= block_offset(min_index) && index < block_offset(min_index) + block_size(min_index)) {
+        return min_index;
+    } else if (min_index < max_index) {
+        return block_search_index(min_index + 1, max_index, index);
+    }
+}
+
+constexpr int character_codepoint(int index)
+{
+    int block = block_search_index(0, int(countof(unicode_blocks) - 1), index);
+    return unicode_blocks[block].from + index - block_offset(block);
+}
+
+constexpr int kaf_index = character_index(0x0643);
+constexpr int kaf_codepoint = character_codepoint(kaf_index);
+
+//} // anonymous namespace
+
+////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
 HFONT font::_system_font = NULL;
@@ -33,11 +189,13 @@ font::font(string::view name, int size)
     , _list_base(0)
     , _char_width{0}
 {
+    (void)unicode_data_lol[0];
+
     GLYPHMETRICS gm;
     MAT2 m;
 
     // allocate lists
-    _list_base = glGenLists(2048);
+    _list_base = glGenLists(256);
 
     // create font
     _handle = CreateFontA(
@@ -67,7 +225,7 @@ font::font(string::view name, int size)
     m.eM21.value = 0;
     m.eM22.value = 1;
 
-    wglUseFontBitmapsW(application::singleton()->window()->hdc(), 0, 2048, _list_base);
+    wglUseFontBitmapsW(application::singleton()->window()->hdc(), 0xfe2f, 256, _list_base);
     for (int ii = 0; ii < kNumChars; ++ii) {
         GetGlyphOutlineW(application::singleton()->window()->hdc(), ii, GGO_METRICS, &gm, 0, NULL, &m);
         _char_width[ii] = gm.gmCellIncX;

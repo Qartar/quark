@@ -170,8 +170,8 @@ void system::create_default_font()
         _default_font = std::make_unique<render::font>("Tahoma", size);
     }
 
-    if (!_monospace_font || !_monospace_font->compare("Consolas", size)) {
-        _monospace_font = std::make_unique<render::font>("Consolas", size);
+    if (!_monospace_font || !_monospace_font->compare("Tahoma", size)) {
+        _monospace_font = std::make_unique<render::font>("Tahoma", size);
     }
 }
 
