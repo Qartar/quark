@@ -183,19 +183,52 @@ void system::draw_particles(time_value time, render::particle const* particles, 
                       + p->velocity * vtime
                       + p->acceleration * 0.5f * vtime * vtime;
 
-        color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
-        color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
+        if (p->flags & render::particle::ring) {
+            float ring_time = (time - p->time - FRAMETIME * 2).to_seconds();
+            float ring_radius = p->size + p->size_velocity * ring_time;
+            float ring_alpha = std::max(0.f, ring_radius / (ring_radius - radius));
 
-        glBegin(GL_TRIANGLE_FAN);
+            ring_radius = std::max(0.f, ring_radius);
 
-        // Number of circle segments, approximation for pi / acos(1 - 1/2x)
-        int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, radius * view_scale - 0.25f)));
-        int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
+            color4 color_in = color * color4(1,1,1,ring_alpha);
+            color4 color_out = color;
 
-        glColor4fv(color_in);
-        glVertex2fv(position);
+            if (p->flags & render::particle::invert) {
+                std::swap(color_in, color_out);
+            }
 
-        if (!(p->flags & render::particle::tail)) {
+            // Number of circle segments, approximation for pi / acos(1 - 1/2x)
+            int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, radius * view_scale - 0.25f)));
+            int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
+
+            glBegin(GL_TRIANGLE_STRIP);
+            for (int ii = 0; ii < countof(_costbl); ii += k) {
+                vec2 v1 = position + vec2(_costbl[ii], _sintbl[ii]) * ring_radius;
+                vec2 v2 = position + vec2(_costbl[ii], _sintbl[ii]) * radius;
+                glColor4fv(color_in);
+                glVertex2fv(v1);
+                glColor4fv(color_out);
+                glVertex2fv(v2);
+            }
+            glColor4fv(color_in);
+            glVertex2f(position.x + ring_radius, position.y);
+            glColor4fv(color_out);
+            glVertex2f(position.x + radius, position.y);
+            glEnd();
+
+        } else if (!(p->flags & render::particle::tail)) {
+            color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
+            color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
+
+            // Number of circle segments, approximation for pi / acos(1 - 1/2x)
+            int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, radius * view_scale - 0.25f)));
+            int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
+
+            glBegin(GL_TRIANGLE_FAN);
+
+            glColor4fv(color_in);
+            glVertex2fv(position);
+
             // draw circle outline
             glColor4fv(color_out);
             for (int ii = 0; ii < countof(_costbl); ii += k) {
@@ -203,7 +236,12 @@ void system::draw_particles(time_value time, render::particle const* particles, 
                 glVertex2fv(vertex);
             }
             glVertex2f(position.x + radius, position.y);
+            glEnd();
+
         } else {
+            color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
+            color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
+
             float tail_time = std::max<float>(0.0f, (time - p->time - FRAMETIME).to_seconds());
             float tail_vtime = p->drag ? tanhf(p->drag * tail_time) / p->drag : tail_time;
 
@@ -218,12 +256,16 @@ void system::draw_particles(time_value time, render::particle const* particles, 
             distance = std::max<float>(distance, radius);
             vec2 tangent = vec2(-normal.y, normal.x);
 
-            // particle needs at least 4 verts to look reasonable
-            int n0 = std::max<int>(4, n);
-            int k0 = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n0));
+            // Number of circle segments, approximation for pi / acos(1 - 1/2x)
+            int n = std::max<int>(4, 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, radius * view_scale - 0.25f))));
+            int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
+
+            glBegin(GL_TRIANGLE_FAN);
 
             glColor4fv(color_in);
-            for (int ii = 0; ii < countof(_costbl); ii += k0) {
+            glVertex2fv(position);
+
+            for (int ii = 0; ii < countof(_costbl); ii += k) {
                 if (ii < countof(_costbl) / 2) {
                     // draw forward-facing half-circle
                     vec2 vertex = position + (tangent * _costbl[ii] + normal * _sintbl[ii]) * radius;
@@ -240,9 +282,9 @@ void system::draw_particles(time_value time, render::particle const* particles, 
             }
             glColor4fv(color_in);
             glVertex2f(position.x + tangent.x * radius, position.y + tangent.y * radius);
+            glEnd();
         }
 
-        glEnd();
     }
 }
 
