@@ -20,6 +20,9 @@ struct particle
 
         //! Draw particle as a half-circle with an elliptical tail
         tail = 1 << 1,
+
+        //! Draw particle as a ring, fade alpha away from leading edge
+        ring = 1 << 2,
     };
 
     time_value time;

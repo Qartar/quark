@@ -122,9 +122,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
 
             p->color = color4(1.0f,1.0f,0.5f,0.5f);
             p->color_velocity = -p->color * color4(0,1,3,3);
-            p->size = 12.0f * scale;
+            p->size = 6.0f * scale;
             p->size_velocity = 192.0f * scale;
-            p->flags = render::particle::invert;
+            p->flags = render::particle::ring;
 
             // fire
 
@@ -371,10 +371,10 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->velocity = direction * 48.0f * scale;
 
             p->color = color4(1.0f,0.25f,0.0f,0.5f);
-            p->color_velocity = -p->color * color4(0,1,3,3);
+            p->color_velocity = -p->color * color4(0,1,3,6);
             p->size = 12.0f * scale;
             p->size_velocity = 192.0f * scale;
-            p->flags = render::particle::invert;
+            p->flags = render::particle::ring;
 
             // fire
 
