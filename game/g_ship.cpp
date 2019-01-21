@@ -426,25 +426,53 @@ void ship::draw(render::system* renderer, time_value time) const
 
         vec2 pos = get_position(time);
 
-        for (int ii = 0; ii < _reactor->maximum_power(); ++ii) {
-            int repaired = 0;
-            for (auto const& ch : _crew) {
-                if (ch->is_repairing(_reactor)) {
-                    ++repaired;
+        int repaired = 0;
+        for (auto const& ch : _crew) {
+            if (ch->is_repairing(_reactor)) {
+                ++repaired;
+            }
+        }
+
+        float ii_powered = std::min<float>(_reactor->power(), _reactor->maximum_power() - _reactor->damage());
+        float ii_overload = std::max<float>(ii_powered, _reactor->power());
+        float ii_unpowered = std::max<float>(ii_overload, _reactor->maximum_power() - _reactor->damage());
+        float ii_repaired = std::min<float>(float(_reactor->maximum_power()), ii_unpowered + repaired);
+        float ii_damaged = std::max<float>(ii_repaired, _reactor->maximum_power() - _reactor->damage());
+
+        struct step_s {
+            color4 color;
+            float pmin;
+            float pmax;
+        };
+
+        step_s steps[] = {
+            /* powered */   { color4(.4f, 1.f, .2f, 1.00f), 0.f, ii_powered },
+            /* overloaded */{ color4(1.f, .2f, 0.f, 1.00f), ii_powered, ii_overload },
+            /* unpowered */ { color4(.4f, 1.f, .2f, .225f), ii_overload, ii_unpowered },
+            /* repaired */  { color4(1.f, .8f, .1f, 1.00f), ii_unpowered, ii_repaired },
+            /* damaged */   { color4(1.f, .2f, 0.f, .333f), ii_damaged, (float)_reactor->maximum_power() },
+        };
+
+        for (int ii = 0, jj = 0; ii < _reactor->maximum_power(); ++ii) {
+            float pmin = float(ii);
+            float pmax = float(ii + 1);
+
+            float t0 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power())) - .5f * edge;
+            float t2 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power())) + .5f * edge;
+
+            for (; jj < countof(steps); ++jj) {
+                color4 c = steps[jj].color; c.a *= alpha;
+                if (pmax <= steps[jj].pmax) {
+                    renderer->draw_arc(pos, radius, 3.f, t2, t0, c);
+                    break;
+                } else {
+                    float t = (steps[jj].pmax - pmin) / (pmax - pmin);
+                    float t1 = t0 * (1.f - t) + t2 * t;
+                    renderer->draw_arc(pos, radius, 3.f, t1, t0, c);
+                    pmin = steps[jj].pmax;
+                    t0 = t1;
                 }
             }
-            int damaged = static_cast<int>(_reactor->maximum_power() - std::ceil(_reactor->damage() - .2f));
-            int powered = ii < _reactor->current_power() ? 1 : 0;
-            int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
-            if (status == 2 && ii < _reactor->desired_power()) {
-                powered = true;
-            }
-
-            color4 c = subsystem_colors[powered][status]; c.a *= alpha;
-
-            float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
-            float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
-            renderer->draw_arc(pos, radius, 3.f, t0 + .5f * edge, t1 - .5f * edge, c);
         }
     }
 
@@ -479,24 +507,57 @@ void ship::draw(render::system* renderer, time_value time) const
             continue;
         }
 
+        int repaired = 0;
+        for (auto const& ch : _crew) {
+            if (ch->is_repairing(subsystem)) {
+                ++repaired;
+            }
+        }
+
+        float ii_powered = std::min<float>(subsystem->power(), subsystem->maximum_power() - subsystem->damage());
+        float ii_overload = std::max<float>(ii_powered, subsystem->power());
+        float ii_unpowered = std::max<float>(ii_overload, subsystem->maximum_power() - subsystem->damage());
+        float ii_repaired = std::min<float>(float(subsystem->maximum_power()), ii_unpowered + repaired);
+        float ii_damaged = std::max<float>(ii_repaired, subsystem->maximum_power() - subsystem->damage());
+
+        struct step_s {
+            color4 color;
+            float pmin;
+            float pmax;
+        };
+
+        step_s steps[] = {
+            /* powered */   { color4(.4f, 1.f, .2f, 1.00f), 0.f, ii_powered },
+            /* overloaded */{ color4(1.f, .2f, 0.f, 1.00f), ii_powered, ii_overload },
+            /* unpowered */ { color4(.4f, 1.f, .2f, .225f), ii_overload, ii_unpowered },
+            /* repaired */  { color4(1.f, .8f, .1f, 1.00f), ii_unpowered, ii_repaired },
+            /* damaged */   { color4(1.f, .2f, 0.f, .333f), ii_damaged, (float)subsystem->maximum_power() },
+        };
+
         // draw power bar for each subsystem power level
-        for (int ii = 0; ii < subsystem->maximum_power(); ++ii) {
-            int repaired = 0;
-            for (auto const& ch : _crew) {
-                if (ch->is_repairing(subsystem)) {
-                    ++repaired;
+        for (int ii = 0, jj = 0; ii < subsystem->maximum_power(); ++ii) {
+            float pmin = float(ii);
+            float pmax = float(ii + 1);
+
+            bounds b = bounds::from_center(position + vec2(0, 10.f + 4.f * ii), vec2(7,3));
+            float t0 = b[0][1];
+            float t2 = b[1][1];
+
+            for (; jj < countof(steps); ++jj) {
+                color4 c = steps[jj].color; c.a *= alpha;
+                if (pmax <= steps[jj].pmax) {
+                    bounds b0(vec2(b[0][0], t0), vec2(b[1][0], t2));
+                    renderer->draw_box(b0.size(), b0.center(), c);
+                    break;
+                } else {
+                    float t = (steps[jj].pmax - pmin) / (pmax - pmin);
+                    float t1 = t0 * (1.f - t) + t2 * t;
+                    bounds b0(vec2(b[0][0], t0), vec2(b[1][0], t1));
+                    renderer->draw_box(b0.size(), b0.center(), c);
+                    pmin = steps[jj].pmax;
+                    t0 = t1;
                 }
             }
-            int damaged = static_cast<int>(subsystem->maximum_power() - std::ceil(subsystem->damage() - .2f));
-            int powered = ii < subsystem->current_power() ? 1 : 0;
-            int status = ii - repaired >= damaged ? 1 : ii >= damaged ? 2 : 0;
-            if (status == 2 && ii < subsystem->desired_power()) {
-                powered = true;
-            }
-
-            color4 c = subsystem_colors[powered][status]; c.a *= alpha;
-
-            renderer->draw_box(vec2(7,3), position + vec2(0, 10.f + 4.f * ii), c);
         }
 
         position += vec2(8,0);
