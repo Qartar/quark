@@ -8,30 +8,12 @@
 #include <GL/gl.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-//namespace {
+namespace {
 
 struct unicode_block {
     int from;
     int to;
     char const* name;
-};
-
-constexpr unicode_block unicode_blocks[] = {
-    { 0x0000, 0x007f, "Basic Latin" },
-    { 0x0080, 0x00ff, "Latin-1 Supplement" },
-    { 0x0100, 0x017f, "Latin Extended-A" },
-    { 0x0180, 0x024f, "Latin Extended-B" },
-    // { 0x0250, 0x02af, "IPA Extensions" },
-    // { 0x02b0, 0x02ff, "Spacing Modifier Letters" },
-    // { 0x0300, 0x036f, "Combining Diacritic Marks" },
-    { 0x0370, 0x03ff, "Greek and Coptic" },
-    { 0x0400, 0x04ff, "Cyrillic" },
-    { 0x0500, 0x052f, "Cyrillic Supplement" },
-    { 0x0530, 0x058f, "Armenian" },
-    { 0x0590, 0x05ff, "Hebrew" },
-    { 0x0600, 0x06ff, "Arabic" },
-    // ...
-    { 0xfe70, 0xfeff, "Arabic Presentation Forms-B" },
 };
 
 template<int size>
@@ -48,9 +30,9 @@ constexpr int unicode_block_offset(int index, unicode_block const (&blocks)[size
         : 0;
 }
 
-template<int... Is> struct seq{};
-template<int N, int... Is> struct gen_seq : gen_seq<N - 1, N - 1, Is...>{};
-template<int... Is> struct gen_seq<0, Is...> : seq<Is...>{};
+template<int... Is> struct indices{};
+template<int N, int... Is> struct build_indices : build_indices<N - 1, N - 1, Is...>{};
+template<int... Is> struct build_indices<0, Is...> : indices<Is...>{};
 
 struct unicode_block_info : unicode_block {
     int size;
@@ -58,44 +40,46 @@ struct unicode_block_info : unicode_block {
 };
 
 template<int size>
-constexpr unicode_block_info make_unicode_block_info(int index)
+constexpr unicode_block_info make_unicode_block_info(unicode_block const (&blocks)[size], int index)
 {
     return {
-        unicode_blocks[index].from,
-        unicode_blocks[index].to,
-        unicode_blocks[index].name,
-        unicode_block_size(index, unicode_blocks),
-        unicode_block_offset(index, unicode_blocks),
+        blocks[index].from,
+        blocks[index].to,
+        blocks[index].name,
+        unicode_block_size(index, blocks),
+        unicode_block_offset(index, blocks),
     };
 }
 
 template<int size, int... Is>
-constexpr std::array<unicode_block_info, size> make_unicode_blocks(seq<Is...>)
+constexpr std::array<unicode_block_info, size> make_unicode_blocks(unicode_block const (&blocks)[size], indices<Is...>)
 {
-    return {{ make_unicode_block_info<size>(Is)... }};
+    return {{ make_unicode_block_info<size>(blocks, Is)... }};
 }
 
 template<int size>
-constexpr std::array<unicode_block_info, size> make_unicode_blocks(unicode_block const (&)[size])
+constexpr std::array<unicode_block_info, size> make_unicode_blocks(unicode_block const (&blocks)[size])
 {
-    return make_unicode_blocks<size>(gen_seq<size>{});
+    return make_unicode_blocks<size>(blocks, build_indices<size>{});
 }
 
-constexpr auto unicode_data_lol = make_unicode_blocks(unicode_blocks);
-
-//------------------------------------------------------------------------------
-template<std::size_t S, std::size_t N = 0>
-constexpr int character_count(unicode_block const (&c)[S])
-{
-    if constexpr (N < S) {
-        return (c[N].to - c[N].from + 1) + character_count<S, N + 1>(c);
-    } else {
-        return 0;
-    }
-}
-
-constexpr int character_max = unicode_blocks[countof(unicode_blocks) - 1].to - unicode_blocks[0].from;
-constexpr int character_num = character_count(unicode_blocks);
+constexpr auto unicode_blocks = make_unicode_blocks({
+    { 0x0000, 0x007f, "Basic Latin" },
+    { 0x0080, 0x00ff, "Latin-1 Supplement" },
+    { 0x0100, 0x017f, "Latin Extended-A" },
+    { 0x0180, 0x024f, "Latin Extended-B" },
+    // { 0x0250, 0x02af, "IPA Extensions" },
+    // { 0x02b0, 0x02ff, "Spacing Modifier Letters" },
+    // { 0x0300, 0x036f, "Combining Diacritic Marks" },
+    { 0x0370, 0x03ff, "Greek and Coptic" },
+    { 0x0400, 0x04ff, "Cyrillic" },
+    { 0x0500, 0x052f, "Cyrillic Supplement" },
+    { 0x0530, 0x058f, "Armenian" },
+    { 0x0590, 0x05ff, "Hebrew" },
+    { 0x0600, 0x06ff, "Arabic" },
+    // ...
+    { 0xfe70, 0xfeff, "Arabic Presentation Forms-B" },
+});
 
 constexpr int block_search(int min_index, int max_index, int codepoint)
 {
@@ -116,7 +100,7 @@ constexpr int block_search(int min_index, int max_index, int codepoint)
 
 constexpr int character_block(int codepoint)
 {
-    return block_search(0, int(countof(unicode_blocks) - 1), codepoint);
+    return block_search(0, int(unicode_blocks.size() - 1), codepoint);
 }
 
 constexpr int block_size(int block_index)
@@ -154,14 +138,14 @@ constexpr int block_search_index(int min_index, int max_index, int index)
 
 constexpr int character_codepoint(int index)
 {
-    int block = block_search_index(0, int(countof(unicode_blocks) - 1), index);
+    int block = block_search_index(0, int(unicode_blocks.size() - 1), index);
     return unicode_blocks[block].from + index - block_offset(block);
 }
 
 constexpr int kaf_index = character_index(0x0643);
 constexpr int kaf_codepoint = character_codepoint(kaf_index);
 
-//} // anonymous namespace
+} // anonymous namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
@@ -189,8 +173,6 @@ font::font(string::view name, int size)
     , _list_base(0)
     , _char_width{0}
 {
-    (void)unicode_data_lol[0];
-
     GLYPHMETRICS gm;
     MAT2 m;
 
