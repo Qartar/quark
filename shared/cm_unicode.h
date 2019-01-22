@@ -36,7 +36,7 @@ constexpr bool is_utf8(char const* s)
 
 //! Returns the decoded codepoint for the UTF-8 character at `s`
 //! and advances the pointer to the next character sequence.
-constexpr int decode(char const*& s)
+constexpr char32_t decode(char const*& s)
 {
     assert(is_utf8(s));
     if ((*s & 0x80) == 0x00) {
@@ -60,7 +60,7 @@ constexpr int decode(char const*& s)
 
 //! Returns the number of bytes required to store the UTF-8 encoding
 //! for the given codepoint and stores the encoding in the given buffer.
-constexpr int encode(int c, char* buf)
+constexpr int encode(char32_t c, char* buf)
 {
     int len = 0;
     if (c < 0x80) {
@@ -134,6 +134,6 @@ constexpr bool isspace(char const* s)
 }
 
 //! Rewrites Unicode code points in-place for rendering
-void rewrite(int* begin, int* end);
+void rewrite(char32_t* begin, char32_t* end);
 
 } // namespace unicode

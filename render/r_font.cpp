@@ -12,8 +12,8 @@
 namespace {
 
 struct unicode_block {
-    int from;           //!< First codepoint in this code block
-    int to;             //!< Last codepoint in this code block
+    char32_t from;      //!< First codepoint in this code block
+    char32_t to;        //!< Last codepoint in this code block
     char const* name;   //!< Name of this code block
 };
 
@@ -78,8 +78,8 @@ constexpr std::array<unicode_block_layout, size> build_unicode_block_layout(unic
 template<int sz> class unicode_block_data
 {
 public:
-    static constexpr int invalid_codepoint = 0xffff; //!< Not a valid character
-    static constexpr int unknown_codepoint = 0xfffd; //!< Replacement character
+    static constexpr char32_t invalid_codepoint = 0xffff; //!< Not a valid character
+    static constexpr char32_t unknown_codepoint = 0xfffd; //!< Replacement character
     static constexpr int invalid_index = -1; //!< Not a valid character index
 
 public:
@@ -103,7 +103,7 @@ public:
     constexpr int max_index() const { return _blocks.back().offset + _blocks.back().size - 1; }
 
     //! Returns character index for the given codepoint
-    constexpr int codepoint_to_index(int codepoint) const {
+    constexpr int codepoint_to_index(char32_t codepoint) const {
         for (int ii = 0; ii < sz && _blocks[ii].from <= codepoint; ++ii) {
             if (_blocks[ii].from <= codepoint && codepoint <= _blocks[ii].to) {
                 return codepoint - _blocks[ii].from + _blocks[ii].offset;
@@ -113,7 +113,7 @@ public:
     }
 
     //! Returns codepoint for the given character index
-    constexpr int index_to_codepoint(int index) const {
+    constexpr char32_t index_to_codepoint(int index) const {
         for (int ii = 0; ii < sz && _blocks[ii].offset <= index; ++ii) {
             if (_blocks[ii].offset <= index && index < _blocks[ii].offset + _blocks[ii].size) {
                 return _blocks[ii].from + index - _blocks[ii].offset;
@@ -134,7 +134,7 @@ public:
 
     //! Returns the decoded codepoint for the UTF-8 character at `s`
     //! and advances the pointer to the next character sequence.
-    static constexpr int decode(char const*& s) {
+    static constexpr char32_t decode(char const*& s) {
         return unicode::decode(s);
     }
 
@@ -318,7 +318,7 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
     char const* end = string.end();
 
     constexpr int buffer_size = 1024;
-    int buffer[buffer_size];
+    char32_t buffer[buffer_size];
 
     while (cursor < end) {
         char const* next = find_color(cursor, end);

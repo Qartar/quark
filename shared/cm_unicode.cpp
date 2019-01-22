@@ -17,12 +17,12 @@ struct join {
         initial = 2, //!< joins to next character
         medial  = 3, //!< joins in either direction
     };
-    int isolated_form;
-    int final_form;
-    int initial_form;
-    int medial_form;
+    char32_t isolated_form;
+    char32_t final_form;
+    char32_t initial_form;
+    char32_t medial_form;
     join_type type;
-    int operator[](int index) const { return (&isolated_form)[index]; }
+    char32_t operator[](int index) const { return (&isolated_form)[index]; }
 };
 
 const std::map<int, join> joining({
@@ -64,7 +64,7 @@ join join_info(int cp)
     return it == joining.cend() ? join{} : it->second;
 }
 
-constexpr bool is_right_to_left(int cp)
+constexpr bool is_right_to_left(char32_t cp)
 {
     if ((cp >= 0x0590 && cp <= 0x05ff)
         || (cp >= 0x0600 && cp <= 0x06ff)
@@ -77,7 +77,7 @@ constexpr bool is_right_to_left(int cp)
     }
 }
 
-constexpr bool is_neutral(int cp)
+constexpr bool is_neutral(char32_t cp)
 {
     if (cp == ' ') {
         return true;
@@ -86,12 +86,12 @@ constexpr bool is_neutral(int cp)
     }
 }
 
-constexpr bool is_left_to_right(int cp)
+constexpr bool is_left_to_right(char32_t cp)
 {
     return !is_right_to_left(cp) && !is_neutral(cp);
 }
 
-void rejoin(int* begin, int* end)
+void rejoin(char32_t* begin, char32_t* end)
 {
     join prev{};
     join current = (begin < end) ? join_info(*begin) : join{};
@@ -119,19 +119,19 @@ void rejoin(int* begin, int* end)
 } // anonymous namespace
 
 //------------------------------------------------------------------------------
-void rewrite(int* begin, int* end)
+void rewrite(char32_t* begin, char32_t* end)
 {
     rejoin(begin, end);
 
     while (begin < end) {
         // left-to-right
-        int* p1 = begin;
+        char32_t* p1 = begin;
         while (p1 < end && !is_right_to_left(*p1)) {
             ++p1;
         }
 
         // right-to-left
-        int* p2 = p1;
+        char32_t* p2 = p1;
         while (p2 < end && !is_left_to_right(*p2)) {
             ++p2;
         }
