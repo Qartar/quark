@@ -174,7 +174,7 @@ protected:
 };
 
 #if defined(__INTELLISENSE__)
-constexpr unicode_block_data<12> unicode_data(
+constexpr unicode_block_data<13> unicode_data(
 #else
 constexpr unicode_block_data unicode_data(
 #endif
@@ -192,6 +192,8 @@ constexpr unicode_block_data unicode_data(
         { 0x0530, 0x058f, "Armenian" },
         { 0x0590, 0x05ff, "Hebrew" },
         { 0x0600, 0x06ff, "Arabic" },
+        // ...
+        { 0x3040, 0x309f, "Hiragana" },
         // ...
         { 0xfe70, 0xfeff, "Arabic Presentation Forms-B" },
         // { 0xff00, 0xffef, "Halfwidth and Fullwidth Forms" },

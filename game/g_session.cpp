@@ -67,9 +67,30 @@ result session::init (string::view cmdline)
     }
 
     uint8_t utf8[] = {
-        0xce, 0xbc, /* mu */
-        0xd9, 0x83, /* kaf */
-        0xef, 0xbb, 0x99, /* kaf isolated form */
+        0xce, 0xbc, /* greek letter mu */
+        ' ',
+        0xd0, 0xbf, /* cyrillic letter pe */
+        0xd1, 0x80, /* cyrillic letter er */
+        0xd0, 0xb8, /* cyrillic letter i */
+        0xd0, 0xb2, /* cyrillic letter ve */
+        0xd0, 0xb5, /* cyrillic letter ie */
+        0xd1, 0x82, /* cyrillic letter te */
+        ' ',
+        0xd9, 0x83, /* arabic letter kaf */
+        0xd8, 0xb1, /* arabic letter reh */
+        0xd8, 0xaa, /* arabic letter teh */
+        0xd8, 0xb1, /* arabic letter reh */
+        ' ',
+        0xe3, 0x82, 0x8f, /* hiragana letter wa */
+        0xe3, 0x81, 0x8b, /* hiragana letter ka */
+        0xe3, 0x82, 0x89, /* hiragana letter ra */
+        0xe3, 0x81, 0xaa, /* hiragana letter na */
+        0xe3, 0x81, 0x84, /* hiragana letter i */
+        ' ',
+        0xef, 0xba, 0xae, /* arabic letter reh final form */
+        0xef, 0xba, 0x97, /* arabic letter teh initial form */
+        0xef, 0xba, 0xae, /* arabic letter reh final form */
+        0xef, 0xbb, 0x9b, /* arabic letter kaf initial form */
         '\r', '\n', '\0'
     };
     _console.printf("%s", utf8);
