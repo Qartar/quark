@@ -335,10 +335,19 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         while (cursor < next) {
             int n = 0;
 
+            // Decode UTF-8 into codepoints
             while (cursor < next && n < buffer_size) {
-                int c = unicode_data.decode_index(cursor);
-                xoffs += _char_width[c];
+                int c = unicode_data.decode(cursor);
                 buffer[n++] = c;
+            }
+
+            // Rewrite text based on directionality/joining
+            unicode::rewrite(buffer, buffer + n);
+
+            // Convert codepoints to character indices
+            for (int ii = 0; ii < n; ++ii) {
+                buffer[ii] = unicode_data.codepoint_to_index(buffer[ii]);
+                xoffs += _char_width[buffer[ii]];
             }
 
             glCallLists(n, GL_INT, buffer);

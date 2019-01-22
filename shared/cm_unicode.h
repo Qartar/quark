@@ -133,4 +133,7 @@ constexpr bool isspace(char const* s)
     }
 }
 
+//! Rewrites Unicode code points in-place for rendering
+void rewrite(int* begin, int* end);
+
 } // namespace unicode

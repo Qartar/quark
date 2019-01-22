@@ -21,6 +21,7 @@ set(SHARED_SOURCES
     cm_string.cpp
     cm_string.h
     cm_time.h
+    cm_unicode.cpp
     cm_unicode.h
     cm_vector.h
 
