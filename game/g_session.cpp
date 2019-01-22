@@ -88,10 +88,11 @@ result session::init (string::view cmdline)
         0xe3, 0x81, 0xaa, /* hiragana letter na */
         0xe3, 0x81, 0x84, /* hiragana letter i */
         ' ',
-        0xef, 0xba, 0xae, /* arabic letter reh final form */
-        0xef, 0xba, 0x97, /* arabic letter teh initial form */
-        0xef, 0xba, 0xae, /* arabic letter reh final form */
-        0xef, 0xbb, 0x9b, /* arabic letter kaf initial form */
+        0xd8, 0xaa, /* arabic letter teh */
+        0xd9, 0x86, /* arabic letter noon */
+        0xd9, 0x88, /* arabic letter waw */
+        0xd9, 0x8a, /* arabic letter yeh */
+        0xd9, 0x86, /* arabic letter noon */
         '\r', '\n', '\0'
     };
     _console.printf("%s", utf8);
