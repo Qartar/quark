@@ -6,6 +6,7 @@
 
 #include "cm_keys.h"
 #include "cm_parser.h"
+#include "cm_unicode.h"
 #include "g_aicontroller.h"
 #include "g_player.h"
 #include "resource.h"

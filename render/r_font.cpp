@@ -4,6 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "cm_unicode.h"
 #include "win_include.h"
 #include <GL/gl.h>
 
@@ -108,7 +109,7 @@ public:
                 return codepoint - _blocks[ii].from + _blocks[ii].offset;
             }
         }
-        return invalid_index;
+        return codepoint_to_index(unknown_codepoint);
     }
 
     //! Returns codepoint for the given character index
@@ -123,44 +124,18 @@ public:
 
     //! Returns true if `s` points to an ASCII character
     static constexpr bool is_ascii(char const* s) {
-        return (*s & 0x80) == 0x00;
+        return unicode::is_ascii(s);
     }
 
     //! Returns true if `s` points to a valid UTF-8 character
     static constexpr bool is_utf8(char const* s) {
-        if ((*s & 0xf8) == 0xf0) {
-            return ((*++s & 0xc0) == 0x80)
-                 | ((*++s & 0xc0) == 0x80)
-                 | ((*++s & 0xc0) == 0x80);
-        } else if ((*s & 0xf0) == 0xe0) {
-            return ((*++s & 0xc0) == 0x80)
-                 | ((*++s & 0xc0) == 0x80);
-        } else if ((*s & 0xe0) == 0xc0) {
-            return ((*++s & 0xc0) == 0x80);
-        } else {
-            return (*s & 0x80) == 0x00;
-        }
+        return unicode::is_utf8(s);
     }
 
     //! Returns the decoded codepoint for the UTF-8 character at `s`
     //! and advances the pointer to the next character sequence.
     static constexpr int decode(char const*& s) {
-        assert(is_utf8(s));
-        if ((*s & 0xf8) == 0xf0) {
-            return ((*s++ & 0x07) << 18)
-                 | ((*s++ & 0x3f) << 12)
-                 | ((*s++ & 0x3f) <<  6)
-                 | ((*s++ & 0x3f) <<  0);
-        } else if ((*s & 0xf0) == 0xe0) {
-            return ((*s++ & 0x0f) << 12)
-                 | ((*s++ & 0x3f) <<  6)
-                 | ((*s++ & 0x3f) <<  0);
-        } else if ((*s & 0xe0) == 0xc0) {
-            return ((*s++ & 0x1f) <<  6)
-                 | ((*s++ & 0x3f) <<  0);
-        } else {
-            return *s++;
-        }
+        return unicode::decode(s);
     }
 
     //! Returns the character index for the UTF-8 character at `s`
@@ -174,7 +149,7 @@ protected:
 };
 
 #if defined(__INTELLISENSE__)
-constexpr unicode_block_data<13> unicode_data(
+constexpr unicode_block_data<14> unicode_data(
 #else
 constexpr unicode_block_data unicode_data(
 #endif
@@ -192,6 +167,8 @@ constexpr unicode_block_data unicode_data(
         { 0x0530, 0x058f, "Armenian" },
         { 0x0590, 0x05ff, "Hebrew" },
         { 0x0600, 0x06ff, "Arabic" },
+        // ...
+        { 0x2000, 0x206f, "General Punctuation" },
         // ...
         { 0x3040, 0x309f, "Hiragana" },
         // ...

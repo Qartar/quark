@@ -245,6 +245,7 @@ LRESULT application::wndproc(HWND hWnd, UINT nCmd, WPARAM wParam, LPARAM lParam)
 //------------------------------------------------------------------------------
 void application::char_event(WPARAM key, LPARAM /*state*/)
 {
+    assert(!IS_LOW_SURROGATE(key) && !IS_HIGH_SURROGATE(key)); // probably broken
     _game.char_event(narrow_cast<int>(key));
 }
 
