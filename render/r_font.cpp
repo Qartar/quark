@@ -11,17 +11,26 @@
 namespace {
 
 struct unicode_block {
-    int from;
-    int to;
-    char const* name;
+    int from;           //!< First codepoint in this code block
+    int to;             //!< Last codepoint in this code block
+    char const* name;   //!< Name of this code block
 };
 
+struct unicode_block_layout : unicode_block {
+    int offset;         //!< Number of characters in all preceding code blocks
+    int size;           //!< Number of characters in this code block
+};
+
+#pragma region Shenanigans for compile-time instantiation
+
+//------------------------------------------------------------------------------
 template<int size>
 constexpr int unicode_block_size(int index, unicode_block const (&blocks)[size])
 {
     return blocks[index].to - blocks[index].from + 1;
 }
 
+//------------------------------------------------------------------------------
 template<int size>
 constexpr int unicode_block_offset(int index, unicode_block const (&blocks)[size])
 {
@@ -30,15 +39,12 @@ constexpr int unicode_block_offset(int index, unicode_block const (&blocks)[size
         : 0;
 }
 
+//------------------------------------------------------------------------------
 template<int... Is> struct indices{};
 template<int N, int... Is> struct build_indices : build_indices<N - 1, N - 1, Is...>{};
 template<int... Is> struct build_indices<0, Is...> : indices<Is...>{};
 
-struct unicode_block_layout : unicode_block {
-    int size;
-    int offset;
-};
-
+//------------------------------------------------------------------------------
 template<int size>
 constexpr unicode_block_layout build_unicode_block_layout(unicode_block const (&blocks)[size], int index)
 {
@@ -46,47 +52,57 @@ constexpr unicode_block_layout build_unicode_block_layout(unicode_block const (&
         blocks[index].from,
         blocks[index].to,
         blocks[index].name,
-        unicode_block_size(index, blocks),
         unicode_block_offset(index, blocks),
+        unicode_block_size(index, blocks),
     };
 }
 
+//------------------------------------------------------------------------------
 template<int size, int... Is>
 constexpr std::array<unicode_block_layout, size> build_unicode_block_layout(unicode_block const (&blocks)[size], indices<Is...>)
 {
     return {{ build_unicode_block_layout<size>(blocks, Is)... }};
 }
 
+//------------------------------------------------------------------------------
 template<int size>
 constexpr std::array<unicode_block_layout, size> build_unicode_block_layout(unicode_block const (&blocks)[size])
 {
     return build_unicode_block_layout<size>(blocks, build_indices<size>{});
 }
 
+#pragma endregion
+
+//------------------------------------------------------------------------------
 template<int sz> class unicode_block_data
 {
 public:
-    static constexpr int invalid_codepoint = 0xffff; // not a character
-    static constexpr int unknown_codepoint = 0xfffd; // replacement character
-    static constexpr int invalid_index = -1;
+    static constexpr int invalid_codepoint = 0xffff; //!< Not a valid character
+    static constexpr int unknown_codepoint = 0xfffd; //!< Replacement character
+    static constexpr int invalid_index = -1; //!< Not a valid character index
 
 public:
     constexpr unicode_block_data(unicode_block const (&blocks)[sz])
         : _blocks(build_unicode_block_layout(blocks))
     {}
 
+    //! Returns an iterator to the beginning of the Unicode block layouts
     constexpr auto begin() const { return _blocks.begin(); }
 
+    //! Returns an iterator to the end of the Unicode block layouts
     constexpr auto end() const { return _blocks.end(); }
 
+    //! Returns the number of loaded Unicode blocks
     constexpr int size() const { return sz; }
 
+    //! Returns the Unicode block layout at the given index
     constexpr unicode_block_layout operator[](int index) const { return _blocks[index]; }
 
+    //! Returns the maximum valid character index
     constexpr int max_index() const { return _blocks.back().offset + _blocks.back().size - 1; }
 
+    //! Returns character index for the given codepoint
     constexpr int codepoint_to_index(int codepoint) const {
-        // linear search
         for (int ii = 0; ii < sz && _blocks[ii].from <= codepoint; ++ii) {
             if (_blocks[ii].from <= codepoint && codepoint <= _blocks[ii].to) {
                 return codepoint - _blocks[ii].from + _blocks[ii].offset;
@@ -95,8 +111,8 @@ public:
         return invalid_index;
     }
 
+    //! Returns codepoint for the given character index
     constexpr int index_to_codepoint(int index) const {
-        // linear search
         for (int ii = 0; ii < sz && _blocks[ii].offset <= index; ++ii) {
             if (_blocks[ii].offset <= index && index < _blocks[ii].offset + _blocks[ii].size) {
                 return _blocks[ii].from + index - _blocks[ii].offset;
@@ -105,10 +121,12 @@ public:
         return unknown_codepoint;
     }
 
+    //! Returns true if `s` points to an ASCII character
     static constexpr bool is_ascii(char const* s) {
         return (*s & 0x80) == 0x00;
     }
 
+    //! Returns true if `s` points to a valid UTF-8 character
     static constexpr bool is_utf8(char const* s) {
         if ((*s & 0xf8) == 0xf0) {
             return ((*++s & 0xc0) == 0x80)
@@ -124,6 +142,8 @@ public:
         }
     }
 
+    //! Returns the decoded codepoint for the UTF-8 character at `s`
+    //! and advances the pointer to the next character sequence.
     static constexpr int decode(char const*& s) {
         assert(is_utf8(s));
         if ((*s & 0xf8) == 0xf0) {
@@ -143,6 +163,8 @@ public:
         }
     }
 
+    //! Returns the character index for the UTF-8 character at `s`
+    //! and advances the pointer to the next character sequence.
     constexpr int decode_index(char const*& s) const {
         return codepoint_to_index(decode(s));
     }
@@ -177,9 +199,13 @@ constexpr unicode_block_data unicode_data(
     }
 );
 
-constexpr int kaf_index = unicode_data.codepoint_to_index(0x0643);
-constexpr int kaf_codepoint = unicode_data.index_to_codepoint(kaf_index);
-static_assert(unicode_data.index_to_codepoint(unicode_data.codepoint_to_index(0x0643)) == 0x0643, "");
+#define STATIC_ASSERT_ROUNDTRIP(n)                                              \
+static_assert(unicode_data.index_to_codepoint(unicode_data.codepoint_to_index(n)) == n, "round trip failed for Unicode codepoint " #n)
+STATIC_ASSERT_ROUNDTRIP(0x03bc); // mu                      [Greek and Coptic]
+STATIC_ASSERT_ROUNDTRIP(0x0643); // kaf                     [Arabic]
+STATIC_ASSERT_ROUNDTRIP(0xfed9); // kaf isolated form       [Arabic Presentation Forms-B]
+STATIC_ASSERT_ROUNDTRIP(0xfffd); // replacement character   [Specials]
+#undef STATIC_ASSERT_ROUNDTRIP
 
 } // anonymous namespace
 
