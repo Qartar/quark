@@ -338,6 +338,9 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
     char const* cursor = string.begin();
     char const* end = string.end();
 
+    constexpr int buffer_size = 1024;
+    int buffer[buffer_size];
+
     while (cursor < end) {
         char const* next = find_color(cursor, end);
         if (!next) {
@@ -350,24 +353,16 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
                    narrow_cast<uint8_t>(a));
         glRasterPos2f(position.x + xoffs * scale.x, position.y);
 
-        char const* utf8 = cursor;
-        while (unicode_data.is_ascii(utf8) && utf8 < next) {
-            ++utf8;
-        }
-
-        next = utf8;
-
-        if (!unicode_data.is_ascii(cursor) && unicode_data.is_utf8(cursor)) {
-            int ch = unicode_data.decode_index(cursor);
-            glCallLists(1, GL_INT, &ch);
-            xoffs += _char_width[ch];
-            next = cursor;
-        } else {
-            glCallLists(static_cast<GLsizei>(next - cursor), GL_UNSIGNED_BYTE, cursor);
-        }
-
         while (cursor < next) {
-            xoffs += _char_width[(uint8_t)*cursor++];
+            int n = 0;
+
+            while (cursor < next && n < buffer_size) {
+                int c = unicode_data.decode_index(cursor);
+                xoffs += _char_width[c];
+                buffer[n++] = c;
+            }
+
+            glCallLists(n, GL_INT, buffer);
         }
 
         if (cursor < end && is_color(cursor)) {
