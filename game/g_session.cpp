@@ -66,6 +66,14 @@ result session::init (string::view cmdline)
         _console.resize(static_cast<std::size_t>(num / den));
     }
 
+    uint8_t utf8[] = {
+        0xce, 0xbc, /* mu */
+        0xd9, 0x83, /* kaf */
+        0xef, 0xbb, 0x99, /* kaf isolated form */
+        '\r', '\n', '\0'
+    };
+    _console.printf("%s", utf8);
+
     for ( int i=0 ; i<MAX_MESSAGES ; i++ )
         memset( _messages[i].string, 0, MAX_STRING );
 

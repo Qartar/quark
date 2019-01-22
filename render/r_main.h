@@ -52,15 +52,13 @@ public:
     vec2 size(string::view string, vec2 scale) const;
 
 private:
-    constexpr static int kNumChars = 256;
-
     string::buffer _name;
     int _size;
 
     HFONT _handle;
     unsigned int _list_base;
 
-    short _char_width[kNumChars];
+    std::vector<short> _char_width;
 
     static HFONT _system_font;
     static HFONT _active_font;

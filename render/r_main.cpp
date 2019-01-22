@@ -170,8 +170,8 @@ void system::create_default_font()
         _default_font = std::make_unique<render::font>("Tahoma", size);
     }
 
-    if (!_monospace_font || !_monospace_font->compare("Courier New", size)) {
-        _monospace_font = std::make_unique<render::font>("Courier New", size);
+    if (!_monospace_font || !_monospace_font->compare("Courier New Bold", size)) {
+        _monospace_font = std::make_unique<render::font>("Courier New Bold", size);
     }
 }
 

@@ -75,6 +75,10 @@ public:
         : _blocks(build_unicode_block_layout(blocks))
     {}
 
+    constexpr auto begin() const { return _blocks.begin(); }
+
+    constexpr auto end() const { return _blocks.end(); }
+
     constexpr int size() const { return sz; }
 
     constexpr unicode_block_layout operator[](int index) const { return _blocks[index]; }
@@ -101,6 +105,10 @@ public:
         return unknown_codepoint;
     }
 
+    static constexpr bool is_ascii(char const* s) {
+        return (*s & 0x80) == 0x00;
+    }
+
     static constexpr bool is_utf8(char const* s) {
         if ((*s & 0xf8) == 0xf0) {
             return ((*++s & 0xc0) == 0x80)
@@ -112,11 +120,12 @@ public:
         } else if ((*s & 0xe0) == 0xc0) {
             return ((*++s & 0xc0) == 0x80);
         } else {
-            return (*s & 0x80) == 0x80;
+            return (*s & 0x80) == 0x00;
         }
     }
 
     static constexpr int decode(char const*& s) {
+        assert(is_utf8(s));
         if ((*s & 0xf8) == 0xf0) {
             return ((*s++ & 0x07) << 18)
                  | ((*s++ & 0x3f) << 12)
@@ -132,6 +141,10 @@ public:
         } else {
             return *s++;
         }
+    }
+
+    constexpr int decode_index(char const*& s) const {
+        return codepoint_to_index(decode(s));
     }
 
 protected:
@@ -200,7 +213,8 @@ font::font(string::view name, int size)
     MAT2 m;
 
     // allocate lists
-    _list_base = glGenLists(256);
+    _list_base = glGenLists(unicode_data.max_index() + 1);
+    _char_width.resize(unicode_data.max_index() + 1);
 
     // create font
     _handle = CreateFontA(
@@ -230,10 +244,12 @@ font::font(string::view name, int size)
     m.eM21.value = 0;
     m.eM22.value = 1;
 
-    wglUseFontBitmapsW(application::singleton()->window()->hdc(), 0xfe2f, 256, _list_base);
-    for (int ii = 0; ii < kNumChars; ++ii) {
-        GetGlyphOutlineW(application::singleton()->window()->hdc(), ii, GGO_METRICS, &gm, 0, NULL, &m);
-        _char_width[ii] = gm.gmCellIncX;
+    for (auto block : unicode_data) {
+        wglUseFontBitmapsW(application::singleton()->window()->hdc(), block.from, block.size, _list_base + block.offset);
+        for (int ii = 0; ii < block.size; ++ii) {
+            GetGlyphOutlineW(application::singleton()->window()->hdc(), block.from + ii, GGO_METRICS, &gm, 0, NULL, &m);
+            _char_width[block.offset + ii] = gm.gmCellIncX;
+        }
     }
 
     // restore previous font
@@ -254,7 +270,7 @@ font::~font()
 
     // delete from opengl
     if (_list_base) {
-        glDeleteLists(_list_base, kNumChars);
+        glDeleteLists(_list_base, unicode_data.max_index() + 1);
     }
 
     // delete font from gdi
@@ -309,16 +325,16 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         glRasterPos2f(position.x + xoffs * scale.x, position.y);
 
         char const* utf8 = cursor;
-        while (!unicode_data.is_utf8(cursor) && utf8 < next) {
+        while (unicode_data.is_ascii(utf8) && utf8 < next) {
             ++utf8;
         }
 
         next = utf8;
 
-        if (unicode_data.is_utf8(cursor)) {
-            xoffs += _char_width[(uint8_t)*cursor];
-            int cp = unicode_data.decode(cursor);
-            glCallLists(1, GL_INT, &cp);
+        if (!unicode_data.is_ascii(cursor) && unicode_data.is_utf8(cursor)) {
+            int ch = unicode_data.decode_index(cursor);
+            glCallLists(1, GL_INT, &ch);
+            xoffs += _char_width[ch];
             next = cursor;
         } else {
             glCallLists(static_cast<GLsizei>(next - cursor), GL_UNSIGNED_BYTE, cursor);
@@ -353,7 +369,8 @@ vec2 font::size(string::view string, vec2 scale) const
         }
 
         while (cursor < next) {
-            size.x += _char_width[(uint8_t)*cursor++];
+            int ch = unicode_data.decode_index(cursor);
+            size.x += _char_width[ch];
         }
 
         if (cursor < end) {
