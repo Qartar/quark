@@ -181,6 +181,7 @@ void console_buffer::append_endline(bool keep_color)
 //------------------------------------------------------------------------------
 std::size_t console_buffer::num_columns(string::view text) const
 {
+    // TODO: UTF-8 support
     std::size_t len = 0;
     char const* prev = text.begin();
     while (char const* next = find_color(prev, text.end())) {
@@ -194,6 +195,7 @@ std::size_t console_buffer::num_columns(string::view text) const
 //------------------------------------------------------------------------------
 string::view console_buffer::advance_columns(std::size_t columns, string::view text) const
 {
+    // TODO: UTF-8 support
     std::size_t len = 0;
     char const* prev = text.begin();
     while (char const* next = find_color(prev, text.end())) {
@@ -238,13 +240,34 @@ void console_input::replace(string::view text)
 //------------------------------------------------------------------------------
 bool console_input::char_event(int key)
 {
-    if (key >= K_SPACE && key < K_BACKSPACE) {
-        if (_length < buffer_size - 1) {
-            memmove(_buffer.data() + _cursor + 1,
+    if (key >= K_SPACE) {
+        int len = 0;
+        char utf8[4];
+
+        if (key < 0x80) {
+            utf8[len++] = key & 0x7f;
+        } else if (key < 0x800) {
+            utf8[len++] = ((key >>  6) & 0x1f) | 0xc0;
+            utf8[len++] = ((key >>  0) & 0x3f) | 0x80;
+        } else if (key < 0x10000) {
+            utf8[len++] = ((key >> 12) & 0x0f) | 0xe0;
+            utf8[len++] = ((key >>  6) & 0x3f) | 0x80;
+            utf8[len++] = ((key >>  0) & 0x3f) | 0x80;
+        } else if (key < 0x110000) {
+            utf8[len++] = ((key >> 18) & 0x07) | 0xf0;
+            utf8[len++] = ((key >> 12) & 0x3f) | 0x80;
+            utf8[len++] = ((key >>  6) & 0x3f) | 0x80;
+            utf8[len++] = ((key >>  0) & 0x3f) | 0x80;
+        }
+
+        if (_length < buffer_size - len) {
+            memmove(_buffer.data() + _cursor + len,
                     _buffer.data() + _cursor,
                     _length - _cursor);
-            _buffer[_cursor++] = (char)key;
-            _buffer[++_length] = '\0';
+            memcpy(_buffer.data() + _cursor, utf8, len);
+            _cursor += len;
+            _length += len;
+            _buffer[_length] = '\0';
         }
         return true;
     } else {
@@ -266,6 +289,7 @@ bool console_input::key_event(int key, bool down)
     }
 
     if (key == K_LEFTARROW) {
+        // TODO: UTF-8 support
         if (_control) {
             while (_cursor > 0 && isspace(_buffer[_cursor - 1])) {
                 --_cursor;
@@ -278,6 +302,7 @@ bool console_input::key_event(int key, bool down)
         }
         consumed = true;
     } else if (key == K_RIGHTARROW) {
+        // TODO: UTF-8 support
         if (_control) {
             while (_cursor < _length && isspace(_buffer[_cursor])) {
                 ++_cursor;
@@ -290,6 +315,7 @@ bool console_input::key_event(int key, bool down)
         }
         consumed = true;
     } else if (key == K_DEL) {
+        // TODO: UTF-8 support
         std::size_t len = 0;
         if (_control && isspace(_buffer[_cursor])) {
             while (_cursor + len < _length && isspace(_buffer[_cursor + len])) {
@@ -310,6 +336,7 @@ bool console_input::key_event(int key, bool down)
         }
         consumed = true;
     } else if (key == K_BACKSPACE) {
+        // TODO: UTF-8 support
         std::size_t len = 0;
         if (_control && _cursor > 0 && isspace(_buffer[_cursor - 1])) {
             while (_cursor > len && isspace(_buffer[_cursor - len - 1])) {
