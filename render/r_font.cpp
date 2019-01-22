@@ -34,13 +34,13 @@ template<int... Is> struct indices{};
 template<int N, int... Is> struct build_indices : build_indices<N - 1, N - 1, Is...>{};
 template<int... Is> struct build_indices<0, Is...> : indices<Is...>{};
 
-struct unicode_block_info : unicode_block {
+struct unicode_block_layout : unicode_block {
     int size;
     int offset;
 };
 
 template<int size>
-constexpr unicode_block_info make_unicode_block_info(unicode_block const (&blocks)[size], int index)
+constexpr unicode_block_layout build_unicode_block_layout(unicode_block const (&blocks)[size], int index)
 {
     return {
         blocks[index].from,
@@ -52,98 +52,121 @@ constexpr unicode_block_info make_unicode_block_info(unicode_block const (&block
 }
 
 template<int size, int... Is>
-constexpr std::array<unicode_block_info, size> make_unicode_blocks(unicode_block const (&blocks)[size], indices<Is...>)
+constexpr std::array<unicode_block_layout, size> build_unicode_block_layout(unicode_block const (&blocks)[size], indices<Is...>)
 {
-    return {{ make_unicode_block_info<size>(blocks, Is)... }};
+    return {{ build_unicode_block_layout<size>(blocks, Is)... }};
 }
 
 template<int size>
-constexpr std::array<unicode_block_info, size> make_unicode_blocks(unicode_block const (&blocks)[size])
+constexpr std::array<unicode_block_layout, size> build_unicode_block_layout(unicode_block const (&blocks)[size])
 {
-    return make_unicode_blocks<size>(blocks, build_indices<size>{});
+    return build_unicode_block_layout<size>(blocks, build_indices<size>{});
 }
 
-constexpr auto unicode_blocks = make_unicode_blocks({
-    { 0x0000, 0x007f, "Basic Latin" },
-    { 0x0080, 0x00ff, "Latin-1 Supplement" },
-    { 0x0100, 0x017f, "Latin Extended-A" },
-    { 0x0180, 0x024f, "Latin Extended-B" },
-    // { 0x0250, 0x02af, "IPA Extensions" },
-    // { 0x02b0, 0x02ff, "Spacing Modifier Letters" },
-    // { 0x0300, 0x036f, "Combining Diacritic Marks" },
-    { 0x0370, 0x03ff, "Greek and Coptic" },
-    { 0x0400, 0x04ff, "Cyrillic" },
-    { 0x0500, 0x052f, "Cyrillic Supplement" },
-    { 0x0530, 0x058f, "Armenian" },
-    { 0x0590, 0x05ff, "Hebrew" },
-    { 0x0600, 0x06ff, "Arabic" },
-    // ...
-    { 0xfe70, 0xfeff, "Arabic Presentation Forms-B" },
-});
-
-constexpr int block_search(int min_index, int max_index, int codepoint)
+template<int sz> class unicode_block_data
 {
-    // Binary search
-    int mid_index = (max_index + min_index) / 2;
-    if (min_index == max_index) {
-        return min_index;
-    } else {
-        if (codepoint >= unicode_blocks[mid_index].to) {
-            return block_search(mid_index, max_index, codepoint);
-        } else if (codepoint < unicode_blocks[mid_index].from) {
-            return block_search(min_index, max_index, codepoint);
+public:
+    static constexpr int invalid_codepoint = 0xffff; // not a character
+    static constexpr int unknown_codepoint = 0xfffd; // replacement character
+    static constexpr int invalid_index = -1;
+
+public:
+    constexpr unicode_block_data(unicode_block const (&blocks)[sz])
+        : _blocks(build_unicode_block_layout(blocks))
+    {}
+
+    constexpr int size() const { return sz; }
+
+    constexpr unicode_block_layout operator[](int index) const { return _blocks[index]; }
+
+    constexpr int max_index() const { return _blocks.back().offset + _blocks.back().size - 1; }
+
+    constexpr int codepoint_to_index(int codepoint) const {
+        // linear search
+        for (int ii = 0; ii < sz && _blocks[ii].from <= codepoint; ++ii) {
+            if (_blocks[ii].from <= codepoint && codepoint <= _blocks[ii].to) {
+                return codepoint - _blocks[ii].from + _blocks[ii].offset;
+            }
+        }
+        return invalid_index;
+    }
+
+    constexpr int index_to_codepoint(int index) const {
+        // linear search
+        for (int ii = 0; ii < sz && _blocks[ii].offset <= index; ++ii) {
+            if (_blocks[ii].offset <= index && index < _blocks[ii].offset + _blocks[ii].size) {
+                return _blocks[ii].from + index - _blocks[ii].offset;
+            }
+        }
+        return unknown_codepoint;
+    }
+
+    static constexpr bool is_utf8(char const* s) {
+        if ((*s & 0xf8) == 0xf0) {
+            return ((*++s & 0xc0) == 0x80)
+                 | ((*++s & 0xc0) == 0x80)
+                 | ((*++s & 0xc0) == 0x80);
+        } else if ((*s & 0xf0) == 0xe0) {
+            return ((*++s & 0xc0) == 0x80)
+                 | ((*++s & 0xc0) == 0x80);
+        } else if ((*s & 0xe0) == 0xc0) {
+            return ((*++s & 0xc0) == 0x80);
         } else {
-            return mid_index;
+            return (*s & 0x80) == 0x80;
         }
     }
-}
 
-constexpr int character_block(int codepoint)
-{
-    return block_search(0, int(unicode_blocks.size() - 1), codepoint);
-}
-
-constexpr int block_size(int block_index)
-{
-    return unicode_blocks[block_index].to
-         - unicode_blocks[block_index].from
-         + 1;
-}
-
-constexpr int block_offset(int block_index)
-{
-    if (block_index > 0) {
-        return block_size(block_index - 1) + block_offset(block_index - 1);
-    } else {
-        return 0;
+    static constexpr int decode(char const*& s) {
+        if ((*s & 0xf8) == 0xf0) {
+            return ((*s++ & 0x07) << 18)
+                 | ((*s++ & 0x3f) << 12)
+                 | ((*s++ & 0x3f) <<  6)
+                 | ((*s++ & 0x3f) <<  0);
+        } else if ((*s & 0xf0) == 0xe0) {
+            return ((*s++ & 0x0f) << 12)
+                 | ((*s++ & 0x3f) <<  6)
+                 | ((*s++ & 0x3f) <<  0);
+        } else if ((*s & 0xe0) == 0xc0) {
+            return ((*s++ & 0x1f) <<  6)
+                 | ((*s++ & 0x3f) <<  0);
+        } else {
+            return *s++;
+        }
     }
-}
 
-constexpr int character_index(int codepoint)
-{
-    int block = character_block(codepoint);
-    int offset = block_offset(block);
-    return codepoint - unicode_blocks[block].from + offset;
-}
+protected:
+    std::array<unicode_block_layout, sz> _blocks;
+};
 
-constexpr int block_search_index(int min_index, int max_index, int index)
-{
-    // Linear search
-    if (index >= block_offset(min_index) && index < block_offset(min_index) + block_size(min_index)) {
-        return min_index;
-    } else if (min_index < max_index) {
-        return block_search_index(min_index + 1, max_index, index);
+#if defined(__INTELLISENSE__)
+constexpr unicode_block_data<12> unicode_data(
+#else
+constexpr unicode_block_data unicode_data(
+#endif
+    {
+        { 0x0000, 0x007f, "Basic Latin" },
+        { 0x0080, 0x00ff, "Latin-1 Supplement" },
+        { 0x0100, 0x017f, "Latin Extended-A" },
+        { 0x0180, 0x024f, "Latin Extended-B" },
+        // { 0x0250, 0x02af, "IPA Extensions" },
+        // { 0x02b0, 0x02ff, "Spacing Modifier Letters" },
+        // { 0x0300, 0x036f, "Combining Diacritic Marks" },
+        { 0x0370, 0x03ff, "Greek and Coptic" },
+        { 0x0400, 0x04ff, "Cyrillic" },
+        { 0x0500, 0x052f, "Cyrillic Supplement" },
+        { 0x0530, 0x058f, "Armenian" },
+        { 0x0590, 0x05ff, "Hebrew" },
+        { 0x0600, 0x06ff, "Arabic" },
+        // ...
+        { 0xfe70, 0xfeff, "Arabic Presentation Forms-B" },
+        // { 0xff00, 0xffef, "Halfwidth and Fullwidth Forms" },
+        { 0xfff0, 0xffff, "Specials" },
     }
-}
+);
 
-constexpr int character_codepoint(int index)
-{
-    int block = block_search_index(0, int(unicode_blocks.size() - 1), index);
-    return unicode_blocks[block].from + index - block_offset(block);
-}
-
-constexpr int kaf_index = character_index(0x0643);
-constexpr int kaf_codepoint = character_codepoint(kaf_index);
+constexpr int kaf_index = unicode_data.codepoint_to_index(0x0643);
+constexpr int kaf_codepoint = unicode_data.index_to_codepoint(kaf_index);
+static_assert(unicode_data.index_to_codepoint(unicode_data.codepoint_to_index(0x0643)) == 0x0643, "");
 
 } // anonymous namespace
 
@@ -285,30 +308,17 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
                    narrow_cast<uint8_t>(a));
         glRasterPos2f(position.x + xoffs * scale.x, position.y);
 
-        char const* mbcs = cursor;
-        while (!(*mbcs & 0x80) && mbcs < next) {
-            ++mbcs;
+        char const* utf8 = cursor;
+        while (!unicode_data.is_utf8(cursor) && utf8 < next) {
+            ++utf8;
         }
 
-        next = mbcs;
+        next = utf8;
 
-        if (*cursor & 0x80) {
-            int mb = 0;
+        if (unicode_data.is_utf8(cursor)) {
             xoffs += _char_width[(uint8_t)*cursor];
-            if ((*cursor & 0xf8) == 0xf0) {
-                mb = ((*cursor++ & 0x07) << 18)
-                   | ((*cursor++ & 0x3f) << 12)
-                   | ((*cursor++ & 0x3f) <<  6)
-                   | ((*cursor++ & 0x3f) <<  0);
-            } else if ((*cursor & 0xf0) == 0xe0) {
-                mb = ((*cursor++ & 0x0f) << 12)
-                   | ((*cursor++ & 0x3f) <<  6)
-                   | ((*cursor++ & 0x3f) <<  0);
-            } else if ((*cursor & 0xe0) == 0xc0) {
-                mb = ((*cursor++ & 0x1f) <<  6)
-                   | ((*cursor++ & 0x3f) <<  0);
-            }
-            glCallLists(1, GL_INT, &mb);
+            int cp = unicode_data.decode(cursor);
+            glCallLists(1, GL_INT, &cp);
             next = cursor;
         } else {
             glCallLists(static_cast<GLsizei>(next - cursor), GL_UNSIGNED_BYTE, cursor);
