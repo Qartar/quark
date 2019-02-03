@@ -85,7 +85,7 @@ uint16_t ship_layout::intersect_compartment(vec2 point) const
 }
 
 //------------------------------------------------------------------------------
-int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std::size_t buffer_size) const
+std::size_t ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std::size_t buffer_size) const
 {
     uint16_t start_idx = intersect_compartment(start);
     uint16_t end_idx = intersect_compartment(end);
@@ -106,34 +106,34 @@ int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std
         vec2 position;
         float distance; //!< distance along path to this search node
         float heuristic; //!< estimated distance from this node to goal
-        int previous; //!< index of previous search node
+        std::size_t previous; //!< index of previous search node
         uint16_t compartment; //!< index of the destination compartment
         uint16_t connection; //!< index of the traversed connection
     };
 
     std::array<search_state, 256> search;
-    search[0] = {start, 0.f, (start - end).length(), -1, start_idx, invalid_connection};
-    int search_size = 0;
+    search[0] = {start, 0.f, (start - end).length(), SIZE_MAX, start_idx, invalid_connection};
+    std::size_t search_size = 0;
 
     struct search_comparator {
         decltype(search) const& _search;
-        bool operator()(int lhs, int rhs) const {
+        bool operator()(std::size_t lhs, std::size_t rhs) const {
             float d1 = _search[lhs].distance + _search[lhs].heuristic;
             float d2 = _search[rhs].distance + _search[rhs].heuristic;
             return d1 > d2;
         };
     };
 
-    std::priority_queue<int, std::vector<int>, search_comparator> queue{{search}};
+    std::priority_queue<std::size_t, std::vector<std::size_t>, search_comparator> queue{{search}};
     queue.push(search_size++);
 
-    std::set<int> openset;
+    std::set<std::size_t> openset;
     for (std::size_t ii = 0, sz = _connections.size(); ii < sz; ++ii) {
         openset.insert(narrow_cast<uint16_t>(ii));
     }
 
     while (queue.size() && search_size < search.size()) {
-        int idx = queue.top(); queue.pop();
+        std::size_t idx = queue.top(); queue.pop();
 
         // remove connection from the open set
         if (search[idx].connection != invalid_connection) {
@@ -147,13 +147,13 @@ int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std
 
         if (search[idx].compartment == end_idx) {
             // search succeeded
-            int depth = 0;
-            for (int ii = idx; search[ii].previous != -1; ii = search[ii].previous) {
+            std::size_t depth = 0;
+            for (std::size_t ii = idx; search[ii].previous != SIZE_MAX; ii = search[ii].previous) {
                 ++depth;
             }
 
             // if buffer doesn't have room just return the path length
-            int num_vertices = depth * 2 + 2;
+            std::size_t num_vertices = depth * 2 + 2;
             if (num_vertices > buffer_size) {
                 return num_vertices;
             }
@@ -162,7 +162,7 @@ int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std
             vec2* buffer_ptr = buffer + num_vertices - 1;
             *buffer_ptr-- = end;
             // insert two vertices for each connection, one on each side
-            for (int ii = idx; search[ii].previous != -1; ii = search[ii].previous) {
+            for (std::size_t ii = idx; search[ii].previous != SIZE_MAX; ii = search[ii].previous) {
                 auto const& c = _connections[search[ii].connection];
                 vec2 n = (_vertices[c.vertices[1]] - _vertices[c.vertices[0]]).cross(1.f) / c.width;
                 // check direction of connection against direction of path
@@ -199,7 +199,7 @@ int ship_layout::find_path(vec2 start, vec2 end, float radius, vec2* buffer, std
             // calculate midpoint of the connection
             auto const& c = _connections[ii];
             s.position =  _vertices[c.vertices[0]];
-            for (int jj = 1; jj < countof(c.vertices); ++jj) {
+            for (std::size_t jj = 1; jj < countof(c.vertices); ++jj) {
                 s.position += _vertices[c.vertices[jj]];
             }
             s.position /= static_cast<float>(countof(c.vertices));
@@ -286,7 +286,7 @@ ship_state::ship_state(ship_layout const& layout)
     constexpr compartment_state default_compartment_state = {1.f, 0.f, {0.f, 0.f}};
     _compartments.resize(_layout.compartments().size(), default_compartment_state);
 
-    constexpr connection_state default_connection_state = {false, 0.f, 0.f, 0.f};
+    constexpr connection_state default_connection_state = {false, false, 0.f, 0.f, 0.f};
     _connections.resize(_layout.connections().size(), default_connection_state);
 }
 
