@@ -179,13 +179,12 @@ convex_shape convex_shape::from_planes(vec3 const* planes, std::size_t num_plane
             vec3 p = planes[ii].cross(planes[jj]);
             if (p.z) {
                 vec2 u = planes[jj].to_vec2();
-                vec2 x = vec2(p.x, p.y) / p.z;
                 float s = u.dot(v);
-                if (s < 0.f && u.dot(vmin - x) > 0.f) {
-                    vmin = x;
+                if (s < 0.f && u.dot(vmin) > -planes[jj].z) {
+                    vmin = vec2(p.x, p.y) / p.z;
                 }
-                if (s > 0.f && u.dot(vmax - x) > 0.f) {
-                    vmax = x;
+                if (s > 0.f && u.dot(vmax) > -planes[jj].z) {
+                    vmax = vec2(p.x, p.y) / p.z;
                 }
                 if (v.dot(vmax - vmin) < 0.f) {
                     break;
