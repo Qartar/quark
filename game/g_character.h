@@ -76,7 +76,7 @@ public:
     bool move(uint16_t compartment);
 
     vec2 get_path(int index) const { return _path[_path_start + index]; }
-    int get_path_length() const { return _path_end - _path_start; }
+    std::size_t get_path_length() const { return _path_end - _path_start; }
 
 protected:
     string::buffer _name;
@@ -88,8 +88,8 @@ protected:
 
     static constexpr int path_size = 32;
     vec2 _path[path_size];
-    int _path_start;
-    int _path_end;
+    std::size_t _path_start;
+    std::size_t _path_end;
 
     handle<ship> _ship;
 

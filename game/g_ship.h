@@ -50,7 +50,6 @@ public:
     virtual void set_position(vec2 position, bool teleport = false) override;
     virtual void set_rotation(float rotation, bool teleport = false) override;
 
-    void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec2 point, float amount);
 
     std::vector<unique_handle<character>>& crew() { return _crew; }
@@ -73,9 +72,6 @@ public:
     bool is_destroyed() const { return _is_destroyed; }
 
     static ship_info const& by_random(random& r);
-
-protected:
-    game::usercmd _usercmd;
 
 protected:
     ship_info const& _info;

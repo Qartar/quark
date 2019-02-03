@@ -91,7 +91,7 @@ void character::draw(render::system* renderer, time_value time) const
                 break;
         }
         vec2 prev = get_position(time) * tx;
-        for (int ii = _path_start; ii < _path_end; ++ii) {
+        for (std::size_t ii = _path_start; ii < _path_end; ++ii) {
             vec2 next = _path[ii] * tx;
             renderer->draw_line(prev, next, color, color);
             prev = next;

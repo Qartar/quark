@@ -115,7 +115,7 @@ model::model(vec2 const* vertices, std::size_t num_vertices, triangle const* tri
         assert(triangles[ii].v0 < num_vertices);
         assert(triangles[ii].v1 < num_vertices);
         assert(triangles[ii].v2 < num_vertices);
-        /*unreferenced parameter*/num_vertices;
+        /*unreferenced parameter*/(void)num_vertices;
 
         _vertices.push_back(vertices[triangles[ii].v0]);
         _vertices.push_back(vertices[triangles[ii].v1]);

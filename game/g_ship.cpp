@@ -12,6 +12,7 @@
 #include "r_model.h"
 
 #include <intrin.h>
+#include <cfloat>
 #include <random>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -306,7 +307,6 @@ const std::vector<ship_info> ship::_types = {
 //------------------------------------------------------------------------------
 ship::ship(ship_info const& info)
     : _info(info)
-    , _usercmd{}
     , _state(info.layout)
     , _shield(nullptr)
     , _dead_time(time_value::max)
@@ -402,11 +402,6 @@ void ship::draw(render::system* renderer, time_value time) const
     }
 
     renderer->draw_model(_model, get_transform(time), _color);
-
-    constexpr color4 subsystem_colors[2][3] = {
-        { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f), color4(1.f, .8f, .1f, .300f), },
-        { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f), color4(1.f, .8f, .1f, 1.00f), },
-    };
 
     float alpha = 1.f;
     if (time > _dead_time && time - _dead_time < destruction_time) {
@@ -566,7 +561,6 @@ void ship::draw(render::system* renderer, time_value time) const
     position = get_position(time) - vec2(4.f * (_crew.size() - 1), -24.f);
 
     for (auto const& ch : _crew) {
-        color4 c = ch->health() ? color4(1,1,1,alpha) : color4(1,.2f,0,alpha);
         if (ch->health() == 0.f) {
             renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), color4(1,.2f,0,alpha));
         } else if (ch->health() == 1.f) {
@@ -618,7 +612,7 @@ void ship::draw(render::system* renderer, time_value time) const
             std::vector<int> idx;
             vtx.push_back(c.shape.vertices()[0] * transform);
             col.push_back(color4(1,1,1,1));
-            for (int jj = 1; jj < c.shape.num_vertices(); ++jj) {
+            for (int jj = 1; jj < narrow_cast<int>(c.shape.num_vertices()); ++jj) {
                 vtx.push_back(c.shape.vertices()[jj] * transform);
                 col.push_back(color4(1,1,1,1));
                 idx.push_back(0);
@@ -630,7 +624,7 @@ void ship::draw(render::system* renderer, time_value time) const
             //renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.shape.num_vertices() - 2) * 3);
             vtx[0] = c.inner_shape.vertices()[0] * transform;
             col[0] = color4(0.f,0.f,0.f,.1f);
-            for (int jj = 1; jj < c.inner_shape.num_vertices(); ++jj) {
+            for (int jj = 1; jj < narrow_cast<int>(c.inner_shape.num_vertices()); ++jj) {
                 vtx[jj] = c.inner_shape.vertices()[jj] * transform;
                 col[jj] = color4(0.f,0.f,0.f,.1f);
             }
@@ -944,7 +938,6 @@ void ship::draw(render::system* renderer, time_value time) const
     //
 
     if (false) {
-        mat3 tx = get_transform(time);
         mat2 rot = mat2::rotate(get_rotation(time));
         renderer->draw_line(get_position(time), get_position(time) + get_linear_velocity() * 2.f, color4(1,0,0,1), color4(1,0,0,1));
         renderer->draw_line(get_position(time), get_position(time) + _engines->target_linear_velocity().normalize() * 32.f, color4(0,1,0,1), color4(0,1,0,1));
@@ -994,8 +987,8 @@ void ship::think()
                 }
                 uint16_t c0 = _state.layout().intersect_compartment(ch->get_path(-1));
                 uint16_t c1 = _state.layout().intersect_compartment(ch->get_path(0));
-                if (conn.compartments[0] == c0 && conn.compartments[1] == c1
-                        || conn.compartments[0] == c1 && conn.compartments[1] == c0) {
+                if ((conn.compartments[0] == c0 && conn.compartments[1] == c1)
+                        || (conn.compartments[0] == c1 && conn.compartments[1] == c0)) {
                     open[ii] = true;
                 }
             }
@@ -1093,12 +1086,6 @@ void ship::damage(object* inflictor, vec2 /*point*/, float amount)
             }
         }
     }
-}
-
-//------------------------------------------------------------------------------
-void ship::update_usercmd(game::usercmd usercmd)
-{
-    _usercmd = usercmd;
 }
 
 //------------------------------------------------------------------------------
