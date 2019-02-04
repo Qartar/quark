@@ -274,13 +274,10 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
 }
 
 //------------------------------------------------------------------------------
-void system::draw_starfield()
+void system::draw_starfield(vec2 streak_vector)
 {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-
-    glVertexPointer(2, GL_FLOAT, 0, _starfield_points.data());
-    glColorPointer(3, GL_FLOAT, 0, _starfield_colors.data());
 
     glPointSize(0.1f);
     glBlendFunc(GL_CONSTANT_COLOR, GL_ONE);
@@ -314,6 +311,19 @@ void system::draw_starfield()
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
+        if (streak_vector != vec2_zero) {
+            vec2 u = streak_vector;
+            vec2 v = u * -.5f;
+
+            float shear[16] = {
+                1.f, 0.f, 0.f, 0.f,
+                0.f, 1.f, 0.f, 0.f,
+                u.x, u.y, 1.f, 0.f,
+                v.x, v.y, 0.f, 1.f,
+            };
+            glMultMatrixf(shear);
+        }
+
         glTranslatef(_view.origin.x, _view.origin.y, 0);
         glScalef(scale[ii], scale[ii], 1);
         glRotatef(r, 0, 0, 1);
@@ -323,7 +333,15 @@ void system::draw_starfield()
                 glPushMatrix();
                 glTranslatef(tx - ix + xx - 2, ty - iy + yy - 2, 0);
 
-                glDrawArrays(GL_POINTS, 0, GLsizei(_starfield_points.size()));
+                if (streak_vector != vec2_zero) {
+                    glVertexPointer(3, GL_FLOAT, 0, _starfield_points.data());
+                    glColorPointer(3, GL_FLOAT, 0, _starfield_colors.data());
+                    glDrawArrays(GL_LINES, 0, (GLsizei)_starfield_points.size());
+                }
+
+                glVertexPointer(3, GL_FLOAT, sizeof(vec3) * 2, _starfield_points.data());
+                glColorPointer(3, GL_FLOAT, sizeof(color3) * 2, _starfield_colors.data());
+                glDrawArrays(GL_POINTS, 0, (GLsizei)_starfield_points.size() / 2);
 
                 glPopMatrix();
             }

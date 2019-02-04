@@ -43,12 +43,17 @@ result system::init()
 
     resize(_window->size());
 
-    _starfield_points.resize(1024);
-    _starfield_colors.resize(1024);
-    for (std::size_t ii = 0; ii < _starfield_points.size(); ++ii) {
-        _starfield_points[ii].x = r.uniform_real();
-        _starfield_points[ii].y = r.uniform_real();
-        _starfield_colors[ii] = color3(1,1,1) * r.uniform_real();
+    _starfield_points.resize(2048);
+    _starfield_colors.resize(2048);
+    for (std::size_t ii = 0; ii * 2 < _starfield_points.size(); ++ii) {
+        _starfield_points[ii * 2].x = r.uniform_real();
+        _starfield_points[ii * 2].y = r.uniform_real();
+        _starfield_points[ii * 2].z = 0.f;
+        _starfield_colors[ii * 2] = color3(1,1,1) * r.uniform_real();
+        // duplicate all points with z-offset to be used as star streaks
+        _starfield_points[ii * 2 + 1] = _starfield_points[ii * 2 + 0];
+        _starfield_points[ii * 2 + 1].z = 1.f;
+        _starfield_colors[ii * 2 + 1] = _starfield_colors[ii * 2 + 0];
     }
 
     float k = 2.f * math::pi<float> / countof(_costbl);

@@ -139,7 +139,7 @@ public:
     void draw_triangles(vec2 const* position, color4 const* color, int const* indices, std::size_t num_indices);
     void draw_particles(time_value time, render::particle const* particles, std::size_t num_particles);
     void draw_model(render::model const* model, mat3 transform, color4 color);
-    void draw_starfield();
+    void draw_starfield(vec2 streak_vector = vec2_zero);
 
     void set_view(render::view const& view);
 
@@ -176,7 +176,7 @@ private:
 
     config::boolean _draw_tris;
 
-    std::vector<vec2> _starfield_points;
+    std::vector<vec3> _starfield_points;
     std::vector<color3> _starfield_colors;
 
     float _costbl[360];
