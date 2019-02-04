@@ -283,15 +283,16 @@ void system::draw_starfield()
     glColorPointer(3, GL_FLOAT, 0, _starfield_colors.data());
 
     glPointSize(0.1f);
+    glBlendFunc(GL_CONSTANT_COLOR, GL_ONE);
 
     float s = std::log2(_view.size.x);
     float i = std::exp2(std::floor(s));
     float scale[5] = {
+        i * .5f,
         i,
         i * 2.f,
         i * 4.f,
         i * 8.f,
-        i * 16.f,
     };
 
     for (int ii = 0; ii < 5; ++ii) {
@@ -305,14 +306,21 @@ void system::draw_starfield()
         float ix = std::floor(tx);
         float iy = std::floor(ty);
 
+        float a = ii == 0 ? square(std::ceil(s) - s)
+                : ii == 4 ? square(s - std::floor(s)) : 1.f;
+
+        glBlendColor(a, a, a, 1.f);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+
+        glTranslatef(_view.origin.x, _view.origin.y, 0);
+        glScalef(scale[ii], scale[ii], 1);
+        glRotatef(r, 0, 0, 1);
+
         for (int xx = 0; xx < 3; ++xx) {
             for (int yy = 0; yy < 3; ++yy) {
-                glMatrixMode(GL_MODELVIEW);
                 glPushMatrix();
-
-                glTranslatef(_view.origin.x, _view.origin.y, 0);
-                glScalef(scale[ii], scale[ii], 1);
-                glRotatef(r, 0, 0, 1);
                 glTranslatef(tx - ix + xx - 2, ty - iy + yy - 2, 0);
 
                 glDrawArrays(GL_POINTS, 0, GLsizei(_starfield_points.size()));
@@ -320,8 +328,11 @@ void system::draw_starfield()
                 glPopMatrix();
             }
         }
+
+        glPopMatrix();
     }
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glPointSize(2.f);
 
     glDisableClientState(GL_VERTEX_ARRAY);
