@@ -19,6 +19,7 @@ struct collision;
 } // namespace physics
 
 namespace render {
+class model;
 class system;
 } // namespace render
 

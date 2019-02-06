@@ -95,6 +95,7 @@ set(QUARK_SOURCES
     system/win_main.cpp
     system/win_main.h
     system/win_include.h
+    system/win_types.h
 )
 
 add_executable(quark WIN32

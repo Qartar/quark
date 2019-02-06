@@ -3,9 +3,7 @@
 
 #pragma once
 
-#ifndef WINAPI
-#define WINAPI __stdcall
-#endif
+#include "win_types.h"
 
 //------------------------------------------------------------------------------
 class application
@@ -50,5 +48,5 @@ protected:
 
     void generate_gamepad_events();
 
-    static LRESULT WINAPI wndproc(HWND hWnd, UINT nCmd, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK wndproc(HWND hWnd, UINT nCmd, WPARAM wParam, LPARAM lParam);
 };

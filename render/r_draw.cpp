@@ -4,6 +4,10 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "r_model.h"
+#include "win_include.h"
+#include <GL/gl.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 

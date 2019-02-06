@@ -5,11 +5,7 @@
 
 #include <cassert>
 #include <cmath>
-#include <cstdarg>
-#include <cstddef>
 #include <cstdint>
-#include <cstdlib>
-#include <cstdio>
 
 #define APP_CLASSNAME   L"Quark"
 

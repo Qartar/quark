@@ -8,6 +8,8 @@
 #include "cm_time.h"
 
 #ifndef _WINDOWS_
+#define WINAPI __stdcall
+#define APIENTRY WINAPI
 typedef struct HFONT__* HFONT;
 typedef struct HBITMAP__* HBITMAP;
 #endif // _WINDOWS_

@@ -4,6 +4,9 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "win_include.h"
+#include <GL/gl.h>
+
 #ifndef GL_VERSION_1_2
 #define GL_BGR                            0x80E0
 #endif // GL_VERSION_1_2

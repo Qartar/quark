@@ -7,12 +7,10 @@
 #include "cm_keys.h"
 #include "cm_parser.h"
 #include "resource.h"
-
 #include "version.h"
 
+#include <cstdarg>
 #include <numeric>
-// #todo: abstract XInput virtual keycodes
-#include <XInput.h>
 
 // global object
 game::session* g_Game;

@@ -9,6 +9,7 @@
 #include "g_shield.h"
 #include "g_weapon.h"
 #include "g_subsystem.h"
+#include "r_model.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {

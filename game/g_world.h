@@ -13,7 +13,6 @@
 
 #include "net_message.h"
 
-#include "r_model.h"
 #include "r_particle.h"
 
 #include <array>

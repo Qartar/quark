@@ -4,6 +4,8 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "r_model.h"
+
 render::model tank_body_model({
     //  center        size          gamma
     {{  0.f,  8.0f}, {20.f,  2.f},  0.5f},  // left tread

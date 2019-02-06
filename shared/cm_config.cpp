@@ -2,6 +2,7 @@
 //
 
 #include "cm_config.h"
+#include "cm_shared.h"
 #include "cm_filesystem.h"
 #include "cm_parser.h"
 

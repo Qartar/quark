@@ -4,8 +4,7 @@
 #pragma once
 
 #include "cm_config.h"
-
-#include <GL/gl.h>
+#include "win_types.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {

@@ -7,9 +7,7 @@
 #include "cm_string.h"
 #include "cm_vector.h"
 
-#ifndef _WINDOWS_
 typedef struct HWND__ *HWND;
-#endif // _WINDOWS_
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace sound {
