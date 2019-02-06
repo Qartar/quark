@@ -210,8 +210,6 @@ private:
 
     render::system* _renderer;
 
-    render::image const* _menu_image;
-
     config::scalar _upgrade_frac;
     config::scalar _upgrade_penalty;
     config::scalar _upgrade_min;

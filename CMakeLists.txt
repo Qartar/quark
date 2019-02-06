@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-project(tanks)
+project(quark)
 
 # Configure version file
 find_package(git)
@@ -47,7 +47,7 @@ add_subdirectory(sound)
 add_subdirectory(physics)
 add_subdirectory(network)
 
-set(TANKS_SOURCES
+set(QUARK_SOURCES
     game/g_button.cpp
     game/g_client.cpp
     game/g_menu.cpp
@@ -84,15 +84,15 @@ set(TANKS_SOURCES
     system/win_include.h
 )
 
-add_executable(tanks WIN32
-    ${TANKS_SOURCES}
+add_executable(quark WIN32
+    ${QUARK_SOURCES}
     ${VERSION_FILE}
 
     precompiled.cpp
     precompiled.h
 )
 
-target_link_libraries(tanks
+target_link_libraries(quark
     # project libraries
     shared
     sound
@@ -106,7 +106,7 @@ target_link_libraries(tanks
     Xinput
 )
 
-target_include_directories(tanks
+target_include_directories(quark
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -117,9 +117,7 @@ target_include_directories(tanks
 
 # Set up precompiled header
 set_source_files_properties(precompiled.cpp PROPERTIES COMPILE_FLAGS /Ycprecompiled.h OBJECT_OUTPUTS precompiled.pch)
-set_source_files_properties(${TANKS_SOURCES} PROPERTIES COMPILE_FLAGS /Yuprecompiled.h OBJECT_DEPENDS precompiled.pch)
+set_source_files_properties(${QUARK_SOURCES} PROPERTIES COMPILE_FLAGS /Yuprecompiled.h OBJECT_DEPENDS precompiled.pch)
 
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${TANKS_SOURCES} precompiled.cpp precompiled.h)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${QUARK_SOURCES} precompiled.cpp precompiled.h)
 source_group("\\" FILES precompiled.cpp precompiled.h)
-
-set_target_properties(tanks PROPERTIES OUTPUT_NAME "Tanks!")

@@ -241,7 +241,7 @@ int get_config_path(char *path, std::size_t size, bool create = false)
 
     SHGetKnownFolderPath( FOLDERID_LocalAppData, KF_FLAG_DEFAULT, NULL, &pszPath );
 
-    PathCchCombine(wPath, countof(wPath), pszPath, L"Tanks!");
+    PathCchCombine(wPath, countof(wPath), pszPath, L"Quark");
 
     if (create) {
         CreateDirectoryW(wPath, NULL);

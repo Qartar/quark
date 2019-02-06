@@ -104,7 +104,7 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
     _hwnd = CreateWindowExW(
         0,
         APP_CLASSNAME,
-        L"Tanks!",
+        L"Quark",
         style,
         xpos,
         ypos,

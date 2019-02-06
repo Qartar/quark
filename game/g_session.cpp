@@ -33,7 +33,7 @@ session::session()
     , _upgrade_min("g_upgradeMin", 0.2f, config::archive|config::server, "minimum upgrade fraction")
     , _upgrades("g_upgrades", true, config::archive|config::server, "enable upgrades")
     , _net_master("net_master", "oedhead.no-ip.org", config::archive, "master server hostname")
-    , _net_server_name("net_serverName", "Tanks! Server", config::archive, "local server name")
+    , _net_server_name("net_serverName", "Quark Server", config::archive, "local server name")
     , _net_graph("net_graph", false, config::archive, "draw network usage graph")
     , _cl_name("ui_name", "", config::archive, "user info: name")
     , _cl_color("ui_color", "255 0 0", config::archive, "user info: color")
@@ -66,10 +66,6 @@ result session::init (string::view cmdline)
         float den = _renderer->monospace_size(" ").x;
         _console.resize(static_cast<std::size_t>(num / den));
     }
-
-    // Hack for MAKEINTRESOURCE which uses an integer as a pointer value
-    _menu_image = _renderer->load_image(string::view(MAKEINTRESOURCE(IDB_BITMAP1),
-                                                     MAKEINTRESOURCE(IDB_BITMAP1)));
 
     for ( int i=0 ; i<MAX_MESSAGES ; i++ )
         memset( _messages[i].string, 0, MAX_STRING );
@@ -143,8 +139,6 @@ result session::init (string::view cmdline)
     pSound->load_sound("assets/sound/cannon_fire.wav");
     pSound->load_sound("assets/sound/cannon_impact.wav");
     pSound->load_sound("assets/sound/missile_flight.wav");
-
-    write_message( "Welcome to Tanks! Press F1 or LSHLDR for help." );
 
     return result::success;
 }
@@ -258,15 +252,6 @@ void session::draw_menu()
     // draw menu
 
     if (_menu_active) {
-
-        // draw splash image
-
-        float aspect = float(_menu_image->width()) / float(_menu_image->height());
-        vec2 size = vec2(_renderer->view().size.y * aspect, _renderer->view().size.y);
-        _renderer->draw_image(_menu_image, (_renderer->view().size - size) * 0.5f, size);
-
-        // draw menu items
-
         _menu.draw(_renderer);
     }
 }

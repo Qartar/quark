@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <cstdio>
 
-#define APP_CLASSNAME   L"Tanks!"
+#define APP_CLASSNAME   L"Quark"
 
 #define PORT_SERVER     28101
 #define PORT_CLIENT     28110
