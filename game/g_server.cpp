@@ -246,9 +246,10 @@ void session::client_command(network::message& message, std::size_t /*client*/)
 {
     game::usercmd cmd{};
 
-    cmd.move = message.read_vector();
-    cmd.look = message.read_vector();
+    cmd.cursor = message.read_vector();
     cmd.action = static_cast<decltype(cmd.action)>(message.read_byte());
+    cmd.buttons = static_cast<decltype(cmd.buttons)>(message.read_byte());
+    cmd.modifiers = static_cast<decltype(cmd.modifiers)>(message.read_byte());
 
     //game::tank* player = _world.player(client);
     //if (player) {

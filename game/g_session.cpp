@@ -93,23 +93,18 @@ result session::init (string::view cmdline)
     cls.number = -1;
 
     _clients[0].input.bind({
-        {'w', usercmdgen::button::forward},
-        {'s', usercmdgen::button::back},
-        {'a', usercmdgen::button::left},
-        {'d', usercmdgen::button::right},
-        {'j', usercmdgen::button::turret_left},
-        {'l', usercmdgen::button::turret_right},
-        {'k', usercmdgen::button::fire},
-    });
-
-    _clients[1].input.bind({
-        {K_UPARROW, usercmdgen::button::forward},
-        {K_DOWNARROW, usercmdgen::button::back},
-        {K_LEFTARROW, usercmdgen::button::left},
-        {K_RIGHTARROW, usercmdgen::button::right},
-        {K_KP_LEFTARROW, usercmdgen::button::turret_left},
-        {K_KP_RIGHTARROW, usercmdgen::button::turret_right},
-        {K_KP_5, usercmdgen::button::fire},
+        {K_ALT, usercmd::modifier::alternate},
+        {K_CTRL, usercmd::modifier::control},
+        {K_SHIFT, usercmd::modifier::shift},
+        {K_MOUSE1, usercmd::button::select},
+        {'m', usercmd::action::move},
+        {'1', usercmd::action::weapon_1},
+        {'2', usercmd::action::weapon_2},
+        {'3', usercmd::action::weapon_3},
+        {'=', usercmd::action::zoom_in},
+        {'-', usercmd::action::zoom_out},
+        {K_MWHEELUP, usercmd::action::zoom_in},
+        {K_MWHEELDOWN, usercmd::action::zoom_out},
     });
 
     init_client();

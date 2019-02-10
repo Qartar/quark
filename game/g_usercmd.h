@@ -3,10 +3,12 @@
 
 #pragma once
 
+#include "cm_enumflag.h"
 #include "cm_vector.h"
 
 #include <cstdint>
 #include <map>
+#include <variant>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -32,53 +34,84 @@ struct usercmd
     enum class action
     {
         none,
-        attack,
+        select,
+        move,
+        weapon_1,
+        weapon_2,
+        weapon_3,
+        zoom_in,
+        zoom_out,
     };
 
-    vec2 move; //!< right/left, forward/back
-    vec2 look; //!< turret right/left, _
+    enum class button
+    {
+        none        = 0,
+        select      = (1 << 0),
+        zoom_in     = (1 << 1),
+        zoom_out    = (1 << 2),
+    };
+    ENUM_FLAG_FRIEND_OPERATORS(usercmd::button);
+
+    enum class modifier
+    {
+        none        = 0,
+        alternate   = (1 << 0),
+        control     = (1 << 1),
+        shift       = (1 << 2),
+    };
+    ENUM_FLAG_FRIEND_OPERATORS(usercmd::modifier);
+
+    vec2 cursor;
     action action;
+    button buttons;
+    modifier modifiers;
 };
 
 //------------------------------------------------------------------------------
 class usercmdgen
 {
 public:
-    enum class button
-    {
-        forward,
-        back,
-        left,
-        right,
-        turret_left,
-        turret_right,
-        fire,
-    };
+    using action = decltype(usercmd::action);
+    using button = usercmd::button;
+    using modifier = usercmd::modifier;
+    using binding = std::variant<action, button, modifier>;
 
     usercmdgen()
-        : _button_state(0)
+        : _button_state(button::none)
+        , _modifier_state(modifier::none)
         , _gamepad_state{}
+        , _queue_begin(0)
+        , _queue_end(0)
     {}
 
     void reset(bool unbind_all = false);
-    void bind(int key, button button);
+    void bind(int key, binding button);
     void unbind(int key);
-    template<std::size_t Size> void bind(std::pair<int, button> const (&bindings)[Size]);
+    template<std::size_t Size> void bind(std::pair<int, binding> const (&bindings)[Size]);
 
     bool key_event(int key, bool down);
+    void cursor_event(vec2 position);
     void gamepad_event(gamepad const& pad);
 
     int state(button button) const;
-    usercmd generate() const;
+    usercmd generate();
+    usercmd generate_direct() const;
 
 protected:
-    std::map<int, button> _bindings;
-    uint32_t _button_state;
+    std::map<int, binding> _bindings;
+    button _button_state;
+    modifier _modifier_state;
+    vec2 _cursor_state;
     gamepad _gamepad_state;
+
+    static constexpr std::size_t _queue_size = 64;
+    usercmd _queue[_queue_size];
+    std::size_t _queue_begin;
+    std::size_t _queue_end;
 };
 
 //------------------------------------------------------------------------------
-template<size_t Size> void usercmdgen::bind(std::pair<int, button> const (&bindings)[Size])
+template<size_t Size> void usercmdgen::bind(std::pair<int, binding> const (&bindings)[Size])
 {
     for (std::size_t ii = 0; ii < Size; ++ii) {
         bind(bindings[ii].first, bindings[ii].second);

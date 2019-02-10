@@ -224,9 +224,10 @@ void session::client_send ()
     _clients[0].usercmd_time = _frametime;
 
     _netchan.write_byte(clc_command);
-    _netchan.write_vector(cmd.move);
-    _netchan.write_vector(cmd.look);
+    _netchan.write_vector(cmd.cursor);
     _netchan.write_byte(narrow_cast<uint8_t>(cmd.action));
+    _netchan.write_byte(narrow_cast<uint8_t>(cmd.buttons));
+    _netchan.write_byte(narrow_cast<uint8_t>(cmd.modifiers));
 
     // check if user info has been changed
     if (!_menu_active) {
