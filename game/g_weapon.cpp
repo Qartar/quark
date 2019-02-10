@@ -92,8 +92,8 @@ void weapon::draw(render::system* renderer, time_value time) const
 
         if (_beam_target && time - _last_attack_time < beam_info.duration) {
             float t = (time - _last_attack_time) / beam_info.duration;
-            vec2 beam_start = get_position(time) * mat3::rotate<2>(_owner->get_rotation(time)) + _owner->get_position(time);
-            vec2 beam_end = (_beam_sweep_end * t + _beam_sweep_start * (1.f - t)) * mat3::rotate<2>(_beam_target->get_rotation(time)) + _beam_target->get_position(time);
+            vec2 beam_start = get_position(time) * _owner->get_transform(time);
+            vec2 beam_end = (_beam_sweep_end * t + _beam_sweep_start * (1.f - t)) * _beam_target->get_transform(time);
 
             if (_beam_shield) {
                 // Trace rigid body using the interpolated position/rotation
@@ -114,8 +114,13 @@ void weapon::think()
 {
     subsystem::think();
 
-    // cancel pending attacks if weapon subsystem has been damaged
-    if (current_power() < maximum_power()) {
+    ship const* target_ship = _target && _target->_type == object_type::ship
+        ? static_cast<ship const*>(_target.get()) : nullptr;
+
+    // cancel pending attacks if weapon subsystem has been damaged or if target
+    // has been destroyed (ships are not immediately removed when destroyed)
+    if (current_power() < maximum_power() || !_target
+            || (target_ship && target_ship->is_destroyed())) {
         cancel();
     }
 
@@ -251,7 +256,9 @@ void weapon::attack_beam(game::object* target, vec2 sweep_start, vec2 sweep_end,
 //------------------------------------------------------------------------------
 void weapon::cancel()
 {
+    _target = nullptr;
     _is_attacking = false;
+    _is_repeating = false;
 }
 
 //------------------------------------------------------------------------------
