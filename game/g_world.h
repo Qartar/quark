@@ -295,7 +295,9 @@ template<typename T> T* world::get(handle<T> h) const
 {
     assert(h.get_world_index() == _index);
     assert(h.get_index() < max_objects);
-    if (_objects[h.get_index()] && h.get_sequence() == _objects[h.get_index()]->_self.get_sequence()) {
+    if (h.get_index() < _objects.size()
+            && _objects[h.get_index()]
+            && h.get_sequence() == _objects[h.get_index()]->_self.get_sequence()) {
         return static_cast<T*>(_objects[h.get_index()].get());
     }
     return nullptr;
