@@ -38,7 +38,9 @@ public:
 
     handle<subsystem> reactor() { return _reactor; }
     handle<game::engines> engines() { return _engines; }
+    handle<game::engines const> engines() const { return _engines; }
     std::vector<handle<weapon>>& weapons() { return _weapons; }
+    std::vector<handle<weapon>> const& weapons() const { return _weapons; }
 
     bool is_destroyed() const { return _is_destroyed; }
 

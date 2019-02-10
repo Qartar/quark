@@ -4,6 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "g_player.h"
 #include "win_include.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -319,18 +320,32 @@ void session::draw_world()
     render::view view{};
     view.size = world_size;
 
+    float aspect_ratio = float(_renderer->window()->width())
+                       / float(_renderer->window()->height());
+
     if (cls.active && _player) {
-        view.origin = _player->get_position(_worldtime);
-        view.angle = 0;
+        if (_player->_type == object_type::player) {
+            player const* pl = static_cast<player const*>(_player.get());
+            const_cast<player*>(pl)->set_aspect(aspect_ratio);
+            player_view plv = pl->view(_worldtime);
+            view.origin = plv.origin;
+            view.size = plv.size;
+            view.angle = 0;
+        } else {
+            view.origin = _player->get_position(_worldtime);
+            view.size /= _zoom;
+            // maintain aspect ratio
+            view.size.x = view.size.y * aspect_ratio;
+            view.angle = 0;
+        }
     } else {
         view.origin = world_center;
+        view.size /= _zoom;
+        // maintain aspect ratio
+        view.size.x = view.size.y * aspect_ratio;
         view.angle = 0;
     }
 
-    view.size /= _zoom;
-    // maintain aspect ratio
-    view.size.x *= (view.size.y * _renderer->window()->width())
-                 / (view.size.x * _renderer->window()->height());
 
     // draw world
 

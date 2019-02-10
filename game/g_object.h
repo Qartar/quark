@@ -40,6 +40,7 @@ enum class object_type
     weapon,
     character,
     controller,
+    player,
 };
 
 //------------------------------------------------------------------------------

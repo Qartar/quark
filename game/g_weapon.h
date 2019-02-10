@@ -71,6 +71,8 @@ public:
     void cancel();
 
     object const* target() const { return _target.get(); }
+    bool is_attacking() const { return _is_attacking; }
+    bool is_repeating() const { return _is_repeating; }
 
     static weapon_info const& by_random(random& r);
 

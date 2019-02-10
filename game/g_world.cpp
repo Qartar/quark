@@ -7,6 +7,7 @@
 #include "g_aicontroller.h"
 #include "g_projectile.h"
 #include "g_ship.h"
+#include "g_player.h"
 #include "p_collide.h"
 #include "p_trace.h"
 
@@ -71,7 +72,11 @@ void world::reset()
         sh->set_rotation(angle, true);
 
         // spawn ai controller to control the ship
-        spawn<aicontroller>(sh);
+        if (ii == 0) {
+            spawn<player>(sh);
+        } else {
+            spawn<aicontroller>(sh);
+        }
     }
 }
 

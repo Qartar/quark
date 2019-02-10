@@ -6,6 +6,7 @@
 
 #include "cm_keys.h"
 #include "cm_parser.h"
+#include "g_player.h"
 #include "resource.h"
 #include "version.h"
 
@@ -161,6 +162,13 @@ result session::run_frame(time_delta time)
     if (!_menu_active || svs.active) {
         // clamp world step size
         _worldtime += std::min(time, FRAMETIME) * _timescale;
+
+        // update client
+        if (!_dedicated) {
+            if (_player && _player->_type == object_type::player) {
+                static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate(), _worldtime);
+            }
+        }
 
         if (_worldtime > time_value((1 + _world.framenum()) * FRAMETIME) && svs.active) {
             _world.run_frame();
@@ -357,6 +365,11 @@ void session::key_event(int key, bool down)
     // user commands here
 
     if (!_dedicated) {
+        if (_player && _player->_type == object_type::player) {
+            if (_clients[0].input.key_event(key, down)) {
+                return;
+            }
+        }
         for (int ii = 0; ii < MAX_PLAYERS; ++ii) {
             //game::tank* player = _world.player(ii);
             //if (player && _clients[ii].input.key_event(key, down)) {
@@ -365,25 +378,24 @@ void session::key_event(int key, bool down)
         }
     }
 
-    if (down) {
-        if (key >= '0' && key <= '9') {
-            cls.number = key - '0' - 1;
-            std::vector<game::object const*> controllers;
-            for (auto const& obj : _world.objects()) {
-                if (obj->_type == object_type::controller) {
-                    controllers.push_back(obj);
-                }
-            }
-            if (cls.number >= 0 && cls.number < controllers.size()) {
-                _player = controllers[cls.number];
-            } else {
-                _player = nullptr;
-            }
-        }
-    }
-
     if (!down) {
         return;
+    }
+
+    if (key >= K_F1 && key <= K_F12) {
+        cls.number = key - K_F1;
+        std::vector<game::object const*> controllers;
+        for (auto const& obj : _world.objects()) {
+            if (obj->_type == object_type::controller || obj->_type == object_type::player) {
+                controllers.push_back(obj);
+            }
+        }
+
+        if (cls.number >= 0 && cls.number < controllers.size()) {
+            _player = controllers[cls.number];
+        } else {
+            _player = nullptr;
+        }
     }
 
     // menu commands
@@ -412,6 +424,11 @@ void session::cursor_event(vec2 position)
     vec2i size = _renderer->window()->size();
     _cursor.x = static_cast<int>(position.x * 640 / size.x);
     _cursor.y = static_cast<int>(position.y * 480 / size.y);
+
+    _clients[0].input.cursor_event(position / vec2(size) * vec2(1,-1) + vec2(0,1));
+    if (_player && _player->_type == object_type::player) {
+        static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate_direct(), _worldtime);
+    }
 
     if (_menu_active) {
         _menu.cursor_event(_cursor);
