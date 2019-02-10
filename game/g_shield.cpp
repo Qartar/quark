@@ -12,6 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type shield::_type(subsystem::_type);
 physics::material shield::_material(0.0f, 0.0f);
 
 //------------------------------------------------------------------------------
@@ -22,8 +23,6 @@ shield::shield(physics::shape const* base, game::ship* owner)
     , _damage_time(time_value::zero)
     , _prev_strength(_strength)
 {
-    _type = object_type::shield;
-
     float radius = 32.f;
 
     for (int ii = 0; ii < kNumVertices; ++ii) {
@@ -157,9 +156,9 @@ void shield::draw(render::system* renderer, time_value time) const
 //------------------------------------------------------------------------------
 bool shield::touch(object* other, physics::collision const* collision)
 {
-    if (other->_type == object_type::projectile) {
+    if (other->is_type<projectile>()) {
         return damage(collision->point, static_cast<projectile*>(other)->damage());
-    } else if (other->_type == object_type::weapon) {
+    } else if (other->is_type<weapon>()) {
         beam_weapon_info const& info = std::get<beam_weapon_info>(static_cast<weapon*>(other)->info());
         return damage(collision->point, info.damage * FRAMETIME.to_seconds());
     }

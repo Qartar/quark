@@ -13,11 +13,15 @@ namespace game {
 class projectile : public object
 {
 public:
+    static const object_type _type;
+
+public:
     projectile(object* owner, float damage, weapon_type type);
     ~projectile();
 
     void spawn();
 
+    virtual object_type const& type() const override { return _type; }
     virtual void draw(render::system* renderer, time_value time) const override;
     virtual bool touch(object *other, physics::collision const* collision) override;
     virtual void think() override;
@@ -33,7 +37,7 @@ public:
 protected:
     float _damage;
 
-    weapon_type _type;
+    weapon_type _weapon_type;
 
     time_value _impact_time;
 

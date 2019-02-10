@@ -14,9 +14,13 @@ class subsystem;
 class character : public object
 {
 public:
+    static const object_type _type;
+
+public:
     character();
     virtual ~character();
 
+    virtual object_type const& type() const override { return _type; }
     virtual void think() override;
 
     std::string const& name() const { return _name; }

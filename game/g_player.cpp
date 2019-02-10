@@ -10,10 +10,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type player::_type(object::_type);
+
 //------------------------------------------------------------------------------
 player::player(ship* target)
-    : object(object_type::player)
-    , _ship(target)
+    : _ship(target)
     , _move_selection(0)
     , _move_appending(0)
     , _weapon_selection(0)
@@ -281,7 +282,7 @@ bool player::attack(vec2 position, bool repeat)
 {
     ship* target = nullptr;
     for (auto obj : get_world()->objects()) {
-        if (obj->_type != object_type::ship) {
+        if (!obj->is_type<ship>()) {
             continue;
         }
         mat3 tx = mat3::inverse_transform(obj->get_position(), obj->get_rotation());

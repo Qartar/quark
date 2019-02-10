@@ -329,7 +329,7 @@ bool world::physics_filter_callback(physics::rigid_body const* body_a, physics::
     game::object* obj_a = _physics_objects[body_a];
     game::object* obj_b = _physics_objects[body_b];
 
-    if (obj_b->_type == object_type::projectile) {
+    if (obj_b->is_type<projectile>()) {
         return false;
     }
 

@@ -10,9 +10,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type subsystem::_type(object::_type);
+
 //------------------------------------------------------------------------------
 subsystem::subsystem(game::ship* owner, subsystem_info info)
-    : object(object_type::subsystem, owner)
+    : object(owner)
     , _subsystem_info(info)
     , _damage(0)
     , _damage_time(time_value::zero)
@@ -80,6 +82,9 @@ void subsystem::decrease_power(int amount)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+const object_type engines::_type(subsystem::_type);
+
+//------------------------------------------------------------------------------
 engines::engines(game::ship* owner, engines_info info)
     : subsystem(owner, {subsystem_type::engines, 2})
     , _engines_info(info)

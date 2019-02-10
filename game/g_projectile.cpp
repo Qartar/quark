@@ -6,19 +6,21 @@
 
 #include "g_projectile.h"
 #include "g_ship.h"
+#include "g_shield.h"
 #include "p_collide.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type projectile::_type(object::_type);
 physics::circle_shape projectile::_shape(1.0f);
 physics::material projectile::_material(0.5f, 1.0f);
 
 //------------------------------------------------------------------------------
 projectile::projectile(object* owner, float damage, weapon_type type)
-    : object(object_type::projectile, owner)
+    : object(owner)
     , _damage(damage)
-    , _type(type)
+    , _weapon_type(type)
     , _impact_time(time_value::max)
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1e-3f);
@@ -55,7 +57,7 @@ void projectile::think()
         return;
     }
 
-    if (_type == weapon_type::missile) {
+    if (_weapon_type == weapon_type::missile) {
         update_homing();
     }
 
@@ -72,7 +74,7 @@ void projectile::update_homing()
     game::object* bestTarget = nullptr;
 
     for (auto* obj : get_world()->objects()) {
-        if (obj->_type != object_type::ship) {
+        if (!obj->is_type<ship>()) {
             continue;
         }
 
@@ -108,7 +110,7 @@ void projectile::update_effects()
         * (std::min(FRAMETIME, time - _spawn_time) / time_delta::from_seconds(1));
     vec2 p2 = get_position();
 
-    if (_type == weapon_type::missile) {
+    if (_weapon_type == weapon_type::missile) {
         get_world()->add_trail_effect(
             effect_type::missile_trail,
             p2,
@@ -121,7 +123,7 @@ void projectile::update_effects()
 //------------------------------------------------------------------------------
 void projectile::update_sound()
 {
-    if (_type == weapon_type::missile) {
+    if (_weapon_type == weapon_type::missile) {
         if (_channel) {
             if (!_channel->playing()) {
                 _channel->loop(_sound_missile_flight);
@@ -138,15 +140,15 @@ void projectile::update_sound()
 //------------------------------------------------------------------------------
 bool projectile::touch(object *other, physics::collision const* collision)
 {
-    auto sound = _type == weapon_type::cannon ? _sound_cannon_impact :
-                 _type == weapon_type::missile ? _sound_cannon_impact :
-                 _type == weapon_type::blaster ? _sound_blaster_impact : sound::asset::invalid;
+    auto sound = _weapon_type == weapon_type::cannon ? _sound_cannon_impact :
+                 _weapon_type == weapon_type::missile ? _sound_cannon_impact :
+                 _weapon_type == weapon_type::blaster ? _sound_blaster_impact : sound::asset::invalid;
 
-    auto effect = _type == weapon_type::cannon ? effect_type::cannon_impact :
-                  _type == weapon_type::missile ? effect_type::missile_impact :
-                  _type == weapon_type::blaster ? effect_type::blaster_impact : effect_type::smoke;
+    auto effect = _weapon_type == weapon_type::cannon ? effect_type::cannon_impact :
+                  _weapon_type == weapon_type::missile ? effect_type::missile_impact :
+                  _weapon_type == weapon_type::blaster ? effect_type::blaster_impact : effect_type::smoke;
 
-    if (other && other->_type != object_type::projectile && !other->touch(this, collision)) {
+    if (other && !other->is_type<projectile>() && !other->touch(this, collision)) {
         return false;
     }
 
@@ -161,7 +163,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
         _impact_time = get_world()->frametime() + time_delta::from_seconds(1) * delta_time;
     }
 
-    float factor = (other && other->_type == object_type::shield) ? .5f : 1.f;
+    float factor = (other && other->is_type<shield>()) ? .5f : 1.f;
 
     if (collision) {
         get_world()->add_sound(sound, collision->point, factor * _damage);
@@ -171,7 +173,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
         get_world()->add_effect(_impact_time, effect, get_position(), vec2_zero, .5f * factor * _damage);
     }
 
-    if (other && other->_type == object_type::ship) {
+    if (other && other->is_type<ship>()) {
         static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _damage);
     }
 
@@ -192,7 +194,7 @@ void projectile::draw(render::system* renderer, time_value time) const
     vec2 p1 = get_position(std::max(_spawn_time, time - tail_time));
     vec2 p2 = get_position(std::min(_impact_time, time));
 
-    switch (_type) {
+    switch (_weapon_type) {
         case weapon_type::cannon:
             renderer->draw_line(1.f, p2, p1, color4(1,0.5,0,a), color4(1,0.5,0,0), color4(1,0.5,0,a), color4(1,0.5,0,0));
             break;
@@ -217,7 +219,7 @@ void projectile::read_snapshot(network::message const& message)
 
     _owner = get_world()->find<object>(message.read_long());
     _damage = message.read_float();
-    _type = static_cast<weapon_type>(message.read_byte());
+    _weapon_type = static_cast<weapon_type>(message.read_byte());
     set_position(message.read_vector());
     set_linear_velocity(message.read_vector());
 
@@ -230,7 +232,7 @@ void projectile::write_snapshot(network::message& message) const
 {
     message.write_long(narrow_cast<int>(_owner->get_sequence() & 0xffffffff));
     message.write_float(_damage);
-    message.write_byte(narrow_cast<uint8_t>(_type));
+    message.write_byte(narrow_cast<uint8_t>(_weapon_type));
     message.write_vector(get_position());
     message.write_vector(get_linear_velocity());
 }

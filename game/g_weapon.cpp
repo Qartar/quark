@@ -15,6 +15,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type weapon::_type(subsystem::_type);
+
 //------------------------------------------------------------------------------
 std::vector<weapon_info> weapon::_types = {
     projectile_weapon_info{
@@ -75,7 +77,6 @@ weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
     , _beam_sweep_end(vec2_zero)
     , _beam_shield(nullptr)
 {
-    _type = object_type::weapon;
     set_position(position, true);
 }
 
@@ -114,7 +115,7 @@ void weapon::think()
 {
     subsystem::think();
 
-    ship const* target_ship = _target && _target->_type == object_type::ship
+    ship const* target_ship = _target && _target->is_type<ship>()
         ? static_cast<ship const*>(_target.get()) : nullptr;
 
     // cancel pending attacks if weapon subsystem has been damaged or if target
@@ -211,12 +212,12 @@ void weapon::think()
 
             physics::collision c;
             game::object* obj = get_world()->trace(c, beam_start, beam_end, _owner.get());
-            if (obj && obj->_type == object_type::shield && obj->touch(this, &c)) {
+            if (obj && obj->is_type<shield>() && obj->touch(this, &c)) {
                 _beam_shield = static_cast<game::shield*>(obj);
             } else {
                 _beam_shield = nullptr;
                 get_world()->add_effect(time, effect_type::sparks, beam_end, -beam_dir, beam_info.damage);
-                if (_beam_target->_type == object_type::ship) {
+                if (_beam_target->is_type<ship>()) {
                     static_cast<ship*>(_beam_target.get())->damage(this, beam_end, beam_info.damage * FRAMETIME.to_seconds());
                 }
             }

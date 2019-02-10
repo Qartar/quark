@@ -68,8 +68,12 @@ struct subsystem_info
 class subsystem : public object
 {
 public:
+    static const object_type _type;
+
+public:
     subsystem(game::ship* owner, subsystem_info info);
 
+    virtual object_type const& type() const override { return _type; }
     virtual void think() override;
 
     subsystem_info const& info() const { return _subsystem_info; }
@@ -115,8 +119,12 @@ struct engines_info
 class engines : public subsystem
 {
 public:
+    static const object_type _type;
+
+public:
     engines(game::ship* owner, engines_info info);
 
+    virtual object_type const& type() const override { return _type; }
     virtual void think() override;
 
     void set_target_velocity(vec2 linear_velocity, float angular_velocity);

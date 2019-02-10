@@ -12,10 +12,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type aicontroller::_type(object::_type);
+
 //------------------------------------------------------------------------------
 aicontroller::aicontroller(ship* target)
-    : object(object_type::controller)
-    , _ship(target)
+    : _ship(target)
     , _destroyed_time(time_value::max)
 {}
 
@@ -62,7 +63,7 @@ void aicontroller::think()
             // get a list of all ships in the world
             std::vector<game::ship*> ships;
             for (auto* object : get_world()->objects()) {
-                if (object != _ship && object->_type == object_type::ship) {
+                if (object != _ship && object->is_type<ship>()) {
                     if (!static_cast<ship*>(object)->is_destroyed()) {
                         ships.push_back(static_cast<ship*>(object));
                     }
@@ -83,7 +84,7 @@ void aicontroller::think()
 
         if (!_ship->is_destroyed()) {
             // cancel pending attacks on targets that have been destroyed
-            if (weapon->target() && weapon->target()->_type == object_type::ship) {
+            if (weapon->target() && weapon->target()->is_type<ship>()) {
                 if (static_cast<ship const*>(weapon->target())->is_destroyed()) {
                     weapon->cancel();
                 }

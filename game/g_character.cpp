@@ -10,6 +10,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type character::_type(object::_type);
+
 const std::string names[] = {
     "aaron",        "alice",        "ash",
     "brian",        "bertha",       "blix",
@@ -41,8 +43,7 @@ const std::string names[] = {
 
 //------------------------------------------------------------------------------
 character::character()
-    : object(object_type::character)
-    , _health(1.f)
+    : _health(1.f)
 {
 }
 

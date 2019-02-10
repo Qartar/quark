@@ -10,6 +10,8 @@
 #include "p_rigidbody.h"
 #include "p_shape.h"
 
+#include <array>
+
 namespace network {
 class message;
 } // namespace network
@@ -29,31 +31,62 @@ namespace game {
 class world;
 
 //------------------------------------------------------------------------------
-enum class object_type
+class object_type
 {
-    object,
-    obstacle,
-    projectile,
-    ship,
-    subsystem,
-    shield,
-    weapon,
-    character,
-    controller,
-    player,
+public:
+    object_type();
+    //! Construct type object for type with base class
+    object_type(object_type const& base);
+
+    //! Returns `true` if this type is derived from `other_type`
+    bool is_type(object_type const& other_type) const {
+        return _type_index >= other_type._type_index
+            && _type_index <= other_type._type_index + other_type._num_derived;
+    }
+
+protected:
+    //! Index of this type in the type list
+    std::size_t _type_index;
+    //! Number of types that are derived directly or indirectly from this type
+    std::size_t _num_derived;
+
+    object_type* _link; //!< Link to child type for out-of-order initialization
+    object_type* _next; //!< Link to sibling type for out-of-order initialization
+
+    static constexpr std::size_t _max_types = 16;
+    static std::array<object_type*, _max_types> _types;
+    static std::size_t _num_types;
+
+protected:
+    void link(object_type const& base);
+    static void insert(std::size_t type_index, std::size_t base_index);
 };
 
 //------------------------------------------------------------------------------
 class object
 {
 public:
-    object(object_type type, object* owner = nullptr);
+    static const object_type _type;
+
+public:
+    object(object* owner = nullptr);
     virtual ~object() {}
 
     void spawn(); //!< Note: not virtual
 
     uint64_t get_sequence() const { return _self.get_sequence(); }
 
+    //! Returns `true` if this type is derived from `other_type`
+    bool is_type(object_type const& other_type) const {
+        return type().is_type(other_type);
+    }
+
+    //! Returns `true` if this type is derived from `other_type`
+    template<typename other_type> bool is_type() const {
+        return type().is_type(other_type::_type);
+    }
+
+    virtual object_type const& type() const { return _type; }
     virtual void draw(render::system* renderer, time_value time) const;
     virtual bool touch(object *other, physics::collision const* collision);
     virtual void think();
@@ -96,8 +129,6 @@ public:
     vec2 _old_position;
     float _old_rotation;
 
-    object_type _type;
-
 protected:
     friend world;
     template<typename> friend class handle;
@@ -116,17 +147,6 @@ protected:
 
 protected:
     game::world* get_world() const { return _self.get_world(); }
-};
-
-//------------------------------------------------------------------------------
-class obstacle : public object
-{
-public:
-    obstacle(physics::rigid_body&& rigid_body)
-        : object(object_type::obstacle)
-    {
-        _rigid_body = std::move(rigid_body);
-    }
 };
 
 } // namespace game

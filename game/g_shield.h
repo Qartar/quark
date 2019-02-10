@@ -12,11 +12,15 @@ namespace game {
 class shield : public subsystem
 {
 public:
+    static const object_type _type;
+
+public:
     shield(physics::shape const* base, game::ship* owner);
     ~shield();
 
     void spawn();
 
+    virtual object_type const& type() const override { return _type; }
     virtual void draw(render::system* renderer, time_value time) const override;
     virtual bool touch(object *other, physics::collision const* collision) override;
     virtual void think() override;

@@ -14,6 +14,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+const object_type ship::_type(object::_type);
 physics::material ship::_material(0.5f, 1.0f, 5.0f);
 
 vec2 main_body_vertices[] = {
@@ -57,8 +58,7 @@ vec2 right_engine_vertices[] = {
 
 //------------------------------------------------------------------------------
 ship::ship()
-    : object(object_type::ship)
-    , _usercmd{}
+    : _usercmd{}
     , _shield(nullptr)
     , _dead_time(time_value::max)
     , _is_destroyed(false)

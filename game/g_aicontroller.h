@@ -14,11 +14,15 @@ class ship;
 class aicontroller : public object
 {
 public:
+    static const object_type _type;
+
+public:
     aicontroller(ship* target);
     virtual ~aicontroller();
 
     void spawn();
 
+    virtual object_type const& type() const override { return _type; }
     virtual void think() override;
 
     virtual vec2 get_position(time_value time) const override;

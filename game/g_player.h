@@ -21,11 +21,15 @@ struct player_view {
 class player : public object
 {
 public:
+    static const object_type _type;
+
+public:
     player(ship* target);
     virtual ~player();
 
     void spawn();
 
+    virtual object_type const& type() const override { return _type; }
     virtual void draw(render::system* renderer, time_value time) const;
     virtual void think() override;
 

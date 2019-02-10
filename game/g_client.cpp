@@ -324,7 +324,7 @@ void session::draw_world()
                        / float(_renderer->window()->height());
 
     if (cls.active && _player) {
-        if (_player->_type == object_type::player) {
+        if (_player->is_type<player>()) {
             player const* pl = static_cast<player const*>(_player.get());
             const_cast<player*>(pl)->set_aspect(aspect_ratio);
             player_view plv = pl->view(_worldtime);

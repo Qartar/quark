@@ -6,6 +6,7 @@
 
 #include "cm_keys.h"
 #include "cm_parser.h"
+#include "g_aicontroller.h"
 #include "g_player.h"
 #include "resource.h"
 #include "version.h"
@@ -165,7 +166,7 @@ result session::run_frame(time_delta time)
 
         // update client
         if (!_dedicated) {
-            if (_player && _player->_type == object_type::player) {
+            if (_player && _player->is_type<player>()) {
                 static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate(), _worldtime);
             }
         }
@@ -365,7 +366,7 @@ void session::key_event(int key, bool down)
     // user commands here
 
     if (!_dedicated) {
-        if (_player && _player->_type == object_type::player) {
+        if (_player && _player->is_type<player>()) {
             if (_clients[0].input.key_event(key, down)) {
                 return;
             }
@@ -386,7 +387,7 @@ void session::key_event(int key, bool down)
         cls.number = key - K_F1;
         std::vector<game::object const*> controllers;
         for (auto const& obj : _world.objects()) {
-            if (obj->_type == object_type::controller || obj->_type == object_type::player) {
+            if (obj->is_type<aicontroller>() || obj->is_type<player>()) {
                 controllers.push_back(obj);
             }
         }
@@ -426,7 +427,7 @@ void session::cursor_event(vec2 position)
     _cursor.y = static_cast<int>(position.y * 480 / size.y);
 
     _clients[0].input.cursor_event(position / vec2(size) * vec2(1,-1) + vec2(0,1));
-    if (_player && _player->_type == object_type::player) {
+    if (_player && _player->is_type<player>()) {
         static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate_direct(), _worldtime);
     }
 
