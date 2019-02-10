@@ -62,7 +62,7 @@
   </Type>
   <Type Name="string::literal">
     <Intrinsic Name="length" Expression="_end - _begin"/>
-    <DisplayString>{_begin, s}</DisplayString>
+    <DisplayString>{_begin, [length()]s}</DisplayString>
     <StringView>_begin, [length()]</StringView>
     <Expand>
       <Item Name="size">length()</Item>
@@ -72,7 +72,7 @@
   <Type Name="string::buffer">
     <Intrinsic Name="length" Expression="_end - _begin"/>
     <Intrinsic Name="capacity" Expression="_capacity - _begin"/>
-    <DisplayString>{_begin, s}</DisplayString>
+    <DisplayString>{_begin, [length()]s}</DisplayString>
     <StringView>_begin, [length()]</StringView>
     <Expand>
       <Item Name="size">length()</Item>

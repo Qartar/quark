@@ -40,6 +40,7 @@ add_compile_options(
     /wd4706         # Disable C4706: assignment within conditional expression
     /permissive-    # Enable language conformance mode
     /std:c++17      # Enable C++17 language features
+    /GF             # Enable string pooling
 )
 
 add_subdirectory(shared)
