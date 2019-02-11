@@ -26,7 +26,6 @@ using string_buffer = ::string::buffer;
 using ::string::strcpy;
 using ::string::sscanf;
 using ::string::strlen;
-using ::string::strncpy;
 
 enum flags
 {
@@ -207,7 +206,7 @@ protected:
 
 protected:
     variable_base* find(string_view name, value_type type);
-    char const* print(variable_base const* base, int tab_size = 4) const;
+    string_view print(variable_base const* base, int tab_size = 4) const;
 
     std::shared_ptr<variable_base> create(string_view name, string_view value, value_type type, int flags, string_view description);
 };

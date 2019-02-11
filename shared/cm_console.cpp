@@ -229,7 +229,7 @@ void console_input::clear()
 //------------------------------------------------------------------------------
 void console_input::replace(string::view text)
 {
-    strncpy(_buffer.data(), text, buffer_size);
+    strcpy(_buffer, text);
     _length = text.length();
     _cursor = _length;
 }
@@ -349,7 +349,7 @@ console_history::console_history()
 //------------------------------------------------------------------------------
 void console_history::insert(string::view text)
 {
-    strncpy(_buffer[_size++ & buffer_mask].data(), text, element_size);
+    strcpy(_buffer[_size++ & buffer_mask], text);
 }
 
 //------------------------------------------------------------------------------

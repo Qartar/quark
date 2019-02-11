@@ -30,10 +30,6 @@ if(MSVC)
     string(REPLACE "/DWIN32 /D_WINDOWS /W3 /GR /EHsc" "/EHsc" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif()
 
-add_definitions(
-    -D_CRT_SECURE_NO_WARNINGS
-)
-
 add_compile_options(
     /W4             # Enable warning level 4
     /WX             # Enable warnings as errors

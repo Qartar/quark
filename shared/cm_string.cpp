@@ -53,7 +53,7 @@ buffer::buffer(char const* c_str)
     , _capacity(nullptr)
 {
     resize(::strlen(c_str));
-    strncpy(_begin, {c_str, c_str + length()}, _capacity - _begin);
+    strzcpy(_begin, {c_str, c_str + length()}, _capacity - _begin);
 }
 
 //------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ buffer::buffer(view s)
     , _capacity(nullptr)
 {
     resize(s.length());
-    strncpy(_begin, s, _capacity - _begin);
+    strzcpy(_begin, s, _capacity - _begin);
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ buffer::buffer(buffer const& s)
     , _capacity(nullptr)
 {
     resize(s.length());
-    strncpy(_begin, s, _capacity - _begin);
+    strzcpy(_begin, s, _capacity - _begin);
 }
 
 //------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ buffer& buffer::operator=(buffer const& s)
 {
     if (this != &s) {
         resize(s.length());
-        strncpy(_begin, s, _capacity - _begin);
+        strzcpy(_begin, s, _capacity - _begin);
     }
     return *this;
 }
@@ -139,7 +139,7 @@ void buffer::reserve(std::size_t size)
 buffer& buffer::assign(char const* s, std::size_t len)
 {
     resize(len);
-    strncpy(_begin, {s, s + len}, _capacity - _begin);
+    strzcpy(_begin, {s, s + len}, _capacity - _begin);
     return *this;
 }
 
@@ -174,20 +174,11 @@ int sscanf(string::view s, string::literal fmt, ...)
 }
 
 //------------------------------------------------------------------------------
-char* strcpy(char* destination, view source)
+char* strzcpy(char* destination, view source, std::size_t destination_size)
 {
-    memcpy(destination, source.begin(), source.length());
-    destination[source.length()] = '\0';
-    return destination;
-}
-
-//------------------------------------------------------------------------------
-char* strncpy(char* destination, view source, std::size_t num)
-{
-    std::size_t l1 = std::min(source.length(), num);
-    std::size_t l2 = num - l1;
+    std::size_t l1 = std::min(source.length(), destination_size - 1);
     memcpy(destination, source.begin(), l1);
-    memset(destination + l1, 0, l2);
+    destination[l1] = '\0';
     return destination;
 }
 

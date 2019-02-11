@@ -597,55 +597,45 @@ void session::spawn_player(std::size_t /*num*/)
 //------------------------------------------------------------------------------
 result session::message(char const* format, ...)
 {
+    auto& msg = _messages[_num_messages++ % MAX_MESSAGES];
     va_list list;
-    char    string[MAX_STRING];
 
-    va_start( list, format );
-    vsprintf( string, format, list );
-    va_end( list );
+    va_start(list, format);
+    vsnprintf(msg.string, countof(msg.string), format, list);
+    va_end(list);
 
-    strcpy( _messages[_num_messages].string, string );
-    _messages[_num_messages].time = _frametime;
-
-    _num_messages = (_num_messages+1)%MAX_MESSAGES;
-
+    msg.time = _frametime;
     return result::success;
 }
 
 //------------------------------------------------------------------------------
-void session::write_message (string::view message, bool broadcast)
+void session::write_message(string::view message, bool broadcast)
 {
+    auto& msg = _messages[_num_messages++ % MAX_MESSAGES];
+
     if (svs.active && broadcast) {
-        broadcast_print( message );
+        broadcast_print(message);
     }
 
-    memset( _messages[_num_messages].string, 0, MAX_STRING );
-    strcpy( _messages[_num_messages].string, message );
-    _messages[_num_messages].time = _frametime;
-
-    _num_messages = (_num_messages+1)%MAX_MESSAGES;
+    strcpy(msg.string, message);
+    msg.time = _frametime;
 }
 
 //------------------------------------------------------------------------------
-void session::draw_messages ()
+void session::draw_messages()
 {
-    float       ypos;
-    float       alpha;
-
     constexpr time_delta view_time = time_delta::from_seconds(15);
     constexpr time_delta fade_time = time_delta::from_seconds(3);
 
-    ypos = _renderer->view().size.y - 36.f;
+    float ypos = _renderer->view().size.y - 36.f;
 
-    for (int ii = _num_messages-1; ii != _num_messages; ii = (ii <= 0 ? MAX_MESSAGES-1 : ii-1)) {
-        if (ii < 0) {
-            continue;
-        }
+    for (int ii = 0; ii < _num_messages && ii < MAX_MESSAGES; ++ii) {
+        message_t const& msg = _messages[(_num_messages - ii - 1) % MAX_MESSAGES];
 
-        if (_messages[ii].time + view_time > _frametime) {
-            alpha = (_messages[ii].time + (view_time - fade_time) > _frametime ? 1.0f : (_messages[ii].time + view_time - _frametime) / fade_time);
+        if (msg.time + view_time > _frametime) {
+            float alpha = (msg.time + (view_time - fade_time) > _frametime ? 1.0f : (msg.time + view_time - _frametime) / fade_time);
 
-            _renderer->draw_string(_messages[ii].string, vec2(8.f,ypos), color4(1,1,1,alpha));
+            _renderer->draw_string(msg.string, vec2(8.f,ypos), color4(1,1,1,alpha));
 
             ypos -= 12.f;
         }
@@ -691,7 +681,7 @@ void session::draw_console()
     {
         char buf[260] = "]";
         console_input const& input = _console.input();
-        strncpy(buf + 1, input.begin(), input.end() - input.begin());
+        strzcpy(buf + 1, string::view(input.begin(), input.end()), countof(buf) - 1);
         _renderer->draw_monospace(buf, vec2(vec2i(4, yoffset - 8)), menu::colors[6]);
         // draw input cursor
         if ((int)(_frametime.to_seconds() * 2.5f) % 2 == 0) {

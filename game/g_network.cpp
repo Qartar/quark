@@ -175,15 +175,14 @@ void session::read_info(network::message& message)
 {
     int client;
     int active;
-    char const* string;
 
     client = message.read_byte();
     active = message.read_byte();
 
     svs.clients[client].active = (active == 1);
 
-    string = message.read_string();
-    strncpy(svs.clients[client].info.name.data(), string, SHORT_STRING);
+    string::view string(message.read_string());
+    strcpy(svs.clients[client].info.name, string);
 
     svs.clients[client].info.color.r = message.read_float();
     svs.clients[client].info.color.g = message.read_float();

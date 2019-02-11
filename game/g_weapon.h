@@ -25,7 +25,7 @@ enum class weapon_type
 //------------------------------------------------------------------------------
 struct base_weapon_info
 {
-    std::string name;
+    string::literal name;
     weapon_type type;
     time_delta reload_time; //!< time between firing
 };

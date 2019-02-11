@@ -176,18 +176,30 @@ std::size_t strlen(string::view str);
 //! locations given by the additional arguments.
 int sscanf(string::view s, string::literal fmt, ...);
 
-//! Copies the first `num` characters of `source` to `destination`. If the end
-//! of the source string is reached before `num` characters have been copied,
-//! `destination` is padded with zeros until a total of `num` characters have
-//! been written to it.
-char* strncpy(char* destination, view source, std::size_t num);
+//! Copies the characters of `source` to `destination`, including the terminating
+//! null character (and stopping at that point). If the length of `source` is
+//! greater than or equal to `destination_size` then the destination string is
+//! truncated and a terminating null character is inserted at the end of the buffer.
+char* strzcpy(char* destination, view source, std::size_t destination_size);
 
-//! Copies the string pointed by `source` into the array pointed by `destination`,
-//! including the terminating null character (and stopping at that point).
+//! Copies the characters of `source` to `destination`, including the terminating
+//! null character (and stopping at that point). If the length of `source` is
+//! greater than or equal to `destination_size` then the destination string is
+//! truncated and a terminating null character is inserted at the end of the buffer.
 template<std::size_t destination_size>
 char* strcpy(char (&destination)[destination_size], view source)
 {
-    return strncpy(destination, source, destination_size);
+    return strzcpy(destination, source, destination_size);
+}
+
+//! Copies the characters of `source` to `destination`, including the terminating
+//! null character (and stopping at that point). If the length of `source` is
+//! greater than or equal to `destination_size` then the destination string is
+//! truncated and a terminating null character is inserted at the end of the buffer.
+template<template<class, std::size_t> typename T, std::size_t S>
+char* strcpy(T<char, S>& destination, view source)
+{
+    return strzcpy(destination.data(), source, destination.size());
 }
 
 //! Compares the string `str1` to the string `str2`.

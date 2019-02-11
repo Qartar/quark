@@ -155,7 +155,7 @@ void session::write_frame()
             || svs.clients[0].info.color != cls.info.color
             || svs.clients[0].info.weapon != cls.info.weapon) {
 
-            strcpy(svs.clients[0].info.name.data(), cls.info.name.data());
+            strcpy(svs.clients[0].info.name, string::view(cls.info.name.data()));
             svs.clients[0].info.color = cls.info.color;
             svs.clients[0].info.weapon = cls.info.weapon;
 

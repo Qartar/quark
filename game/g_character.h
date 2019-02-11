@@ -23,7 +23,7 @@ public:
     virtual object_type const& type() const override { return _type; }
     virtual void think() override;
 
-    std::string const& name() const { return _name; }
+    string::view name() const { return _name; }
     void damage(object* inflictor, float amount);
     float health() const { return _health; }
 
@@ -31,7 +31,7 @@ public:
     handle<subsystem> assignment() const { return _subsystem; }
 
 protected:
-    std::string _name;
+    string::buffer _name;
     float _health;
 
     handle<subsystem> _subsystem;

@@ -20,11 +20,9 @@ void session::init_client()
     _client_say = 0;
 
     if (strlen(_cl_name)) {
-        strncpy(cls.info.name.data(), _cl_name, cls.info.name.size());
+        strcpy(cls.info.name, _cl_name);
     } else {
-        strncpy(cls.info.name.data(),
-                application::singleton()->username(),
-                cls.info.name.size());
+        strcpy(cls.info.name, application::singleton()->username());
     }
 
     {
@@ -234,7 +232,7 @@ void session::client_send ()
             || svs.clients[cls.number].info.color != cls.info.color
             || svs.clients[cls.number].info.weapon != cls.info.weapon) {
 
-            strcpy(svs.clients[cls.number].info.name.data(), cls.info.name.data());
+            strcpy(svs.clients[cls.number].info.name, string::view(cls.info.name.data()));
             svs.clients[cls.number].info.color = cls.info.color;
             svs.clients[cls.number].info.weapon = cls.info.weapon;
             write_info(_netchan, cls.number);

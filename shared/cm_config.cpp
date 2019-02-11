@@ -266,18 +266,14 @@ int get_config_path(char *path, std::size_t size, bool create = false)
 }
 
 //------------------------------------------------------------------------------
-char const* system::print(variable_base const* base, int /*tab_size*/) const
+string_view system::print(variable_base const* base, int /*tab_size*/) const
 {
-    static char buffer[MAX_STRING];
-
-    sprintf(buffer, "%-20s %-20s %-8s %3d \"%s\"\n",
+    return va("%-20s %-20s %-8s %3d \"%s\"\n",
          base->name().c_str(),
          va("\"%s\"", base->value().c_str()).c_str(),
          config::type_strings[static_cast<int>(base->type())].c_str(),
          base->flags(),
-         base->description().c_str() );
-
-    return buffer;
+         base->description().c_str());
 }
 
 //------------------------------------------------------------------------------
@@ -377,7 +373,7 @@ void system::shutdown()
 void system::command_list(parser::text const& /*args*/)
 {
     for (auto it : _singleton->_variables) {
-        log::message(_singleton->print(it.second.get(), 4));
+        log::message(_singleton->print(it.second.get(), 4).c_str());
     }
 }
 

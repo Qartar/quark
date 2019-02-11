@@ -12,7 +12,7 @@ namespace game {
 
 const object_type character::_type(object::_type);
 
-const std::string names[] = {
+const string::literal names[] = {
     "aaron",        "alice",        "ash",
     "brian",        "bertha",       "blix",
     "charlie",      "carol",        "cyrix",
