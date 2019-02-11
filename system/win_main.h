@@ -15,6 +15,7 @@ public:
 
     void quit(int exit_code);
 
+    string::buffer username() const;
     string::buffer clipboard() const;
     string::view init_string() { return _init_string; }
 

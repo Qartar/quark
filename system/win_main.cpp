@@ -415,6 +415,42 @@ void application::generate_gamepad_events()
 }
 
 //------------------------------------------------------------------------------
+string::buffer application::username() const
+{
+    string::buffer s;
+    constexpr DWORD buffer_size = 1024;
+    wchar_t buffer[buffer_size];
+    DWORD length = buffer_size;
+
+    if (GetUserNameW(buffer, &length)) {
+        // Calculate the destination size in bytes
+        int len = WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            buffer,
+            length,
+            nullptr,
+            0,
+            NULL,
+            NULL);
+
+        // Convert directly into string::buffer's data
+        s.resize(len - 1);
+        WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            buffer,
+            length,
+            s.data(),
+            narrow_cast<int>(s.length()),
+            NULL,
+            NULL);
+    }
+
+    return s;
+}
+
+//------------------------------------------------------------------------------
 string::buffer application::clipboard() const
 {
     string::buffer s;
@@ -437,7 +473,7 @@ string::buffer application::clipboard() const
                     NULL,
                     NULL);
 
-                // Convert directly into std::string's data
+                // Convert directly into string::buffer's data
                 s.resize(len - 1);
                 WideCharToMultiByte(
                     CP_UTF8,

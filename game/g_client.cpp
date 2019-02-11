@@ -5,7 +5,6 @@
 #pragma hdrstop
 
 #include "g_player.h"
-#include "win_include.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -22,11 +21,10 @@ void session::init_client()
 
     if (strlen(_cl_name)) {
         strncpy(cls.info.name.data(), _cl_name, cls.info.name.size());
-#if defined(_WIN32)
     } else {
-        DWORD length = narrow_cast<DWORD>(cls.info.name.size());
-        GetUserNameA(cls.info.name.data(), (LPDWORD )&length);
-#endif
+        strncpy(cls.info.name.data(),
+                application::singleton()->username(),
+                cls.info.name.size());
     }
 
     {
