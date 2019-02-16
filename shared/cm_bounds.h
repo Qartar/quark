@@ -4,6 +4,7 @@
 #pragma once
 
 #include "cm_vector.h"
+#include "cm_matrix.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // axially aligned bounding boxes
@@ -80,6 +81,15 @@ public:
     bounds expand(float s) const { return bounds(_mins - vec2(s), _maxs + vec2(s)); }
     bounds expand(vec2 v) const { return bounds(_mins - vec2(v), _maxs + vec2(v)); }
 
+    bounds transform(mat3 tx) const {
+        return from_points({
+            vec2(_mins.x, _mins.y) * tx,
+            vec2(_maxs.x, _mins.y) * tx,
+            vec2(_mins.x, _maxs.y) * tx,
+            vec2(_maxs.x, _maxs.y) * tx,
+        });
+    }
+
     bool contains(vec2 point) const {
         return point.x >= _mins.x
             && point.y >= _mins.y
@@ -87,11 +97,28 @@ public:
             && point.y <= _maxs.y;
     }
 
+    bool contains(bounds b) const {
+        return _mins.x <= b._mins.x
+            && _maxs.x >= b._maxs.x
+            && _mins.y <= b._mins.y
+            && _maxs.y >= b._maxs.y;
+    }
+
     bool intersects(bounds b) const {
         return _mins.x <= b._maxs.x
             && _maxs.x >= b._mins.x
             && _mins.y <= b._maxs.y
             && _maxs.y >= b._mins.y;
+    }
+
+    bool intersects_circle(vec2 center, float radius) const {
+        // Closest point on the bounds to the center of the circle
+        vec2 point{
+            center.x < _mins.x ? _mins.x : center.x > _maxs.x ? _maxs.x : center.x,
+            center.y < _mins.y ? _mins.y : center.y > _maxs.y ? _maxs.y : center.y,
+        };
+
+        return (point - center).length_sqr() <= radius * radius;
     }
 
     void clear() { _mins.clear(); _maxs.clear(); }

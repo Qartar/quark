@@ -46,6 +46,43 @@ vec2 system::monospace_size(string::view string) const
 //------------------------------------------------------------------------------
 void system::draw_arc(vec2 center, float radius, float width, float min_angle, float max_angle, color4 color)
 {
+    if (!_view_bounds.intersects_circle(center, radius + width * .5f)) {
+        return;
+    }
+
+    bounds arc_bounds;
+    {
+        // minimum angle normalized to (-pi, pi]
+        float amin = std::remainder(min_angle, 2.f * math::pi<float>);
+        // maximum angle, normalized to (-pi, ...]
+        float amax = amin + (max_angle - min_angle);
+
+        vec2 points[2] = {
+            center + vec2(std::cos(min_angle), std::sin(min_angle)) * radius,
+            center + vec2(std::cos(max_angle), std::sin(max_angle)) * radius,
+        };
+        arc_bounds = bounds::from_points(points);
+
+        if (amin <= -.5f * math::pi<float> && amax >= -.5f * math::pi<float>) {
+            arc_bounds[0][1] = center.y - radius;
+        }
+        if (amin <= 0.f && amax >= 0.f) {
+            arc_bounds[1][0] = center.x + radius;
+        }
+        if (amin <= .5f * math::pi<float> && amax >= .5f * math::pi<float>) {
+            arc_bounds[1][1] = center.y + radius;
+        }
+        if (amin <= math::pi<float> && amax >= math::pi<float>) {
+            arc_bounds[0][0] = center.x - radius;
+        }
+
+        arc_bounds = arc_bounds.expand(width * .5f);
+    }
+
+    if (!_view_bounds.intersects(arc_bounds)) {
+        return;
+    }
+
     // Scaling factor for circle tessellation
     const float view_scale = sqrtf(_framebuffer_size.length_sqr() / _view.size.length_sqr());
 
@@ -213,6 +250,10 @@ void system::draw_line(vec2 start, vec2 end, color4 start_color, color4 end_colo
 //------------------------------------------------------------------------------
 void system::draw_model(render::model const* model, mat3 tx, color4 color)
 {
+    if (!_view_bounds.intersects(model->bounds().transform(tx))) {
+        return;
+    }
+
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
 
@@ -282,7 +323,8 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
     int k = std::max<int>(4, 360 / n);
 
     // Draw half-circle at start
-    if (start_color.a || start_edge_color.a) {
+    if ((start_color.a || start_edge_color.a)
+            && _view_bounds.intersects_circle(start, width * .5f)) {
         glBegin(GL_TRIANGLE_FAN);
             glColor4fv(start_color);
             glVertex2fv(start);
@@ -297,7 +339,8 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
     }
 
     // Draw half-circle at end
-    if (end_color.a || end_edge_color.a) {
+    if ((end_color.a || end_edge_color.a)
+            && _view_bounds.intersects_circle(end, width * .5f)) {
         glBegin(GL_TRIANGLE_FAN);
             glColor4fv(end_color);
             glVertex2fv(end);

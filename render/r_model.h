@@ -30,9 +30,7 @@ public:
 
     std::vector<vec2> const& vertices() const { return _vertices; }
 
-    vec2 mins() const { return _mins; }
-    vec2 maxs() const { return _maxs; }
-
+    bounds bounds() const { return _bounds; }
     bool contains(vec2 point) const;
 
 protected:
@@ -41,8 +39,7 @@ protected:
     std::vector<vec2> _vertices;
     std::vector<color3> _colors;
     std::vector<uint16_t> _indices;
-    vec2 _mins;
-    vec2 _maxs;
+    ::bounds _bounds;
 
 protected:
     model(rect const* rects, std::size_t num_rects);

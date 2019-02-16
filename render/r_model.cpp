@@ -45,8 +45,6 @@ namespace render {
 
 //------------------------------------------------------------------------------
 model::model(model::rect const* rects, std::size_t num_rects)
-    : _mins(0,0)
-    , _maxs(0,0)
 {
     for (std::size_t ii = 0; ii < num_rects; ++ii) {
         _indices.push_back(narrow_cast<uint16_t>(_vertices.size() + 0));
@@ -68,28 +66,19 @@ model::model(model::rect const* rects, std::size_t num_rects)
         _colors.emplace_back(rects[ii].gamma, rects[ii].gamma, rects[ii].gamma);
         _colors.emplace_back(rects[ii].gamma, rects[ii].gamma, rects[ii].gamma);
         _colors.emplace_back(rects[ii].gamma, rects[ii].gamma, rects[ii].gamma);
-
-        // calculate absolute mins/maxs
-        for (int jj = 0; jj < 2; ++jj) {
-            if (_mins[jj] > mins[jj]) {
-                _mins[jj] = mins[jj];
-            }
-            if (_maxs[jj] < maxs[jj]) {
-                _maxs[jj] = maxs[jj];
-            }
-        }
     }
+
+    _bounds = bounds::from_points(_vertices.data(), _vertices.size());
 }
 
 //------------------------------------------------------------------------------
 bool model::contains(vec2 point) const
 {
-    if (point.x < _mins.x || point.x > _maxs.x
-            || point.y < _mins.y || point.y > _maxs.y) {
+    if (!_bounds.contains(point)) {
         return false;
     }
 
-    for (int ii = 0; ii < _indices.size(); ii += 3) {
+    for (std::size_t ii = 0; ii < _indices.size(); ii += 3) {
         uint16_t i0 = _indices[ii + 0];
         uint16_t i1 = _indices[ii + 1];
         uint16_t i2 = _indices[ii + 2];

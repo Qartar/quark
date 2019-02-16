@@ -247,7 +247,7 @@ void ship::think()
                 // find a random point on the ship's model
                 vec2 v;
                 do {
-                    v = _model->mins() + (_model->maxs() - _model->mins()) * vec2(_random.uniform_real(), _random.uniform_real());
+                    v = _model->bounds().mins() + _model->bounds().size() * vec2(_random.uniform_real(), _random.uniform_real());
                 } while (!_model->contains(v));
 
                 get_world()->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);

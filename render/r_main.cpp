@@ -20,6 +20,7 @@ system::system(render::window* window)
     , _rbo{0, 0}
     , _window(window)
     , _view{}
+    , _view_bounds{}
     , _draw_tris("r_tris", 0, 0, "draw triangle edges")
     , _graph("r_graph", false, 0, "draw frame timing graph")
 {}
@@ -128,6 +129,7 @@ void system::end_frame()
 void system::set_view(render::view const& view)
 {
     _view = view;
+    _view_bounds = bounds::from_center(view.origin, view.size);
     set_default_state();
 }
 

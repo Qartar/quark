@@ -176,6 +176,7 @@ private:
     void destroy_framebuffer();
 
     render::view _view;
+    bounds _view_bounds;
 
     config::boolean _draw_tris;
 
