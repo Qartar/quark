@@ -164,46 +164,21 @@ void weapon_button::draw(render::system* renderer) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-client_button::client_button(string::view text, vec2i position, vec2i size, color3* color_ptr)
+client_button::client_button(string::view text, vec2i position, vec2i size)
     : button(text, position, size)
-    , _color_ptr(color_ptr)
-    , _color_index(0)
-    , _text_down(false)
-    , _text_over(false)
     , _text_rectangle(rect::from_center(position + vec2i(0, size.y / 2 - 12), vec2i(size.x - 16, 14)))
-    , _weapons({
-        weapon_button{game::weapon_type::cannon, position + vec2i(size.x / 2 + 24 + 4, (size.y / 3 - 4) / 2 - size.y / 2), vec2i(48, size.y / 3 - 4)},
-        weapon_button{game::weapon_type::missile, position + vec2i(size.x / 2 + 24 + 4, 0), vec2i(48, size.y / 3 - 4)},
-        weapon_button{game::weapon_type::blaster, position + vec2i(size.x / 2 + 24 + 4, size.y / 2 - (size.y / 3 - 4) / 2), vec2i(48, size.y / 3 - 4)}})
 {}
 
 //------------------------------------------------------------------------------
 bool client_button::key_event(int key, bool down)
 {
-    for (auto& button : _weapons) {
-        if (button.key_event(key, down)) {
-            return true;
-        }
-    }
-
     if (key == K_MOUSE1) {
-        if (_text_over && down) {
-            _text_down = true;
-            return true;
-        } else if (!down) {
-            if (_text_down && _text_over) {
-                g_Game->_client_button_down ^= 1;
-            }
-            _text_down = false;
-        }
-
         if (_over && down) {
             _down = true;
             return true;
         } else if (!down) {
             if (_down && _over) {
-                _color_index = (_color_index+1) % game::num_player_colors;
-                *_color_ptr = game::player_colors[_color_index];
+                g_Game->_client_button_down ^= 1;
             }
             _down = false;
         }
@@ -215,23 +190,18 @@ bool client_button::key_event(int key, bool down)
 //------------------------------------------------------------------------------
 bool client_button::cursor_event(vec2i position)
 {
-    for (auto& button : _weapons) {
-        button.cursor_event(position);
-    }
-
-    _text_over = _text_rectangle.contains(position);
-    _over = !_text_over && _rectangle.contains(position);
+    _over = _text_rectangle.contains(position);
     return false;
 }
 
 //------------------------------------------------------------------------------
 void client_button::draw(render::system* renderer) const
 {
-    int text_border_color = (g_Game->_client_button_down || _text_over) ? 6 : 4;
-    int text_button_color = (g_Game->_client_button_down || _text_down) ? 3 : 5;
+    int text_border_color = (g_Game->_client_button_down || _over) ? 6 : 4;
+    int text_button_color = (g_Game->_client_button_down || _down) ? 3 : 5;
 
-    int border_color = _over ? 6 : 4;
-    int button_color = _down ? 3 : 5;
+    int border_color =  4;
+    int button_color = 5;
     int text_color = button_color + 2;
 
     draw_rectangle(renderer, _rectangle, menu::colors[button_color], menu::colors[border_color]);
@@ -239,13 +209,6 @@ void client_button::draw(render::system* renderer) const
 
     draw_rectangle(renderer, _text_rectangle, menu::colors[text_button_color], menu::colors[text_border_color]);
     draw_text(renderer, _text_rectangle, string::view(g_Game->cls.info.name.data()), menu::colors[7], valign_bottom|halign_left);
-
-    renderer->draw_model(&tank_body_model, mat3::transform(vec2(_rectangle.center()), 0), color4(*_color_ptr));
-    renderer->draw_model(&tank_turret_model, mat3::transform(vec2(_rectangle.center()), 0), color4(*_color_ptr));
-
-    for (auto const& button : _weapons) {
-        button.draw(renderer);
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

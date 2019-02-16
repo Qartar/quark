@@ -73,7 +73,7 @@ void window::init ()
 
     // options
 
-    _submenus[2]->add_button<client_button>("Player", vec2i(64,104), vec2i(96,80), &g_Game->cls.info.color);
+    _submenus[2]->add_button<client_button>("Player", vec2i(64,104), vec2i(96,80));
 }
 
 //------------------------------------------------------------------------------

@@ -6,25 +6,6 @@
 
 #include "r_model.h"
 
-render::model tank_body_model({
-    //  center        size          gamma
-    {{  0.f,  8.0f}, {20.f,  2.f},  0.5f},  // left tread
-    {{  0.f, -8.0f}, {20.f,  2.f},  0.5f},  // right tread
-    {{  0.f,  0.0f}, {24.f, 16.f},  0.8f},  // main chassis
-    {{- 8.f,  0.0f}, { 4.f, 12.f},  0.6f},  // whatever
-    {{-12.f,  5.0f}, { 3.f,  6.f},  0.5f},  // left barrel
-    {{-12.f, -5.0f}, { 3.f,  6.f},  0.5f},  // right barrel
-    {{ 10.f,  0.0f}, { 2.f, 12.f},  0.6f},
-    {{  7.f,  0.0f}, { 2.f, 12.f},  0.6f},
-});
-
-render::model tank_turret_model({
-    //  center        size          gamma
-    {{  0.f,  0.f},  { 8.f,  10.f}, 1.0f},  // turret
-    {{  0.f,  0.f},  {10.f,   8.f}, 1.0f},  // turret
-    {{ 13.f,  0.f},  {16.f,   2.f}, 1.0f},  // barrel
-});
-
 render::model ship_model({
     //  center          size        gamma
     {{  2.f,  0.f},  {18.f, 12.f}, 0.5f},

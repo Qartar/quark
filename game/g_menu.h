@@ -159,7 +159,7 @@ protected:
 class client_button : public button
 {
 public:
-    client_button(string::view text, vec2i position, vec2i size, color3* color_ptr);
+    client_button(string::view text, vec2i position, vec2i size);
 
     virtual bool key_event(int key, bool down) override;
     virtual bool cursor_event(vec2i position) override;
@@ -167,15 +167,7 @@ public:
     virtual void draw(render::system* renderer) const override;
 
 protected:
-    color3* _color_ptr;
-    int _color_index;
-
-    bool _text_down;
-    bool _text_over;
-
     rect _text_rectangle;
-
-    std::array<weapon_button, 3> _weapons;
 };
 
 //------------------------------------------------------------------------------
