@@ -111,7 +111,7 @@ public:
     explicit buffer(view s);
     //! Implicit conversion from string literal
     template<std::size_t size> constexpr buffer(char const (&s)[size])
-        : buffer(view{s, s + size})
+        : buffer(view{s, s + size - 1})
     {}
     buffer(buffer&& s);
     buffer(buffer const& s);
@@ -140,13 +140,11 @@ public:
     //! Returns the character at the given index
     char operator[](std::size_t index) const { return _begin[index]; }
 
-    template<std::size_t size> buffer operator+(char const (&)[size]) const { return *this; }
+    //! Return a buffer with the contents of `s` appended to the string
+    buffer operator+(view s) const;
 
-    buffer operator+(view) const { return *this; }
-
-    template<std::size_t size> buffer& operator+=(char const (&)[size]) { return *this; }
-
-    buffer& operator+=(view) { return *this; }
+    //! Append the contents of `s` to the string
+    buffer& operator+=(view s);
 
     //! Returns the last character in the string
     char back() const { assert(_end > _begin); return *(_end - 1); }

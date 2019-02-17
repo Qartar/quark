@@ -119,6 +119,28 @@ buffer::~buffer()
 }
 
 //------------------------------------------------------------------------------
+buffer buffer::operator+(view s) const
+{
+    buffer out{};
+    out.resize(length() + s.length());
+    snprintf(
+        out._begin,
+        out._capacity - out._begin,
+        "%s%.*s",
+        _begin,
+        narrow_cast<int>(s.length()),
+        s.begin());
+    return out;
+}
+
+//------------------------------------------------------------------------------
+buffer& buffer::operator+=(view s)
+{
+    *this = *this + s;
+    return *this;
+}
+
+//------------------------------------------------------------------------------
 void buffer::resize(std::size_t length)
 {
     reserve(length + 1);
