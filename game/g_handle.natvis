@@ -6,12 +6,23 @@
     <Intrinsic Name="get_system" Expression="(_value &amp; system_mask) &gt;&gt; system_shift"/>
     <Intrinsic Name="get_sequence" Expression="(_value &amp; sequence_mask) &gt;&gt; sequence_shift"/>
     <Intrinsic Name="get_world" Expression="game::world::_singletons[get_system()]"/>
-    <Intrinsic Name="is_valid" Expression="get_world() &amp;&amp; get_index() &lt; get_world()-&gt;_objects.size()"/>
     <Intrinsic Name="get" Expression="($T1*)get_world()-&gt;_objects[get_index()]._Mypair._Myval2"/>
-    <DisplayString Condition="is_valid() == true">{get()}</DisplayString>
+    <Intrinsic Name="is_valid" Expression="get_world() &amp;&amp; get_index() &lt; get_world()-&gt;_objects.size() &amp;&amp; _value == get()-&gt;_self._value"/>
+    <DisplayString Condition="get() == 0">empty</DisplayString>
     <DisplayString Condition="is_valid() != true">empty</DisplayString>
-    <Expand>
-      <ExpandedItem>get()</ExpandedItem>
+    <DisplayString Condition="is_valid() == true">{get()}</DisplayString>
+    <Expand HideRawView="true">
+      <ExpandedItem Optional="true" Condition="is_valid() == true">get()</ExpandedItem>
+      <!-- Replace default [Raw View] with a breakdown of _value into its elements -->
+      <Synthetic Name="[Raw View]">
+        <DisplayString>{{_value={_value} }}</DisplayString>
+        <Expand>
+          <Item Name="[system]">get_system()</Item>
+          <Item Name="[sequence]">get_sequence()</Item>
+          <Item Name="[index]">get_index()</Item>
+          <Item Name="_value">_value</Item>
+        </Expand>
+      </Synthetic>
     </Expand>
   </Type>
 </AutoVisualizer>
