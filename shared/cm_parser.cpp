@@ -124,9 +124,10 @@ text& text::operator=(text&& other)
 }
 
 //------------------------------------------------------------------------------
-result<tokenized> tokenize(char const* str, char const* end)
+result<tokenized> tokenize(string::view text)
 {
-    assert(str && end || str == end);
+    char const* str = text.begin();
+    char const* end = text.end();
 
     std::vector<token> tokens;
     while (true) {
@@ -189,6 +190,100 @@ result<tokenized> tokenize(char const* str, char const* end)
     }
 
     // never gets here
+}
+
+//------------------------------------------------------------------------------
+context::context(string::view text, string::view filename, std::size_t linenumber)
+    : _filename(filename)
+    , _linenumber(linenumber)
+    , _text(text)
+    , _cursor(nullptr)
+{
+    auto tokens = tokenize(_text);
+    if (std::holds_alternative<tokenized>(tokens)) {
+        _tokens = std::move(std::get<tokenized>(tokens));
+        _cursor = _tokens.data();
+    }
+}
+
+//------------------------------------------------------------------------------
+result<token> context::next_token()
+{
+    if (has_token()) {
+        return *_cursor++;
+    } else if (_tokens.size()) {
+        return error{*(_cursor - 1), "expected token"};
+    } else {
+        return error{token{"", ""}, "expected token"};
+    }
+}
+
+//------------------------------------------------------------------------------
+bool context::skip_token()
+{
+    auto tok = next_token();
+    if (std::holds_alternative<token>(tok)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool context::skip_braced_section(bool parse_opening_brace)
+{
+    if (parse_opening_brace && !expect_token("{")) {
+        return false;
+    }
+
+    for (std::size_t count = 1; count;) {
+        if (check_token("}")) {
+            --count;
+        } else if (check_token("{")) {
+            ++count;
+        } else if (!skip_token()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+bool context::peek_token(string::view text) const
+{
+    if (has_token() && *_cursor == text) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool context::check_token(string::view text)
+{
+    if (has_token() && *_cursor == text) {
+        ++_cursor;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool context::expect_token(string::view text)
+{
+    auto tok = next_token();
+    if (std::holds_alternative<token>(tok)) {
+        if (std::get<token>(tok) == text) {
+            return true;
+        } else {
+            set_error(error{std::get<token>(tok), "expected token '%s', found '%s'"});
+            return false;
+        }
+    } else {
+        return false;
+    }
 }
 
 } // namespace parser

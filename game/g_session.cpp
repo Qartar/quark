@@ -758,7 +758,7 @@ void session::command_eval(parser::text const& args)
         }
 
         parser::result<parser::tokenized> result =
-            parser::tokenize(expr.c_str(), expr.c_str() + expr.length());
+            parser::tokenize(expr);
         if (std::holds_alternative<parser::error>(result)) {
             log::message("%s\n", expr.c_str());
             print_error(expr.c_str(), std::get<parser::error>(result));

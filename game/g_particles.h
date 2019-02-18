@@ -9,8 +9,6 @@
 #include "cm_vector.h"
 #include "r_particle.h"
 
-#include <string>
-
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -18,7 +16,7 @@ namespace game {
 struct particle_effect {
 
     struct layer {
-        std::string name;
+        string::buffer name;
 
         expression::value count;
         expression::value size, size_velocity;
@@ -44,12 +42,16 @@ struct particle_effect {
         expression expr;
     };
 
-    std::string name;
-    std::string definition;
+    string::buffer name;
+    string::buffer definition;
     std::vector<layer> layers;
 
-    bool parse(std::string definition);
+    bool parse(string::view definition);
     parser::result<layer> parse_layer(parser::token const*& tokens, parser::token const* end) const;
+
+    bool parse(parser::context& context);
+    bool parse_layer(parser::context& context, layer& layer) const;
+    bool parse_layer_flags(parser::context& context, render::particle::flag_bits& flags) const;
 };
 
 } // namespace game

@@ -42,14 +42,14 @@ struct token
         return begin[index];
     }
 
-    template<std::size_t size> bool operator==(char const (&str)[size]) const {
+    bool operator==(string::view str) const {
         assert(begin < end);
-        return strncmp(begin, str, std::max<std::ptrdiff_t>(end - begin, size - 1)) == 0;
+        return string::view{begin, end} == str;
     }
 
-    template<std::size_t size> bool operator!=(char const (&str)[size]) const {
+    bool operator!=(string::view str) const {
         assert(begin < end);
-        return strncmp(begin, str, std::max<std::ptrdiff_t>(end - begin, size - 1)) != 0;
+        return string::view{begin, end} != str;
     }
 
     bool operator==(char ch) const {
@@ -87,43 +87,49 @@ template<typename T> using result = std::variant<error, T>;
 using tokenized = std::vector<token>;
 
 //------------------------------------------------------------------------------
-result<tokenized> tokenize(char const* begin, char const* end);
+result<tokenized> tokenize(string::view text);
 
 //------------------------------------------------------------------------------
 class context
 {
 public:
+    context() {}
+    context(string::view text, string::view filename, std::size_t linenumber = 1);
+
     bool has_token() const {
         return _cursor < _tokens.data() + _tokens.size();
     }
 
+    result<token> next_token();
     bool skip_token();
+    bool skip_braced_section(bool parse_opening_brace = true);
 
-    template<std::size_t size> bool peek_token(char const (&string)[size]) const {
-        return peek_token(string, string + size);
-    }
+    bool peek_token(string::view text) const;
+    bool check_token(string::view text);
+    bool expect_token(string::view text);
 
-    template<std::size_t size> bool check_token(char const (&string)[size]) {
-        return check_token(string, string + size);
-    }
+    bool has_error() const { return std::holds_alternative<error>(_error); }
+    error get_error() const { return std::get<error>(_error); }
+    void set_error(error e) { _error = e; }
+    void clear_error() { _error = std::variant<error>{}; }
 
-    template<std::size_t size> bool expect_token(char const (&string)[size]) {
-        return expect_token(string, string + size);
-    }
-
-    result<token> expect_any_token();
+    struct token_info
+    {
+        string::view filename;
+        std::size_t linenumber;
+        std::size_t column;
+    };
 
 protected:
     string::buffer _filename;
     std::size_t _linenumber;
 
+    string::view _text;
     tokenized _tokens;
     token* _cursor;
+    std::variant<error> _error;
 
 protected:
-    bool peek_token(char const* begin, char const* end) const;
-    bool check_token(char const* begin, char const* end);
-    bool expect_token(char const* begin, char const* end);
 };
 
 } // namespace parser

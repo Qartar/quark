@@ -88,7 +88,6 @@ parser::result<particle_effect::layer> particle_effect::parse_layer(parser::toke
 
     layer out{};
 
-#if 1
     while (tokens < end) {
         if (*tokens == "flags") {
             if (++tokens >= end) {
@@ -119,42 +118,15 @@ parser::result<particle_effect::layer> particle_effect::parse_layer(parser::toke
             }
         }
     }
-#else
-    parser::context context;
-    while (context.has_token()) {
-        if (context.check_token("flags")) {
-            if (!context.expect_token("=")) {
-                return {};
-            }
-            while (context.has_token()) {
-                if (context.check_token("invert")) {
-                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::invert);
-                } else if (context.check_token("tail")) {
-                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::tail);
-                } else {
-                    return {};
-                }
-                if (context.peek_token(";")) {
-                    break;
-                } else if (!context.expect_token("|")) {
-                    return {};
-                }
-            }
-            if (!context.expect_token(";")) {
-                return {};
-            }
-        }
-    }
-#endif
 
     return out;
 }
 
 //------------------------------------------------------------------------------
-bool particle_effect::parse(std::string str)
+bool particle_effect::parse(string::view str)
 {
-    definition = str;
-    auto result = parser::tokenize(str.c_str(), str.c_str() + str.size());
+    definition = string::buffer(str);
+    auto result = parser::tokenize(definition);
     if (std::holds_alternative<parser::error>(result)) {
         return false;
     }
@@ -179,7 +151,84 @@ bool particle_effect::parse(std::string str)
                 return false;
             }
             layers.push_back(std::get<particle_effect::layer>(layer));
-            layers.back().name = std::string(layer_name->begin, layer_name->end);
+            layers.back().name = string::buffer(string::view(layer_name->begin, layer_name->end));
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+bool particle_effect::parse_layer_flags(parser::context& context, render::particle::flag_bits& flags) const
+{
+    if (!context.expect_token("=")) {
+        return false;
+    }
+
+    while (context.has_token()) {
+        if (context.check_token("invert")) {
+            flags = static_cast<render::particle::flag_bits>(flags | render::particle::invert);
+        } else if (context.check_token("tail")) {
+            flags = static_cast<render::particle::flag_bits>(flags | render::particle::tail);
+        } else {
+            return false;
+        }
+        if (context.peek_token(";")) {
+            break;
+        } else if (!context.expect_token("|")) {
+            return false;
+        }
+    }
+
+    return context.expect_token(";");
+}
+
+//------------------------------------------------------------------------------
+bool particle_effect::parse_layer(parser::context& context, layer& layer) const
+{
+    // parse name
+    if (!context.peek_token("{")) {
+        auto token = context.next_token();
+        if (!std::holds_alternative<parser::token>(token)) {
+            return false;
+        }
+        layer.name = string::buffer({std::get<parser::token>(token).begin,
+                                     std::get<parser::token>(token).end});
+    }
+
+    // parse opening brace
+    if (!context.expect_token("{")) {
+        return false;
+    }
+
+    // parse fields until the closing brace
+    while (context.has_token()) {
+        if (context.peek_token("}")) {
+            break;
+        }
+        if (context.check_token("flags")) {
+            if (!parse_layer_flags(context, layer.flags)) {
+                return false;
+            }
+        }
+    }
+
+    // parse closing brace
+    return context.expect_token("}");
+}
+
+//------------------------------------------------------------------------------
+bool particle_effect::parse(parser::context& context)
+{
+    while (context.has_token()) {
+        if (context.check_token("layer")) {
+            layer layer;
+            if (!parse_layer(context, layer)) {
+                return false;
+            }
+            layers.push_back(std::move(layer));
         } else {
             return false;
         }
