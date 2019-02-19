@@ -4,6 +4,7 @@
 #include "cm_parser.h"
 #include <cctype>
 #include <cstring>
+#include <algorithm>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace parser {
@@ -193,6 +194,28 @@ result<tokenized> tokenize(string::view text)
 }
 
 //------------------------------------------------------------------------------
+std::vector<string::view> split_lines(string::view text)
+{
+    std::vector<string::view> lines;
+    char const* begin = text.begin();
+    char const* end = text.begin();
+
+    while (end < text.end()) {
+        while (*end != '\n') {
+            ++end;
+        }
+        lines.push_back({begin, end});
+        begin = ++end;
+    }
+
+    if (begin != end) {
+        lines.push_back({begin, end});
+    }
+
+    return lines;
+}
+
+//------------------------------------------------------------------------------
 context::context(string::view text, string::view filename, std::size_t linenumber)
     : _filename(filename)
     , _linenumber(linenumber)
@@ -204,6 +227,7 @@ context::context(string::view text, string::view filename, std::size_t linenumbe
         _tokens = std::move(std::get<tokenized>(tokens));
         _cursor = _tokens.data();
     }
+    _lines = split_lines(_text);
 }
 
 //------------------------------------------------------------------------------
@@ -284,6 +308,22 @@ bool context::expect_token(string::view text)
     } else {
         return false;
     }
+}
+
+//------------------------------------------------------------------------------
+context::token_info context::get_info(token token) const
+{
+    auto it = std::upper_bound(_lines.begin(), _lines.end(), token.begin,
+        [](char const* begin, string::view rhs) {
+            return begin < rhs.end();
+        }
+    );
+
+    return {
+        _filename,
+        _linenumber + std::distance(_lines.begin(), it),
+        1 + static_cast<std::size_t>(token.begin - it->begin()),
+    };
 }
 
 } // namespace parser

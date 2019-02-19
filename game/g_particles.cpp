@@ -163,6 +163,8 @@ bool particle_effect::parse(string::view str)
 //------------------------------------------------------------------------------
 bool particle_effect::parse_layer_flags(parser::context& context, render::particle::flag_bits& flags) const
 {
+    flags = {};
+
     if (!context.expect_token("=")) {
         return false;
     }
@@ -173,6 +175,8 @@ bool particle_effect::parse_layer_flags(parser::context& context, render::partic
         } else if (context.check_token("tail")) {
             flags = static_cast<render::particle::flag_bits>(flags | render::particle::tail);
         } else {
+            parser::token t = std::get<parser::token>(context.next_token());
+            context.set_error({t, "expected particle flag, found '" + t + "'"});
             return false;
         }
         if (context.peek_token(";")) {
@@ -188,6 +192,8 @@ bool particle_effect::parse_layer_flags(parser::context& context, render::partic
 //------------------------------------------------------------------------------
 bool particle_effect::parse_layer(parser::context& context, layer& layer) const
 {
+    layer = {};
+
     // parse name
     if (!context.peek_token("{")) {
         auto token = context.next_token();
@@ -292,6 +298,36 @@ void world::draw_particles(render::system* renderer, time_value time) const
 void world::clear_particles()
 {
     _particles.clear();
+
+    {
+        string::literal definition =
+R"(
+    layer one {
+        flags = tail;
+    }
+    layer two {
+        flags = invert;
+    }
+    layer three {
+        flags = shazaam;
+    }
+)";
+        parser::context context(definition, "definition");
+        particle_effect effect;
+        if (!effect.parse(context)) {
+            auto info = context.get_info(context.get_error().tok);
+            log::message("%s(%zu,%zu): ", info.filename.c_str(), info.linenumber, info.column);
+            log::error("%s\n", context.get_error().msg.c_str());
+            log::message("%s\n", context.get_line(info.linenumber).c_str());
+            for (std::size_t ii = 0; ii + 1 < info.column; ++ii) {
+                log::message(" ");
+            }
+            for (std::size_t ii = 0, sz = context.get_error().tok.end - context.get_error().tok.begin; ii < sz; ++ii) {
+                log::message("^");
+            }
+            log::message("\n");
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

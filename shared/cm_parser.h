@@ -90,6 +90,9 @@ using tokenized = std::vector<token>;
 result<tokenized> tokenize(string::view text);
 
 //------------------------------------------------------------------------------
+std::vector<string::view> split_lines(string::view text);
+
+//------------------------------------------------------------------------------
 class context
 {
 public:
@@ -120,12 +123,18 @@ public:
         std::size_t column;
     };
 
+    token_info get_info(token token) const;
+    string::view get_line(std::size_t number) const {
+        return _lines[number - _linenumber];
+    }
+
 protected:
     string::buffer _filename;
     std::size_t _linenumber;
 
     string::view _text;
-    tokenized _tokens;
+    std::vector<token> _tokens;
+    std::vector<string::view> _lines;
     token* _cursor;
     std::variant<error> _error;
 
