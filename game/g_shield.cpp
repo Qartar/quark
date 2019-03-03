@@ -87,16 +87,15 @@ void shield::draw(render::system* renderer, time_value time) const
     color4 draw_colors[kNumVertices * 3 + 1];
     int draw_indices[kNumVertices * 15];
 
-    vec2 pos = get_position(time);
-    mat2 rot; rot.set_rotation(get_rotation(time));
+    mat3 transform = _owner->get_transform(time);
 
     for (int ii = 0; ii < kNumVertices; ++ii) {
         float f = _flux[ii] * lerp + _prev_flux[ii] * (1.f - lerp);
         float strength = _strength * lerp + _prev_strength * (1.f - lerp);
         float s = f / (.1f + f);
 
-        draw_vertices[ii * 3 + 0] = _vertices[ii] * rot + pos;
-        draw_vertices[ii * 3 + 2] = _vertices[ii] * rot * (.9f * s + .8f * (1.f - s)) + pos;
+        draw_vertices[ii * 3 + 0] = _vertices[ii] * transform;
+        draw_vertices[ii * 3 + 2] = _vertices[ii] * (.9f * s + .8f * (1.f - s)) * transform;
         draw_vertices[ii * 3 + 1] = (draw_vertices[ii * 3 + 0] + draw_vertices[ii * 3 + 2]) * .5f;
 
         draw_colors[ii * 3 + 0] = _colors[0] * s + _colors[1] * (1.f - s);
@@ -139,7 +138,7 @@ void shield::draw(render::system* renderer, time_value time) const
         draw_indices[ii * 15 + 14] = ii * 3 + 5;
     }
 
-    draw_vertices[kNumVertices * 3] = pos;
+    draw_vertices[kNumVertices * 3] = vec2(0,0) * transform;
     draw_colors[kNumVertices * 3] = _colors[3];
 
     draw_indices[kNumVertices * 15 - 13] = 0;
