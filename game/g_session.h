@@ -98,7 +98,6 @@ struct userinfo
 {
     std::array<char, 64> name;
     color3 color;
-    weapon_type weapon;
 };
 
 //

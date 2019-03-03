@@ -4,6 +4,7 @@
 #pragma once
 
 #include "g_subsystem.h"
+#include "g_projectile.h"
 
 #include <variant>
 
@@ -14,30 +15,18 @@ class shield;
 class ship;
 
 //------------------------------------------------------------------------------
-enum class weapon_type
-{
-    cannon,
-    missile,
-    blaster,
-    laser,
-};
-
-//------------------------------------------------------------------------------
 struct base_weapon_info
 {
     string::literal name;
-    weapon_type type;
     time_delta reload_time; //!< time between firing
 };
 
 //------------------------------------------------------------------------------
 struct projectile_weapon_info : base_weapon_info
 {
-    float speed; //!< launch speed of projectiles
     time_delta delay; //!< time between each projectile in an attack
     int count; //!< number of projectiles in each attack
-    float damage; //!< damage per projectile
-    bool inertia; //!< projectile inherits owner velocity
+    projectile_info projectile;
 };
 
 //------------------------------------------------------------------------------
@@ -46,6 +35,7 @@ struct beam_weapon_info : base_weapon_info
     time_delta duration; //!< duration of beam attack
     float sweep; //!< length of beam sweep
     float damage; //!< beam damage per second
+    color4 color; //!< beam color
 };
 
 //------------------------------------------------------------------------------

@@ -144,26 +144,6 @@ void submenu_button::draw(render::system* renderer) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-const string::literal weapon_button::_strings[] = {"Cannon", "Missile", "Blaster"};
-
-//------------------------------------------------------------------------------
-weapon_button::weapon_button(game::weapon_type type, vec2i position, vec2i size)
-    : button(_strings[static_cast<int>(type)], position, size, [type](){g_Game->cls.info.weapon = type;})
-    , _type(type)
-{}
-
-//------------------------------------------------------------------------------
-void weapon_button::draw(render::system* renderer) const
-{
-    int border_color = _over ? 6 : 4;
-    int button_color = (_down || g_Game->cls.info.weapon == _type) ? 3 : 5;
-    int text_color = button_color + 2;
-
-    draw_rectangle(renderer, _rectangle, menu::colors[button_color], menu::colors[border_color]);
-    draw_text(renderer, _rectangle, _text, menu::colors[text_color]);
-}
-
-////////////////////////////////////////////////////////////////////////////////
 client_button::client_button(string::view text, vec2i position, vec2i size)
     : button(text, position, size)
     , _text_rectangle(rect::from_center(position + vec2i(0, size.y / 2 - 12), vec2i(size.x - 16, 14)))

@@ -83,7 +83,6 @@ result session::init (string::view cmdline)
         cl.local = false;
         cl.info.name.fill('\0');
         cl.info.color = color3(1,1,1);
-        cl.info.weapon = weapon_type::cannon;
     }
 
     memset( _clientsay, 0, LONG_STRING );

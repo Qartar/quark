@@ -27,7 +27,6 @@ void session::start_server ()
 
         svs.clients[0].info.name = cls.info.name;
         svs.clients[0].info.color = cls.info.color;
-        svs.clients[0].info.weapon = cls.info.weapon;
 
         spawn_player(0);
     }
@@ -63,7 +62,6 @@ void session::start_server_local()
             snprintf(svs.clients[ii].info.name.data(),
                      svs.clients[ii].info.name.size(), "Player %zu", ii+1);
             svs.clients[ii].info.color = player_colors[ii];
-            svs.clients[ii].info.weapon = weapon_type::cannon;
         } else {
             svs.clients[ii].active = false;
             svs.clients[ii].local = false;
@@ -152,12 +150,10 @@ void session::write_frame()
     // check if local user info has been changed
     if (!_menu_active && svs.clients[0].local) {
         if (strcmp(svs.clients[0].info.name.data(), cls.info.name.data())
-            || svs.clients[0].info.color != cls.info.color
-            || svs.clients[0].info.weapon != cls.info.weapon) {
+            || svs.clients[0].info.color != cls.info.color) {
 
             strcpy(svs.clients[0].info.name, string::view(cls.info.name.data()));
             svs.clients[0].info.color = cls.info.color;
-            svs.clients[0].info.weapon = cls.info.weapon;
 
             write_info(message, 0);
         }

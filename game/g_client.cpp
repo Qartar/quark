@@ -46,8 +46,6 @@ void session::init_client()
         }
     }
 
-    cls.info.weapon = static_cast<weapon_type>((int)_cl_weapon);
-
     _net_bytes.fill(0);
 }
 
@@ -56,7 +54,6 @@ void session::shutdown_client()
 {
     _cl_name = string::view(cls.info.name.data());
     _cl_color = va("%i %i %i", (int )(cls.info.color.r*255), (int )(cls.info.color.g*255), (int )(cls.info.color.b*255) );
-    _cl_weapon = static_cast<int>(cls.info.weapon);
 }
 
 //------------------------------------------------------------------------------
@@ -205,7 +202,6 @@ void session::connect_ack(string::view message_string)
     svs.clients[cls.number].active = true;
     svs.clients[cls.number].info.name = cls.info.name;
     svs.clients[cls.number].info.color = cls.info.color;
-    svs.clients[cls.number].info.weapon = cls.info.weapon;
 
     write_info(_netchan, cls.number);
 }
@@ -229,12 +225,10 @@ void session::client_send ()
     // check if user info has been changed
     if (!_menu_active) {
         if (strcmp(svs.clients[cls.number].info.name.data(), cls.info.name.data())
-            || svs.clients[cls.number].info.color != cls.info.color
-            || svs.clients[cls.number].info.weapon != cls.info.weapon) {
+            || svs.clients[cls.number].info.color != cls.info.color) {
 
             strcpy(svs.clients[cls.number].info.name, string::view(cls.info.name.data()));
             svs.clients[cls.number].info.color = cls.info.color;
-            svs.clients[cls.number].info.weapon = cls.info.weapon;
             write_info(_netchan, cls.number);
         }
     }

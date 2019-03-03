@@ -142,20 +142,6 @@ protected:
 };
 
 //------------------------------------------------------------------------------
-class weapon_button : public button
-{
-public:
-    weapon_button(game::weapon_type type, vec2i position, vec2i size);
-
-    virtual void draw(render::system* renderer) const override;
-
-protected:
-    game::weapon_type _type;
-
-    static const string::literal _strings[];
-};
-
-//------------------------------------------------------------------------------
 class client_button : public button
 {
 public:

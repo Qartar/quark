@@ -21,41 +21,77 @@ const object_type weapon::_type(subsystem::_type);
 std::vector<weapon_info> weapon::_types = {
     projectile_weapon_info{
         /* name */              "blaster",
-        /* type */              weapon_type::blaster,
         /* reload_time */       time_delta::from_seconds(8.f),
-        /* speed */             786.f,
         /* delay */             time_delta::from_seconds(.2f),
         /* count */             3,
-        /* damage */            .2f,
-        /* inertia */           true,
+        /* projectile */        {
+            /* damage */            .2f,
+            /* speed */             786.f,
+            /* inertia */           true,
+            /* homing */            false,
+            /* fuse_time */         time_delta::from_seconds(5.f),
+            /* fade_time */         time_delta::from_seconds(1.f),
+            /* color */             color4(1.f, 0.f, 0.f, 1.f),
+            /* tail_time */         time_delta::from_seconds(.02f),
+            /* launch_effect */     effect_type::blaster,
+            /* launch_sound */      sound::asset::invalid,
+            /* flight_effect */     effect_type::none,
+            /* flight sound */      sound::asset::invalid,
+            /* impact_effect */     effect_type::blaster_impact,
+            /* impact_sound */      sound::asset::invalid,
+                                },
     },
     projectile_weapon_info{
         /* name */              "cannon",
-        /* type */              weapon_type::cannon,
         /* reload_time */       time_delta::from_seconds(8.f),
-        /* speed */             1280.f,
         /* delay */             time_delta::from_seconds(.3f),
         /* count */             2,
-        /* damage */            .3f,
-        /* inertia */           true,
+        /* projectile */        {
+            /* damage */            .3f,
+            /* speed */             1280.f,
+            /* inertia */           true,
+            /* homing */            false,
+            /* fuse_time */         time_delta::from_seconds(5.f),
+            /* fade_time */         time_delta::from_seconds(1.f),
+            /* color */             color4(1.f, .5f, 0.f, 1.f),
+            /* tail_time */         time_delta::from_seconds(.02f),
+            /* launch_effect */     effect_type::cannon,
+            /* launch_sound */      sound::asset::invalid,
+            /* flight_effect */     effect_type::none,
+            /* flight sound */      sound::asset::invalid,
+            /* impact_effect */     effect_type::cannon_impact,
+            /* impact_sound */      sound::asset::invalid,
+                                },
     },
     projectile_weapon_info{
         /* name */              "missile",
-        /* type */              weapon_type::missile,
         /* reload_time */       time_delta::from_seconds(8.f),
-        /* speed */             256.f,
         /* delay */             time_delta::from_seconds(.2f),
         /* count */             3,
-        /* damage */            .2f,
-        /* inertia */           true,
+        /* projectile */        {
+            /* damage */            .2f,
+            /* speed */             256.f,
+            /* inertia */           true,
+            /* homing */            true,
+            /* fuse_time */         time_delta::from_seconds(5.f),
+            /* fade_time */         time_delta::from_seconds(1.f),
+            /* color */             color4(1.f, 1.f, 1.f, 1.f),
+            /* tail_time */         time_delta::from_seconds(.02f),
+            /* launch_effect */     effect_type::none,
+            /* launch_sound */      sound::asset::invalid,
+            /* flight_effect */     effect_type::missile_trail,
+            /* flight sound */      sound::asset::invalid,
+            /* impact_effect */     effect_type::missile_impact,
+            /* impact_sound */      sound::asset::invalid,
+                                },
     },
     beam_weapon_info{
         /* name */              "laser",
-        /* type */              weapon_type::laser,
         /* reload_time */       time_delta::from_seconds(8.f),
         /* duration */          time_delta::from_seconds(1.f),
         /* sweep */             1.5f,
         /* damage */            .4f,
+        /* color */             color4(1.f, .5f, 0.f, 1.f),
     },
 };
 
@@ -96,15 +132,18 @@ void weapon::draw(render::system* renderer, time_value time) const
             vec2 beam_start = get_position(time) * _owner->get_transform(time);
             vec2 beam_end = (_beam_sweep_end * t + _beam_sweep_start * (1.f - t)) * _beam_target->get_transform(time);
 
+            color4 core_color = beam_info.color * color4(1.f, 1.f, 1.f, .5f);
+            color4 edge_color = beam_info.color * color4(1.f, 1.f, 1.f, .1f);
+
             if (_beam_shield) {
                 // Trace rigid body using the interpolated position/rotation
                 physics::rigid_body shield_proxy = _beam_shield->rigid_body();
                 shield_proxy.set_position(_beam_shield->get_position(time));
                 shield_proxy.set_rotation(_beam_shield->get_rotation(time));
                 auto tr = physics::trace(&shield_proxy, beam_start, beam_end);
-                renderer->draw_line(2.f, beam_start, tr.get_contact().point, color4(1, 0.5, 0, 0.5), color4(1, 0, 0, 0.1f));
+                renderer->draw_line(2.f, beam_start, tr.get_contact().point, core_color, edge_color);
             } else {
-                renderer->draw_line(2.f, beam_start, beam_end, color4(1, 0.5, 0, 0.5), color4(1, 0, 0, 0.1f));
+                renderer->draw_line(2.f, beam_start, beam_end, core_color, edge_color);
             }
         }
     }
@@ -144,25 +183,25 @@ void weapon::think()
 
         if (_projectile_target && time - _last_attack_time <= projectile_info.count * projectile_info.delay) {
             if (_projectile_count < projectile_info.count && _projectile_count * projectile_info.delay <= time - _last_attack_time) {
-                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.damage, projectile_info.type);
+                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.projectile);
                 vec2 start = get_position() * _owner->rigid_body().get_transform();
                 vec2 end = _projectile_target_pos * _projectile_target->rigid_body().get_transform();
 
                 vec2 relative_velocity = _projectile_target->get_linear_velocity();
-                if (projectile_info.inertia) {
+                if (projectile_info.projectile.inertia) {
                     relative_velocity -= _owner->get_linear_velocity();
                 }
 
                 // lead target based on relative velocity
-                float dt = intercept_time(end - start, relative_velocity, projectile_info.speed);
+                float dt = intercept_time(end - start, relative_velocity, projectile_info.projectile.speed);
                 if (dt > 0.f) {
                     end += relative_velocity * dt;
                 }
 
                 vec2 dir = (end - start).normalize();
 
-                vec2 projectile_velocity = dir * projectile_info.speed;
-                if (projectile_info.inertia) {
+                vec2 projectile_velocity = dir * projectile_info.projectile.speed;
+                if (projectile_info.projectile.inertia) {
                     projectile_velocity += _owner->get_linear_velocity();
                 }
 
@@ -170,16 +209,12 @@ void weapon::think()
                 proj->set_linear_velocity(projectile_velocity);
                 proj->set_rotation(std::atan2(dir.y, dir.x), true);
 
-                if (projectile_info.type == weapon_type::blaster) {
-                    sound::asset _sound_blaster_fire = pSound->load_sound("assets/sound/blaster_fire.wav");
-                    get_world()->add_sound(_sound_blaster_fire, start, projectile_info.damage);
-                    get_world()->add_effect(time, effect_type::blaster, start, dir * 2);
-                } else if (projectile_info.type == weapon_type::cannon) {
-                    sound::asset _sound_cannon_fire = pSound->load_sound("assets/sound/cannon_fire.wav");
-                    get_world()->add_sound(_sound_cannon_fire, start, projectile_info.damage);
-                    get_world()->add_effect(time, effect_type::cannon, start, dir * 2);
-                } else {
-                    get_world()->add_effect(time, effect_type::cannon, start, dir * 2);
+                if (projectile_info.projectile.launch_effect != effect_type::none) {
+                    get_world()->add_effect(time, projectile_info.projectile.launch_effect, start, dir * 2);
+                }
+
+                if (projectile_info.projectile.launch_sound != sound::asset::invalid) {
+                    get_world()->add_sound(projectile_info.projectile.launch_sound, start, projectile_info.projectile.damage);
                 }
 
                 ++_projectile_count;

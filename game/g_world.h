@@ -34,6 +34,7 @@ class world;
 //------------------------------------------------------------------------------
 enum class effect_type
 {
+    none,
     smoke,
     sparks,
     cannon,
