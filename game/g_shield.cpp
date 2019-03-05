@@ -157,12 +157,9 @@ bool shield::touch(object* other, physics::collision const* collision)
 {
     if (other->is_type<projectile>()) {
         return damage(collision->point, static_cast<projectile*>(other)->damage());
-    } else if (other->is_type<weapon>()) {
-        beam_weapon_info const& info = std::get<beam_weapon_info>(static_cast<weapon*>(other)->info());
-        return damage(collision->point, info.damage * FRAMETIME.to_seconds());
+    } else {
+        return _strength > 0.f;
     }
-
-    return true;
 }
 
 //------------------------------------------------------------------------------

@@ -315,11 +315,12 @@ bool player::attack(vec2 position, bool repeat)
         }
 
         handle<weapon> weapon = _ship->weapons()[ii];
-        if (std::holds_alternative<projectile_weapon_info>(weapon->info())) {
-            weapon->attack_projectile(target, vec2_zero, repeat);
+        if (std::holds_alternative<projectile_weapon_info>(weapon->info())
+            || std::holds_alternative<pulse_weapon_info>(weapon->info())) {
+            weapon->attack_point(target, vec2_zero, repeat);
         } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
             vec2 v = _random.uniform_nsphere<vec2>();
-            weapon->attack_beam(target, v * -4.f, v * 4.f, repeat);
+            weapon->attack_sweep(target, v * -4.f, v * 4.f, repeat);
         }
     }
 

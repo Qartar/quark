@@ -93,6 +93,18 @@ std::vector<weapon_info> weapon::_types = {
         /* damage */            .4f,
         /* color */             color4(1.f, .5f, 0.f, 1.f),
     },
+    pulse_weapon_info{
+        /* name */              "phaser",
+        /* reload_time */       time_delta::from_seconds(8.f),
+        /* delay */             time_delta::from_seconds(.3f),
+        /* count */             2,
+        /* damage */            .3f,
+        /* color */             color4(1.f, .2f, 0.f, 1.f),
+        /* launch_effect */     effect_type::none,
+        /* launch_sound */      sound::asset::invalid,
+        /* impact_effect */     effect_type::none,
+        /* impact_sound */      sound::asset::invalid,
+    },
 };
 
 //------------------------------------------------------------------------------
@@ -112,6 +124,9 @@ weapon::weapon(game::ship* owner, weapon_info const& info, vec2 position)
     , _beam_sweep_start(vec2_zero)
     , _beam_sweep_end(vec2_zero)
     , _beam_shield(nullptr)
+    , _pulse_target(nullptr)
+    , _pulse_target_pos(vec2_zero)
+    , _pulse_count(0)
 {
     set_position(position, true);
 }
@@ -144,6 +159,34 @@ void weapon::draw(render::system* renderer, time_value time) const
                 renderer->draw_line(2.f, beam_start, tr.get_contact().point, core_color, edge_color);
             } else {
                 renderer->draw_line(2.f, beam_start, beam_end, core_color, edge_color);
+            }
+        }
+    }
+
+    if (std::holds_alternative<pulse_weapon_info>(_info)) {
+        auto& pulse_info = std::get<pulse_weapon_info>(_info);
+
+        time_value last_pulse_time = _last_attack_time + pulse_info.delay * (_pulse_count - 1);
+
+        if (_pulse_target && time - last_pulse_time < pulse_info.delay) {
+            float t = (time - last_pulse_time) / pulse_info.delay;
+            vec2 start = get_position(time) * _owner->get_transform(time);
+            vec2 end = _pulse_target_pos * _pulse_target->get_transform(time);
+
+            float a = std::exp(-5.f * t);
+
+            color4 core_color = pulse_info.color * color4(1.f, 1.f, 1.f, .5f * a);
+            color4 edge_color = pulse_info.color * color4(1.f, 1.f, 1.f, .1f * a);
+
+            if (_pulse_shield) {
+                // Trace rigid body using the interpolated position/rotation
+                physics::rigid_body shield_proxy = _pulse_shield->rigid_body();
+                shield_proxy.set_position(_pulse_shield->get_position(time));
+                shield_proxy.set_rotation(_pulse_shield->get_rotation(time));
+                auto tr = physics::trace(&shield_proxy, start, end);
+                renderer->draw_line(2.f, start, tr.get_contact().point, core_color, edge_color);
+            } else {
+                renderer->draw_line(2.f, start, end, core_color, edge_color);
             }
         }
     }
@@ -249,12 +292,66 @@ void weapon::think()
             game::object* obj = get_world()->trace(c, beam_start, beam_end, _owner.get());
             if (obj && obj->is_type<shield>() && obj->touch(this, &c)) {
                 _beam_shield = static_cast<game::shield*>(obj);
+                _beam_shield->damage(c.point, beam_info.damage * FRAMETIME.to_seconds());
             } else {
                 _beam_shield = nullptr;
                 get_world()->add_effect(time, effect_type::sparks, beam_end, -beam_dir, beam_info.damage);
                 if (_beam_target->is_type<ship>()) {
                     static_cast<ship*>(_beam_target.get())->damage(this, beam_end, beam_info.damage * FRAMETIME.to_seconds());
                 }
+            }
+        }
+    }
+
+    //
+    // update pulse
+    //
+
+    if (std::holds_alternative<pulse_weapon_info>(_info)) {
+        auto& pulse_info = std::get<pulse_weapon_info>(_info);
+
+        if (_is_attacking && time - _last_attack_time > pulse_info.reload_time) {
+            _pulse_target = _target;
+            _pulse_target_pos = _target_pos;
+            _pulse_count = 0;
+            _pulse_shield = nullptr;
+            _last_attack_time = time;
+            _is_attacking = _is_repeating;
+        }
+
+        if (_pulse_target && time - _last_attack_time <= pulse_info.count * pulse_info.delay) {
+            if (_pulse_count < pulse_info.count && _pulse_count * pulse_info.delay <= time - _last_attack_time) {
+                vec2 start = get_position() * _owner->rigid_body().get_transform();
+                vec2 end = _pulse_target_pos * _pulse_target->rigid_body().get_transform();
+                vec2 dir = (end - start).normalize();
+
+                if (pulse_info.launch_effect != effect_type::none) {
+                    get_world()->add_effect(time, pulse_info.launch_effect, start, dir * 2);
+                }
+
+                if (pulse_info.launch_sound != sound::asset::invalid) {
+                    get_world()->add_sound(pulse_info.launch_sound, start, pulse_info.damage);
+                }
+
+                physics::collision c;
+                game::object* obj = get_world()->trace(c, start, end, _owner.get());
+                if (obj && obj->is_type<shield>() && obj->touch(this, &c)) {
+                    _pulse_shield = static_cast<game::shield*>(obj);
+                    if (pulse_info.impact_effect != effect_type::none) {
+                        get_world()->add_effect(time, pulse_info.impact_effect, c.point, -dir, .5f * pulse_info.damage);
+                    }
+                    _pulse_shield->damage(c.point, pulse_info.damage);
+                } else {
+                    _pulse_shield = nullptr;
+                    if (pulse_info.impact_effect != effect_type::none) {
+                        get_world()->add_effect(time, pulse_info.impact_effect, end, -dir, pulse_info.damage);
+                    }
+                    if (_pulse_target->is_type<ship>()) {
+                        static_cast<ship*>(_pulse_target.get())->damage(this, end, pulse_info.damage);
+                    }
+                }
+
+                ++_pulse_count;
             }
         }
     }
@@ -271,16 +368,17 @@ void weapon::write_snapshot(network::message& /*message*/) const
 }
 
 //------------------------------------------------------------------------------
-void weapon::attack_projectile(game::object* target, vec2 target_pos, bool repeat)
+void weapon::attack_point(game::object* target, vec2 target_pos, bool repeat)
 {
     _target = target;
     _target_pos = target_pos;// / target->rigid_body.get_transform();
+    _target_end = target_pos;// / target->rigid_body.get_transform();
     _is_attacking = true;
     _is_repeating = repeat;
 }
 
 //------------------------------------------------------------------------------
-void weapon::attack_beam(game::object* target, vec2 sweep_start, vec2 sweep_end, bool repeat)
+void weapon::attack_sweep(game::object* target, vec2 sweep_start, vec2 sweep_end, bool repeat)
 {
     _target = target;
     _target_pos = sweep_start;// / target->rigid_body().get_transform();

@@ -39,7 +39,20 @@ struct beam_weapon_info : base_weapon_info
 };
 
 //------------------------------------------------------------------------------
-using weapon_info = std::variant<projectile_weapon_info, beam_weapon_info>;
+struct pulse_weapon_info : base_weapon_info
+{
+    time_delta delay; //!< time between each pulse in an attack
+    int count; //!< number of pulses in each attack
+    float damage; //!< damage per pulse
+    color4 color; //!< pulse color
+    effect_type launch_effect;
+    sound::asset launch_sound;
+    effect_type impact_effect;
+    sound::asset impact_sound;
+};
+
+//------------------------------------------------------------------------------
+using weapon_info = std::variant<projectile_weapon_info, beam_weapon_info, pulse_weapon_info>;
 
 //------------------------------------------------------------------------------
 class weapon : public subsystem
@@ -60,8 +73,8 @@ public:
 
     weapon_info const& info() const { return _info; }
 
-    void attack_projectile(game::object* target, vec2 target_pos, bool repeat = false);
-    void attack_beam(game::object* target, vec2 sweep_start, vec2 sweep_end, bool repeat = false);
+    void attack_point(game::object* target, vec2 target_pos, bool repeat = false);
+    void attack_sweep(game::object* target, vec2 sweep_start, vec2 sweep_end, bool repeat = false);
     void cancel();
 
     object const* target() const { return _target.get(); }
@@ -89,6 +102,11 @@ protected:
     vec2 _beam_sweep_start;
     vec2 _beam_sweep_end;
     game::handle<shield> _beam_shield; //!< beam weapons need to track whether it's hitting shields or not
+
+    game::handle<object> _pulse_target;
+    vec2 _pulse_target_pos;
+    int _pulse_count;
+    game::handle<shield> _pulse_shield;
 
     static std::vector<weapon_info> _types;
 };

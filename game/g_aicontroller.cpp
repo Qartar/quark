@@ -107,11 +107,12 @@ void aicontroller::think()
             // select a random target
             if (ships.size()) {
                 game::ship* target = ships[_random.uniform_int(ships.size())];
-                if (std::holds_alternative<projectile_weapon_info>(weapon->info())) {
-                    weapon->attack_projectile(target, vec2_zero);
+                if (std::holds_alternative<projectile_weapon_info>(weapon->info())
+                    || std::holds_alternative<pulse_weapon_info>(weapon->info())) {
+                    weapon->attack_point(target, vec2_zero);
                 } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
                     vec2 v = _random.uniform_nsphere<vec2>();
-                    weapon->attack_beam(target, v * -4.f, v * 4.f);
+                    weapon->attack_sweep(target, v * -4.f, v * 4.f);
                 }
             }
         }
