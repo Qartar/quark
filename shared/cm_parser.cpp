@@ -341,7 +341,7 @@ bool context::expect_token(string::view text)
         if (std::get<token>(tok) == text) {
             return true;
         } else {
-            set_error(error{std::get<token>(tok), "expected token '%s', found '%s'"});
+            set_error(error{std::get<token>(tok), "" + parser::token{} + "expected token '" + text + "', found '" + std::get<token>(tok) + "'"});
             return false;
         }
     } else {

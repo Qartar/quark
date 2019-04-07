@@ -58,6 +58,9 @@ float expression::evaluate_op(random& r, op_type type, float lhs, float rhs)
             assert(false);
             return 0.f;
 
+        case op_type::member:
+            return lhs;
+
         case op_type::sum:
             return lhs + rhs;
 
@@ -131,12 +134,31 @@ float expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) 
 //------------------------------------------------------------------------------
 expression_builder::expression_builder(string::view const* inputs, std::size_t num_inputs)
 {
+    _type_info.push_back({"scalar", {}, 1});
+    _type_info.push_back({"vec2", {{"x", expression::type::scalar, 0}, {"y", expression::type::scalar, 1}}, 2});
+    _type_info.push_back({"vec4", {{"x", expression::type::scalar, 0}, {"y", expression::type::scalar, 1}, {"z", expression::type::scalar, 2}, {"w", expression::type::scalar, 3}}, 4});
+
+    _type_info.push_back({"in",
+        {
+            {"pos", expression::type::vec2, 0},
+            {"vel", expression::type::vec2, 2},
+            {"dir", expression::type::vec2, 4},
+            {"str", expression::type::scalar, 6},
+            {"idx", expression::type::scalar, 7},
+        },
+        8
+    });
+
     for (std::size_t ii = 0; ii < num_inputs; ++ii) {
         _symbols[string::buffer(inputs[ii])] = ii;
         _expression._ops.push_back({expression::op_type::none, 0, 0});
         _used.push_back(true); // assume inputs are always used
+        _types.push_back(expression::type::scalar);
     }
     _expression._num_inputs = num_inputs;
+
+    _types[0] = static_cast<expression::type>(3);
+    _symbols["in"] = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -160,7 +182,9 @@ expression expression_builder::compile(expression::value* map) const
     }
 
     for (std::size_t ii = _expression.num_inputs(), sz = _used.size(); ii < sz; ++ii) {
-        if (_used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
+        if (_expression._ops[ii].type == expression::op_type::member) {
+            map[ii] = map[_expression._ops[ii].lhs];
+        } else if (_used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
             map[ii] = num_used++;
         }
     }
@@ -192,14 +216,47 @@ expression::value expression_builder::add_constant(float value)
         _expression._constants.push_back(value);
         _constants[value] = _expression._ops.size() - 1;
         _used.push_back(false);
+        _types.push_back(expression::type::scalar);
         return _expression._ops.size() - 1;
     }
 }
 
 //------------------------------------------------------------------------------
+expression::value expression_builder::alloc_type(expression::type type)
+{
+    type_info const& info = _type_info[static_cast<std::size_t>(type)];
+    expression::value base = _expression._ops.size();
+    if (info.fields.size()) {
+        // sub-allocate child types
+        for (auto field : info.fields) {
+            alloc_type(field.type);
+        }
+    } else {
+        for (std::size_t ii = 0; ii < info.size; ++ii) {
+            _expression._ops.push_back({expression::op_type::none, 0, 0});
+            _expression._constants.push_back(0);
+            _used.push_back(false);
+            _types.push_back(expression::type::scalar);
+        }
+    }
+    assert(_expression._ops.size() - base == info.size);
+    _types[base] = type;
+    return base;
+}
+
+//------------------------------------------------------------------------------
 expression::value expression_builder::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
 {
-    if (is_constant(lhs) && is_constant(rhs)) {
+    if (type == expression::op_type::member) {
+        type_info const& parent_type = _type_info[static_cast<std::size_t>(_types[lhs])];
+        type_info const& member_type = _type_info[static_cast<std::size_t>(parent_type.fields[rhs].type)];
+
+        expression::value base = alloc_type(parent_type.fields[rhs].type);
+        for (std::size_t ii = 0; ii < member_type.size; ++ii) {
+            _expression._ops[base + ii] = {expression::op_type::member, expression::value(lhs + ii)};
+        }
+        return base;
+    } else if (is_constant(lhs) && is_constant(rhs)) {
         static random r; // not used
         return add_constant(
             expression::evaluate_op(
@@ -211,6 +268,7 @@ expression::value expression_builder::add_op(expression::op_type type, expressio
         _expression._constants.push_back(0.f);
         _expression._ops.push_back({type, lhs, rhs});
         _used.push_back(false);
+        _types.push_back(expression::type::scalar);
         return _expression._ops.size() - 1;
     }
 }
@@ -301,6 +359,8 @@ parser::result<expression::op_type> expression_parser::peek_operator(parser::con
         return expression::op_type::quotient;
     } else if (token == '^') {
         return expression::op_type::exponent;
+    } else if (token == '.') {
+        return expression::op_type::member;
     } else {
         return parser::error{token, "expected operator, found '" + token + "'"};
     }
@@ -326,6 +386,8 @@ parser::result<expression::op_type> expression_parser::parse_operator(parser::co
         return expression::op_type::quotient;
     } else if (token == '^') {
         return expression::op_type::exponent;
+    } else if (token == '.') {
+        return expression::op_type::member;
     } else {
         return context.set_error({token, "expected operator, found '" + token + "'"});
     }
@@ -475,6 +537,7 @@ constexpr int op_precedence(expression::op_type t)
         case expression::op_type::product: return 5;
         case expression::op_type::quotient: return 5;
         case expression::op_type::exponent: return 4;
+        case expression::op_type::member: return 2;
         default: return 0;
     }
 }
@@ -533,6 +596,24 @@ parser::result<expression::value> expression_parser::parse_operand(parser::conte
 }
 
 //------------------------------------------------------------------------------
+parser::result<expression::value> expression_parser::parse_member(parser::context& context, type_info const& type)
+{
+    auto result = context.next_token();
+    if (std::holds_alternative<parser::error>(result)) {
+        return std::get<parser::error>(result);
+    }
+
+    auto name = std::get<parser::token>(result);
+    for (std::size_t ii = 0; ii < type.fields.size(); ++ii) {
+        if (name == type.fields[ii].name) {
+            return expression::value(ii);
+        }
+    }
+
+    return context.set_error({name, "" + parser::token{} + "'" + type.name + "' has no member '" + name + "'"});
+}
+
+//------------------------------------------------------------------------------
 parser::result<expression::value> expression_parser::parse_expression(parser::context& context, int precedence)
 {
     parser::result<expression::value> lhs = parse_operand(context);
@@ -557,6 +638,18 @@ parser::result<expression::value> expression_parser::parse_expression(parser::co
         } else {
             lhs_op = parse_operator(context);
             assert(!std::holds_alternative<parser::error>(lhs_op));
+        }
+
+        if (std::get<expression::op_type>(lhs_op) == expression::op_type::member) {
+            parser::result<expression::value> rhs = parse_member(context, _type_info[static_cast<std::size_t>(_types[std::get<expression::value>(lhs)])]);
+            if (std::holds_alternative<parser::error>(rhs)) {
+                return std::get<parser::error>(rhs);
+            } else {
+                lhs = add_op(std::get<expression::op_type>(lhs_op),
+                             std::get<expression::value>(lhs),
+                             std::get<expression::value>(rhs));
+                continue;
+            }
         }
 
         parser::result<expression::value> rhs = parse_expression(context, lhs_precedence);

@@ -397,8 +397,9 @@ R"(
         let foo = 4;
         let bar = 6;
         /* this is another
-        size = foo;
+        size = posx;
         test */
+        size = in.pos.x;
     }
     layer three {
         flags = shazaam;

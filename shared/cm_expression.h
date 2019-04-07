@@ -17,6 +17,12 @@ class expression
 public:
     using value = std::ptrdiff_t;
 
+    enum class type {
+        scalar,
+        vec2,
+        vec4,
+    };
+
     enum class op_type {
         none,
         constant,
@@ -30,6 +36,7 @@ public:
         sine,
         cosine,
         random,
+        member,
     };
 
     struct op {
@@ -59,6 +66,7 @@ public:
             case expression::op_type::sqrt:
             case expression::op_type::sine:
             case expression::op_type::cosine:
+            case expression::op_type::member:
                 return op_arity::unary;
 
             // binary ops
@@ -115,11 +123,30 @@ public:
     void mark_used(expression::value value);
 
 protected:
+    struct field_info {
+        string::buffer name;
+        expression::type type;
+        std::size_t offset;
+    };
+
+    struct type_info {
+        string::buffer name;
+        std::vector<field_info> fields;
+        std::size_t size;
+    };
+
+protected:
     expression _expression;
 
     std::map<string::buffer, expression::value> _symbols;
     std::map<float, expression::value> _constants;
     std::vector<bool> _used;
+    std::vector<expression::type> _types;
+
+    std::vector<type_info> _type_info;
+
+protected:
+    expression::value alloc_type(expression::type type);
 };
 
 //------------------------------------------------------------------------------
@@ -160,4 +187,5 @@ protected:
     result<expression::value> parse_operand_explicit(parser::context& context);
     result<expression::value> parse_operand(parser::context& context);
     result<expression::value> parse_expression(parser::context& context, int precedence);
+    result<expression::value> parse_member(parser::context& context, type_info const& type);
 };
