@@ -24,8 +24,8 @@ int particle_effect::layer::evaluate_count(
 
     inputs = { pos.x, pos.y, vel.x, vel.y, dir.x, dir.y, str, 0.f };
 
-    expr.evaluate_one(count, r, inputs.data(), values.data());
-    return static_cast<int>(values[count]);
+    float value = expr.evaluate_one(count, r, inputs.data(), values.data());
+    return static_cast<int>(value);
 }
 
 //------------------------------------------------------------------------------
@@ -384,6 +384,94 @@ R"(
             log::message("\n");
         }
     }
+
+    {
+        constexpr std::size_t linenumber = __LINE__ + 2;
+        string::literal definition =
+R"(
+    layer shock_wave {
+        let scale = sqrt(str);
+
+        count = 1;
+        flags = invert;
+
+        position = posx, posy;
+        velocity = dirx * 48 * scale, diry * 48 * scale;
+        acceleration = 0, 0;
+
+        color = 1, 1, 0.5, 0.5;
+        color_velocity = 0, -1, -1.5, -1.5;
+
+        size = 12 * scale;
+        size_velocity = 192 * scale;
+    }
+
+    layer fire {
+        let scale = sqrt(str);
+
+        count = 64 * scale;
+
+        let r = random * 2 * pi;
+        let d = random * 8 * scale;
+
+        position = posx + cos(r) * d, posy + sin(r) * d;
+
+        let r = random * 2 * pi;
+        let d = sqrt(random) * 128 * str;
+
+        velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
+        acceleration = 0, 0;
+
+        color = 1, random, 0, 0.1;
+        color_velocity = 0, 0, 0, -0.1 / (0.5 + (random ^ 2) * 2);
+
+        size = (random * (24 - 8) + 8) * scale;
+        size_velocity = str;
+
+        drag = (random * (4 - 2) + 2) * scale;
+    }
+
+    layer debris {
+        let scale = sqrt(str);
+
+        count = 32 * scale;
+        flags = tail;
+
+        let r = random * 2 * pi;
+        let d = random * 2 * scale;
+
+        position = posx + cos(r) * d, posy + sin(r) * d;
+
+        let r = random * 2 * pi;
+        let d = sqrt(random) * 128 * scale;
+
+        velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
+        acceleration = 0, 0;
+
+        color = 1, random * .5 + .5, 0, 1;
+        color_velocity = 0, 0, 0, random - 2.5;
+
+        size = 0.5;
+        size_velocity = 0;
+
+        drag = random * .5 + .5;
+    }
+)";
+        parser::context context(definition, __FILE__, linenumber);
+        if (!_effect.parse(context)) {
+            auto info = context.get_info(context.get_error().tok);
+            log::message("%s(%zu,%zu): ", info.filename.c_str(), info.linenumber, info.column);
+            log::error("%s\n", context.get_error().msg.c_str());
+            log::message("%s\n", context.get_line(info.linenumber).c_str());
+            for (std::size_t ii = 0; ii + 1 < info.column; ++ii) {
+                log::message(" ");
+            }
+            for (std::size_t ii = 0, sz = context.get_error().tok.end - context.get_error().tok.begin; ii < sz; ++ii) {
+                log::message("^");
+            }
+            log::message("\n");
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -447,6 +535,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
         case effect_type::cannon_impact:
         case effect_type::missile_impact:
         case effect_type::explosion: {
+#if 1
+            add_particle_effect(&_effect, time, position, vec2_zero, direction, strength);
+#else
             render::particle* p;
             float scale = std::sqrt(strength);
 
@@ -513,6 +604,7 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->drag = _random.uniform_real(.5f, 1.f);
                 p->flags = render::particle::tail;
             }
+#endif
             break;
         }
 

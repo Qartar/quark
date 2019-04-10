@@ -273,11 +273,11 @@ expression_parser::expression_parser(string::view const* inputs, std::size_t num
 //------------------------------------------------------------------------------
 void expression_parser::assign(string::view name, expression::value value)
 {
-    if (_symbols.find(name) != _symbols.cend()) {
-        //log::warning("
-    } else {
+    //if (_symbols.find(name) != _symbols.cend()) {
+    //    //log::warning("
+    //} else {
         _symbols[string::buffer(name)] = value;
-    }
+    //}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -312,7 +312,7 @@ parser::result<expression::op_type> expression_parser::parse_operator(parser::co
     auto result = context.next_token();
     if (std::holds_alternative<parser::error>(result)) {
         // TODO: "expected operator ..."
-        return std::get<parser::error>(result);
+        return context.set_error(std::get<parser::error>(result));
     }
 
     auto token = std::get<parser::token>(result);
@@ -376,7 +376,7 @@ parser::result<expression::value> expression_parser::parse_unary_function(parser
 {
     result<expression::value> arg = parse_operand(context);
     if (std::holds_alternative<parser::error>(arg)) {
-        return std::get<parser::error>(arg);
+        return context.set_error(std::get<parser::error>(arg));
     }
     return add_op(type, std::get<expression::value>(arg), rhs);
 }
@@ -387,7 +387,7 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(pars
     auto result = context.next_token();
     if (std::holds_alternative<parser::error>(result)) {
         // TODO: "expected expression ..."
-        return std::get<parser::error>(result);
+        return context.set_error(std::get<parser::error>(result));
     }
 
     auto token = std::get<parser::token>(result);
@@ -400,7 +400,7 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(pars
     if (token == '(') {
         parser::result<expression::value> expr = parse_expression(context);
         if (std::holds_alternative<parser::error>(expr)) {
-            return std::get<parser::error>(expr);
+            return context.set_error(std::get<parser::error>(expr));
         }
         if (!context.expect_token(")")) {
             return context.get_error();
@@ -418,6 +418,8 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(pars
     //    return parse_unary_function(context, op_type::logarithm, constant::e);
     //} else if (token == "log") {
     //    return parse_binary_function(context, op_type::logarithm);
+    } else if (token == "sqrt") {
+        return parse_unary_function(context, expression::op_type::sqrt);
     } else if (token == "sin") {
         return parse_unary_function(context, expression::op_type::sine);
     } else if (token == "cos") {
@@ -514,6 +516,17 @@ parser::result<expression::value> expression_parser::parse_operand(parser::conte
     } else {
         return out;
     }
+#elif 1
+    if (context.check_token("-")) {
+        auto lhs = parse_operand_explicit(context);
+        if (std::holds_alternative<parser::error>(lhs)) {
+            return context.set_error(std::get<parser::error>(lhs));
+        } else {
+            return add_op(expression::op_type::negative, std::get<expression::value>(lhs), 0);
+        }
+    } else {
+        return parse_operand_explicit(context);
+    }
 #else
     return parse_operand_explicit(context);
 #endif
@@ -524,7 +537,7 @@ parser::result<expression::value> expression_parser::parse_expression(parser::co
 {
     parser::result<expression::value> lhs = parse_operand(context);
     if (std::holds_alternative<parser::error>(lhs)) {
-        return std::get<parser::error>(lhs);
+        return context.set_error(std::get<parser::error>(lhs));
     }
 
     while (context.has_token()
@@ -535,7 +548,7 @@ parser::result<expression::value> expression_parser::parse_expression(parser::co
 
         parser::result<expression::op_type> lhs_op = peek_operator(context);
         if (std::holds_alternative<parser::error>(lhs_op)) {
-            return std::get<parser::error>(lhs_op);
+            return context.set_error(std::get<parser::error>(lhs_op));
         }
 
         int lhs_precedence = op_precedence(std::get<expression::op_type>(lhs_op));
@@ -548,7 +561,7 @@ parser::result<expression::value> expression_parser::parse_expression(parser::co
 
         parser::result<expression::value> rhs = parse_expression(context, lhs_precedence);
         if (std::holds_alternative<parser::error>(rhs)) {
-            return std::get<parser::error>(rhs);
+            return context.set_error(std::get<parser::error>(rhs));
         } else {
             lhs = add_op(std::get<expression::op_type>(lhs_op),
                          std::get<expression::value>(lhs),

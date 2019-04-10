@@ -5,6 +5,7 @@
 
 #include "g_usercmd.h"
 #include "g_object.h"
+#include "g_particles.h"
 
 #include "p_material.h"
 #include "p_rigidbody.h"
@@ -219,6 +220,8 @@ private:
     //
 
     mutable std::vector<render::particle> _particles;
+
+    particle_effect _effect;
 
     void add_particle_effect(particle_effect const* effect, time_value time, vec2 position, vec2 velocity, vec2 direction, float strength);
 
