@@ -39,6 +39,41 @@ public:
         value rhs;
     };
 
+    //! Number of operands used by an op_type
+    enum class op_arity {
+        nullary,    //!< op has no operands
+        unary,      //!< op has a single operand
+        binary,     //!< op has two operands
+    };
+
+    //! Returns the number of operands used by the given op_type
+    static constexpr expression::op_arity arity(expression::op_type op) {
+        switch (op) {
+            // nullary ops
+            case expression::op_type::none:
+            case expression::op_type::constant:
+            case expression::op_type::random:
+                return op_arity::nullary;
+
+            // unary ops
+            case expression::op_type::negative:
+            case expression::op_type::sqrt:
+            case expression::op_type::sine:
+            case expression::op_type::cosine:
+                return op_arity::unary;
+
+            // binary ops
+            case expression::op_type::sum:
+            case expression::op_type::difference:
+            case expression::op_type::product:
+            case expression::op_type::quotient:
+            case expression::op_type::exponent:
+                return op_arity::binary;
+        }
+        // rely on compiler warnings to detect missing case labels
+        __assume(false);
+    }
+
     std::size_t num_inputs() const { return _num_inputs; }
     std::size_t num_values() const { return _ops.size(); }
 
@@ -74,6 +109,9 @@ public:
     bool is_constant(expression::value value) const {
         return _expression._ops[value].type == expression::op_type::constant;
     }
+
+    //! Returns true if the given value depends on the random generator during evaluation
+    bool is_random(expression::value value) const;
 
     void mark_used(expression::value value);
 

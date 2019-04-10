@@ -12,83 +12,17 @@ namespace {
 
 constexpr bool is_nullary(expression::op_type op)
 {
-    switch (op) {
-        // no-op
-        case expression::op_type::none:
-        case expression::op_type::constant:
-        case expression::op_type::random:
-            return true;
-
-        // unary ops
-        case expression::op_type::negative:
-        case expression::op_type::sqrt:
-        case expression::op_type::sine:
-        case expression::op_type::cosine:
-            return false;
-
-        // binary ops
-        case expression::op_type::sum:
-        case expression::op_type::difference:
-        case expression::op_type::product:
-        case expression::op_type::quotient:
-        case expression::op_type::exponent:
-            return false;
-    }
-    __assume(false);
+    return expression::arity(op) == expression::op_arity::nullary;
 }
 
 constexpr bool is_unary(expression::op_type op)
 {
-    switch (op) {
-        // no-op
-        case expression::op_type::none:
-        case expression::op_type::constant:
-        case expression::op_type::random:
-            return false;
-
-        // unary ops
-        case expression::op_type::negative:
-        case expression::op_type::sqrt:
-        case expression::op_type::sine:
-        case expression::op_type::cosine:
-            return true;
-
-        // binary ops
-        case expression::op_type::sum:
-        case expression::op_type::difference:
-        case expression::op_type::product:
-        case expression::op_type::quotient:
-        case expression::op_type::exponent:
-            return false;
-    }
-    __assume(false);
+    return expression::arity(op) == expression::op_arity::unary;
 }
 
 constexpr bool is_binary(expression::op_type op)
 {
-    switch (op) {
-        // no-op
-        case expression::op_type::none:
-        case expression::op_type::constant:
-        case expression::op_type::random:
-            return false;
-
-        // unary ops
-        case expression::op_type::negative:
-        case expression::op_type::sqrt:
-        case expression::op_type::sine:
-        case expression::op_type::cosine:
-            return false;
-
-        // binary ops
-        case expression::op_type::sum:
-        case expression::op_type::difference:
-        case expression::op_type::product:
-        case expression::op_type::quotient:
-        case expression::op_type::exponent:
-            return true;
-    }
-    __assume(false);
+    return expression::arity(op) == expression::op_arity::binary;
 }
 
 } // anonymous namespace
@@ -119,6 +53,11 @@ float expression::evaluate_one(value val, random& r, float const* inputs, float*
 float expression::evaluate_op(random& r, op_type type, float lhs, float rhs)
 {
     switch (type) {
+        case op_type::none:
+        case op_type::constant:
+            assert(false);
+            return 0.f;
+
         case op_type::sum:
             return lhs + rhs;
 
@@ -148,21 +87,15 @@ float expression::evaluate_op(random& r, op_type type, float lhs, float rhs)
 
         case op_type::random:
             return r.uniform_real();
-
-        case op_type::constant:
-        case op_type::none:
-        default:
-            assert(false);
-            return 0.f;
     }
+    // rely on compiler warnings to detect missing case labels
+    __assume(false);
 }
 
 //------------------------------------------------------------------------------
 float expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) const
 {
     expression::op const& op = _ops[index];
-    float lhs = 0.f;
-    float rhs = 0.f;
 
     switch (op.type) {
         // no-op
@@ -170,30 +103,28 @@ float expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) 
         case op_type::constant:
             return values[index];
 
-        // independent ops
-        case op_type::random:
-            break;
+        default: {
+            // evaluate operands
+            float lhs = 0.f;
+            float rhs = 0.f;
 
-        // binary ops
-        case op_type::sum:
-        case op_type::difference:
-        case op_type::product:
-        case op_type::quotient:
-        case op_type::exponent:
-            lhs = evaluate_op_r(op.lhs, r, values);
-            rhs = evaluate_op_r(op.rhs, r, values);
-            break;
+            switch (arity(op.type)) {
+                case op_arity::nullary:
+                    break;
 
-        // unary ops
-        case op_type::negative:
-        case op_type::sqrt:
-        case op_type::sine:
-        case op_type::cosine:
-            lhs = evaluate_op_r(op.lhs, r, values);
-            break;
+                case op_arity::unary:
+                    lhs = evaluate_op_r(op.lhs, r, values);
+                    break;
+
+                case op_arity::binary:
+                    lhs = evaluate_op_r(op.lhs, r, values);
+                    rhs = evaluate_op_r(op.rhs, r, values);
+                    break;
+            }
+
+            return evaluate_op(r, op.type, lhs, rhs);
+        }
     }
-
-    return evaluate_op(r, op.type, lhs, rhs);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -285,6 +216,28 @@ expression::value expression_builder::add_op(expression::op_type type, expressio
 }
 
 //------------------------------------------------------------------------------
+bool expression_builder::is_random(expression::value value) const
+{
+    expression::op const& op = _expression._ops[value];
+    if (op.type == expression::op_type::random) {
+        return true;
+    } else {
+        switch (expression::arity(op.type)) {
+            case expression::op_arity::nullary:
+                return false;
+
+            case expression::op_arity::unary:
+                return is_random(op.lhs);
+
+            case expression::op_arity::binary:
+                return is_random(op.lhs) || is_random(op.rhs);
+        }
+        // rely on compiler warnings to detect missing case labels
+        __assume(false);
+    }
+}
+
+//------------------------------------------------------------------------------
 void expression_builder::mark_used(expression::value value)
 {
     // no need to mark operands if already marked as used
@@ -295,29 +248,17 @@ void expression_builder::mark_used(expression::value value)
     _used[value] = true;
 
     expression::op const& op = _expression._ops[value];
-    switch (op.type) {
-        // no-op
-        case expression::op_type::none:
-        case expression::op_type::constant:
-        case expression::op_type::random:
+    switch (expression::arity(op.type)) {
+        case expression::op_arity::nullary:
             break;
 
-        // binary ops
-        case expression::op_type::sum:
-        case expression::op_type::difference:
-        case expression::op_type::product:
-        case expression::op_type::quotient:
-        case expression::op_type::exponent:
+        case expression::op_arity::unary:
+            mark_used(op.lhs);
+            break;
+
+        case expression::op_arity::binary:
             mark_used(op.lhs);
             mark_used(op.rhs);
-            break;
-
-        // unary ops
-        case expression::op_type::negative:
-        case expression::op_type::sqrt:
-        case expression::op_type::sine:
-        case expression::op_type::cosine:
-            mark_used(op.lhs);
             break;
     }
 }
