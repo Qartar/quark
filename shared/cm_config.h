@@ -80,9 +80,9 @@ protected:
     void set_boolean(bool b);
     void set_scalar(float f);
 
-    string_buffer to_string(int i) const;
-    string_buffer to_string(bool b) const;
-    string_buffer to_string(float f) const;
+    string_view to_string(int i) const;
+    string_view to_string(bool b) const;
+    string_view to_string(float f) const;
 };
 
 //------------------------------------------------------------------------------
@@ -119,9 +119,9 @@ protected:
     void set_boolean(bool b) { _base->set_boolean(b); }
     void set_scalar(float f) { _base->set_scalar(f); }
 
-    string_buffer to_string(int i) const { return _base->to_string(i); }
-    string_buffer to_string(bool b) const { return _base->to_string(b); }
-    string_buffer to_string(float f) const { return _base->to_string(f); }
+    string_view to_string(int i) const { return _base->to_string(i); }
+    string_view to_string(bool b) const { return _base->to_string(b); }
+    string_view to_string(float f) const { return _base->to_string(f); }
 };
 
 //------------------------------------------------------------------------------

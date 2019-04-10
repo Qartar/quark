@@ -9,6 +9,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace string {
 
+class buffer;
+
 //------------------------------------------------------------------------------
 class view
 {
@@ -25,6 +27,8 @@ public:
         : _begin(s)
         , _end(s + size - 1)
     {}
+    //! Delete implicit conversion from temporary string::buffer
+    view(buffer&&) = delete;
     //! Construct from explicit range
     view(char const* begin, char const* end)
         : _begin(begin)
@@ -54,6 +58,12 @@ public:
 
     //! Returns true if the string begins with the given prefix
     bool starts_with(string::view prefix) const;
+
+    //! Returns the last character in the string view
+    char back() const { assert(_end > _begin); return *(_end - 1); }
+
+    //! Removes the last character in the string view
+    void pop_back() { assert(_end > _begin); --_end; }
 
 protected:
     char const* _begin;

@@ -111,21 +111,21 @@ void variable_base::set_scalar(float f)
 }
 
 //------------------------------------------------------------------------------
-string_buffer variable_base::to_string(int i) const
+string_view variable_base::to_string(int i) const
 {
-    return string_buffer(va("%d", i));
+    return va("%d", i);
 }
 
 //------------------------------------------------------------------------------
-string_buffer variable_base::to_string(bool b) const
+string_view variable_base::to_string(bool b) const
 {
-    return string_buffer(b ? "true" : "false");
+    return b ? string_literal("true") : string_literal("false");
 }
 
 //------------------------------------------------------------------------------
-string_buffer variable_base::to_string(float f) const
+string_view variable_base::to_string(float f) const
 {
-    string_buffer s(va("%f", f));
+    string_view s(va("%f", f));
     if (s[0] != '.') {
         // strip trailing zeroes
         while (s.back() == '0') {
@@ -136,7 +136,7 @@ string_buffer variable_base::to_string(float f) const
             s.pop_back();
         }
     }
-    return string_buffer(s.c_str());
+    return s;
 }
 
 //------------------------------------------------------------------------------
