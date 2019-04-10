@@ -4,7 +4,6 @@ effect cannon {
 
         position = posx, posy;
         velocity = dirx * 9.6, diry * 9.6;
-        acceleration = 0, 0;
 
         color = 1, 1, 0, 1;
         color_velocity = 0, -2.5, 0, -5;
@@ -28,7 +27,6 @@ effect cannon {
         let d = sqrt(random) * 32;
 
         velocity = (dirx * .5 + cos(r)) * d, (diry * .5 + sin(r)) * d;
-        acceleration = 0, 0;
 
         let alpha = 0.1;
 

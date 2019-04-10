@@ -7,7 +7,6 @@ effect blaster_impact {
 
         position = posx, posy;
         velocity = dirx * 48 * scale, diry * 48 * scale;
-        acceleration = 0, 0;
 
         color = 1, 0, 0, 0;
         color_velocity = 0, 1, 0, 2.5;
@@ -26,7 +25,6 @@ effect blaster_impact {
 
         position = posx, posy;
         velocity = dirx * 48 * scale, diry * 48 * scale;
-        acceleration = 0, 0;
 
         color = 1, 0.25, 0, 0.5;
         color_velocity = 0, -.25, 0, -1.5;
@@ -51,7 +49,6 @@ effect blaster_impact {
         let d = sqrt(random) * 128 * str;
 
         velocity = (dirx * .5 + cos(r)) * d, (diry * .5 + sin(r)) * d;
-        acceleration = 0, 0;
 
         let alpha = 0.1;
 
@@ -79,7 +76,6 @@ effect blaster_impact {
         let d = random * 128 * scale;
 
         velocity = dirx * random * 96 + cos(r) * d, diry * 96 + sin(r) * d;
-        acceleration = 0, 0;
 
         color = 1, random * .5, 0, 1;
         color_velocity = 0, 0, 0, random - 2.5;

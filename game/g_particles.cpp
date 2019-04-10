@@ -224,6 +224,13 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
         {"color_velocity", layer.color_velocity},
     };
 
+    // zero-initialize all values
+    for (auto& v : values) {
+        for (std::size_t ii = 0; ii < v.size; ++ii) {
+            v.value[ii] = parser.add_constant(0.f);
+        }
+    }
+
     // parse fields until the closing brace
     while (context.has_token()) {
         if (context.peek_token("}")) {
