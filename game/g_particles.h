@@ -19,6 +19,7 @@ struct particle_effect {
         string::buffer name;
 
         expression::value count;
+        expression::value time;
         expression::value size, size_velocity;
         expression::value position[2], velocity[2], acceleration[2];
         expression::value drag;

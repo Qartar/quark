@@ -47,6 +47,8 @@ void particle_effect::layer::evaluate(
 
     expr.evaluate(r, inputs.data(), values.data());
 
+    p.time += time_delta::from_seconds(values[time]);
+
     p.size = values[size];
     p.size_velocity = values[size_velocity];
 
@@ -214,6 +216,7 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
 
     const value_info values[] = {
         {"count", layer.count},
+        {"time", layer.time},
         {"size", layer.size},
         {"size_velocity", layer.size_velocity},
         {"position", layer.position},
