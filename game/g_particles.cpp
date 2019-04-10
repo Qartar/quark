@@ -147,6 +147,31 @@ bool particle_effect::parse_layer_vector(parser::context& context, expression_pa
     return context.expect_token(";");
 }
 
+//------------------------------------------------------------------------------
+bool particle_effect::parse_local_value(parser::context& context, expression_parser& parser) const
+{
+    auto localname = context.next_token();
+    if (std::holds_alternative<parser::error>(localname)) {
+        return false;
+    }
+
+    if (!context.expect_token("=")) {
+        return false;
+    }
+
+    auto result = parser.parse_temporary(context);
+    if (std::holds_alternative<parser::error>(result)) {
+        return false;
+    } else {
+        parser.assign({std::get<parser::token>(localname).begin,
+                       std::get<parser::token>(localname).end},
+                      std::get<expression::value>(result));
+    }
+
+    return context.expect_token(";");
+}
+
+//------------------------------------------------------------------------------
 namespace {
 
 struct value_info {
@@ -229,6 +254,8 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
         } else if (token == "color" && !parse_layer_vector(context, parser, layer.color)) {
             return false;
         } else if (token == "color_velocity" && !parse_layer_vector(context, parser, layer.color_velocity)) {
+            return false;
+        } else if (token == "let" && !parse_local_value(context, parser)) {
             return false;
         }
     }
@@ -330,6 +357,9 @@ R"(
     layer two {
         flags = invert;
         position = 5 * 2, 10;
+        let foo = 4;
+        let bar = 6;
+        size = foo;
     }
     layer three {
         flags = shazaam;

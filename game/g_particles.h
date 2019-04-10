@@ -54,6 +54,7 @@ struct particle_effect {
     template<std::size_t vector_size> bool parse_layer_vector(parser::context& context, expression_parser& parser, expression::value (&vector)[vector_size]) const {
         return parse_layer_vector(context, parser, vector, vector_size);
     }
+    bool parse_local_value(parser::context& context, expression_parser& parser) const;
 };
 
 } // namespace game

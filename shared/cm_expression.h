@@ -148,6 +148,10 @@ public:
         return result;
     }
 
+    result<expression::value> parse_temporary(parser::context& context) {
+        return parse_expression(context, INT_MAX);
+    }
+
 protected:
     result<expression::op_type> peek_operator(parser::context const& context) const;
     result<expression::op_type> parse_operator(parser::context& context);
