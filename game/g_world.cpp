@@ -11,6 +11,8 @@
 #include "p_collide.h"
 #include "p_trace.h"
 
+#include "cm_filesystem.h"
+
 #include <algorithm>
 #include <set>
 
@@ -351,6 +353,137 @@ bool world::physics_collide_callback(physics::rigid_body const* body_a, physics:
     game::object* obj_b = _physics_objects[body_b];
 
     return obj_a->touch(obj_b, &collision);
+}
+
+//------------------------------------------------------------------------------
+void world::draw_particle_effect(
+    render::system* renderer,
+    string::view definition_file,
+    time_delta time,
+    particle_mode mode)
+{
+    auto buffer = file::read(definition_file);
+    string::view definition((char const*)buffer.data(), (char const*)buffer.data() + buffer.size());
+
+    if (definition.length() && definition != _cached_definition) {
+        parser::context context(definition, definition_file);
+        particle_effect effect;
+        if (!effect.parse(context)) {
+            auto info = context.get_info(context.get_error().tok);
+            log::message("%s(%zu,%zu): ", info.filename.c_str(), info.linenumber, info.column);
+            log::error("%s\n", context.get_error().msg.c_str());
+            log::message("%s\n", context.get_line(info.linenumber).c_str());
+            for (std::size_t ii = 0; ii + 1 < info.column; ++ii) {
+                log::message(" ");
+            }
+            for (std::size_t ii = 0, sz = context.get_error().tok.end - context.get_error().tok.begin; ii < sz; ++ii) {
+                log::message("^");
+            }
+            log::message("\n");
+        } else {
+            _cached_effect = effect;
+        }
+
+        // keep definition even it compilation failed to prevent repeated reparsing
+        _cached_definition = string::buffer(definition);
+    }
+
+    _particles.clear();
+
+    _random = {};
+
+    add_particle_effect(&_cached_effect, time_value::zero, vec2_zero, vec2_zero, vec2_zero, 1.f);
+
+    if (mode == particle_mode::show_timing) {
+        render::view view = renderer->view();
+
+        constexpr int nx = 15;
+        for (int ii = 0; ii < nx; ++ii) {
+            render::view v = view;
+            v.origin -= vec2((ii - nx / 2) * 96.f, 0);
+            renderer->set_view(v);
+
+            renderer->draw_particles(
+                time_value((time_value::zero + time + time_delta::from_milliseconds(ii * 150)) % time_delta::from_milliseconds(2000)),
+                _particles.data(),
+                _particles.size());
+        }
+        renderer->set_view(view);
+    } else if (mode == particle_mode::show_strength) {
+        render::view view = renderer->view();
+
+        constexpr int nx = 15;
+        for (int ii = 0; ii < nx; ++ii) {
+            render::view v = view;
+            v.origin -= vec2((ii - nx / 2) * 96.f, 0);
+            renderer->set_view(v);
+
+            _particles.clear();
+
+            _random = {};
+
+            add_particle_effect(&_cached_effect, time_value::zero, vec2_zero, vec2_zero, vec2_zero, float(ii + 1) / float(nx));
+
+            renderer->draw_particles(
+                time_value::zero + time,
+                _particles.data(),
+                _particles.size());
+        }
+
+        renderer->set_view(view);
+    } else if (mode == particle_mode::show_direction) {
+        render::view view = renderer->view();
+
+        constexpr int nx = 7;
+        for (int ii = 0; ii < nx; ++ii) {
+            render::view v = view;
+            float a = math::pi<float> * 2.f * float(ii) / float(nx);
+            vec2 direction = vec2(1,0) * mat2::rotate(a);
+            // arc =  2 * pi * r / nx
+            // r = arc * nx / 2pi
+            v.origin -= direction * 128.f * float(nx) / (math::pi<float> * 2.f);
+            //v.origin -= vec2((ii - nx / 2) * 96.f, 0);
+            renderer->set_view(v);
+
+            _particles.clear();
+
+            _random = {};
+
+            add_particle_effect(&_cached_effect, time_value::zero, vec2_zero, vec2_zero, direction, 1.f);
+
+            renderer->draw_particles(
+                time_value::zero + time,
+                _particles.data(),
+                _particles.size());
+        }
+
+        renderer->set_view(view);
+    } else if (mode == particle_mode::show_random) {
+        render::view view = renderer->view();
+
+        constexpr int nx = 15;
+        for (int ii = 0; ii < nx; ++ii) {
+            render::view v = view;
+            v.origin -= vec2((ii - nx / 2) * 96.f, 0);
+            renderer->set_view(v);
+
+            _particles.clear();
+
+            add_particle_effect(&_cached_effect, time_value::zero, vec2_zero, vec2_zero, vec2_zero, 1.f);
+
+            renderer->draw_particles(
+                time_value::zero + time,
+                _particles.data(),
+                _particles.size());
+        }
+
+        renderer->set_view(view);
+    } else {
+        renderer->draw_particles(
+            time_value::zero + time,
+            _particles.data(),
+            _particles.size());
+    }
 }
 
 } // namespace game

@@ -180,6 +180,23 @@ public:
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
 
+    enum class particle_mode {
+        show_normal,
+        show_timing,
+        show_strength,
+        show_direction,
+        show_random,
+    };
+
+    void draw_particle_effect(
+        render::system* renderer,
+        string::view definition,
+        time_delta time,
+        particle_mode mode);
+
+    string::buffer _cached_definition;
+    particle_effect _cached_effect;
+
 private:
     //! Sparse array of objects in the world, resized as needed
     std::vector<std::unique_ptr<object>> _objects;

@@ -166,7 +166,17 @@ result session::run_frame(time_delta time)
 
     if (!_menu_active || svs.active) {
         // clamp world step size
-        _worldtime += std::min(time, FRAMETIME) * _timescale;
+        if (_particle_left) {
+            _worldtime -= time * (_particle_slow ? .02f : .1f);
+        } else if (_particle_right) {
+            _worldtime += time * (_particle_slow ? .02f : .1f);
+        } else if (!_particle_pause) {
+            if (_particle_slow) {
+                _worldtime += std::min(time, FRAMETIME) * _timescale * .2f;
+            } else {
+                _worldtime += std::min(time, FRAMETIME) * _timescale;
+            }
+        }
 
         // update client
         if (!_dedicated) {
@@ -248,6 +258,29 @@ void session::char_event(int key)
 {
     if (_console.char_event(key) || _console.active()) {
         return;
+    }
+
+    if (key == K_SPACE) {
+        _particle_pause = !_particle_pause;
+        return;
+    } else if (key == 't') {
+        _particle_mode = _particle_mode == world::particle_mode::show_timing
+            ? world::particle_mode::show_normal
+            : world::particle_mode::show_timing;
+        return;
+    } else if (key == 's') {
+        _particle_mode = _particle_mode == world::particle_mode::show_strength
+            ? world::particle_mode::show_normal
+            : world::particle_mode::show_strength;
+        return;
+    } else if (key == 'd') {
+        _particle_mode = _particle_mode == world::particle_mode::show_direction
+            ? world::particle_mode::show_normal
+            : world::particle_mode::show_direction;
+    } else if (key == 'r') {
+        _particle_mode = _particle_mode == world::particle_mode::show_random
+            ? world::particle_mode::show_normal
+            : world::particle_mode::show_random;
     }
 
     if (_client_button_down) {
@@ -355,6 +388,14 @@ void session::key_event(int key, bool down)
         if (_menu.key_event(key, down)) {
             return;
         }
+    }
+
+    if (key == K_LEFTARROW) {
+        _particle_left = down;
+    } else if (key == K_RIGHTARROW) {
+        _particle_right = down;
+    } else if (key == K_SHIFT) {
+        _particle_slow = down;
     }
 
     if (key == K_PGDN && down) {
@@ -774,7 +815,7 @@ void session::command_eval(parser::text const& args)
         std::vector<float> values(ex.num_values());
         auto idx = map[std::get<expression::value>(v)];
 
-#if 1
+#ifdef _DEBUG
         // assert that parsed result is the same as compiled result
         std::vector<float> parser_values(parser.num_values());
         float parser_value = parser.evaluate_one(

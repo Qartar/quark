@@ -227,6 +227,13 @@ private:
     time_value _frametime;
     std::size_t _framenum;
 
+    bool _particle_left = false;
+    bool _particle_right = false;
+    bool _particle_slow = false;
+    bool _particle_pause = false;
+
+    world::particle_mode _particle_mode = world::particle_mode::show_normal;
+
     vec2i _cursor;
     bool _show_cursor;
 

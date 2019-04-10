@@ -1,0 +1,90 @@
+layer vortex {
+    let scale = sqrt(str);
+
+    count = 1;
+    flags = invert;
+
+    position = posx, posy;
+    velocity = dirx * 48 * scale, diry * 48 * scale;
+    acceleration = 0, 0;
+
+    color = 1, 0, 0, 0;
+    color_velocity = 0, 1, 0, 2.5;
+
+    size = 96 * scale;
+    size_velocity = -480 * scale;
+
+    drag = 0;
+}
+
+layer shock_wave {
+    let scale = sqrt(str);
+
+    count = 1;
+    flags = invert;
+
+    position = posx, posy;
+    velocity = dirx * 48 * scale, diry * 48 * scale;
+    acceleration = 0, 0;
+
+    color = 1, 0.25, 0, 0.5;
+    color_velocity = 0, -.25, 0, -1.5;
+
+    size = 12 * scale;
+    size_velocity = 192 * scale;
+
+    drag = 0;
+}
+
+layer fire {
+    let scale = sqrt(str);
+
+    count = 64 * scale;
+
+    let r = random * 2 * pi;
+    let d = random * 16 * scale;
+
+    position = posx + cos(r) * d, posy + sin(r) * d;
+
+    let r = random * 2 * pi;
+    let d = sqrt(random) * 128 * str;
+
+    velocity = (dirx * .5 + cos(r)) * d, (diry * .5 + sin(r)) * d;
+    acceleration = 0, 0;
+
+    let alpha = 0.1;
+
+    color = 1, random * .5, 0, alpha;
+    color_velocity = 0, 0, 0, -alpha / (.5 + ((random ^ 2) * 1.5));
+
+    size = (random * 16 + 8) * scale;
+    size_velocity = str;
+
+    drag = (random * 2 + 2) * scale;
+}
+
+layer debris {
+    let scale = sqrt(str);
+
+    count = 32 * scale;
+    flags = tail;
+
+    let r = random * 2 * pi;
+    let d = random * 2 * scale;
+
+    position = posx + cos(r) * d, posy + sin(r) * d;
+
+    let r = random * 2 * pi;
+    let d = random * 128 * scale;
+
+    velocity = dirx * random * 96 + cos(r) * d, diry * 96 + sin(r) * d;
+    acceleration = 0, 0;
+
+    color = 1, random * .5, 0, 1;
+    color_velocity = 0, 0, 0, random - 2.5;
+
+    size = 0.5;
+    size_velocity = 0;
+
+    drag = random * .5 + .5;
+}

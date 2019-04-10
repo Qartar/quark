@@ -348,7 +348,12 @@ void session::draw_world()
     _renderer->set_view(view);
 
     if (cls.active) {
-        _world.draw(_renderer, _worldtime);
+        //_world.draw(_renderer, _worldtime);
+        _world.draw_particle_effect(
+            _renderer,
+            "assets/particles/blaster_impact.decl",
+            _worldtime % time_delta::from_milliseconds(2000),
+            _particle_mode);
     }
 
     // update sound listener
