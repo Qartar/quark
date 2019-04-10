@@ -141,8 +141,8 @@ public:
 
     void assign(char const* name, expression::value value);
 
-    result<expression::value> parse_expression(token const*& tokens, token const* end) {
-        auto result = parse_expression(tokens, end, INT_MAX);
+    result<expression::value> parse_expression(parser::context& context) {
+        auto result = parse_expression(context, INT_MAX);
         if (std::holds_alternative<expression::value>(result)) {
             mark_used(std::get<expression::value>(result));
         }
@@ -150,10 +150,11 @@ public:
     }
 
 protected:
-    result<expression::op_type> parse_operator(token const*& tokens, token const* end);
-    //result<expression> parse_binary_function(token const*& tokens, token const* end, expression::op_type type)
-    result<expression::value> parse_unary_function(token const*& tokens, token const* end, expression::op_type type, expression::value rhs = 0);
-    result<expression::value> parse_operand_explicit(token const*& tokens, token const* end);
-    result<expression::value> parse_operand(token const*& tokens, token const* end);
-    result<expression::value> parse_expression(token const*& tokens, token const* end, int precedence);
+    result<expression::op_type> peek_operator(parser::context const& context) const;
+    result<expression::op_type> parse_operator(parser::context& context);
+    //result<expression> parse_binary_function(parser::context& context, expression::op_type type)
+    result<expression::value> parse_unary_function(parser::context& context, expression::op_type type, expression::value rhs = 0);
+    result<expression::value> parse_operand_explicit(parser::context& context);
+    result<expression::value> parse_operand(parser::context& context);
+    result<expression::value> parse_expression(parser::context& context, int precedence);
 };

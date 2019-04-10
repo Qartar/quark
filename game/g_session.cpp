@@ -759,19 +759,10 @@ void session::command_eval(parser::text const& args)
             expr += args.tokens()[ii];
         }
 
-        parser::result<parser::tokenized> result =
-            parser::tokenize(expr);
-        if (std::holds_alternative<parser::error>(result)) {
-            log::message("%s\n", expr.c_str());
-            print_error(expr.c_str(), std::get<parser::error>(result));
-            return;
-        }
-
-        parser::tokenized const& tokens = std::get<parser::tokenized>(result);
-        parser::token const* begin = &tokens[0];
+        parser::context context(expr, "<console>");
 
         expression_parser parser(nullptr, 0);
-        auto v = parser.parse_expression(begin, begin + tokens.size());
+        auto v = parser.parse_expression(context);
         if (std::holds_alternative<parser::error>(v)) {
             log::message("%s\n", expr.c_str());
             print_error(expr.c_str(), std::get<parser::error>(v));

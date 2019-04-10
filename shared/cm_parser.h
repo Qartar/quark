@@ -104,6 +104,7 @@ public:
     }
 
     result<token> next_token();
+    result<token> peek_token() const;
     bool skip_token();
     bool skip_braced_section(bool parse_opening_brace = true);
 
@@ -113,7 +114,7 @@ public:
 
     bool has_error() const { return std::holds_alternative<error>(_error); }
     error get_error() const { return std::get<error>(_error); }
-    void set_error(error e) { _error = e; }
+    error set_error(error e) { _error = e; return e; }
     void clear_error() { _error = std::variant<error>{}; }
 
     struct token_info

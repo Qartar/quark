@@ -243,6 +243,18 @@ result<token> context::next_token()
 }
 
 //------------------------------------------------------------------------------
+result<token> context::peek_token() const
+{
+    if (has_token()) {
+        return *_cursor;
+    } else if (_tokens.size()) {
+        return error{*(_cursor - 1), "expected token"};
+    } else {
+        return error{token{"", ""}, "expected token"};
+    }
+}
+
+//------------------------------------------------------------------------------
 bool context::skip_token()
 {
     auto tok = next_token();
