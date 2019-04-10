@@ -355,7 +355,7 @@ R"(
         size = 5 * str;
     }
     layer two {
-        flags = invert;
+        flags = invert | tail;
         position = 5 * 2, 10;
         let foo = 4;
         let bar = 6;

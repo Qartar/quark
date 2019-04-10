@@ -156,6 +156,7 @@ result<tokenized> tokenize(string::view text)
             case '{':
             case '}':
             case ';':
+            case '|':
                 ++t.end;
                 ++str;
                 tokens.push_back(t);
