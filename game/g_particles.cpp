@@ -281,19 +281,37 @@ bool particle_effect::parse(parser::context& context)
         return false;
     }
 
+    // parse opening brace
+    if (!context.expect_token("{")) {
+        return false;
+    }
+
+    // parse layers until the closing brace
     while (context.has_token()) {
-        if (context.check_token("layer")) {
+        if (context.peek_token("}")) {
+            break;
+        }
+
+        auto result = context.next_token();
+        if (!std::holds_alternative<parser::token>(result)) {
+            return false;
+        }
+
+        auto token = std::get<parser::token>(result);
+        if (token == "layer") {
             layer layer;
             if (!parse_layer(context, layer)) {
                 return false;
             }
             layers.push_back(std::move(layer));
         } else {
+            context.set_error({token, "unexpected token"});
             return false;
         }
     }
 
-    return true;
+    // parse closing brace
+    return context.expect_token("}");
 }
 
 //------------------------------------------------------------------------------
@@ -356,6 +374,7 @@ void world::clear_particles()
         constexpr std::size_t linenumber = __LINE__ + 2;
         string::literal definition =
 R"(
+{
     layer one {
         flags = tail;
         count = 50;
@@ -374,6 +393,7 @@ R"(
     layer three {
         flags = shazaam;
     }
+}
 )";
         parser::context context(definition, __FILE__, linenumber);
         particle_effect effect;
@@ -396,6 +416,7 @@ R"(
         constexpr std::size_t linenumber = __LINE__ + 2;
         string::literal definition =
 R"(
+{
     layer shock_wave {
         let scale = sqrt(str);
 
@@ -463,6 +484,7 @@ R"(
 
         drag = random * .5 + .5;
     }
+}
 )";
         parser::context context(definition, __FILE__, linenumber);
         if (!_effect.parse(context)) {

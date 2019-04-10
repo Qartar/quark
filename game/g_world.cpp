@@ -367,7 +367,20 @@ void world::draw_particle_effect(
 
     if (definition.length() && definition != _cached_definition) {
         parser::context context(definition, definition_file);
+
         particle_effect effect;
+
+        context.expect_token("effect");
+
+        // parse name
+        if (!context.peek_token("{")) {
+            auto token = context.next_token();
+            if (!std::holds_alternative<parser::token>(token)) {
+            }
+            effect.name = string::buffer({std::get<parser::token>(token).begin,
+                                          std::get<parser::token>(token).end});
+        }
+
         if (!effect.parse(context)) {
             auto info = context.get_info(context.get_error().tok);
             log::message("%s(%zu,%zu): ", info.filename.c_str(), info.linenumber, info.column);

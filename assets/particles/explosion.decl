@@ -1,67 +1,69 @@
-layer shock_wave {
-    let scale = sqrt(str);
+effect explosion {
+    layer shock_wave {
+        let scale = sqrt(str);
 
-    count = 1;
-    flags = invert;
+        count = 1;
+        flags = invert;
 
-    position = posx, posy;
-    velocity = dirx * 48 * scale, diry * 48 * scale;
-    acceleration = 0, 0;
+        position = posx, posy;
+        velocity = dirx * 48 * scale, diry * 48 * scale;
+        acceleration = 0, 0;
 
-    color = 1, 1, 0.5, 0.5;
-    color_velocity = 0, -1, -1.5, -1.5;
+        color = 1, 1, 0.5, 0.5;
+        color_velocity = 0, -1, -1.5, -1.5;
 
-    size = 12 * scale;
-    size_velocity = 192 * scale;
-}
+        size = 12 * scale;
+        size_velocity = 192 * scale;
+    }
 
-layer fire {
-    let scale = sqrt(str);
+    layer fire {
+        let scale = sqrt(str);
 
-    count = 64 * scale;
+        count = 64 * scale;
 
-    let r = random * 2 * pi;
-    let d = random * 8 * scale;
+        let r = random * 2 * pi;
+        let d = random * 8 * scale;
 
-    position = posx + cos(r) * d, posy + sin(r) * d;
+        position = posx + cos(r) * d, posy + sin(r) * d;
 
-    let r = random * 2 * pi;
-    let d = sqrt(random) * 128 * str;
+        let r = random * 2 * pi;
+        let d = sqrt(random) * 128 * str;
 
-    velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
-    acceleration = 0, 0;
+        velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
+        acceleration = 0, 0;
 
-    color = 1, random, 0, 0.1;
-    color_velocity = 0, 0, 0, -0.1 / (0.5 + (random ^ 2) * 2);
+        color = 1, random, 0, 0.1;
+        color_velocity = 0, 0, 0, -0.1 / (0.5 + (random ^ 2) * 2);
 
-    size = (random * (24 - 8) + 8) * scale;
-    size_velocity = str;
+        size = (random * (24 - 8) + 8) * scale;
+        size_velocity = str;
 
-    drag = (random * (4 - 2) + 2) * scale;
-}
+        drag = (random * (4 - 2) + 2) * scale;
+    }
 
-layer debris {
-    let scale = sqrt(str);
+    layer debris {
+        let scale = sqrt(str);
 
-    count = 64 * scale;
-    flags = tail;
+        count = 64 * scale;
+        flags = tail;
 
-    let r = random * 2 * pi;
-    let d = random * 2 * scale;
+        let r = random * 2 * pi;
+        let d = random * 2 * scale;
 
-    position = posx + cos(r) * d, posy + sin(r) * d;
+        position = posx + cos(r) * d, posy + sin(r) * d;
 
-    let r = random * 2 * pi;
-    let d = sqrt(random) * 128 * scale;
+        let r = random * 2 * pi;
+        let d = sqrt(random) * 128 * scale;
 
-    velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
-    acceleration = 0, 0;
+        velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
+        acceleration = 0, 0;
 
-    color = 1, random * .5 + .5, 0, 1;
-    color_velocity = 0, 0, 0, random - 2.5;
+        color = 1, random * .5 + .5, 0, 1;
+        color_velocity = 0, 0, 0, random - 2.5;
 
-    size = 0.5;
-    size_velocity = 0;
+        size = 0.5;
+        size_velocity = 0;
 
-    drag = random * .5 + .5;
+        drag = random * .5 + .5;
+    }
 }
