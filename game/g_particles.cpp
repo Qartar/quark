@@ -80,87 +80,6 @@ void particle_effect::layer::evaluate(
 }
 
 //------------------------------------------------------------------------------
-parser::result<particle_effect::layer> particle_effect::parse_layer(parser::token const*& tokens, parser::token const* end) const
-{
-    expression_parser parser({
-        "posx", "posy", "velx", "vely", "dirx", "diry", "str", "idx",
-    });
-
-    layer out{};
-
-    while (tokens < end) {
-        if (*tokens == "flags") {
-            if (++tokens >= end) {
-                return parser::error{*(tokens - 1), "expected '=' after '" + *(tokens - 1) + "'"};
-            } else if (*tokens++ != '=') {
-                return parser::error{*(tokens - 1), "expected '=' after '" + *(tokens - 2) + "', found '" + *(tokens - 1) + "'"};
-            }
-            while (tokens < end) {
-                if (*tokens == "invert") {
-                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::invert);
-                    ++tokens;
-                } else if (*tokens == "tail") {
-                    out.flags = static_cast<render::particle::flag_bits>(out.flags | render::particle::tail);
-                    ++tokens;
-                } else {
-                    return parser::error{*tokens, "unrecognized flag '" + *tokens + "'"};
-                }
-                if (*tokens == ";") {
-                    break;
-                } else if (tokens >= end) {
-                    return parser::error{*(tokens - 1), "expected '|' after '" + *(tokens - 1) + "'"};
-                } else if (*tokens++ != '|') {
-                    return parser::error{*(tokens - 1), "expected '|' after '" + *(tokens - 2) + "', found '" + *(tokens - 1) + "'"};
-                }
-            }
-            if (tokens >= end || *tokens++ != ';') {
-                return parser::error{*(tokens - 1), ""};
-            }
-        }
-    }
-
-    return out;
-}
-
-//------------------------------------------------------------------------------
-bool particle_effect::parse(string::view str)
-{
-    definition = string::buffer(str);
-    auto result = parser::tokenize(definition);
-    if (std::holds_alternative<parser::error>(result)) {
-        return false;
-    }
-
-    parser::token const* tokens = std::get<parser::tokenized>(result).data();
-    parser::token const* end = tokens + std::get<parser::tokenized>(result).size();
-
-    while (tokens < end) {
-        if (*tokens == "layer") {
-            if (++tokens >= end) {
-                return false;
-            }
-            parser::token const* layer_name = tokens;
-            if (++tokens >= end || *tokens != '{') {
-                return false;
-            }
-            auto layer = parse_layer(++tokens, end);
-            if (std::holds_alternative<parser::error>(layer)) {
-                return false;
-            }
-            if (++tokens >= end || *tokens != '}') {
-                return false;
-            }
-            layers.push_back(std::get<particle_effect::layer>(layer));
-            layers.back().name = string::buffer(string::view(layer_name->begin, layer_name->end));
-        } else {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
 bool particle_effect::parse_layer_flags(parser::context& context, render::particle::flag_bits& flags) const
 {
     flags = {};
@@ -190,6 +109,60 @@ bool particle_effect::parse_layer_flags(parser::context& context, render::partic
 }
 
 //------------------------------------------------------------------------------
+bool particle_effect::parse_layer_value(parser::context& context, expression_parser& parser, expression::value& value) const
+{
+    if (!context.expect_token("=")) {
+        return false;
+    }
+
+    auto result = parser.parse_expression(context);
+    if (std::holds_alternative<parser::error>(result)) {
+        return false;
+    } else {
+        value = std::get<expression::value>(result);
+    }
+
+    return context.expect_token(";");
+}
+
+//------------------------------------------------------------------------------
+bool particle_effect::parse_layer_vector(parser::context& context, expression_parser& parser, expression::value* vector, std::size_t vector_size) const
+{
+    if (!context.expect_token("=")) {
+        return false;
+    }
+
+    for (std::size_t ii = 0; ii < vector_size; ++ii) {
+        if (ii && !context.expect_token(",")) {
+            return false;
+        }
+        auto result = parser.parse_expression(context);
+        if (std::holds_alternative<parser::error>(result)) {
+            return false;
+        } else {
+            vector[ii] = std::get<expression::value>(result);
+        }
+    }
+
+    return context.expect_token(";");
+}
+
+namespace {
+
+struct value_info {
+    string::literal name;
+    expression::value* value;
+    std::size_t size;
+
+    value_info(string::literal name, expression::value& value)
+        : name(name), value(&value), size(1) {}
+    template<std::size_t sz> value_info(string::literal name, expression::value (&value)[sz])
+        : name(name), value(value), size(sz) {}
+};
+
+} // anonymous namespace
+
+//------------------------------------------------------------------------------
 bool particle_effect::parse_layer(parser::context& context, layer& layer) const
 {
     layer = {};
@@ -209,15 +182,62 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
         return false;
     }
 
+    expression_parser parser({
+        "posx", "posy", "velx", "vely", "dirx", "diry", "str", "idx",
+    });
+
+    const value_info values[] = {
+        {"count", layer.count},
+        {"size", layer.size},
+        {"size_velocity", layer.size_velocity},
+        {"position", layer.position},
+        {"velocity", layer.velocity},
+        {"acceleration", layer.acceleration},
+        {"drag", layer.drag},
+        {"color", layer.color},
+        {"color_velocity", layer.color_velocity},
+    };
+
     // parse fields until the closing brace
     while (context.has_token()) {
         if (context.peek_token("}")) {
             break;
         }
-        if (context.check_token("flags")) {
-            if (!parse_layer_flags(context, layer.flags)) {
-                return false;
-            }
+
+        auto result = context.next_token();
+        if (!std::holds_alternative<parser::token>(result)) {
+            return false;
+        }
+
+        auto token = std::get<parser::token>(result);
+        if (token == "flags" && !parse_layer_flags(context, layer.flags)) {
+            return false;
+        } else if (token == "count" && !parse_layer_value(context, parser, layer.count)) {
+            return false;
+        } else if (token == "size" && !parse_layer_value(context, parser, layer.size)) {
+            return false;
+        } else if (token == "size_velocity" && !parse_layer_value(context, parser, layer.size_velocity)) {
+            return false;
+        } else if (token == "drag" && !parse_layer_value(context, parser, layer.drag)) {
+            return false;
+        } else if (token == "position" && !parse_layer_vector(context, parser, layer.position)) {
+            return false;
+        } else if (token == "velocity" && !parse_layer_vector(context, parser, layer.velocity)) {
+            return false;
+        } else if (token == "acceleration" && !parse_layer_vector(context, parser, layer.acceleration)) {
+            return false;
+        } else if (token == "color" && !parse_layer_vector(context, parser, layer.color)) {
+            return false;
+        } else if (token == "color_velocity" && !parse_layer_vector(context, parser, layer.color_velocity)) {
+            return false;
+        }
+    }
+
+    std::vector<expression::value> map(parser.num_values());
+    layer.expr = parser.compile(map.data());
+    for (auto& v : values) {
+        for (std::size_t ii = 0; ii < v.size; ++ii) {
+            v.value[ii] = map[v.value[ii]];
         }
     }
 
@@ -304,9 +324,12 @@ void world::clear_particles()
 R"(
     layer one {
         flags = tail;
+        count = 50;
+        size = 5 * str;
     }
     layer two {
         flags = invert;
+        position = 5 * 2, 10;
     }
     layer three {
         flags = shazaam;

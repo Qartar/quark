@@ -46,12 +46,14 @@ struct particle_effect {
     string::buffer definition;
     std::vector<layer> layers;
 
-    bool parse(string::view definition);
-    parser::result<layer> parse_layer(parser::token const*& tokens, parser::token const* end) const;
-
     bool parse(parser::context& context);
     bool parse_layer(parser::context& context, layer& layer) const;
     bool parse_layer_flags(parser::context& context, render::particle::flag_bits& flags) const;
+    bool parse_layer_value(parser::context& context, expression_parser& parser, expression::value& value) const;
+    bool parse_layer_vector(parser::context& context, expression_parser& parser, expression::value* vector, std::size_t vector_size) const;
+    template<std::size_t vector_size> bool parse_layer_vector(parser::context& context, expression_parser& parser, expression::value (&vector)[vector_size]) const {
+        return parse_layer_vector(context, parser, vector, vector_size);
+    }
 };
 
 } // namespace game
