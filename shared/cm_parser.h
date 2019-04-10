@@ -112,10 +112,10 @@ public:
     bool check_token(string::view text);
     bool expect_token(string::view text);
 
-    bool has_error() const { return std::holds_alternative<error>(_error); }
-    error get_error() const { assert(has_error()); return std::get<error>(_error); }
-    error set_error(error e) { _error = e; return e; }
-    void clear_error() { _error = std::variant<error>{}; }
+    bool has_error() const { return !_errors.empty(); }
+    error get_error() const { assert(has_error()); return _errors.back(); }
+    error set_error(error e) { _errors.resize(1); _errors[0] = e; return e; }
+    void clear_error() { _errors.clear(); }
 
     struct token_info
     {
@@ -137,9 +137,7 @@ protected:
     std::vector<token> _tokens;
     std::vector<string::view> _lines;
     token* _cursor;
-    std::variant<error> _error;
-
-protected:
+    std::vector<error> _errors;
 };
 
 } // namespace parser

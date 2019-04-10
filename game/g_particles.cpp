@@ -277,6 +277,10 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
 //------------------------------------------------------------------------------
 bool particle_effect::parse(parser::context& context)
 {
+    if (context.has_error()) {
+        return false;
+    }
+
     while (context.has_token()) {
         if (context.check_token("layer")) {
             layer layer;
@@ -358,11 +362,14 @@ R"(
         size = 5 * str;
     }
     layer two {
+        // this is a test!
         flags = invert | tail;
         position = 5 * 2, 10;
         let foo = 4;
         let bar = 6;
+        /* this is another
         size = foo;
+        test */
     }
     layer three {
         flags = shazaam;

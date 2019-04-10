@@ -142,6 +142,30 @@ result<tokenized> tokenize(string::view text)
             return tokens;
         }
 
+        // skip comments
+        if (str + 1 < end && str[0] == '/') {
+            if (str[1] == '/') {
+                while (str < end && *str != '\n') {
+                    ++str;
+                }
+                continue;
+            } else if (str[1] == '*') {
+                char const* ptr = str;
+                str += 2;
+                while (true) {
+                    if (str + 1 >= end) {
+                        return error{{ptr, ptr + 2}, "unexpected end of file in comment"};
+                    } else if (str[0] == '*' && str[1] == '/') {
+                        str += 2;
+                        break;
+                    } else {
+                        ++str;
+                    }
+                }
+                continue;
+            }
+        }
+
         token t{str, str};
         switch (*str) {
             case '=':
@@ -223,10 +247,12 @@ context::context(string::view text, string::view filename, std::size_t linenumbe
     , _text(text)
     , _cursor(nullptr)
 {
-    auto tokens = tokenize(_text);
-    if (std::holds_alternative<tokenized>(tokens)) {
-        _tokens = std::move(std::get<tokenized>(tokens));
+    auto result = tokenize(_text);
+    if (std::holds_alternative<tokenized>(result)) {
+        _tokens = std::move(std::get<tokenized>(result));
         _cursor = _tokens.data();
+    } else {
+        set_error(std::get<error>(result));
     }
     _lines = split_lines(_text);
 }
@@ -300,7 +326,7 @@ bool context::peek_token(string::view text) const
 bool context::check_token(string::view text)
 {
     if (has_token() && *_cursor == text) {
-        ++_cursor;
+        next_token();
         return true;
     } else {
         return false;
@@ -326,6 +352,9 @@ bool context::expect_token(string::view text)
 //------------------------------------------------------------------------------
 context::token_info context::get_info(token token) const
 {
+    assert(token.begin >= _lines.front().begin()
+        && token.begin < _lines.back().end());
+
     auto it = std::upper_bound(_lines.begin(), _lines.end(), token.begin,
         [](char const* begin, string::view rhs) {
             return begin < rhs.end();
