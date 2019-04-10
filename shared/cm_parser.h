@@ -113,7 +113,7 @@ public:
     bool expect_token(string::view text);
 
     bool has_error() const { return std::holds_alternative<error>(_error); }
-    error get_error() const { return std::get<error>(_error); }
+    error get_error() const { assert(has_error()); return std::get<error>(_error); }
     error set_error(error e) { _error = e; return e; }
     void clear_error() { _error = std::variant<error>{}; }
 
