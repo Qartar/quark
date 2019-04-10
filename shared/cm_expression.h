@@ -113,9 +113,7 @@ public:
     expression::value add_constant(float value);
     expression::value add_op(expression::op_type type, expression::value lhs, expression::value rhs);
 
-    bool is_constant(expression::value value) const {
-        return _expression._ops[value].type == expression::op_type::constant;
-    }
+    bool is_constant(expression::value value) const;
 
     //! Returns true if the given value depends on the random generator during evaluation
     bool is_random(expression::value value) const;
@@ -147,6 +145,10 @@ protected:
 
 protected:
     expression::value alloc_type(expression::type type);
+
+    bool is_constant(expression::type type, expression::value value) const;
+    bool is_random(expression::type type, expression::value value) const;
+    void mark_used(expression::type type, expression::value value);
 };
 
 //------------------------------------------------------------------------------

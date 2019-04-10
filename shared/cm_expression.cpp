@@ -247,6 +247,10 @@ expression::value expression_builder::alloc_type(expression::type type)
 //------------------------------------------------------------------------------
 expression::value expression_builder::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
 {
+    //
+    // wtf is this nightmare?
+    //
+
     if (type == expression::op_type::member) {
         type_info const& parent_type = _type_info[static_cast<std::size_t>(_types[lhs])];
         type_info const& member_type = _type_info[static_cast<std::size_t>(parent_type.fields[rhs].type)];
@@ -256,6 +260,12 @@ expression::value expression_builder::add_op(expression::op_type type, expressio
             _expression._ops[base + ii] = {expression::op_type::member, expression::value(lhs + ii)};
         }
         return base;
+    } else if (is_nullary(type)) {
+        _expression._constants.push_back(0.f);
+        _expression._ops.push_back({type, lhs, rhs});
+        _used.push_back(false);
+        _types.push_back(expression::type::scalar);
+        return _expression._ops.size() - 1;
     } else if (is_constant(lhs) && is_constant(rhs)) {
         static random r; // not used
         return add_constant(
@@ -264,93 +274,139 @@ expression::value expression_builder::add_op(expression::op_type type, expressio
                 type,
                 _expression._constants[lhs - _expression._num_inputs],
                 _expression._constants[rhs - _expression._num_inputs]));
-    } else {
-        if (is_binary(type)) {
-            if (_types[lhs] == expression::type::scalar) {
-                type_info const& rhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
-                expression::value base = alloc_type(_types[rhs]);
-                for (std::size_t ii = 0; ii < rhs_type.size; ++ii) {
-                    _expression._ops[base + ii] = {type, lhs, expression::value(rhs + ii)};
-                }
-                return base;
-            } else if (_types[lhs] == _types[rhs]) {
-                type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
-                expression::value base = alloc_type(_types[lhs]);
-                for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
-                    _expression._ops[base + ii] = {type, expression::value(lhs + ii), expression::value(rhs + ii)};
-                }
-                return base;
-            } else if (_types[rhs] == expression::type::scalar) {
-                type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
-                expression::value base = alloc_type(_types[lhs]);
-                for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
-                    _expression._ops[base + ii] = {type, expression::value(lhs + ii), rhs};
-                }
-                return base;
-            } else {
-                // fail bad no
-                assert(false);
-                _expression._constants.push_back(0.f);
-                _expression._ops.push_back({type, lhs, rhs});
-                _used.push_back(false);
-                _types.push_back(expression::type::scalar);
-                return _expression._ops.size() - 1;
-            }
-        } else {
-            _expression._constants.push_back(0.f);
-            _expression._ops.push_back({type, lhs, rhs});
-            _used.push_back(false);
-            _types.push_back(expression::type::scalar);
-            return _expression._ops.size() - 1;
+    } else if (is_unary(type) || _types[rhs] == expression::type::scalar) {
+        type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
+        expression::value base = alloc_type(_types[lhs]);
+        for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
+            _expression._ops[base + ii] = {type, expression::value(lhs + ii), rhs};
         }
+        return base;
+    } else if (is_binary(type)) {
+        if (_types[lhs] == expression::type::scalar) {
+            type_info const& rhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
+            expression::value base = alloc_type(_types[rhs]);
+            for (std::size_t ii = 0; ii < rhs_type.size; ++ii) {
+                _expression._ops[base + ii] = {type, lhs, expression::value(rhs + ii)};
+            }
+            return base;
+        } else if (_types[lhs] == _types[rhs]) {
+            type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
+            expression::value base = alloc_type(_types[lhs]);
+            for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
+                _expression._ops[base + ii] = {type, expression::value(lhs + ii), expression::value(rhs + ii)};
+            }
+            return base;
+        } else {
+            // fail bad no
+            assert(false);
+            return 0;
+        }
+    }
+    assert(false);
+    return 0;
+}
+
+
+//------------------------------------------------------------------------------
+bool expression_builder::is_constant(expression::value value) const
+{
+    return is_constant(_types[value], value);
+}
+
+//------------------------------------------------------------------------------
+bool expression_builder::is_constant(expression::type type, expression::value value) const
+{
+    type_info const& info = _type_info[static_cast<std::size_t>(type)];
+    if (info.fields.empty()) {
+        assert(info.size == 1);
+        return _expression._ops[value].type == expression::op_type::constant;
+    } else {
+        for (auto const& field : info.fields) {
+            if (!is_constant(field.type, value + field.offset)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
 //------------------------------------------------------------------------------
 bool expression_builder::is_random(expression::value value) const
 {
-    expression::op const& op = _expression._ops[value];
-    if (op.type == expression::op_type::random) {
-        return true;
-    } else {
-        switch (expression::arity(op.type)) {
-            case expression::op_arity::nullary:
-                return false;
+    return is_random(_types[value], value);
+}
 
-            case expression::op_arity::unary:
-                return is_random(op.lhs);
+//------------------------------------------------------------------------------
+bool expression_builder::is_random(expression::type type, expression::value value) const
+{
+    type_info const& info = _type_info[static_cast<std::size_t>(type)];
+    if (info.fields.empty()) {
+        assert(info.size == 1);
+        expression::op const& op = _expression._ops[value];
+        if (op.type == expression::op_type::random) {
+            return true;
+        } else {
+            switch (expression::arity(op.type)) {
+                case expression::op_arity::nullary:
+                    return false;
 
-            case expression::op_arity::binary:
-                return is_random(op.lhs) || is_random(op.rhs);
+                case expression::op_arity::unary:
+                    return is_random(op.lhs);
+
+                case expression::op_arity::binary:
+                    return is_random(op.lhs) || is_random(op.rhs);
+            }
+            // rely on compiler warnings to detect missing case labels
+            __assume(false);
         }
-        // rely on compiler warnings to detect missing case labels
-        __assume(false);
+    } else {
+        for (auto const& field : info.fields) {
+            if (is_random(field.type, value + field.offset)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
 //------------------------------------------------------------------------------
 void expression_builder::mark_used(expression::value value)
 {
-    // no need to mark operands if already marked as used
-    if (_used[value]) {
-        return;
-    }
+    return mark_used(_types[value], value);
+}
 
-    _used[value] = true;
+//------------------------------------------------------------------------------
+void expression_builder::mark_used(expression::type type, expression::value value)
+{
+    type_info const& info = _type_info[static_cast<std::size_t>(type)];
+    if (info.fields.empty()) {
+        assert(info.size == 1);
 
-    expression::op const& op = _expression._ops[value];
-    switch (expression::arity(op.type)) {
-        case expression::op_arity::nullary:
-            break;
+        // no need to mark operands if already marked as used
+        if (_used[value]) {
+            return;
+        }
 
-        case expression::op_arity::unary:
-            mark_used(op.lhs);
-            break;
+        _used[value] = true;
 
-        case expression::op_arity::binary:
-            mark_used(op.lhs);
-            mark_used(op.rhs);
-            break;
+        expression::op const& op = _expression._ops[value];
+        switch (expression::arity(op.type)) {
+            case expression::op_arity::nullary:
+                break;
+
+            case expression::op_arity::unary:
+                mark_used(op.lhs);
+                break;
+
+            case expression::op_arity::binary:
+                mark_used(op.lhs);
+                mark_used(op.rhs);
+                break;
+        }
+    } else {
+        for (auto const& field : info.fields) {
+            mark_used(field.type, value + field.offset);
+        }
     }
 }
 
