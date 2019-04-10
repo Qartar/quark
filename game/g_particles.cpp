@@ -183,6 +183,7 @@ struct value_info {
         : name(name), value(&value), size(1) {}
     template<std::size_t sz> value_info(string::literal name, expression::value (&value)[sz])
         : name(name), value(value), size(sz) {}
+    bool operator==(parser::token const& token) const { return token == name; }
 };
 
 } // anonymous namespace
@@ -235,28 +236,29 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
         }
 
         auto token = std::get<parser::token>(result);
-        if (token == "flags" && !parse_layer_flags(context, layer.flags)) {
-            return false;
-        } else if (token == "count" && !parse_layer_value(context, parser, layer.count)) {
-            return false;
-        } else if (token == "size" && !parse_layer_value(context, parser, layer.size)) {
-            return false;
-        } else if (token == "size_velocity" && !parse_layer_value(context, parser, layer.size_velocity)) {
-            return false;
-        } else if (token == "drag" && !parse_layer_value(context, parser, layer.drag)) {
-            return false;
-        } else if (token == "position" && !parse_layer_vector(context, parser, layer.position)) {
-            return false;
-        } else if (token == "velocity" && !parse_layer_vector(context, parser, layer.velocity)) {
-            return false;
-        } else if (token == "acceleration" && !parse_layer_vector(context, parser, layer.acceleration)) {
-            return false;
-        } else if (token == "color" && !parse_layer_vector(context, parser, layer.color)) {
-            return false;
-        } else if (token == "color_velocity" && !parse_layer_vector(context, parser, layer.color_velocity)) {
-            return false;
-        } else if (token == "let" && !parse_local_value(context, parser)) {
-            return false;
+        if (token == "flags") {
+            if (!parse_layer_flags(context, layer.flags)) {
+                return false;
+            }
+        } else if (token == "let") {
+            if (!parse_local_value(context, parser)) {
+                return false;
+            }
+        } else {
+            auto v = std::find(std::begin(values), std::end(values), token);
+
+            if (v == std::end(values)) {
+                context.set_error({token, "undeclared identifier '" + token + "'"});
+                return false;
+            } else if (v->size == 1) {
+                if (!parse_layer_value(context, parser, *v->value)) {
+                    return false;
+                }
+            } else {
+                if (!parse_layer_vector(context, parser, v->value, v->size)) {
+                    return false;
+                }
+            }
         }
     }
 
