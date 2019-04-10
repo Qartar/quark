@@ -265,11 +265,44 @@ expression::value expression_builder::add_op(expression::op_type type, expressio
                 _expression._constants[lhs - _expression._num_inputs],
                 _expression._constants[rhs - _expression._num_inputs]));
     } else {
-        _expression._constants.push_back(0.f);
-        _expression._ops.push_back({type, lhs, rhs});
-        _used.push_back(false);
-        _types.push_back(expression::type::scalar);
-        return _expression._ops.size() - 1;
+        if (is_binary(type)) {
+            if (_types[lhs] == expression::type::scalar) {
+                type_info const& rhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
+                expression::value base = alloc_type(_types[rhs]);
+                for (std::size_t ii = 0; ii < rhs_type.size; ++ii) {
+                    _expression._ops[base + ii] = {type, lhs, expression::value(rhs + ii)};
+                }
+                return base;
+            } else if (_types[lhs] == _types[rhs]) {
+                type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
+                expression::value base = alloc_type(_types[lhs]);
+                for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
+                    _expression._ops[base + ii] = {type, expression::value(lhs + ii), expression::value(rhs + ii)};
+                }
+                return base;
+            } else if (_types[rhs] == expression::type::scalar) {
+                type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
+                expression::value base = alloc_type(_types[lhs]);
+                for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
+                    _expression._ops[base + ii] = {type, expression::value(lhs + ii), rhs};
+                }
+                return base;
+            } else {
+                // fail bad no
+                assert(false);
+                _expression._constants.push_back(0.f);
+                _expression._ops.push_back({type, lhs, rhs});
+                _used.push_back(false);
+                _types.push_back(expression::type::scalar);
+                return _expression._ops.size() - 1;
+            }
+        } else {
+            _expression._constants.push_back(0.f);
+            _expression._ops.push_back({type, lhs, rhs});
+            _used.push_back(false);
+            _types.push_back(expression::type::scalar);
+            return _expression._ops.size() - 1;
+        }
     }
 }
 

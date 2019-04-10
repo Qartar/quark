@@ -43,7 +43,8 @@ effect blaster_impact {
         let r = random * 2 * pi;
         let d = random * 16 * scale;
 
-        position = posx + cos(r) * d, posy + sin(r) * d;
+        //position = posx + cos(r) * d, posy + sin(r) * d;
+        position = in.pos * d;
 
         let r = random * 2 * pi;
         let d = sqrt(random) * 128 * str;

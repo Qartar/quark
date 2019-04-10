@@ -89,6 +89,15 @@
       <Item Name="data">begin, [length()]</Item>
     </Expand>
   </Type>
+  <Type Name="expression_parser::token">
+    <Intrinsic Name="length" Expression="end - begin"/>
+    <DisplayString>{begin, [length()]s}</DisplayString>
+    <StringView>begin, [length()]</StringView>
+    <Expand>
+      <Item Name="size">length()</Item>
+      <Item Name="data">begin, [length()]</Item>
+    </Expand>
+  </Type>
 
   <!-- time_base<T> -->
   <Type Name="time_base&lt;*&gt;">
