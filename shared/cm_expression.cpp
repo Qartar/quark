@@ -8,11 +8,96 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace {
+
+constexpr bool is_nullary(expression::op_type op)
+{
+    switch (op) {
+        // no-op
+        case expression::op_type::none:
+        case expression::op_type::constant:
+        case expression::op_type::random:
+            return true;
+
+        // unary ops
+        case expression::op_type::negative:
+        case expression::op_type::sqrt:
+        case expression::op_type::sine:
+        case expression::op_type::cosine:
+            return false;
+
+        // binary ops
+        case expression::op_type::sum:
+        case expression::op_type::difference:
+        case expression::op_type::product:
+        case expression::op_type::quotient:
+        case expression::op_type::exponent:
+            return false;
+    }
+    __assume(false);
+}
+
+constexpr bool is_unary(expression::op_type op)
+{
+    switch (op) {
+        // no-op
+        case expression::op_type::none:
+        case expression::op_type::constant:
+        case expression::op_type::random:
+            return false;
+
+        // unary ops
+        case expression::op_type::negative:
+        case expression::op_type::sqrt:
+        case expression::op_type::sine:
+        case expression::op_type::cosine:
+            return true;
+
+        // binary ops
+        case expression::op_type::sum:
+        case expression::op_type::difference:
+        case expression::op_type::product:
+        case expression::op_type::quotient:
+        case expression::op_type::exponent:
+            return false;
+    }
+    __assume(false);
+}
+
+constexpr bool is_binary(expression::op_type op)
+{
+    switch (op) {
+        // no-op
+        case expression::op_type::none:
+        case expression::op_type::constant:
+        case expression::op_type::random:
+            return false;
+
+        // unary ops
+        case expression::op_type::negative:
+        case expression::op_type::sqrt:
+        case expression::op_type::sine:
+        case expression::op_type::cosine:
+            return false;
+
+        // binary ops
+        case expression::op_type::sum:
+        case expression::op_type::difference:
+        case expression::op_type::product:
+        case expression::op_type::quotient:
+        case expression::op_type::exponent:
+            return true;
+    }
+    __assume(false);
+}
+
+} // anonymous namespace
+
 //------------------------------------------------------------------------------
 void expression::evaluate(random& r, float const* inputs, float* values) const
 {
-    memcpy(values, _constants.data(), sizeof(float) * _constants.size());
-    memcpy(values + _constants.size(), inputs, sizeof(float) * _num_inputs);
+    memcpy(values, inputs, sizeof(float) * _num_inputs);
+    memcpy(values + _num_inputs, _constants.data(), sizeof(float) * _constants.size());
 
     for (std::size_t ii = 0, sz = _ops.size(); ii < sz; ++ii) {
         if (_ops[ii].type != op_type::none && _ops[ii].type != op_type::constant) {
@@ -24,8 +109,8 @@ void expression::evaluate(random& r, float const* inputs, float* values) const
 //------------------------------------------------------------------------------
 float expression::evaluate_one(value val, random& r, float const* inputs, float* values) const
 {
-    memcpy(values, _constants.data(), sizeof(float) * _constants.size());
-    memcpy(values + _constants.size(), inputs, sizeof(float) * _num_inputs);
+    memcpy(values, inputs, sizeof(float) * _num_inputs);
+    memcpy(values + _num_inputs, _constants.data(), sizeof(float) * _constants.size());
 
     return evaluate_op_r(val, r, values);
 }
@@ -118,6 +203,7 @@ expression_builder::expression_builder(char const* const* inputs, std::size_t nu
     for (std::size_t ii = 0; ii < num_inputs; ++ii) {
         _symbols[inputs[ii]] = ii;
         _expression._ops.push_back({expression::op_type::none, 0, 0});
+        _used.push_back(true); // assume inputs are always used
     }
     _expression._num_inputs = num_inputs;
 }
@@ -126,65 +212,38 @@ expression_builder::expression_builder(char const* const* inputs, std::size_t nu
 expression expression_builder::compile(expression::value* map) const
 {
     expression out;
-    out._num_inputs = _expression._num_inputs;
-    std::vector<bool> used(_expression._ops.size(), false);
-    for (std::size_t ii = 0, sz = used.size(); ii < sz; ++ii) {
-        expression::op const& op = _expression._ops[ii];
-        switch (op.type) {
-            // no-op
-            case expression::op_type::none:
-            case expression::op_type::constant:
-            case expression::op_type::random:
-                break;
-
-            // binary ops
-            case expression::op_type::sum:
-            case expression::op_type::difference:
-            case expression::op_type::product:
-            case expression::op_type::quotient:
-            case expression::op_type::exponent:
-                used[op.lhs] = true;
-                used[op.rhs] = true;
-                used[ii] = true;
-                break;
-
-            // unary ops
-            case expression::op_type::negative:
-            case expression::op_type::sqrt:
-            case expression::op_type::sine:
-            case expression::op_type::cosine:
-                used[op.lhs] = true;
-                used[ii] = true;
-                break;
-        }
-    }
-
     std::size_t num_used = 0;
+
     // always use all inputs, even if they aren't referenced
+    out._num_inputs = _expression._num_inputs;
     for (std::size_t ii = 0, sz = _expression.num_inputs(); ii < sz; ++ii) {
         map[ii] = num_used++;
     }
+
     // make sure all constants are placed in front of the calculated values
-    for (std::size_t ii = _expression.num_inputs(), sz = used.size(); ii < sz; ++ii) {
-        if (used[ii] && _expression._ops[ii].type == expression::op_type::constant) {
-            out._constants.push_back(_expression._constants[ii]);
+    for (std::size_t ii = _expression.num_inputs(), sz = _used.size(); ii < sz; ++ii) {
+        if (_used[ii] && _expression._ops[ii].type == expression::op_type::constant) {
+            out._constants.push_back(_expression._constants[ii - _expression.num_inputs()]);
             map[ii] = num_used++;
         }
     }
 
-    for (std::size_t ii = _expression.num_inputs(), sz = used.size(); ii < sz; ++ii) {
-        if (used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
+    for (std::size_t ii = _expression.num_inputs(), sz = _used.size(); ii < sz; ++ii) {
+        if (_used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
             map[ii] = num_used++;
         }
     }
 
     out._ops.resize(num_used);
-    for (std::size_t ii = 0, jj = 0; jj < num_used; ++ii) {
-        if (used[ii]) {
+    for (std::size_t ii = 0, sz = _used.size(); ii < sz; ++ii) {
+        if (_used[ii]) {
+            expression::value jj = map[ii];
             out._ops[jj].type = _expression._ops[ii].type;
             out._ops[jj].lhs = map[_expression._ops[ii].lhs];
             out._ops[jj].rhs = map[_expression._ops[ii].rhs];
-            ++jj;
+            // assert that operands are evaluated prior to this value
+            assert(is_nullary(out._ops[jj].type) || out._ops[jj].lhs <= jj);
+            assert(!is_binary(out._ops[jj].type) || out._ops[jj].rhs <= jj);
         }
     }
 
@@ -201,6 +260,7 @@ expression::value expression_builder::add_constant(float value)
         _expression._ops.push_back({expression::op_type::constant, 0, 0});
         _expression._constants.push_back(value);
         _constants[value] = _expression._ops.size() - 1;
+        _used.push_back(false);
         return _expression._ops.size() - 1;
     }
 }
@@ -214,12 +274,51 @@ expression::value expression_builder::add_op(expression::op_type type, expressio
             expression::evaluate_op(
                 r,
                 type,
-                _expression._constants[lhs],
-                _expression._constants[rhs]));
+                _expression._constants[lhs - _expression._num_inputs],
+                _expression._constants[rhs - _expression._num_inputs]));
     } else {
         _expression._constants.push_back(0.f);
         _expression._ops.push_back({type, lhs, rhs});
+        _used.push_back(false);
         return _expression._ops.size() - 1;
+    }
+}
+
+//------------------------------------------------------------------------------
+void expression_builder::mark_used(expression::value value)
+{
+    // no need to mark operands if already marked as used
+    if (_used[value]) {
+        return;
+    }
+
+    _used[value] = true;
+
+    expression::op const& op = _expression._ops[value];
+    switch (op.type) {
+        // no-op
+        case expression::op_type::none:
+        case expression::op_type::constant:
+        case expression::op_type::random:
+            break;
+
+        // binary ops
+        case expression::op_type::sum:
+        case expression::op_type::difference:
+        case expression::op_type::product:
+        case expression::op_type::quotient:
+        case expression::op_type::exponent:
+            mark_used(op.lhs);
+            mark_used(op.rhs);
+            break;
+
+        // unary ops
+        case expression::op_type::negative:
+        case expression::op_type::sqrt:
+        case expression::op_type::sine:
+        case expression::op_type::cosine:
+            mark_used(op.lhs);
+            break;
     }
 }
 
@@ -250,10 +349,7 @@ parser::result<expression::op_type> expression_parser::parse_operator(token cons
         return parser::error{*tokens, "expected operator after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
     }
 
-    if (tokens[0] == '=') {
-        ++tokens;
-        return expression::op_type::equality;
-    } else if (tokens[0] == '+') {
+    if (tokens[0] == '+') {
         ++tokens;
         return expression::op_type::sum;
     } else if (tokens[0] == '-') {
@@ -410,7 +506,6 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(toke
 constexpr int op_precedence(expression::op_type t)
 {
     switch (t) {
-        case expression::op_type::equality: return 16;
         case expression::op_type::sum: return 6;
         case expression::op_type::difference: return 6;
         case expression::op_type::product: return 5;

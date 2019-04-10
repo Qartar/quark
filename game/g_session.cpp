@@ -751,6 +751,8 @@ void session::command_eval(parser::text const& args)
     if (args.tokens().size() < 2) {
         log::message("usage: eval <^fffexpression^xxx>\n");
     } else {
+        static random r; // for evaluation
+
         string::buffer expr(args.tokens()[1]);
         for (std::size_t ii = 2; ii < args.tokens().size(); ++ii) {
             expr += " ";
@@ -775,17 +777,23 @@ void session::command_eval(parser::text const& args)
             print_error(expr.c_str(), std::get<parser::error>(v));
             return;
         }
-#if 0
+
         std::vector<expression::value> map(parser.num_values());
         expression ex = parser.compile(map.data());
         std::vector<float> values(ex.num_values());
         auto idx = map[std::get<expression::value>(v)];
-#else
-        auto& ex = parser;
-        std::vector<float> values(ex.num_values());
-        auto idx = std::get<expression::value>(v);
+
+#if 1
+        // assert that parsed result is the same as compiled result
+        std::vector<float> parser_values(parser.num_values());
+        float parser_value = parser.evaluate_one(
+            std::get<expression::value>(v),
+            r,
+            nullptr,
+            parser_values.data());
+        assert(parser_value == ex.evaluate_one(idx, r, nullptr, values.data()));
 #endif
-        static random r;
+
         log::message("^fff%s^xxx = %0g\n",
                      expr.c_str(),
                      ex.evaluate_one(

@@ -33,6 +33,7 @@ endif()
 add_compile_options(
     /W4             # Enable warning level 4
     /WX             # Enable warnings as errors
+    /w44062         # Enable C4602: unhandled enumeration in switch statement
     /wd4706         # Disable C4706: assignment within conditional expression
     /permissive-    # Enable language conformance mode
     /std:c++17      # Enable C++17 language features

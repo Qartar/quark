@@ -21,7 +21,6 @@ public:
     enum class op_type {
         none,
         constant,
-        equality,
         sum,
         difference,
         negative,
@@ -76,11 +75,14 @@ public:
         return _expression._ops[value].type == expression::op_type::constant;
     }
 
+    void mark_used(expression::value value);
+
 protected:
     expression _expression;
 
     std::map<std::string, expression::value> _symbols;
     std::map<float, expression::value> _constants;
+    std::vector<bool> _used;
 };
 
 //------------------------------------------------------------------------------
@@ -102,7 +104,11 @@ public:
     void assign(char const* name, expression::value value);
 
     result<expression::value> parse_expression(token const*& tokens, token const* end) {
-        return parse_expression(tokens, end, INT_MAX);
+        auto result = parse_expression(tokens, end, INT_MAX);
+        if (std::holds_alternative<expression::value>(result)) {
+            mark_used(std::get<expression::value>(result));
+        }
+        return result;
     }
 
 protected:
