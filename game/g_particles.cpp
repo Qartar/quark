@@ -347,6 +347,7 @@ void world::clear_particles()
     _particles.clear();
 
     {
+        constexpr std::size_t linenumber = __LINE__ + 2;
         string::literal definition =
 R"(
     layer one {
@@ -365,7 +366,7 @@ R"(
         flags = shazaam;
     }
 )";
-        parser::context context(definition, "definition");
+        parser::context context(definition, __FILE__, linenumber);
         particle_effect effect;
         if (!effect.parse(context)) {
             auto info = context.get_info(context.get_error().tok);
