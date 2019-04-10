@@ -7,7 +7,6 @@
 #include "cm_random.h"
 
 #include <map>
-#include <string>
 #include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,8 +96,8 @@ protected:
 class expression_builder
 {
 public:
-    expression_builder(char const* const* inputs, std::size_t num_inputs);
-    template<std::size_t num_inputs> explicit expression_builder(char const* (&&inputs)[num_inputs])
+    expression_builder(string::view const* inputs, std::size_t num_inputs);
+    template<std::size_t num_inputs> explicit expression_builder(string::view (&&inputs)[num_inputs])
         : expression_builder(inputs, num_inputs) {}
 
     expression compile(expression::value* map) const;
@@ -118,7 +117,7 @@ public:
 protected:
     expression _expression;
 
-    std::map<std::string, expression::value> _symbols;
+    std::map<string::buffer, expression::value> _symbols;
     std::map<float, expression::value> _constants;
     std::vector<bool> _used;
 };
@@ -130,8 +129,8 @@ public:
     using token = parser::token;
     template<typename T> using result = parser::result<T>;
 
-    expression_parser(char const* const* inputs, std::size_t num_inputs);
-    template<std::size_t num_inputs> explicit expression_parser(char const* (&&inputs)[num_inputs])
+    expression_parser(string::view const* inputs, std::size_t num_inputs);
+    template<std::size_t num_inputs> explicit expression_parser(string::view (&&inputs)[num_inputs])
         : expression_parser(inputs, num_inputs) {}
 
     std::size_t num_values() const { return _expression.num_values(); }
@@ -139,7 +138,7 @@ public:
         return _expression.evaluate_one(val, r, inputs, values);
     }
 
-    void assign(char const* name, expression::value value);
+    void assign(string::view name, expression::value value);
 
     result<expression::value> parse_expression(parser::context& context) {
         auto result = parse_expression(context, INT_MAX);

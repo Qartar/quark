@@ -129,10 +129,10 @@ float expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) 
 
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-expression_builder::expression_builder(char const* const* inputs, std::size_t num_inputs)
+expression_builder::expression_builder(string::view const* inputs, std::size_t num_inputs)
 {
     for (std::size_t ii = 0; ii < num_inputs; ++ii) {
-        _symbols[inputs[ii]] = ii;
+        _symbols[string::buffer(inputs[ii])] = ii;
         _expression._ops.push_back({expression::op_type::none, 0, 0});
         _used.push_back(true); // assume inputs are always used
     }
@@ -265,18 +265,18 @@ void expression_builder::mark_used(expression::value value)
 
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
-expression_parser::expression_parser(char const* const* inputs, std::size_t num_inputs)
+expression_parser::expression_parser(string::view const* inputs, std::size_t num_inputs)
     : expression_builder(inputs, num_inputs)
 {
 }
 
 //------------------------------------------------------------------------------
-void expression_parser::assign(char const* name, expression::value value)
+void expression_parser::assign(string::view name, expression::value value)
 {
     if (_symbols.find(name) != _symbols.cend()) {
         //log::warning("
     } else {
-        _symbols[name] = value;
+        _symbols[string::buffer(name)] = value;
     }
 }
 
@@ -453,7 +453,7 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(pars
     //
 
     } else if (*token.begin >= 'a' && *token.begin <= 'z' || *token.begin >= 'A' && *token.begin <= 'Z') {
-        auto s = _symbols.find(std::string(token.begin, token.end));
+        auto s = _symbols.find(string::view(token.begin, token.end));
         if (s == _symbols.cend()) {
             return context.set_error({token, "unrecognized symbol: '" + token + "'"});
         }
