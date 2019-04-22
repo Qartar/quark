@@ -274,6 +274,10 @@ void system::destroy_framebuffer()
 //------------------------------------------------------------------------------
 void system::draw_timers() const
 {
+    //std::vector<vec2> vertices(std::min(_timers.size(), _timer_index) - 1);
+    vec2 vertices[4096];
+    std::size_t vertices_size = std::min(_timers.size(), _timer_index) - 1;
+
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -282,6 +286,9 @@ void system::draw_timers() const
     glPushMatrix();
     glLoadIdentity();
 
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 0, vertices);
+
     float dx = time_delta::from_hertz(60).to_seconds() * _timers.size();
     float dy = time_delta::from_hertz(60).to_seconds();
 
@@ -289,43 +296,54 @@ void system::draw_timers() const
     glScalef(-2.f / dx, (1.f / 6.f) / dy, 1);
 
     // red - render time (begin_frame -> end_frame)
-    glBegin(GL_LINE_STRIP);
-        glColor4f(1,0,0,.8f);
-        for (std::size_t ii = 0, sz = _timers.size(); ii < _timer_index && ii < sz; ++ii) {
-            time_delta tx = _timers[(_timer_index - 1) % sz].end_frame
-                            - _timers[(_timer_index - ii - 1) % sz].end_frame;
-            time_delta ty = _timers[(_timer_index - ii - 1) % sz].end_frame
-                            - _timers[(_timer_index - ii - 1) % sz].begin_frame;
+    {
+        timing const* t = _timers.data();
+        vec2* v = vertices;
+        for (std::size_t ii = 0, sz = _timers.size(); ii + 1 < _timer_index && ii + 1 < sz; ++ii) {
+            time_delta tx = t[(_timer_index - 1) % sz].end_frame
+                            - t[(_timer_index - ii - 1) % sz].end_frame;
+            time_delta ty = t[(_timer_index - ii - 1) % sz].end_frame
+                            - t[(_timer_index - ii - 1) % sz].begin_frame;
 
-            glVertex2f(tx.to_seconds(), ty.to_seconds());
+            *v++ = vec2(tx.to_seconds(), ty.to_seconds());
         }
-    glEnd();
+    }
+    glColor4f(1,0,0,.8f);
+    glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)vertices_size);
 
     // green - game time (previous swap_buffer -> begin_frame)
-    glBegin(GL_LINE_STRIP);
-        glColor4f(0,1,0,.8f);
+    {
+        timing const* t = _timers.data();
+        vec2* v = vertices;
         for (std::size_t ii = 0, sz = _timers.size(); ii + 1 < _timer_index && ii + 1 < sz; ++ii) {
-            time_delta tx = _timers[(_timer_index - 1) % sz].end_frame
-                            - _timers[(_timer_index - ii - 1) % sz].end_frame;
-            time_delta ty = _timers[(_timer_index - ii - 1) % sz].begin_frame
-                            - _timers[(_timer_index - ii - 2) % sz].swap_buffer;
+            time_delta tx = t[(_timer_index - 1) % sz].end_frame
+                            - t[(_timer_index - ii - 1) % sz].end_frame;
+            time_delta ty = t[(_timer_index - ii - 1) % sz].begin_frame
+                            - t[(_timer_index - ii - 2) % sz].swap_buffer;
 
-            glVertex2f(tx.to_seconds(), ty.to_seconds());
+            *v++ = vec2(tx.to_seconds(), ty.to_seconds());
         }
-    glEnd();
+    }
+    glColor4f(0,1,0,.8f);
+    glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)vertices_size);
 
     // blue - frame time (previous swap_buffer -> swap_buffer)
-    glBegin(GL_LINE_STRIP);
-        glColor4f(0,.5f,1,.8f);
+    {
+        timing const* t = _timers.data();
+        vec2* v = vertices;
         for (std::size_t ii = 0, sz = _timers.size(); ii + 1 < _timer_index && ii + 1 < sz; ++ii) {
-            time_delta tx = _timers[(_timer_index - 1) % sz].end_frame
-                            - _timers[(_timer_index - ii - 1) % sz].end_frame;
-            time_delta ty = _timers[(_timer_index - ii - 1) % sz].swap_buffer
-                            - _timers[(_timer_index - ii - 2) % sz].swap_buffer;
+            time_delta tx = t[(_timer_index - 1) % sz].end_frame
+                            - t[(_timer_index - ii - 1) % sz].end_frame;
+            time_delta ty = t[(_timer_index - ii - 1) % sz].swap_buffer
+                            - t[(_timer_index - ii - 2) % sz].swap_buffer;
 
-            glVertex2f(tx.to_seconds(), ty.to_seconds());
+            *v++ = vec2(tx.to_seconds(), ty.to_seconds());
         }
-    glEnd();
+    }
+    glColor4f(0,.5f,1,.8f);
+    glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)vertices_size);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
 
     // white - 60 Hz marker
     glBegin(GL_LINES);

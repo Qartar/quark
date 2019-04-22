@@ -195,6 +195,8 @@ void projectile::read_snapshot(network::message const& message)
     _old_position = get_position();
 
     _owner = get_world()->find<object>(message.read_long());
+    //_damage = message.read_float();
+    //_weapon_type = static_cast<weapon_type>(message.read_byte());
     set_position(message.read_vector());
     set_linear_velocity(message.read_vector());
 
@@ -206,6 +208,8 @@ void projectile::read_snapshot(network::message const& message)
 void projectile::write_snapshot(network::message& message) const
 {
     message.write_long(narrow_cast<int>(_owner->get_sequence() & 0xffffffff));
+    //message.write_float(_damage);
+    //message.write_byte(narrow_cast<uint8_t>(_weapon_type));
     message.write_vector(get_position());
     message.write_vector(get_linear_velocity());
 }
