@@ -9,14 +9,14 @@ set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/cmake")
 set(VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/version.h")
 
 if(GIT_FOUND)
-    add_custom_command(OUTPUT ${VERSION_FILE}
+    add_custom_target(quark-version ALL
         COMMAND ${CMAKE_COMMAND}
             -DPROJECT_NAME=${PROJECT_NAME}
             -DGIT_EXECUTABLE="${GIT_EXECUTABLE}"
             -DCONFIG_FILE="${SCRIPTS_DIR}/version.h.in"
             -DOUTPUT_FILE="${VERSION_FILE}"
             -P "${SCRIPTS_DIR}/version.cmake"
-        DEPENDS
+        SOURCES
             ${SCRIPTS_DIR}/version.cmake
             ${SCRIPTS_DIR}/version.h.in
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -103,6 +103,9 @@ add_executable(quark WIN32
     precompiled.cpp
     precompiled.h
 )
+
+add_dependencies(quark quark-version)
+set_source_files_properties(${VERSION_FILE} GENERATED)
 
 target_link_libraries(quark
     # project libraries
