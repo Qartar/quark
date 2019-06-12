@@ -14,10 +14,10 @@ struct equilibrium_point
     // K kelvin
     float temperature;
 
-    // kPa kilopascals
+    // Pa pascals
     float pressure;
 
-    // kg·m⁻³
+    // kg·m⁻³ kilograms per meter cubed
     float density;
 };
 
@@ -39,10 +39,10 @@ struct thermal_properties
     // J·kg⁻¹ joules per kilogram
     float enthalpy_of_sublimation;
 
-    // <K, kPa, kg·m⁻³>
+    // <K, Pa, kg·m⁻³>
     equilibrium_point triple_point;
 
-    // <K, kPa, kg·m⁻³>
+    // <K, Pa, kg·m⁻³>
     equilibrium_point critical_point;
 };
 
@@ -53,63 +53,70 @@ struct gas_properties : thermal_properties
     float mass_diffusivity;
 
     // J·kg⁻¹·K⁻¹ joules per kilogram kelvin
-    float specifc_gas_constant;
+    float specific_gas_constant;
 };
 
 //------------------------------------------------------------------------------
 constexpr gas_properties air_properties = {
-    0.026f, 1.012f, 0.f, 0.f, 0.f,
+    0.0262f, 1.012e-3f/*wtf*/*1e3f, 0.f, 0.f, 0.f,
     {0.f, 0.f, 0.f},
     {0.f, 0.f, 0.f},
     2e-9f, 287.058f,
 };
 
 constexpr gas_properties helium_properties = {
-    0.f, 0.f, 0.f, 0.f, 0.f,
-    {2.177f, 5.043f, 0.f},
-    {5.1953f, 227.46f, 0.f},
+    0.f, 5.19e-3f, 0.f, 0.f, 0.f,
+    {2.177f, 5043.f, 0.f},
+    {5.1953f, 227460.f, 0.f},
     0.f, 0.f,
 };
 
 constexpr gas_properties carbon_dioxide_properties = {
-    0.015f, 0.f, 0.f, 0.f, 0.f,
-    {216.55f, 10132.f, 0.f},
-    {304.1f, 7380.f, .000469f},
+    0.015f, 0.844e-3f, 0.f, 0.f, 0.f,
+    {216.55f, 10132000.f, 0.f},
+    {304.1f, 7380000.f, .000469f},
     0.f, 0.f,
 };
 
 constexpr gas_properties nitrogen_properties = {
-    0.026f, 0.f, 0.f, 0.f, 0.f,
-    {63.18f, 12.6f, 0.f},
-    {126.2f, 3390.f, 0.f},
+    0.026f, 1.04e-3f, 0.f, 0.f, 0.f,
+    {63.18f, 12600.f, 0.f},
+    {126.2f, 3390000.f, 0.f},
     0.f, 0.f,
 };
 
 constexpr gas_properties oxygen_properties = {
-    0.026f, 0.f, 0.f, 0.f, 0.f,
-    {54.36f, .152f, 0.f},
-    {154.6f, 5050.f, 0.f},
+    0.026f, 1.04e-3f, 0.f, 0.f, 0.f,
+    {54.36f, 152.f, 0.f},
+    {154.6f, 5050000.f, 0.f},
     0.f, 0.f,
 };
 
 constexpr gas_properties hydrogen_properties = {
-    0.1819f, 0.f, 0.f, 0.f, 0.f,
-    {13.84f, 7.04f, 0.f},
-    {33.2f, 1300.f, 0.f},
+    0.1819f, 14.32e-3f, 0.f, 0.f, 0.f,
+    {13.84f, 7040.f, 0.f},
+    {33.2f, 1300000.f, 0.f},
     0.f, 0.f,
 };
 
 constexpr gas_properties methane_properties = {
     0.f, 0.f, 0.f, 480600.f, 0.f,
-    {90.68f, 11.7f, 0.f},
-    {190.4f, 4600.f, .000162f},
+    {90.68f, 11700.f, 0.f},
+    {190.4f, 4600000.f, .000162f},
+    0.f, 0.f,
+};
+
+constexpr gas_properties chlorine_properties = {
+    0.f, .48e-3f, 0.f, 0.f, 0.f,
+    {172.17f, 1392.f, 0.f},
+    {416.9f, 7991000000.f, 0.f},
     0.f, 0.f,
 };
 
 constexpr gas_properties water_vapor_properties = {
-    0.025f, 0.f, 333550.f, 22257000.f, 0.f,
-    {273.16f, .611657f, 0.f},
-    {647.f, 22064.f, .000322f},
+    0.025f, 1.67e-3f, 333550.f, 22257000.f, 0.f,
+    {273.16f, 611.657f, 0.f},
+    {647.f, 22064000.f, .000322f},
     0.f, 0.f,
 };
 
@@ -133,10 +140,7 @@ protected:
     float _velocity[kSize]; // m¹s⁻¹ meters per second
     float _temperature[kSize]; // K¹ kelvin
 
-    static constexpr float _mass_diffusivity = 2e-9f; // m²s⁻¹
-    static constexpr float _thermal_conductivity = 0.026f; // W¹m⁻¹K⁻¹ watts per meter-kelvin
-    static constexpr float _specific_heat_capacity = 1.012f; // J¹kg⁻¹K⁻¹ joules per kilogram kelvin
-    static constexpr float _specific_gas_constant = 287.058f; // J¹kg⁻¹K⁻¹ joules per kilogram kelvin
+    static constexpr gas_properties properties = air_properties;
 
     static constexpr float dx = 1.f;
     static constexpr float invdx = 1.f / dx;
@@ -156,12 +160,13 @@ protected:
     float interpolate_temperature(float x) const;
 
 protected:
-    void solve_pic(time_delta delta_time);
+    void solve_pressure(float* pressure) const;
 
-    void advect_tracers(time_delta delta_time);
+    void advect_pic(time_delta delta_time);
+
+    void advect_tracers(time_delta delta_time, tracer* tracers) const;
 
     void diffuse(time_delta delta_time, float nu, float* quantity) const;
-
 };
 
 } // namespace game
