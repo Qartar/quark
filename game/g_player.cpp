@@ -330,7 +330,7 @@ bool player::attack(vec2 position, bool repeat)
 //------------------------------------------------------------------------------
 void player::toggle_weapon(int weapon_index, bool toggle_power)
 {
-    if (_ship->weapons().size() > weapon_index) {
+    if (narrow_cast<int>(_ship->weapons().size()) > weapon_index) {
         handle<weapon> weapon = _ship->weapons()[weapon_index];
         if (toggle_power) {
             if (weapon->desired_power() < weapon->maximum_power()) {

@@ -34,10 +34,17 @@ add_compile_options(
     /W4             # Enable warning level 4
     /WX             # Enable warnings as errors
     /wd4706         # Disable C4706: assignment within conditional expression
-    /permissive-    # Enable language conformance mode
     /std:c++17      # Enable C++17 language features
     /GF             # Enable string pooling
 )
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(
+        "-Wno-unknown-pragmas"
+        "-Wno-missing-braces"
+        "-Wno-missing-field-initializers"
+    )
+endif()
 
 add_subdirectory(shared)
 add_subdirectory(sound)
@@ -88,7 +95,6 @@ set(QUARK_SOURCES
     render/r_particle.h
     render/r_window.cpp
     render/r_window.h
-    system/resource.rc
     system/resource.h
     system/win_main.cpp
     system/win_main.h
@@ -96,8 +102,13 @@ set(QUARK_SOURCES
     system/win_types.h
 )
 
+if (MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(WIN32_SOURCES system/resource.rc)
+endif()
+
 add_executable(quark WIN32
     ${QUARK_SOURCES}
+    ${WIN32_SOURCES}
     ${VERSION_FILE}
 
     precompiled.cpp
