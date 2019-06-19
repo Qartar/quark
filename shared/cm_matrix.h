@@ -309,19 +309,19 @@ constexpr mat3 mat3_identity = mat3(1,0,0,0,1,0,0,0,1);
 constexpr mat4 mat4_identity = mat4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);
 
 //------------------------------------------------------------------------------
-template<> inline bool isnan<mat2>(mat2 m)
+template<> inline bool isnan<mat2>(mat2 m) noexcept
 {
     return isnan(m[0]) || isnan(m[1]);
 }
 
 //------------------------------------------------------------------------------
-template<> inline bool isnan<mat3>(mat3 m)
+template<> inline bool isnan<mat3>(mat3 m) noexcept
 {
     return isnan(m[0]) || isnan(m[1]) || isnan(m[2]);
 }
 
 //------------------------------------------------------------------------------
-template<> inline bool isnan<mat4>(mat4 m)
+template<> inline bool isnan<mat4>(mat4 m) noexcept
 {
     return isnan(m[0]) || isnan(m[1]) || isnan(m[2]) || isnan(m[3]);
 }

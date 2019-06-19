@@ -10,6 +10,8 @@ class vec2;
 class vec3;
 class vec4;
 
+using std::isnan;
+
 ////////////////////////////////////////////////////////////////////////////////
 // vector types
 
@@ -374,19 +376,19 @@ constexpr vec3 vec3_zero = vec3(0,0,0);
 constexpr vec4 vec4_zero = vec4(0,0,0,0);
 
 //------------------------------------------------------------------------------
-template<> inline bool isnan<vec2>(vec2 v)
+template<> inline bool isnan<vec2>(vec2 v) noexcept
 {
     return isnan(v[0]) || isnan(v[1]);
 }
 
 //------------------------------------------------------------------------------
-template<> inline bool isnan<vec3>(vec3 v)
+template<> inline bool isnan<vec3>(vec3 v) noexcept
 {
     return isnan(v[0]) || isnan(v[1]) || isnan(v[2]);
 }
 
 //------------------------------------------------------------------------------
-template<> inline bool isnan<vec4>(vec4 v)
+template<> inline bool isnan<vec4>(vec4 v) noexcept
 {
     return isnan(v[0]) || isnan(v[1]) || isnan(v[2]) || isnan(v[3]);
 }

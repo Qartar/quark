@@ -52,7 +52,7 @@ void message::rewind_bits(std::size_t bits) const
         _bytes_read = 0;
     } else {
         _bytes_read -= bits / byte_bits;
-        if (_bits_read && (bits % byte_bits) >= _bits_read) {
+        if (_bits_read && narrow_cast<int>(bits % byte_bits) >= _bits_read) {
             --_bytes_read;
         }
         _bits_read += byte_bits - (bits % byte_bits);
@@ -188,7 +188,7 @@ void message::write_bits(int value, int bits)
     }
 
     // check for overflow
-    if (bits_available() < value_bits) {
+    if (bits_available() < static_cast<std::size_t>(value_bits)) {
         return;
     }
 
@@ -253,7 +253,7 @@ int message::read_bits(int bits) const
     int value = 0;
 
     // check for underflow
-    if (bits_remaining() < value_bits) {
+    if (bits_remaining() < static_cast<std::size_t>(value_bits)) {
         return -1;
     }
 

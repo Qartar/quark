@@ -17,7 +17,7 @@ struct sound_format {
 class cSoundSource
 {
 public:
-    virtual ~cSoundSource() = 0 {};
+    virtual ~cSoundSource() {};
 
     static cSoundSource* create(string::view filename);
 
