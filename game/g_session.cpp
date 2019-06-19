@@ -392,7 +392,7 @@ void session::key_event(int key, bool down)
             }
         }
 
-        if (cls.number >= 0 && cls.number < controllers.size()) {
+        if (cls.number >= 0 && cls.number < narrow_cast<int>(controllers.size())) {
             _player = controllers[cls.number];
         } else {
             _player = nullptr;

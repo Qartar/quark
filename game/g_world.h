@@ -269,7 +269,7 @@ T* world::spawn(Args&& ...args)
     }
 
     T* obj = static_cast<T*>(_objects[obj_index].get());
-    assert(obj->is_type<T>() && "invalid type info");
+    assert(obj->template is_type<T>() && "invalid type info");
     obj->_self = handle<object>(obj_index, _index, ++_sequence);
     obj->_spawn_time = frametime();
     obj->spawn();

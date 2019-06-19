@@ -59,9 +59,9 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR szCm
 //------------------------------------------------------------------------------
 application::application(HINSTANCE hInstance)
     : _hinstance(hInstance)
-    , _window(hInstance, wndproc)
     , _exit_code(0)
     , _mouse_state(0)
+    , _window(hInstance, wndproc)
 {
     _singleton = this;
 }

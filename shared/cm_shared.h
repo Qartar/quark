@@ -13,6 +13,15 @@
 #define PORT_CLIENT     28110
 
 //------------------------------------------------------------------------------
+#if defined(_MSC_VER)
+#define ASSUME(x) __assume(x)
+#elif defined(__clang__)
+#define ASSUME(x) __builtin_assume(x)
+#else
+#define ASSUME(x)
+#endif
+
+//------------------------------------------------------------------------------
 using byte = std::uint8_t;
 using word = std::uint16_t;
 

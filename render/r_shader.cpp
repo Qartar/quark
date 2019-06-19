@@ -19,7 +19,7 @@ constexpr string::literal gl_shader_stage_name(gl::shader_stage stage)
         case gl::shader_stage::vertex: return "vertex";
         case gl::shader_stage::fragment: return "fragment";
     }
-    __assume(false);
+    ASSUME(false);
 }
 
 } // anonymous namespace

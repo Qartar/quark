@@ -190,7 +190,7 @@ void system::draw_particles(time_value time, render::particle const* particles, 
         if (!(p->flags & render::particle::tail)) {
             // draw circle outline
             glColor4fv(color_out);
-            for (int ii = 0; ii < countof(_costbl); ii += k) {
+            for (std::size_t ii = 0; ii < countof(_costbl); ii += k) {
                 vec2 vertex = position + vec2(_costbl[ii], _sintbl[ii]) * radius;
                 glVertex2fv(vertex);
             }
@@ -215,7 +215,7 @@ void system::draw_particles(time_value time, render::particle const* particles, 
             int k0 = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n0));
 
             glColor4fv(color_in);
-            for (int ii = 0; ii < countof(_costbl); ii += k0) {
+            for (std::size_t ii = 0; ii < countof(_costbl); ii += k0) {
                 if (ii < countof(_costbl) / 2) {
                     // draw forward-facing half-circle
                     vec2 vertex = position + (tangent * _costbl[ii] + normal * _sintbl[ii]) * radius;

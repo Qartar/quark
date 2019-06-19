@@ -187,7 +187,7 @@ bool socket::write(network::address const& remote, network::message const& messa
 
     int result = ::sendto(_socket, buf, narrow_cast<int>(len), 0, (sockaddr*)&to, tolen);
 
-    if (result < len) {
+    if (result < narrow_cast<int>(len)) {
         return false;
     }
 

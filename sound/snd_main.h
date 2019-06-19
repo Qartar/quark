@@ -112,7 +112,7 @@ class cSound : public sound::system
 {
 public:
     cSound();
-    ~cSound() {}
+    virtual ~cSound() {}
 
     virtual result on_create(HWND hWnd) override;
     virtual void on_destroy() override;
@@ -128,7 +128,7 @@ public:
 
     //  registration
 
-    sound::asset load_sound(string::view filename);
+    sound::asset load_sound(string::view filename) override;
     cSoundSource* get_sound(sound::asset asset);
 
     //  mixing

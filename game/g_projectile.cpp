@@ -172,8 +172,6 @@ bool projectile::touch(object *other, physics::collision const* collision)
 //------------------------------------------------------------------------------
 void projectile::draw(render::system* renderer, time_value time) const
 {
-    constexpr time_delta tail_time = time_delta::from_seconds(.04f);
-
     if (time - _info.tail_time > _impact_time) {
         return;
     }

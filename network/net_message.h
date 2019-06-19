@@ -125,7 +125,14 @@ class message_storage : public message
 {
 public:
     message_storage()
+#if defined(__clang__)
+#   pragma clang diagnostic push
+#   pragma clang diagnostic ignored "-Wuninitialized"
+#endif
         : message(_buffer.data(), _buffer.size())
+#if defined(__clang__)
+#   pragma clang diagnostic pop
+#endif
     {}
 
 protected:

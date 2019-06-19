@@ -53,6 +53,14 @@ character::~character()
 }
 
 //------------------------------------------------------------------------------
+void character::spawn()
+{
+    object::spawn();
+
+    _name = string::buffer(names[_random.uniform_int(countof(names))]);
+}
+
+//------------------------------------------------------------------------------
 void character::think()
 {
     if (_health && _subsystem && _subsystem->damage()) {

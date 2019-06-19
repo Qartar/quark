@@ -80,7 +80,7 @@ private:
 
     // More font stuff (r_font.cpp)
 
-    static const int _font_size = 48;
+    static constexpr int _font_size = 48;
     //! Global scaling factor applied to font rendering to give consistent
     //! text size regardless of window size and display scaling.
     float _font_scale;
