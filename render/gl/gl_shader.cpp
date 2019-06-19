@@ -22,7 +22,7 @@ constexpr GLenum gl_shader_type(shader_stage stage)
         case shader_stage::fragment:
             return GL_FRAGMENT_SHADER;
         default:
-            __assume(false);
+            ASSUME(false);
     }
 }
 

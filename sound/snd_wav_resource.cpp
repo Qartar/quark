@@ -23,9 +23,9 @@ static const struct { int iResource; string::literal szResource; } resources[] =
 result cSoundWaveResource::load(string::view filename)
 {
     char const* resourcename = nullptr;
-    for (int i = 0; i < countof(resources); i++) {
-        if (strcmp(filename, resources[i].szResource) == 0) {
-            resourcename = MAKEINTRESOURCE(resources[i].iResource);
+    for (std::size_t ii = 0; ii < countof(resources); ++ii) {
+        if (strcmp(filename, resources[ii].szResource) == 0) {
+            resourcename = MAKEINTRESOURCE(resources[ii].iResource);
             break;
         }
     }
@@ -50,7 +50,6 @@ result cSoundWaveResource::load(string::view filename)
         }
     }
 
-    UnlockResource(resource_data);
     FreeResource(resource);
 
     return (_num_samples > 0 ? result::success : result::failure);

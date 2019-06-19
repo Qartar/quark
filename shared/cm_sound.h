@@ -21,6 +21,8 @@ enum class asset
 class channel
 {
 public:
+    virtual ~channel() {}
+
     virtual bool playing() const = 0;
     virtual bool looping() const = 0;
 

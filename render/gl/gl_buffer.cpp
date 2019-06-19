@@ -27,7 +27,7 @@ constexpr GLenum gl_buffer_target(buffer_type type)
             return GL_SHADER_STORAGE_BUFFER;
     }
      // rely on compiler warnings to detect missing case labels
-    __assume(false);
+    ASSUME(false);
 }
 
 //------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ constexpr GLenum gl_buffer_access(buffer_access access)
             return GL_READ_ONLY;
     }
      // rely on compiler warnings to detect missing case labels
-    __assume(false);
+    ASSUME(false);
 }
 
 //------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ constexpr GLenum gl_buffer_access_bits(buffer_access access)
             return GL_MAP_READ_BIT;
     }
      // rely on compiler warnings to detect missing case labels
-    __assume(false);
+    ASSUME(false);
 }
 
 } // anonymous namespace

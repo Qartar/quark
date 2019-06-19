@@ -19,8 +19,8 @@ struct edge_distance
     }
     bool operator<(edge_distance const& other) const {
         return std::abs(signed_distance_sqr) < std::abs(other.signed_distance_sqr)
-            || std::abs(signed_distance_sqr) == std::abs(other.signed_distance_sqr)
-                && orthogonal_distance > other.orthogonal_distance;
+            || (std::abs(signed_distance_sqr) == std::abs(other.signed_distance_sqr)
+                && orthogonal_distance > other.orthogonal_distance);
     }
     bool operator==(edge_distance const& other) const {
         return signed_distance_sqr == other.signed_distance_sqr
