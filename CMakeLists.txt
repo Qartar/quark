@@ -54,6 +54,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     )
 endif()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(
+        "-Wno-unknown-pragmas"
+        "-Wno-missing-braces"
+        "-Wno-missing-field-initializers"
+    )
+endif()
+
 add_subdirectory(shared)
 add_subdirectory(sound)
 add_subdirectory(physics)
