@@ -6,24 +6,34 @@
 
 #include "cm_keys.h"
 
-#include <WS2tcpip.h>
-#include <XInput.h>
+#if defined(_WIN32)
+#   include <WS2tcpip.h>
+#   include <XInput.h>
+#endif // defined(_WIN32)
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
 
 int64_t get_ticks()
 {
+#if defined(_WIN32)
     LARGE_INTEGER counter;
     QueryPerformanceCounter(&counter);
     return counter.QuadPart;
+#else // !defined(_WIN32)
+    return 0;
+#endif // !defined(_WIN32)
 }
 
 int64_t get_ticks_per_second()
 {
+#if defined(_WIN32)
     LARGE_INTEGER frequency;
     QueryPerformanceFrequency(&frequency);
     return frequency.QuadPart;
+#else // !defined(_WIN32)
+    return 0;
+#endif // !defined(_WIN32)
 }
 
 } // anonymous namespace
@@ -41,10 +51,17 @@ time_value time_value::current()
 application* application::_singleton = nullptr;
 
 //------------------------------------------------------------------------------
+#if defined(_WIN32)
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR szCmdLine, int nCmdShow)
 {
     return application(hInstance).main(szCmdLine, nCmdShow);
 }
+#else
+int main(int argc, char** argv)
+{
+    return application(0).main(nullptr, 0);
+}
+#endif // defined(_WIN32)
 
 //------------------------------------------------------------------------------
 application::application(HINSTANCE hInstance)
@@ -60,7 +77,9 @@ application::application(HINSTANCE hInstance)
 int application::main(LPSTR szCmdLine, int /*nCmdShow*/)
 {
     time_value previous_time, current_time;
+#if defined(_WIN32)
     MSG msg;
+#endif // defined(_WIN32)
 
     if (failed(init(_hinstance, szCmdLine))) {
         return shutdown();
@@ -72,10 +91,13 @@ int application::main(LPSTR szCmdLine, int /*nCmdShow*/)
 
         // inactive/idle loop
         if (!_window.active()) {
+#if defined(_WIN32)
             Sleep(1);
+#endif // defined(_WIN32)
         }
 
         // message loop (pump)
+#if defined(_WIN32)
         while (PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE)) {
             if (!GetMessageW(&msg, NULL, 0, 0 )) {
                 return shutdown();
@@ -84,6 +106,7 @@ int application::main(LPSTR szCmdLine, int /*nCmdShow*/)
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
+#endif // defined(_WIN32)
 
         // gamepad events are polled from the device
         generate_gamepad_events();
@@ -106,18 +129,22 @@ result application::init(HINSTANCE hInstance, LPSTR szCmdLine)
     srand(static_cast<unsigned int>(get_ticks()));
 
     // initialize COM, required by XInput
+#if defined(_WIN32)
     if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED))) {
         return result::failure;
     }
+#endif // defined(_WIN32)
 
     _config.init();
 
     // initialize networking
+#if defined(_WIN32)
     {
         WSADATA wsadata = {};
         if (WSAStartup(MAKEWORD(2, 2), &wsadata)) {
         }
     }
+#endif // defined(_WIN32)
 
     // create sound class
     if (failed(sound::system::create())) {
@@ -150,12 +177,16 @@ int application::shutdown()
     sound::system::destroy();
 
     // shutdown networking
+#if defined(_WIN32)
     WSACleanup();
+#endif // defined(_WIN32)
 
     _config.shutdown();
 
     // uninitialize COM
+#if defined(_WIN32)
     CoUninitialize();
+#endif // defined(_WIN32)
 
 #ifdef DEBUG_MEM
     _CrtDumpMemoryLeaks();
@@ -171,12 +202,17 @@ void application::quit(int exit_code)
     _exit_code = exit_code;
 
     // tell windows we dont want to play anymore
+#if defined(_WIN32)
     PostQuitMessage(exit_code);
+#else // !defined(_WIN32)
+    exit(exit_code);
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 LRESULT application::wndproc(HWND hWnd, UINT nCmd, WPARAM wParam, LPARAM lParam)
 {
+#if defined(_WIN32)
     switch (nCmd)
     {
     case WM_NCCREATE:
@@ -248,6 +284,9 @@ LRESULT application::wndproc(HWND hWnd, UINT nCmd, WPARAM wParam, LPARAM lParam)
     }
 
     return DefWindowProcW(hWnd, nCmd, wParam, lParam);
+#else // !defined(_WIN32)
+    return 0;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
@@ -358,6 +397,7 @@ void application::mouse_event(WPARAM mouse_state, vec2i position)
         }
     }
 
+#if defined(_WIN32)
     if ((int16_t)HIWORD(mouse_state) < 0) {
         _game.key_event(K_MWHEELDOWN, true);
         _game.key_event(K_MWHEELDOWN, false);
@@ -365,6 +405,7 @@ void application::mouse_event(WPARAM mouse_state, vec2i position)
         _game.key_event(K_MWHEELUP, true);
         _game.key_event(K_MWHEELUP, false);
     }
+#endif // defined(_WIN32)
 
     _mouse_state = mouse_state;
     _game.cursor_event(vec2(position));
@@ -373,6 +414,7 @@ void application::mouse_event(WPARAM mouse_state, vec2i position)
 //------------------------------------------------------------------------------
 void application::generate_gamepad_events()
 {
+#if defined(_WIN32)
     for (DWORD ii = 0; ii < XUSER_MAX_COUNT; ++ii) {
         XINPUT_STATE state{};
 
@@ -420,11 +462,13 @@ void application::generate_gamepad_events()
             _game.key_event(keystroke.VirtualKey, !(keystroke.Flags & XINPUT_KEYSTROKE_KEYUP));
         }
     }
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 string::buffer application::username() const
 {
+#if defined(_WIN32)
     string::buffer s;
     constexpr DWORD buffer_size = 1024;
     wchar_t buffer[buffer_size];
@@ -456,11 +500,15 @@ string::buffer application::username() const
     }
 
     return s;
+#else // !defined(_WIN32)
+    return string::buffer{};
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 string::buffer application::clipboard() const
 {
+#if defined(_WIN32)
     string::buffer s;
 
     if (OpenClipboard(NULL) != 0) {
@@ -500,4 +548,7 @@ string::buffer application::clipboard() const
     }
 
     return s;
+#else // !defined(_WIN32)
+    return string::buffer{};
+#endif // !defined(_WIN32)
 }

@@ -39,12 +39,14 @@ shader::PFNGLDELETESHADER shader::glDeleteShader = nullptr;
 //------------------------------------------------------------------------------
 void shader::init()
 {
+#if defined(_WIN32)
     glCreateShader = (PFNGLCREATESHADER)wglGetProcAddress("glCreateShader");
     glGetShaderiv = (PFNGLGETSHADERIV)wglGetProcAddress("glGetShaderiv");
     glGetShaderInfoLog = (PFNGLGETSHADERINFOLOG)wglGetProcAddress("glGetShaderInfoLog");
     glShaderSource = (PFNGLSHADERSOURCE)wglGetProcAddress("glShaderSource");
     glCompileShader = (PFNGLCOMPILESHADER)wglGetProcAddress("glCompileShader");
     glDeleteShader = (PFNGLDELETESHADER)wglGetProcAddress("glDeleteShader");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
@@ -119,6 +121,7 @@ program::PFNGLLINKPROGRAM program::glLinkProgram = nullptr;
 //------------------------------------------------------------------------------
 void program::init()
 {
+#if defined(_WIN32)
     glCreateProgram = (PFNGLCREATEPROGRAM)wglGetProcAddress("glCreateProgram");
     glUseProgram = (PFNGLUSEPROGRAM)wglGetProcAddress("glUseProgram");
     glGetProgramiv = (PFNGLGETPROGRAMIV)wglGetProcAddress("glGetProgramiv");
@@ -127,6 +130,7 @@ void program::init()
     glAttachShader = (PFNGLATTACHSHADER)wglGetProcAddress("glAttachShader");
     glDetachShader = (PFNGLDETACHSHADER)wglGetProcAddress("glDetachShader");
     glLinkProgram = (PFNGLLINKPROGRAM)wglGetProcAddress("glLinkProgram");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

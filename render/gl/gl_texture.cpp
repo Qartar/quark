@@ -23,6 +23,7 @@ texture::PFNGLTEXTURESTORAGE2DMULTISAMPLE texture::glTextureStorage2DMultisample
 ////////////////////////////////////////////////////////////////////////////////
 void texture::init()
 {
+#if defined(_WIN32)
     // OpenGL 1.3
     glActiveTexture = (PFNGLACTIVETEXTURE)wglGetProcAddress("glActiveTexture");
     // ARB_texture_storage
@@ -34,6 +35,7 @@ void texture::init()
     glBindTextureUnit = (PFNGLBINDTEXTUREUNIT)wglGetProcAddress("glBindTextureUnit");
     glTextureStorage2D = (PFNGLTEXTURESTORAGE2D)wglGetProcAddress("glTextureStorage2D");
     glTextureStorage2DMultisample = (PFNGLTEXTURESTORAGE2DMULTISAMPLE)wglGetProcAddress("glTextureStorage2DMultisample");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

@@ -206,9 +206,13 @@ buffer::~buffer()
 //------------------------------------------------------------------------------
 stream open(string::view filename, file::mode mode)
 {
+#if defined(_WIN32)
     FILE* f = nullptr;
     fopen_s(&f, filename.c_str(), mode_to_native(mode));
     return stream_internal(f);
+#else
+    return stream_internal(fopen(filename.c_str(), mode_to_native(mode)));
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -240,11 +244,14 @@ time modified_time(string::view filename)
 #if defined(_WIN32)
     struct _stat64 s;
     if (!_stat64(filename.c_str(), &s)) {
+#else
+    struct stat s;
+    if (!stat(filename.c_str(), &s)) {
+#endif
         return static_cast<file::time>(s.st_mtime);
     } else {
         return static_cast<file::time>(0);
     }
-#endif
 }
 
 } // namespace file

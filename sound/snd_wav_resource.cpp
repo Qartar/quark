@@ -5,6 +5,10 @@
 #include "snd_wav_resource.h"
 #include "../system/resource.h"
 
+#if defined(_WIN32)
+#   define NOMINMAX
+#   include <Windows.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 static const struct { int iResource; string::literal szResource; } resources[] =
 {
@@ -18,10 +22,12 @@ static const struct { int iResource; string::literal szResource; } resources[] =
     { IDR_WAVE8, "assets/sound/blaster_impact.wav" },
     { IDR_WAVE9, "assets/sound/missile_flight.wav" },
 };
+#endif // defined(_WIN32)
 
 //------------------------------------------------------------------------------
 result cSoundWaveResource::load(string::view filename)
 {
+#if defined(_WIN32)
     char const* resourcename = nullptr;
     for (std::size_t ii = 0; ii < countof(resources); ++ii) {
         if (strcmp(filename, resources[ii].szResource) == 0) {
@@ -53,4 +59,7 @@ result cSoundWaveResource::load(string::view filename)
     FreeResource(resource);
 
     return (_num_samples > 0 ? result::success : result::failure);
+#else // !defined(_WIN32)
+    return result::failure;
+#endif // !defined(_WIN32)
 }

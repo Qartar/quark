@@ -44,13 +44,15 @@ private:
     result activate(bool active, bool minimized);
     void resize_for_dpi(RECT const* suggested, int dpi);
 
-    int _current_dpi;
-
     bool _active;
+#if defined(_WIN32)
     bool _minimized;
+#endif // defined(_WIN32)
     bool _fullscreen;
     vec2i _position;
+#if defined(_WIN32)
     vec2i _logical_size;
+#endif // defined(_WIN32)
     vec2i _physical_size;
 
     config::integer _vid_width;
@@ -60,12 +62,17 @@ private:
 
     render::system _renderer;
 
+    HWND _hwnd;
+    HDC _hdc;
+#if defined(_WIN32)
+    HGLRC _hrc;
+
     HINSTANCE _hinst;
     WNDPROC _wndproc;
 
-    HWND _hwnd;
-    HDC _hdc;
-    HGLRC _hrc;
+    int _current_dpi;
+#endif // defined(_WIN32)
+
 };
 
 } // namespace render

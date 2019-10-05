@@ -25,20 +25,27 @@ else()
     configure_file(${SCRIPTS_DIR}/version.h.in ${VERSION_FILE})
 endif()
 
-# Remove bad default compiler flags for Visual Studio
 if(MSVC)
+    # Remove bad default compiler flags for Visual Studio
     string(REPLACE "/DWIN32 /D_WINDOWS /W3 /GR /EHsc" "/EHsc" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+    add_compile_options(
+        /W4             # Enable warning level 4
+        /WX             # Enable warnings as errors
+        /wd4706         # Disable C4706: assignment within conditional expression
+        /std:c++17      # Enable C++17 language features
+        /GF             # Enable string pooling
+    )
 endif()
 
-add_compile_options(
-    /W4             # Enable warning level 4
-    /WX             # Enable warnings as errors
-    /wd4706         # Disable C4706: assignment within conditional expression
-    /std:c++17      # Enable C++17 language features
-    /GF             # Enable string pooling
-)
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (NOT MSVC) # i.e. not clang-cl
+        add_compile_options(
+            "-Wall"
+            "-Werror"
+            "-std=c++17"
+        )
+    endif()
     add_compile_options(
         "-Wno-unknown-pragmas"
         "-Wno-missing-braces"
@@ -137,6 +144,21 @@ add_executable(quark WIN32
 add_dependencies(quark quark-version)
 set_source_files_properties(${VERSION_FILE} GENERATED)
 
+if(WIN32)
+    set(WIN32_LIBRARIES
+        Shcore
+        ws2_32
+        opengl32
+        Pathcch
+        Xinput
+    )
+else()
+    set(POSIX_LIBRARIES
+        GL
+        pthread
+    )
+endif()
+
 target_link_libraries(quark
     # project libraries
     shared
@@ -144,11 +166,8 @@ target_link_libraries(quark
     physics
     network
     # system libraries
-    Shcore
-    ws2_32
-    opengl32
-    Pathcch
-    Xinput
+    ${WIN32_LIBRARIES}
+    ${POSIX_LIBRARIES}
 )
 
 target_include_directories(quark
@@ -161,8 +180,10 @@ target_include_directories(quark
 )
 
 # Set up precompiled header
-set_source_files_properties(precompiled.cpp PROPERTIES COMPILE_FLAGS /Ycprecompiled.h OBJECT_OUTPUTS precompiled.pch)
-set_source_files_properties(${QUARK_SOURCES} PROPERTIES COMPILE_FLAGS /Yuprecompiled.h OBJECT_DEPENDS precompiled.pch)
+if(MSVC)
+    set_source_files_properties(precompiled.cpp PROPERTIES COMPILE_FLAGS /Ycprecompiled.h OBJECT_OUTPUTS precompiled.pch)
+    set_source_files_properties(${QUARK_SOURCES} PROPERTIES COMPILE_FLAGS /Yuprecompiled.h OBJECT_DEPENDS precompiled.pch)
+endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${QUARK_SOURCES} precompiled.cpp precompiled.h)
 source_group("\\" FILES precompiled.cpp precompiled.h)
