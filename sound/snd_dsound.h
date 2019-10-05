@@ -3,6 +3,8 @@
 
 #pragma once
 
+#if defined(_WIN32)
+
 #include <windows.h>
 #include <dsound.h>
 
@@ -48,3 +50,5 @@ private:
 
     void mix_stereo16(samplepair_t* input, stereo16_t* output, int num_samples, int volume);
 };
+
+#endif // defined(_WIN32)

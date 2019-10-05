@@ -84,5 +84,9 @@ protected:
     engine_type _engine;
 };
 
+#if !defined(_WIN32)
+#define random not_stdlib_random
+#endif // !defined(_WIN32)
+
 //------------------------------------------------------------------------------
 using random = random_base<std::minstd_rand>;

@@ -32,6 +32,7 @@ vertex_array::PFNGLVERTEXARRAYBINDINGDIVISOR vertex_array::glVertexArrayBindingD
 //------------------------------------------------------------------------------
 void vertex_array::init()
 {
+#if defined(_WIN32)
     // OpenGL 3.0
     glBindVertexArray = (PFNGLBINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
     glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYS)wglGetProcAddress("glDeleteVertexArrays");
@@ -48,6 +49,7 @@ void vertex_array::init()
     glVertexArrayAttribLFormat = (PFNGLVERTEXARRAYATTRIBLFORMAT)wglGetProcAddress("glVertexArrayAttribLFormat");
     glVertexArrayAttribBinding = (PFNGLVERTEXARRAYATTRIBBINDING)wglGetProcAddress("glVertexArrayAttribBinding");
     glVertexArrayBindingDivisor = (PFNGLVERTEXARRAYBINDINGDIVISOR)wglGetProcAddress("glVertexArrayBindingDivisor");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

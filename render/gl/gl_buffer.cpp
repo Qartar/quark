@@ -95,6 +95,7 @@ buffer::PFNGLUNMAPNAMEDBUFFER buffer::glUnmapNamedBuffer = nullptr;
 //------------------------------------------------------------------------------
 void buffer::init()
 {
+#if defined(_WIN32)
     // OpenGL 1.5
     glBindBuffer = (PFNGLBINDBUFFER)wglGetProcAddress("glBindBuffer");
     glDeleteBuffers = (PFNGLDELETEBUFFERS)wglGetProcAddress("glDeleteBuffers");
@@ -112,6 +113,7 @@ void buffer::init()
     glNamedBufferSubData = (PFNGLNAMEDBUFFERSUBDATA)wglGetProcAddress("glNamedBufferSubData");
     glMapNamedBuffer = (PFNGLMAPNAMEDBUFFER)wglGetProcAddress("glMapNamedBuffer");
     glUnmapNamedBuffer = (PFNGLUNMAPNAMEDBUFFER)wglGetProcAddress("glUnmapNamedBuffer");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

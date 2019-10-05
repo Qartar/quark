@@ -100,6 +100,7 @@ image::image(string::view name)
         return;
     }
 
+#if defined(_WIN32)
     HBITMAP bitmap = NULL;
 
     if ((bitmap = load_bitmap_from_resource(name))) {
@@ -115,6 +116,7 @@ image::image(string::view name)
     if (bitmap) {
         DeleteObject(bitmap);
     }
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
@@ -125,6 +127,7 @@ image::~image()
 //------------------------------------------------------------------------------
 HBITMAP image::load_bitmap_from_resource(string::view name) const
 {
+#if defined(_WIN32)
     UINT flags = LR_CREATEDIBSECTION;
 
     return (HBITMAP )LoadImageA(
@@ -135,11 +138,15 @@ HBITMAP image::load_bitmap_from_resource(string::view name) const
         0,                              // cy
         flags                           // fuLoad
     );
+#else // !defined(_WIN32)
+    return NULL;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 HBITMAP image::load_bitmap_from_file(string::view name) const
 {
+#if defined(_WIN32)
     UINT flags = LR_CREATEDIBSECTION | LR_DEFAULTSIZE | LR_LOADFROMFILE;
 
     return (HBITMAP )LoadImageA(
@@ -150,11 +157,15 @@ HBITMAP image::load_bitmap_from_file(string::view name) const
         0,                              // cy
         flags                           // fuLoad
     );
+#else // !defined(_WIN32)
+    return NULL;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 bool image::upload(HBITMAP bitmap)
 {
+#if defined(_WIN32)
     if (!bitmap) {
         return false;
     }
@@ -183,6 +194,9 @@ bool image::upload(HBITMAP bitmap)
     _texture.parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     return true;
+#else // !defined(_WIN32)
+    return false;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
@@ -206,6 +220,7 @@ result image::load_file(string::view filename)
 //------------------------------------------------------------------------------
 result image::write_bmp(string::view filename, int width, int height, image_format format, uint8_t const* data)
 {
+#if defined(_WIN32)
     if (format != image_format::bgr8) {
         log::warning("failed to write image '^fff%.*s^xxx', unsupported format\n", filename.length(), filename.begin());
         return result::failure;
@@ -241,6 +256,9 @@ result image::write_bmp(string::view filename, int width, int height, image_form
     }
 
     return result::success;
+#else // !defined(_WIN32)
+    return result::failure;
+#endif // !defined(_WIN32)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

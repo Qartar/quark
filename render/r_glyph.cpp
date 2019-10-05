@@ -13,6 +13,7 @@ namespace render {
 //------------------------------------------------------------------------------
 glyph glyph::from_hdc(HDC hdc, UINT ch)
 {
+#if defined(_WIN32)
     glyph g;
 
     MAT2 const mat = {
@@ -166,6 +167,9 @@ glyph glyph::from_hdc(HDC hdc, UINT ch)
     // these bounds are guaranteed to contain the entire curve.
     g._bounds = bounds::from_points(g._points.data(), g._points.size());
     return g;
+#else // !defined(_WIN32)
+    return {};
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

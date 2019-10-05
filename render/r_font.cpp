@@ -431,8 +431,10 @@ font::PFNGLDRAWELEMENTSINSTANCED font::glDrawElementsInstanced = nullptr;
 //------------------------------------------------------------------------------
 void font::init()
 {
+#if defined(_WIN32)
     // additional opengl bindings
     glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)wglGetProcAddress("glDrawElementsInstanced");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
@@ -448,6 +450,7 @@ font::font(render::system* renderer, string::view name, int size)
     if (read_sdf(data_filename, _sdf.get())) {
         _image = renderer->load_image(image_filename);
     } else {
+#if defined(_WIN32)
         // create font
         HFONT font = CreateFontA(
             _size,                      // cHeight
@@ -479,6 +482,7 @@ font::font(render::system* renderer, string::view name, int size)
         // restore previous font and delete our created font
         SelectObject(application::singleton()->window()->hdc(), prev_font);
         DeleteObject(font);
+#endif // defined(_WIN32)
     }
 
     if (_sdf.get()) {

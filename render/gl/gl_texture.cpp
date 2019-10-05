@@ -27,6 +27,7 @@ texture::PFNGLTEXTUREPARAMETERIV texture::glTextureParameteriv = nullptr;
 ////////////////////////////////////////////////////////////////////////////////
 void texture::init()
 {
+#if defined(_WIN32)
     // OpenGL 1.3
     glActiveTexture = (PFNGLACTIVETEXTURE)wglGetProcAddress("glActiveTexture");
     // ARB_texture_storage
@@ -42,6 +43,7 @@ void texture::init()
     glTextureParameterfv = (PFNGLTEXTUREPARAMETERFV)wglGetProcAddress("glTextureParameterfv");
     glTextureParameteri = (PFNGLTEXTUREPARAMETERI)wglGetProcAddress("glTextureParameteri");
     glTextureParameteriv = (PFNGLTEXTUREPARAMETERIV)wglGetProcAddress("glTextureParameteriv");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

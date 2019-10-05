@@ -43,7 +43,9 @@ result system::init()
 {
     random r;
 
+#if defined(_WIN32)
     glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
+#endif // defined(_WIN32)
 
     gl::buffer::init();
     gl::framebuffer::init();

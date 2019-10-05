@@ -23,9 +23,15 @@ typedef struct HDC__* HDC;
 typedef struct HGLRC__* HGLRC;
 
 // minwindef.h
-#define CALLBACK __stdcall
 #define WINAPI __stdcall
-#define APIENTRY WINAPI
+#if defined(_WIN32)
+#   define CALLBACK __stdcall
+#   define APIENTRY WINAPI
+#else // !defined(_WIN32)
+#   define CALLBACK
+#   define APIENTRY
+#endif // !defined(_WIN32)
+typedef int BOOL;
 typedef unsigned int UINT;
 typedef UINT_PTR WPARAM;
 typedef LONG_PTR LPARAM;

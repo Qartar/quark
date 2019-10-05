@@ -7,6 +7,11 @@
 #include "snd_wav_stream.h"
 #include "snd_wav_resource.h"
 
+#if defined(_WIN32)
+#   define NOMINMAX
+#   include <Windows.h>
+#endif // defined(_WIN32)
+
 //------------------------------------------------------------------------------
 cSoundSource* cSoundSource::create(string::view filename)
 {
@@ -59,6 +64,7 @@ bool cSoundWaveSource::parse_chunk(chunk_file &chunk)
 //------------------------------------------------------------------------------
 bool cSoundWaveSource::parse_format(chunk_file &chunk)
 {
+#if defined(_WIN32)
     WAVEFORMATEX        wfx;
 
     chunk.read((byte *)&wfx, chunk.size());
@@ -69,6 +75,9 @@ bool cSoundWaveSource::parse_format(chunk_file &chunk)
     _format.frequency = wfx.nSamplesPerSec;
 
     return true;
+#else // !defined(_WIN32)
+    return false;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

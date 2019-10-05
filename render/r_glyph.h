@@ -5,6 +5,18 @@
 
 #include "win_include.h"
 
+#if !defined(_WIN32)
+struct POINT {
+    UINT x, y;
+};
+struct GLYPHMETRICS {
+    UINT gmBlackBoxX;
+    UINT gmBlackBoxY;
+    UINT gmCellIncX;
+    POINT gmptGlyphOrigin;
+};
+#endif // !defined(_WIN32)
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 

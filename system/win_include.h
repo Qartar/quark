@@ -49,4 +49,6 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#include <Windows.h>
+#if defined(_WIN32)
+#   include <Windows.h>
+#endif // defined(_WIN32)

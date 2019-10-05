@@ -31,6 +31,7 @@ framebuffer::PFNGLDRAWBUFFERS framebuffer::glDrawBuffers = nullptr;
 //------------------------------------------------------------------------------
 void framebuffer::init()
 {
+#if defined(_WIN32)
     // GL_ARB_framebuffer_object
     glBindFramebuffer = (PFNGLBINDFRAMEBUFFER )wglGetProcAddress("glBindFramebuffer");
     glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERS )wglGetProcAddress("glDeleteFramebuffers");
@@ -47,6 +48,7 @@ void framebuffer::init()
     glBlitNamedFramebuffer = (PFNGLBLITNAMEDFRAMEBUFFER )wglGetProcAddress("glBlitNamedFramebuffer");
 
     glDrawBuffers = (PFNGLDRAWBUFFERS )wglGetProcAddress("glDrawBuffers");
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
