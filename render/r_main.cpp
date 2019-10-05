@@ -30,6 +30,7 @@ result system::init()
 {
     random r;
 
+#if defined(_WIN32)
     glBindRenderbuffer = (PFNGLBINDRENDERBUFFER )wglGetProcAddress("glBindRenderbuffer");
     glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERS )wglGetProcAddress("glDeleteRenderbuffers");
     glGenRenderbuffers = (PFNGLGENRENDERBUFFERS )wglGetProcAddress("glGenRenderbuffers");
@@ -41,6 +42,7 @@ result system::init()
     glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFER )wglGetProcAddress("glFramebufferRenderbuffer");
     glBlitFramebuffer = (PFNGLBLITFRAMEBUFFER )wglGetProcAddress("glBlitFramebuffer");
     glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
+#endif // defined(_WIN32)
 
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;

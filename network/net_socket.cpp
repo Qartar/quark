@@ -5,7 +5,14 @@
 #include "net_address.h"
 #include "net_message.h"
 
-#include <WS2tcpip.h>
+#if defined(_WIN32)
+#   include <WS2tcpip.h>
+#else // !defined(_WIN32)
+#   include <unistd.h>
+#   include <sys/types.h>
+#   include <sys/socket.h>
+#   include <netinet/ip.h>
+#endif // !defined(_WIN32)
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace network {
@@ -67,6 +74,7 @@ bool socket::open(socket_type type, word port)
 //------------------------------------------------------------------------------
 std::uintptr_t socket::open_socket(socket_type type, word port) const
 {
+#if defined(_WIN32)
     std::uintptr_t newsocket = 0;
     unsigned long args = 1;
 
@@ -130,13 +138,20 @@ std::uintptr_t socket::open_socket(socket_type type, word port) const
 
     closesocket(newsocket);
     return false;
+#else // !defined(_WIN32)
+    return 0;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 void socket::close()
 {
     if (_socket) {
+#if defined(_WIN32)
         ::closesocket(_socket);
+#else // !defined(_WIN32)
+        ::close(_socket);
+#endif // !defined(_WIN32)
         _socket = 0;
     }
 }
@@ -205,7 +220,7 @@ bool socket::printf(network::address const& remote, string::literal fmt, ...)
     byte* buf = message.reserve(size);
 
     va_start(va, fmt);
-    int len = vsprintf_s((char*)buf, size, fmt.c_str(), va);
+    int len = vsnprintf((char*)buf, size, fmt.c_str(), va);
     va_end(va);
 
     if (len >= 0) {
@@ -237,6 +252,7 @@ bool socket::resolve(string::view address_string, network::address& address) con
 //------------------------------------------------------------------------------
 bool socket::sockaddr_to_address(sockaddr_storage const& sockaddr, network::address& address) const
 {
+#if defined(_WIN32)
     if (sockaddr.ss_family == AF_INET) {
         auto const& sockaddr_ipv4 = reinterpret_cast<sockaddr_in const&>(sockaddr);
 
@@ -270,11 +286,15 @@ bool socket::sockaddr_to_address(sockaddr_storage const& sockaddr, network::addr
     }
 
     return true;
+#else // !defined(_WIN32)
+    return false;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 bool socket::address_to_sockaddr(network::address const& address, sockaddr_storage& sockaddr) const
 {
+#if defined(_WIN32)
     sockaddr = {};
 
     if (_type == socket_type::ipv4) {
@@ -321,11 +341,15 @@ bool socket::address_to_sockaddr(network::address const& address, sockaddr_stora
     }
 
     return true;
+#else // !defined(_WIN32)
+    return false;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 bool socket::resolve_sockaddr(string::view address_string, sockaddr_storage& sockaddr) const
 {
+#if defined(_WIN32)
     addrinfo* info = nullptr;
 
     addrinfo hints = {};
@@ -340,6 +364,7 @@ bool socket::resolve_sockaddr(string::view address_string, sockaddr_storage& soc
         freeaddrinfo(info);
         return true;
     }
+#endif // defined(_WIN32)
 
     return false;
 }

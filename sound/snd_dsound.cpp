@@ -5,7 +5,7 @@
 #include "snd_device.h"
 #include "snd_dsound.h"
 
-#include <dsound.h>
+#if defined(_WIN32)
 
 ////////////////////////////////////////////////////////////////////////////////
 HRESULT (WINAPI *pDirectSoundCreate)(GUID *, LPDIRECTSOUND8 *, IUnknown *);
@@ -293,3 +293,5 @@ void cDirectSoundDevice::mix_stereo16(samplepair_t* input, stereo16_t* output, i
         output[ii].right = clamp<short>(right, INT16_MIN, INT16_MAX);
     }
 }
+
+#endif // defined(_WIN32)

@@ -33,6 +33,7 @@ font::font(string::view name, int size)
     , _list_base(0)
     , _char_width{0}
 {
+#if defined(_WIN32)
     GLYPHMETRICS gm;
     MAT2 m;
 
@@ -75,11 +76,13 @@ font::font(string::view name, int size)
 
     // restore previous font
     SelectObject(application::singleton()->window()->hdc(), prev_font);
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 font::~font()
 {
+#if defined(_WIN32)
     // restore system font if this is the active font
     if (_active_font == _handle) {
         glListBase(0);
@@ -88,16 +91,19 @@ font::~font()
         _active_font = _system_font;
         _system_font = NULL;
     }
+#endif // defined(_WIN32)
 
     // delete from opengl
     if (_list_base) {
         glDeleteLists(_list_base, kNumChars);
     }
 
+#if defined(_WIN32)
     // delete font from gdi
     if (_handle) {
         DeleteObject(_handle);
     }
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
@@ -112,13 +118,14 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 {
     // activate font if it isn't already
     if (_active_font != _handle) {
+#if defined(_WIN32)
         HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
 
         // keep track of the system font so it can be restored later
         if (_system_font == NULL) {
             _system_font = prev_font;
         }
-
+#endif // defined(_WIN32)
         glListBase(_list_base);
         _active_font = _handle;
     }
