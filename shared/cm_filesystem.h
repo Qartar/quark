@@ -8,7 +8,11 @@
 #include <cstddef>
 #include <cstdint>
 
+#if defined(_WIN32)
 typedef struct _iobuf FILE;
+#else // !defined(_WIN32)
+typedef struct _IO_FILE FILE;
+#endif // !defined(_WIN32)
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace file {

@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 cAudioDevice *cAudioDevice::create(HWND hwnd)
 {
+#if defined(_WIN32)
     cAudioDevice* device;
     device_state_t state = device_fail;
 
@@ -26,6 +27,7 @@ cAudioDevice *cAudioDevice::create(HWND hwnd)
             return NULL;
         }
     }
+#endif // defined(_WIN32)
 
     return NULL;
 }

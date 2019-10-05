@@ -6,7 +6,8 @@
 
 #include "resource.h"
 
-#include <ShellScalingApi.h>
+#if defined(_WIN32)
+#   include <ShellScalingApi.h>
 
 namespace {
 
@@ -19,46 +20,58 @@ static PFNWGLGETSWAPINTERVALEXT wglGetSwapIntervalEXT = NULL;
 
 } // anonymous namespace
 
+#endif // defined(_WIN32)
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
+#if defined(_WIN32)
 constexpr int windowed_style = WS_OVERLAPPED|WS_BORDER|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_MAXIMIZEBOX;
 constexpr int fullscreen_style = WS_OVERLAPPED;
+#endif // defined(_WIN32)
 
 //------------------------------------------------------------------------------
 window::window(HINSTANCE hInstance, WNDPROC WndProc)
-    : _current_dpi(USER_DEFAULT_SCREEN_DPI)
-    , _vid_width("vid_width", 1280, config::archive | config::reset, "window width in logical pixels (dpi scaled)")
+    : _vid_width("vid_width", 1280, config::archive | config::reset, "window width in logical pixels (dpi scaled)")
     , _vid_height("vid_height", 760, config::archive | config::reset, "window height in logical pixels (dpi scaled)")
     , _vid_fullscreen("vid_fullscreen", 0, config::archive | config::reset, "fullscreen window (uses desktop dimensions)")
     , _vid_vsync("vid_vsync", true, config::archive, "synchronize buffer swap to vertical blank (vsync)")
     , _renderer(this)
-    , _hinst(hInstance)
-    , _wndproc(WndProc)
     , _hwnd(nullptr)
     , _hdc(nullptr)
+#if defined(_WIN32)
     , _hrc(nullptr)
+    , _hinst(hInstance)
+    , _wndproc(WndProc)
+    , _current_dpi(USER_DEFAULT_SCREEN_DPI)
+#endif // defined(_WIN32)
 {}
 
 //------------------------------------------------------------------------------
 result window::create()
 {
+#if defined(_WIN32)
     if (failed(create(CW_USEDEFAULT, 0, _vid_width, _vid_height, _vid_fullscreen))) {
         return result::failure;
     }
 
     return _renderer.init();
+#else // !defined(_WIN32)
+    return result::failure;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 void window::end_frame ()
 {
+#if defined(_WIN32)
     if (wglSwapIntervalEXT && _vid_vsync.modified()) {
         wglSwapIntervalEXT(_vid_vsync ? 1 : 0);
         _vid_vsync.reset();
     }
 
     SwapBuffers(_hdc);
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
@@ -73,6 +86,7 @@ window::~window()
 //------------------------------------------------------------------------------
 result window::create(int xpos, int ypos, int width, int height, bool fullscreen)
 {
+#if defined(_WIN32)
     SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 
     // Setup struct for RegisterClass
@@ -176,11 +190,15 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
     SetFocus(_hwnd);
 
     return result::success;
+#else // !defined(_WIN32)
+    return result::failure;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 result window::init_opengl()
 {
+#if defined(_WIN32)
     int     pixelformat;
     PIXELFORMATDESCRIPTOR pfd = 
     {
@@ -241,22 +259,28 @@ result window::init_opengl()
     }
 
     return result::success;
+#else // !defined(_WIN32)
+    return result::failure;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 void window::destroy()
 {
+#if defined(_WIN32)
     if (_hwnd) {
         shutdown_opengl( );
 
         DestroyWindow(_hwnd);
         _hwnd = NULL;
     }
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 void window::shutdown_opengl()
 {
+#if defined(_WIN32)
     wglMakeCurrent(NULL, NULL);
 
     if (_hrc) {
@@ -268,11 +292,13 @@ void window::shutdown_opengl()
         ReleaseDC(_hwnd, _hdc);
         _hdc = NULL;
     }
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 LRESULT window::message (UINT nCmd, WPARAM wParam, LPARAM lParam)
 {
+#if defined(_WIN32)
     switch (nCmd) {
         case WM_ACTIVATE:
             activate( (LOWORD(wParam) != WA_INACTIVE), ( HIWORD(wParam) > 0 ) );
@@ -304,11 +330,15 @@ LRESULT window::message (UINT nCmd, WPARAM wParam, LPARAM lParam)
     }
 
     return DefWindowProcW( _hwnd, nCmd, wParam, lParam );
+#else // !defined(_WIN32)
+    return 0;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 void window::resize_for_dpi(RECT const* suggested, int dpi)
 {
+#if defined(_WIN32)
     // By default Windows adjusts the window to preserve scale for the entire
     // window including the non-client area. This causes the dimensions of the
     // client area to change which we want to avoid.
@@ -333,11 +363,13 @@ void window::resize_for_dpi(RECT const* suggested, int dpi)
     _current_dpi = dpi;
 
     end_frame();
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 bool window::toggle_fullscreen()
 {
+#if defined(_WIN32)
     if (_fullscreen) {
         ShowWindow(_hwnd, SW_RESTORE);
         SetWindowLongA(_hwnd, GWL_STYLE, windowed_style | WS_VISIBLE);
@@ -358,11 +390,15 @@ bool window::toggle_fullscreen()
         _fullscreen = true;
     }
     return true;
+#else // !defined(_WIN32)
+    return false;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 result window::activate(bool active, bool minimized)
 {
+#if defined(_WIN32)
     if (active && !minimized) {
         if (!_active || _minimized) {
             SetForegroundWindow(_hwnd);
@@ -382,6 +418,9 @@ result window::activate(bool active, bool minimized)
     }
 
     return result::success;
+#else // !defined(_WIN32)
+    return result::failure;
+#endif // !defined(_WIN32)
 }
 
 } // namespace render

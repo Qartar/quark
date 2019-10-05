@@ -3,9 +3,6 @@
 
 #pragma once
 
-#define NOMINMAX
-#include <windows.h>
-
 #include "cm_shared.h"
 #include "cm_config.h"
 #include "cm_sound.h"

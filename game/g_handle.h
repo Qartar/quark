@@ -82,7 +82,7 @@ public:
     //! get the index of the referenced object in the world's object array
     uint64_t get_index() const { return (_value & index_mask) >> index_shift; }
     //! get a pointer to world that contains the referenced object
-    game::world* get_world() const { return game::world::_singletons[get_world_index()]; }
+    game::world* get_world() const { return get_world_internal(); }
     //! get the unique sequence number for the referenced object
     uint64_t get_sequence() const { return (_value & sequence_mask) >> sequence_shift; }
 
@@ -92,6 +92,9 @@ protected:
 
     //! packed value containing object index, world index, and sequence id
     uint64_t _value;
+
+    //! force dependent name lookup since game::world is defined after game::handle
+    template<typename Y = game::world> game::world* get_world_internal() const { return Y::_singletons[get_world_index()]; }
 
 protected:
     //! number of bits used to store the object index

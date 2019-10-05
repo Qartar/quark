@@ -6,8 +6,10 @@
 #include "cm_filesystem.h"
 #include "cm_parser.h"
 
-#include <Shlobj.h>
-#include <PathCch.h>
+#if defined(_WIN32)
+#   include <Shlobj.h>
+#   include <PathCch.h>
+#endif // defined(_WIN32)
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace config {
@@ -239,6 +241,7 @@ config::scalar& scalar::operator=(float f)
 //------------------------------------------------------------------------------
 int get_config_path(char *path, std::size_t size, bool create = false)
 {
+#if defined(_WIN32)
     PWSTR pszPath;
     WCHAR wPath[1024];
 
@@ -263,6 +266,9 @@ int get_config_path(char *path, std::size_t size, bool create = false)
         narrow_cast<int>(size),
         NULL,
         NULL);
+#else // !defined(_WIN32)
+    return ::string::strzcpy(path, "./config.ini", size) ? 1 : 0;
+#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

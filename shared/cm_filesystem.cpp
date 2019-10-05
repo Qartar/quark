@@ -204,9 +204,13 @@ buffer::~buffer()
 //------------------------------------------------------------------------------
 stream open(string::view filename, file::mode mode)
 {
+#if defined(_WIN32)
     FILE* f = nullptr;
     fopen_s(&f, filename.c_str(), mode_to_native(mode));
     return stream_internal(f);
+#else
+    return stream_internal(fopen(filename.c_str(), mode_to_native(mode)));
+#endif
 }
 
 //------------------------------------------------------------------------------

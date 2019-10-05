@@ -5,6 +5,7 @@
 #include "cm_shared.h"
 
 #include <cstdarg>
+#include <cstdio> // vsnprintf
 #include <algorithm>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,9 +202,15 @@ int stricmp(view str1, view str2)
 {
     std::size_t l1 = str1.length();
     std::size_t l2 = str2.length();
+#if defined(_WIN32)
     int d = _strnicmp(str1.begin(),
                       str2.begin(),
                       std::min(l1, l2));
+#else // !defined(_WIN32)
+    int d = strncasecmp(str1.begin(),
+                        str2.begin(),
+                        std::min(l1, l2));
+#endif // !defined(_WIN32)
 
     return d ? d :
         l1 < l2 ? -1 :
