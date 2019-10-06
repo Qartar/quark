@@ -8,6 +8,16 @@ find_package(Git)
 set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/cmake")
 set(VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/version.h")
 
+if(APPLE)
+    add_compile_options(-DGL_SILENCE_DEPRECATION)
+    INCLUDE_DIRECTORIES ( /System/Library/Frameworks )
+    FIND_LIBRARY(OpenGL_LIBRARY OpenGL )
+    MARK_AS_ADVANCED (
+            OpenGL_LIBRARY)
+    SET(EXTRA_LIBS ${OpenGL_LIBRARY})
+    link_libraries(${EXTRA_LIBS})
+endif(APPLE)
+
 if(GIT_FOUND)
     add_custom_target(quark-version ALL
         COMMAND ${CMAKE_COMMAND}
@@ -152,6 +162,8 @@ if(WIN32)
         Pathcch
         Xinput
     )
+elseif(APPLE)
+    add_compile_options("-framework OpenGL")
 else()
     set(POSIX_LIBRARIES
         GL

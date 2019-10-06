@@ -5,8 +5,14 @@
 
 #include "gl/gl_types.h"
 
+#if defined(_WIN32)
 #include "win_include.h"
 #include <GL/gl.h>
+#elif defined(__APPLE__)
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
+#endif // !defined(__APPLE__)
 
 //------------------------------------------------------------------------------
 // OpenGL 1.2

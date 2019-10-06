@@ -10,9 +10,11 @@
 
 #if defined(_WIN32)
 typedef struct _iobuf FILE;
-#else // !defined(_WIN32)
+#elif defined(__APPLE__)
+typedef struct __sFILE FILE;
+#else
 typedef struct _IO_FILE FILE;
-#endif // !defined(_WIN32)
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace file {
