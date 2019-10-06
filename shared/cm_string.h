@@ -213,19 +213,3 @@ int stricmp(view str1, view str2);
 //------------------------------------------------------------------------------
 string::view va(string::literal fmt, ...);
 
-////////////////////////////////////////////////////////////////////////////////
-namespace std {
-
-template<class> struct less;
-
-//------------------------------------------------------------------------------
-template<> struct less<::string::buffer>
-{
-    using is_transparent = void;
-
-    bool operator()(::string::view lhs, ::string::view rhs) const {
-        return strcmp(lhs, rhs) < 0;
-    }
-};
-
-} // namespace std

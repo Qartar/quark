@@ -147,6 +147,7 @@ void cSound::set_listener(vec3 origin, vec3 forward, vec3 right, vec3 up)
 //------------------------------------------------------------------------------
 sound::asset cSound::load_sound(string::view filename)
 {
+#if defined(_WIN32)
     auto it = _sounds_by_name.find(filename);
     if (it != _sounds_by_name.cend()) {
         return it->second;
@@ -161,6 +162,9 @@ sound::asset cSound::load_sound(string::view filename)
     } else {
         return sound::asset::invalid;
     }
+#else
+    return sound::asset::invalid;
+#endif // defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------

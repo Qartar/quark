@@ -5,7 +5,12 @@
 #pragma hdrstop
 
 #include "win_include.h"
+
+#if defined(__APPLE__)
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
