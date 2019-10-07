@@ -59,7 +59,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR szCm
 #else
 int main(int argc, char** argv)
 {
-    return application(0).main(nullptr, 0);
+    return application(nullptr).main(*argv, 0);
 }
 #endif // defined(_WIN32)
 
