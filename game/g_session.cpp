@@ -120,8 +120,7 @@ result session::init (string::view cmdline)
     }
 
     // sound indices are shared over the network so sounds
-    // need to be registed in the same order on all clients
-
+    // need to be registered in the same order on all clients
     pSound->load_sound("assets/sound/tank_move.wav");
     pSound->load_sound("assets/sound/tank_idle.wav");
     pSound->load_sound("assets/sound/tank_explode.wav");
