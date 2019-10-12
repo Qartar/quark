@@ -12,6 +12,10 @@
 #include <GL/gl.h>
 #endif
 
+#if defined(USE_SDL)
+#   include <SDL2/SDL_video.h>
+#endif // defined(USE_SDL)
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
@@ -35,7 +39,19 @@ result system::init()
 {
     random r;
 
-#if defined(_WIN32)
+#if defined(USE_SDL)
+    glBindRenderbuffer = (PFNGLBINDRENDERBUFFER )SDL_GL_GetProcAddress("glBindRenderbuffer");
+    glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERS )SDL_GL_GetProcAddress("glDeleteRenderbuffers");
+    glGenRenderbuffers = (PFNGLGENRENDERBUFFERS )SDL_GL_GetProcAddress("glGenRenderbuffers");
+    glRenderbufferStorage = (PFNGLRENDERBUFFERSTORAGE )SDL_GL_GetProcAddress("glRenderbufferStorage");
+    glRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLE )SDL_GL_GetProcAddress("glRenderbufferStorageMultisample");
+    glBindFramebuffer = (PFNGLBINDFRAMEBUFFER )SDL_GL_GetProcAddress("glBindFramebuffer");
+    glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERS )SDL_GL_GetProcAddress("glDeleteFramebuffers");
+    glGenFramebuffers = (PFNGLGENFRAMEBUFFERS )SDL_GL_GetProcAddress("glGenFramebuffers");
+    glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFER )SDL_GL_GetProcAddress("glFramebufferRenderbuffer");
+    glBlitFramebuffer = (PFNGLBLITFRAMEBUFFER )SDL_GL_GetProcAddress("glBlitFramebuffer");
+    glBlendColor = (PFNGLBLENDCOLOR )SDL_GL_GetProcAddress("glBlendColor");
+#elif defined(_WIN32)
     glBindRenderbuffer = (PFNGLBINDRENDERBUFFER )wglGetProcAddress("glBindRenderbuffer");
     glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERS )wglGetProcAddress("glDeleteRenderbuffers");
     glGenRenderbuffers = (PFNGLGENRENDERBUFFERS )wglGetProcAddress("glGenRenderbuffers");

@@ -20,7 +20,7 @@ void log::set(log* logger)
 //------------------------------------------------------------------------------
 void log::message(char const* fmt, ...)
 {
-    if (_singleton) {
+    if (_singleton && false) {
         constexpr int buffer_size = 8192;
         char buffer[buffer_size];
 
@@ -31,13 +31,19 @@ void log::message(char const* fmt, ...)
         va_end(ap);
 
         _singleton->print(level::message, buffer);
+    } else {
+        va_list ap;
+
+        va_start(ap, fmt);
+        vfprintf(stdout, fmt, ap);
+        va_end(ap);
     }
 }
 
 //------------------------------------------------------------------------------
 void log::warning(char const* fmt, ...)
 {
-    if (_singleton) {
+    if (_singleton && false) {
         constexpr int buffer_size = 8192;
         char buffer[buffer_size];
 
@@ -48,13 +54,19 @@ void log::warning(char const* fmt, ...)
         va_end(ap);
 
         _singleton->print(level::warning, buffer);
+    } else {
+        va_list ap;
+
+        va_start(ap, fmt);
+        vfprintf(stderr, fmt, ap);
+        va_end(ap);
     }
 }
 
 //------------------------------------------------------------------------------
 void log::error(char const* fmt, ...)
 {
-    if (_singleton) {
+    if (_singleton && false) {
         constexpr int buffer_size = 8192;
         char buffer[buffer_size];
 
@@ -65,6 +77,12 @@ void log::error(char const* fmt, ...)
         va_end(ap);
 
         _singleton->print(level::error, buffer);
+    } else {
+        va_list ap;
+
+        va_start(ap, fmt);
+        vfprintf(stderr, fmt, ap);
+        va_end(ap);
     }
 }
 

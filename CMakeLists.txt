@@ -35,6 +35,8 @@ else()
     configure_file(${SCRIPTS_DIR}/version.h.in ${VERSION_FILE})
 endif()
 
+set(USE_SDL ON)
+
 if(MSVC)
     # Remove bad default compiler flags for Visual Studio
     string(REPLACE "/DWIN32 /D_WINDOWS /W3 /GR /EHsc" "/EHsc" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
@@ -110,22 +112,36 @@ set(QUARK_SOURCES
     render/r_model.cpp
     render/r_model.h
     render/r_particle.h
-    render/r_window.cpp
-    render/r_window.h
-    system/resource.h
-    system/win_main.cpp
-    system/win_main.h
-    system/win_include.h
-    system/win_types.h
 )
 
-if (MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(WIN32_SOURCES system/resource.rc)
+if (USE_SDL)
+    add_compile_options(-DUSE_SDL)
+    set(SDL_SOURCES
+        render/sdl_window.cpp
+        render/sdl_window.h
+        system/sdl_main.cpp
+        system/sdl_main.h
+    )
+    set(SDL_LIBRARIES
+        SDL2
+    )
+elseif (MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(WIN32_SOURCES
+        render/r_window.cpp
+        render/r_window.h
+        system/resource.h
+        system/resource.rc
+        system/win_main.cpp
+        system/win_main.h
+        system/win_include.h
+        system/win_types.h
+    )
 endif()
 
 add_executable(quark WIN32
     ${QUARK_SOURCES}
     ${WIN32_SOURCES}
+    ${SDL_SOURCES}
     ${VERSION_FILE}
 
     precompiled.cpp
@@ -160,6 +176,7 @@ target_link_libraries(quark
     # system libraries
     ${WIN32_LIBRARIES}
     ${POSIX_LIBRARIES}
+    ${SDL_LIBRARIES}
 )
 
 target_include_directories(quark

@@ -6,6 +6,11 @@
 #include "cm_config.h"
 #include "win_types.h"
 
+#if defined(USE_SDL)
+typedef struct SDL_Window SDL_Window;
+typedef void* SDL_GL_Context;
+#endif // defined(USE_SDL)
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
@@ -23,8 +28,12 @@ public:
     LRESULT message(UINT uCmd, WPARAM wParam, LPARAM lParam);
     bool toggle_fullscreen();
 
+#if defined(USE_SDL)
+    SDL_Window* hwnd() const { return _hwnd; }
+#else
     HWND hwnd() const { return _hwnd; }
     HDC hdc() const { return _hdc; }
+#endif
 
     bool active() const { return _active; }
     vec2i position() const { return _position; }
@@ -62,8 +71,14 @@ private:
 
     render::system _renderer;
 
+#if defined(USE_SDL)
+    SDL_Window* _hwnd;
+    SDL_GL_Context _hrc;
+
+#else // !defined(USE_SDL)
     HWND _hwnd;
     HDC _hdc;
+
 #if defined(_WIN32)
     HGLRC _hrc;
 
@@ -73,6 +88,7 @@ private:
     int _current_dpi;
 #endif // defined(_WIN32)
 
+#endif // !defined(USE_SDL)
 };
 
 } // namespace render

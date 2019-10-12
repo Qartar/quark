@@ -81,6 +81,10 @@ font::font(string::view name, int size)
 
     // restore previous font
     SelectObject(application::singleton()->window()->hdc(), prev_font);
+#else
+    for (int ii = 0; ii < kNumChars; ++ii) {
+        _char_width[ii] = 10;
+    }
 #endif // defined(_WIN32)
 }
 
