@@ -144,6 +144,8 @@ int application::shutdown()
 
     _config.shutdown();
 
+    SDL_Quit();
+
 #ifdef DEBUG_MEM    
     _CrtDumpMemoryLeaks();
 #endif // DEBUG_MEM
@@ -161,7 +163,7 @@ void application::quit(int exit_code)
 #if defined(_WIN32)
     PostQuitMessage(exit_code);
 #else // !defined(_WIN32)
-    SDL_Quit();
+    exit(exit_code);
 #endif // !defined(_WIN32)
 }
 
