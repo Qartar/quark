@@ -7,11 +7,23 @@
 
 #if defined(_WIN32)
 #   include <WS2tcpip.h>
+
+#   define s6_addr16 s6_words
 #else // !defined(_WIN32)
+#   include <fcntl.h>
+#   include <netdb.h>
 #   include <unistd.h>
 #   include <sys/types.h>
 #   include <sys/socket.h>
 #   include <netinet/ip.h>
+
+#   define SOCKET_ERROR (-1)
+#   define INVALID_SOCKET (-1)
+#   define closesocket close
+#   define in4addr_any {INADDR_ANY}
+#   define in4addr_loopback {INADDR_LOOPBACK}
+#   define in4addr_broadcast {INADDR_BROADCAST}
+#   define in6addr_allnodesonlink { { { 0xff,0x2,0,0,0,0,0,0,0,0,0,0,0,0,0,0x1 } } }
 #endif // !defined(_WIN32)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +86,6 @@ bool socket::open(socket_type type, word port)
 //------------------------------------------------------------------------------
 std::uintptr_t socket::open_socket(socket_type type, word port) const
 {
-#if defined(_WIN32)
     std::uintptr_t newsocket = 0;
     unsigned long args = 1;
 
@@ -87,10 +98,17 @@ std::uintptr_t socket::open_socket(socket_type type, word port) const
     }
 
     // disable blocking
+#if defined(_WIN32)
     if (ioctlsocket(newsocket, FIONBIO, &args) == SOCKET_ERROR) {
         ::closesocket(newsocket);
         return 0;
     }
+#else // !defined(_WIN32)
+    if (fcntl(newsocket, F_SETFL, O_NONBLOCK)) {
+        ::closesocket(newsocket);
+        return 0;
+    }
+#endif // !defined(_WIN32)
 
     // enable broadcasting
     if (type == socket_type::ipv4) {
@@ -136,22 +154,15 @@ std::uintptr_t socket::open_socket(socket_type type, word port) const
         }
     }
 
-    closesocket(newsocket);
+    ::closesocket(newsocket);
     return false;
-#else // !defined(_WIN32)
-    return 0;
-#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 void socket::close()
 {
     if (_socket) {
-#if defined(_WIN32)
         ::closesocket(_socket);
-#else // !defined(_WIN32)
-        ::close(_socket);
-#endif // !defined(_WIN32)
         _socket = 0;
     }
 }
@@ -252,7 +263,6 @@ bool socket::resolve(string::view address_string, network::address& address) con
 //------------------------------------------------------------------------------
 bool socket::sockaddr_to_address(sockaddr_storage const& sockaddr, network::address& address) const
 {
-#if defined(_WIN32)
     if (sockaddr.ss_family == AF_INET) {
         auto const& sockaddr_ipv4 = reinterpret_cast<sockaddr_in const&>(sockaddr);
 
@@ -266,8 +276,8 @@ bool socket::sockaddr_to_address(sockaddr_storage const& sockaddr, network::addr
             address.port = ntohs(sockaddr_ipv4.sin_port);
             address.ip6.fill(0);
             address.ip6[5] = 0xffff;
-            address.ip6[6] = ntohs(sockaddr_ipv4.sin_addr.S_un.S_un_w.s_w1);
-            address.ip6[7] = ntohs(sockaddr_ipv4.sin_addr.S_un.S_un_w.s_w2);
+            address.ip6[6] = ntohs((sockaddr_ipv4.sin_addr.s_addr >>  0) & 0xffff);
+            address.ip6[7] = ntohs((sockaddr_ipv4.sin_addr.s_addr >> 16) & 0xffff);
         } else {
             return false;
         }
@@ -278,7 +288,7 @@ bool socket::sockaddr_to_address(sockaddr_storage const& sockaddr, network::addr
             address.type = network::address_type::ipv6;
             address.port = ntohs(sockaddr_ipv6.sin6_port);
             for (std::size_t ii = 0; ii < address.ip6.size(); ++ii) {
-                address.ip6[ii] = ntohs(sockaddr_ipv6.sin6_addr.u.Word[ii]);
+                address.ip6[ii] = ntohs(sockaddr_ipv6.sin6_addr.s6_addr16[ii]);
             }
         } else {
             return false;
@@ -286,15 +296,11 @@ bool socket::sockaddr_to_address(sockaddr_storage const& sockaddr, network::addr
     }
 
     return true;
-#else // !defined(_WIN32)
-    return false;
-#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 bool socket::address_to_sockaddr(network::address const& address, sockaddr_storage& sockaddr) const
 {
-#if defined(_WIN32)
     sockaddr = {};
 
     if (_type == socket_type::ipv4) {
@@ -324,14 +330,15 @@ bool socket::address_to_sockaddr(network::address const& address, sockaddr_stora
             sockaddr_ipv6.sin6_addr = in6addr_allnodesonlink;
         } else if (address.type == network::address_type::ipv4) {
             // IPv4-mapped IPv6 address
-            sockaddr_ipv6.sin6_addr.u.Word[ 5] = 0xffff;
-            sockaddr_ipv6.sin6_addr.u.Byte[12] = address.ip4[0];
-            sockaddr_ipv6.sin6_addr.u.Byte[13] = address.ip4[1];
-            sockaddr_ipv6.sin6_addr.u.Byte[14] = address.ip4[2];
-            sockaddr_ipv6.sin6_addr.u.Byte[15] = address.ip4[3];
+            sockaddr_ipv6.sin6_addr.s6_addr[10] = 0xff;
+            sockaddr_ipv6.sin6_addr.s6_addr[11] = 0xff;
+            sockaddr_ipv6.sin6_addr.s6_addr[12] = address.ip4[0];
+            sockaddr_ipv6.sin6_addr.s6_addr[13] = address.ip4[1];
+            sockaddr_ipv6.sin6_addr.s6_addr[14] = address.ip4[2];
+            sockaddr_ipv6.sin6_addr.s6_addr[15] = address.ip4[3];
         } else if (address.type == network::address_type::ipv6) {
             for (size_t ii = 0; ii < address.ip6.size(); ++ii) {
-                sockaddr_ipv6.sin6_addr.u.Word[ii] = htons(address.ip6[ii]);
+                sockaddr_ipv6.sin6_addr.s6_addr16[ii] = htons(address.ip6[ii]);
             }
         } else {
             return false;
@@ -341,15 +348,11 @@ bool socket::address_to_sockaddr(network::address const& address, sockaddr_stora
     }
 
     return true;
-#else // !defined(_WIN32)
-    return false;
-#endif // !defined(_WIN32)
 }
 
 //------------------------------------------------------------------------------
 bool socket::resolve_sockaddr(string::view address_string, sockaddr_storage& sockaddr) const
 {
-#if defined(_WIN32)
     addrinfo* info = nullptr;
 
     addrinfo hints = {};
@@ -364,7 +367,6 @@ bool socket::resolve_sockaddr(string::view address_string, sockaddr_storage& soc
         freeaddrinfo(info);
         return true;
     }
-#endif // defined(_WIN32)
 
     return false;
 }
