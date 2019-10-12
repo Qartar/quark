@@ -5,6 +5,8 @@
 
 #include "win_types.h"
 
+typedef union SDL_Event SDL_Event;
+
 //------------------------------------------------------------------------------
 class application
 {
@@ -49,5 +51,9 @@ protected:
 
     void generate_gamepad_events();
 
+#if defined(USE_SDL)
+    void process_event(SDL_Event const& ev);
+#else
     static LRESULT CALLBACK wndproc(HWND hWnd, UINT nCmd, WPARAM wParam, LPARAM lParam);
+#endif
 };

@@ -15,6 +15,10 @@
 #include "r_image.h"
 #include "r_shader.h"
 
+#if defined(USE_SDL)
+#   include <SDL2/SDL_video.h>
+#endif // defined(USE_SDL)
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
