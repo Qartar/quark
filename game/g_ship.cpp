@@ -117,8 +117,53 @@ void ship::spawn()
 //------------------------------------------------------------------------------
 void ship::draw(render::system* renderer, time_value time) const
 {
+#if 1
+        {
+            auto tx = get_transform(time);
+#define SHIP(L,B)           \
+    {vec2{L * .5f, B * 0.f},     \
+    vec2{L * .3f, B * .4f},     \
+    vec2{L * 0.f, B * .5f},     \
+    vec2{L * -.35f, B * .4f},    \
+    vec2{L * -.5f, B * .2f},    \
+    vec2{L * -.5f, B * -.2f},   \
+    vec2{L * -.35f, B * -.4f},   \
+    vec2{L * 0.f, B * -.5f},    \
+    vec2{L * .3f, B * -.4f}}
+
+            const vec2 pts[][9] = {
+                // yamato-class battleship
+                SHIP(263.f, 39.f),
+
+                // iowa-class battleship
+                SHIP(270.f, 33.f),
+
+                // king george v-class battleship
+                SHIP(227.f, 31.5f),
+
+                // deutschland-class cruiser
+                SHIP(186.f, 21.7f),
+
+                // town-class cruiser
+                SHIP(180.f, 19.f),
+
+                // tribal-class destroyer
+                SHIP(115.f, 11.f),
+            };
+
+            static int s_idx = 0;
+            int idx = ++s_idx %  countof(pts);
+            for (int ii = 0; ii < countof(pts[idx]); ++ii) {
+                vec2 v0 = pts[idx][ii] * tx;
+                vec2 v1 = pts[idx][(ii + 1) % countof(pts[idx])] * tx;
+                renderer->draw_line(v0, v1, color4(0,1,0,1), color4(0,1,0,1));
+            }
+        }
+#else
+
     if (!_is_destroyed) {
         renderer->draw_model(_model, get_transform(time), _color);
+
 
         constexpr color4 subsystem_colors[2][2] = {
             { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f) },
@@ -206,6 +251,7 @@ void ship::draw(render::system* renderer, time_value time) const
             position += vec2(8,0);
         }
     }
+#endif
 }
 
 //------------------------------------------------------------------------------

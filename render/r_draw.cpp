@@ -363,8 +363,130 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
 }
 
 //------------------------------------------------------------------------------
+namespace {
+
+vec3 const grad3[12] = {
+    vec3(1, 1, 0), vec3(-1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0),
+    vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
+    vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, 1, -1), vec3(0, -1, -1)
+};
+
+int const perm[512] = {
+    151,160,137, 91, 90, 15,131, 13,201, 95, 96, 53,194,233,  7,225,
+    140, 36,103, 30, 69,142,  8, 99, 37,240, 21, 10, 23,190,  6,148,
+    247,120,234, 75,  0, 26,197, 62, 94,252,219,203,117, 35, 11, 32,
+     57,177, 33, 88,237,149, 56, 87,174, 20,125,136,171,168, 68,175,
+     74,165, 71,134,139, 48, 27,166, 77,146,158,231, 83,111,229,122,
+     60,211,133,230,220,105, 92, 41, 55, 46,245, 40,244,102,143, 54,
+     65, 25, 63,161,  1,216, 80, 73,209, 76,132,187,208, 89, 18,169,
+    200,196,135,130,116,188,159, 86,164,100,109,198,173,186,  3, 64,
+     52,217,226,250,124,123,  5,202, 38,147,118,126,255, 82, 85,212,
+    207,206, 59,227, 47, 16, 58, 17,182,189, 28, 42,223,183,170,213,
+    119,248,152,  2, 44,154,163, 70,221,153,101,155,167, 43,172,  9,
+    129, 22, 39,253, 19, 98,108,110, 79,113,224,232,178,185,112,104,
+    218,246, 97,228,251, 34,242,193,238,210,144, 12,191,179,162,241,
+     81, 51,145,235,249, 14,239,107, 49,192,214, 31,181,199,106,157,
+    184, 84,204,176,115,121, 50, 45,127,  4,150,254,138,236,205, 93,
+    222,114, 67, 29, 24, 72,243,141,128,195, 78, 66,215, 61,156,180,
+//  repeat
+    151,160,137, 91, 90, 15,131, 13,201, 95, 96, 53,194,233,  7,225,
+    140, 36,103, 30, 69,142,  8, 99, 37,240, 21, 10, 23,190,  6,148,
+    247,120,234, 75,  0, 26,197, 62, 94,252,219,203,117, 35, 11, 32,
+     57,177, 33, 88,237,149, 56, 87,174, 20,125,136,171,168, 68,175,
+     74,165, 71,134,139, 48, 27,166, 77,146,158,231, 83,111,229,122,
+     60,211,133,230,220,105, 92, 41, 55, 46,245, 40,244,102,143, 54,
+     65, 25, 63,161,  1,216, 80, 73,209, 76,132,187,208, 89, 18,169,
+    200,196,135,130,116,188,159, 86,164,100,109,198,173,186,  3, 64,
+     52,217,226,250,124,123,  5,202, 38,147,118,126,255, 82, 85,212,
+    207,206, 59,227, 47, 16, 58, 17,182,189, 28, 42,223,183,170,213,
+    119,248,152,  2, 44,154,163, 70,221,153,101,155,167, 43,172,  9,
+    129, 22, 39,253, 19, 98,108,110, 79,113,224,232,178,185,112,104,
+    218,246, 97,228,251, 34,242,193,238,210,144, 12,191,179,162,241,
+     81, 51,145,235,249, 14,239,107, 49,192,214, 31,181,199,106,157,
+    184, 84,204,176,115,121, 50, 45,127,  4,150,254,138,236,205, 93,
+    222,114, 67, 29, 24, 72,243,141,128,195, 78, 66,215, 61,156,180
+};
+
+double dot(vec3 p, double a, double b)
+{
+    return p.x * a + p.y * b;
+}
+
+float simplex(vec2 P)
+{
+    constexpr float sqrt_three = 1.73205080756887729352f;
+    double  n0, n1, n2;
+
+    //  skew input space to determine simplex cell
+    double const F2 = 0.5 * (sqrt_three - 1.0f);
+    double s = (P.x + P.y) * F2;
+    int i = int(floor(P.x + s));
+    int j = int(floor(P.y + s));
+
+    //  unskew back into xy space
+    double const G2 = (3.0 - sqrt_three) / 6.0;
+    double t = (i + j) * G2;
+    double X0 = i - t;
+    double Y0 = j - t;
+    double x0 = P.x - X0;
+    double y0 = P.y - Y0;
+
+    //  determine simplex
+    int i1, j1;
+    if (x0 > y0) {
+        i1 = 1; j1 = 0;
+    } else {
+        i1 = 0; j1 = 1;
+    }
+
+    //  coordinates of other corners
+    double x1 = x0 - i1 + G2;
+    double y1 = y0 - j1 + G2;
+    double x2 = x0 - 1.0 + G2 * 2.0;
+    double y2 = y0 - 1.0 + G2 * 2.0;
+
+    //  work out hashed gradient indices
+    int ii = i & 255;
+    int jj = j & 255;
+    int gi0 = perm[ii + perm[jj]] % 12;
+    int gi1 = perm[(ii + i1 + perm[jj + j1]) & 255] % 12;
+    int gi2 = perm[(ii + 1 + perm[jj + 1]) & 255] % 12;
+
+    //  calculate contributions
+    double t0 = 0.5 - x0 * x0 - y0 * y0;
+    if (t0 < 0.0) {
+        n0 = 0.0;
+    } else {
+        t0 *= t0;
+        n0 = t0 * t0 * dot(grad3[gi0], x0, y0);
+    }
+
+    double t1 = 0.5 - x1 * x1 - y1 * y1;
+    if (t1 < 0.0) {
+        n1 = 0.0;
+    } else {
+        t1 *= t1;
+        n1 = t1 * t1 * dot(grad3[gi1], x1, y1);
+    }
+
+    double t2 = 0.5 - x2 * x2 - y2 * y2;
+    if (t2 < 0.0) {
+        n2 = 0.0;
+    } else {
+        t2 *= t2;
+        n2 = t2 * t2 * dot(grad3[gi2], x2, y2);
+    }
+
+    //  sum and scale to range [-1,1]
+    return float(70.0 * (n0 + n1 + n2));
+}
+
+} // anonymous namespace
+
+//------------------------------------------------------------------------------
 void system::draw_starfield(vec2 streak_vector)
 {
+#if 0
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
 
@@ -444,6 +566,160 @@ void system::draw_starfield(vec2 streak_vector)
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
+#else
+    (void)streak_vector;
+
+    glBegin(GL_LINES);
+
+    glColor4f(1,1,1,1);
+
+    float xmin = _view.origin.x - _view.size.x * .5f;
+    float xmax = _view.origin.x + _view.size.x * .5f;
+    float ymin = _view.origin.y - _view.size.y * .5f;
+    float ymax = _view.origin.y + _view.size.y * .5f;
+
+    float dx = 16.f * (xmax - xmin) / _framebuffer_size.x;
+    float dy = 16.f * (ymax - ymin) / _framebuffer_size.y;
+
+    auto const noise = [](vec2 v) {
+        //return sin(.2f * v.x) * sin(.1f * v.y) + cos(.1f * v.x + 1.f);
+        return .25f * simplex(v * .001f)
+             + .5f * simplex(vec2(-9, 17) + v * .0005f)
+             + 1.f * simplex(vec2(13, 7) + v * .00025f)
+             + 2.f * simplex(vec2(29, -51) + v * .000125f)
+             + 1.f
+             + v.length_sqr() * .0000000025f;
+    };
+
+    for (int jj = 0; 16 * jj < _framebuffer_size.y; ++jj) {
+        float y0 = ymin + dy * jj;
+
+        for (int ii = 0; 16 * ii < _framebuffer_size.x; ++ii) {
+            float x0 = xmin + dx * ii;
+
+            float h00, h10;
+            float h01, h11;
+
+            h00 = noise(vec2(x0,      y0     ));
+            h10 = noise(vec2(x0 + dx, y0     ));
+            h01 = noise(vec2(x0,      y0 + dy));
+            h11 = noise(vec2(x0 + dx, y0 + dy));
+
+            /*
+                h00 h10
+                h01 h11
+
+                --      +-      ++      ++      +-      ++
+                --      --      --      -+      -+      ++
+
+                h0 + (h1 - h0)t = 0
+                t = -h0 / (h1 - h0)
+
+            */
+
+            float x2 = x0 - dx * h00 / (h10 - h00);
+            float x3 = x0 - dx * h01 / (h11 - h01);
+            float y2 = y0 - dy * h00 / (h01 - h00);
+            float y3 = y0 - dy * h10 / (h11 - h10);
+
+            /*
+
+                (x0, y0)        (x2, y0)        (x0 + dx, y0)
+
+                (x0, y2)                        (x0 + dx, y3)
+
+                (x0, y0 + dy)   (x3, y0 + dy)   (x0 + dx, y0 + dy)
+
+            */
+
+            int mask = ((h00 < 0.f) ? 1 : 0)
+                     | ((h10 < 0.f) ? 2 : 0)
+                     | ((h01 < 0.f) ? 4 : 0)
+                     | ((h11 < 0.f) ? 8 : 0);
+
+            switch (mask) {
+            case 1:
+            case 15 ^ 1:
+                glVertex2f(x0, y2);
+                glVertex2f(x2, y0);
+                break;
+
+            case 2:
+            case 15 ^ 2:
+                glVertex2f(x2, y0);
+                glVertex2f(x0 + dx, y3);
+                break;
+
+            case 4:
+            case 15 ^ 4:
+                glVertex2f(x0, y2);
+                glVertex2f(x3, y0 + dy);
+                break;
+
+            case 8:
+            case 15 ^ 8:
+                glVertex2f(x3, y0 + dy);
+                glVertex2f(x0 + dx, y3);
+                break;
+
+            case 1 | 2:
+            case 4 | 8:
+                glVertex2f(x0, y2);
+                glVertex2f(x0 + dx, y3);
+                break;
+
+            case 1 | 4:
+            case 2 | 8:
+                glVertex2f(x2, y0);
+                glVertex2f(x3, y0 + dx);
+                break;
+
+            case 1 | 8:
+                glVertex2f(x2, y0);
+                glVertex2f(x0 + dx, y3);
+                glVertex2f(x0, y2);
+                glVertex2f(x3, y0 + dy);
+                break;
+
+            case 2 | 4:
+                glVertex2f(x0, y2);
+                glVertex2f(x2, y0);
+                glVertex2f(x3, y0 + dy);
+                glVertex2f(x0 + dx, y3);
+                break;
+            }
+        }
+    }
+
+    glEnd();
+
+    glBegin(GL_TRIANGLES);
+    for (int jj = 0; 16 * jj < _framebuffer_size.y; ++jj) {
+        float y0 = ymin + dy * jj;
+
+        for (int ii = 0; 16 * ii < _framebuffer_size.x; ++ii) {
+            float x0 = xmin + dx * ii;
+
+            float h0 = noise(vec2(x0,      y0     ));
+
+            if (h0 < 0.f) {
+                glColor4f(0,1,0,.1f);
+            } else {
+                glColor4f(0,0,1,.1f);
+            }
+
+            glVertex2f(x0 - dx * .5f, y0 - dy * .5f);
+            glVertex2f(x0 + dx * .5f, y0 - dy * .5f);
+            glVertex2f(x0 + dx * .5f, y0 + dy * .5f);
+
+            glVertex2f(x0 - dx * .5f, y0 - dy * .5f);
+            glVertex2f(x0 + dx * .5f, y0 + dy * .5f);
+            glVertex2f(x0 - dx * .5f, y0 + dy * .5f);
+        }
+    }
+    glEnd();
+
+#endif
 }
 
 } // namespace render

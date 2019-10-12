@@ -63,8 +63,8 @@ void world::reset()
     _sequence = 0;
     _framenum = 0;
 
-    for (int ii = 0; ii < 3; ++ii) {
-        float angle = float(ii) * (math::pi<float> * 2.f / 3.f);
+    for (int ii = 0; ii < 6; ++ii) {
+        float angle = float(ii) * (math::pi<float> * 2.f / 6.f);
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>();
