@@ -7,15 +7,19 @@ find_package(git)
 
 set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/cmake")
 set(VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/version.h")
+set(USE_SDL ON)
 
 if(APPLE)
     add_compile_options(-DGL_SILENCE_DEPRECATION)
-    INCLUDE_DIRECTORIES ( /System/Library/Frameworks )
-    FIND_LIBRARY(OpenGL_LIBRARY OpenGL )
-    MARK_AS_ADVANCED (
-            OpenGL_LIBRARY)
-    SET(EXTRA_LIBS ${OpenGL_LIBRARY})
+    include_directories (
+            /usr/local/include
+            /System/Library/Frameworks
+    )
+    find_library(OpenGL_LIBRARY OpenGL)
+    mark_as_advanced (OpenGL_LIBRARY)
+    set(EXTRA_LIBS ${OpenGL_LIBRARY})
     link_libraries(${EXTRA_LIBS})
+    link_directories(/usr/local/lib)
 endif(APPLE)
 
 if(GIT_FOUND)
@@ -34,8 +38,6 @@ if(GIT_FOUND)
 else()
     configure_file(${SCRIPTS_DIR}/version.h.in ${VERSION_FILE})
 endif()
-
-set(USE_SDL ON)
 
 if(MSVC)
     # Remove bad default compiler flags for Visual Studio

@@ -42,7 +42,7 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
 {
     int style = SDL_WINDOW_OPENGL
         | SDL_WINDOW_HIDDEN
-        | SDL_WINDOW_ALLOW_HIGHDPI
+        //| SDL_WINDOW_ALLOW_HIGHDPI
         | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 
     _hwnd = SDL_CreateWindow("Quark", xpos, ypos, width, height, style);
