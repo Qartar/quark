@@ -26,6 +26,14 @@
 #   define in6addr_allnodesonlink { { { 0xff,0x2,0,0,0,0,0,0,0,0,0,0,0,0,0,0x1 } } }
 #endif // !defined(_WIN32)
 
+#ifndef s6_addr16
+#define s6_addr16 __u6_addr.__u6_addr16
+#endif
+
+#ifndef IPV6_ADD_MEMBERSHIP
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace network {
 
