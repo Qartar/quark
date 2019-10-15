@@ -42,7 +42,7 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
 {
     int style = SDL_WINDOW_OPENGL
         | SDL_WINDOW_HIDDEN
-        //| SDL_WINDOW_ALLOW_HIGHDPI
+        | SDL_WINDOW_ALLOW_HIGHDPI
         | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
 
     _hwnd = SDL_CreateWindow("Quark", xpos, ypos, width, height, style);
@@ -52,7 +52,8 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
     }
 
     SDL_GetWindowPosition(_hwnd, &_position.x, &_position.y);
-    SDL_GetWindowSize(_hwnd, &_physical_size.x, &_physical_size.y);
+    SDL_GetWindowSize(_hwnd, &_logical_size.x, &_logical_size.y);
+    SDL_GL_GetDrawableSize(_hwnd, &_physical_size.x, &_physical_size.y);
 
     // initialize OpenGL
     if (failed(init_opengl())) {

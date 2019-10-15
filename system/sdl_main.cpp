@@ -225,7 +225,9 @@ void application::process_event(SDL_Event const& ev)
 
         case SDL_MOUSEMOTION: {
             SDL_MouseMotionEvent const& mev = reinterpret_cast<SDL_MouseMotionEvent const&>(ev);
-            _game.cursor_event(vec2(mev.x, mev.y));
+            float sx = float(_window.size().x) / float(_window.logical_size().x);
+            float sy = float(_window.size().y) / float(_window.logical_size().y);
+            _game.cursor_event(vec2(mev.x * sx, mev.y * sy));
             break;
         }
 
