@@ -37,6 +37,7 @@ public:
 
     bool active() const { return _active; }
     vec2i position() const { return _position; }
+    vec2i logical_size() const { return _logical_size; }
     vec2i size() const { return _physical_size; }
     int width() const { return _physical_size.x; }
     int height() const { return _physical_size.y; }
@@ -59,9 +60,7 @@ private:
 #endif // defined(_WIN32)
     bool _fullscreen;
     vec2i _position;
-#if defined(_WIN32)
     vec2i _logical_size;
-#endif // defined(_WIN32)
     vec2i _physical_size;
 
     config::integer _vid_width;
