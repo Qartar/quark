@@ -30,6 +30,7 @@ public:
 
 #if defined(USE_SDL)
     SDL_Window* hwnd() const { return _hwnd; }
+    void on_resize();
 #else
     HWND hwnd() const { return _hwnd; }
     HDC hdc() const { return _hdc; }
