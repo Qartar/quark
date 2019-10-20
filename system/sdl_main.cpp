@@ -213,9 +213,13 @@ void application::process_event(SDL_Event const& ev)
 {
     switch (ev.type)
     {
-        case SDL_WINDOWEVENT:
+        case SDL_WINDOWEVENT: {
+            SDL_WindowEvent const& wev = reinterpret_cast<SDL_WindowEvent const&>(ev);
+            if (wev.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                _window.on_resize();
+            }
             break;
-
+        }
         case SDL_KEYDOWN:
         case SDL_KEYUP: {
             SDL_KeyboardEvent const& kev = reinterpret_cast<SDL_KeyboardEvent const&>(ev);

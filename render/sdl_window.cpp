@@ -42,8 +42,8 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
 {
     int style = SDL_WINDOW_OPENGL
         | SDL_WINDOW_HIDDEN
-        | SDL_WINDOW_ALLOW_HIGHDPI
-        | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+        | SDL_WINDOW_RESIZABLE
+        | SDL_WINDOW_ALLOW_HIGHDPI;
 
     _hwnd = SDL_CreateWindow("Quark", xpos, ypos, width, height, style);
     if (!_hwnd) {
@@ -51,6 +51,9 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
         return result::failure;
     }
 
+    if (fullscreen) {
+        SDL_SetWindowFullscreen(_hwnd, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    }
     SDL_GetWindowPosition(_hwnd, &_position.x, &_position.y);
     SDL_GetWindowSize(_hwnd, &_logical_size.x, &_logical_size.y);
     SDL_GL_GetDrawableSize(_hwnd, &_physical_size.x, &_physical_size.y);
@@ -115,6 +118,16 @@ void window::end_frame()
     }
 
     SDL_GL_SwapWindow(_hwnd);
+}
+
+//------------------------------------------------------------------------------
+void window::on_resize()
+{
+    SDL_GetWindowPosition(_hwnd, &_position.x, &_position.y);
+    SDL_GetWindowSize(_hwnd, &_logical_size.x, &_logical_size.y);
+    SDL_GL_GetDrawableSize(_hwnd, &_physical_size.x, &_physical_size.y);
+
+    _renderer.resize(_physical_size);
 }
 
 } // namespace render
