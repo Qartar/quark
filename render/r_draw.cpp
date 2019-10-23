@@ -569,32 +569,48 @@ void system::draw_starfield(vec2 streak_vector)
 #else
     (void)streak_vector;
 
-    glBegin(GL_LINES);
-
-    glColor4f(1,1,1,1);
-
     float xmin = _view.origin.x - _view.size.x * .5f;
     float xmax = _view.origin.x + _view.size.x * .5f;
     float ymin = _view.origin.y - _view.size.y * .5f;
     float ymax = _view.origin.y + _view.size.y * .5f;
 
-    float dx = 16.f * (xmax - xmin) / _framebuffer_size.x;
-    float dy = 16.f * (ymax - ymin) / _framebuffer_size.y;
+    constexpr int sz = 16;
+
+    float dx = sz * (xmax - xmin) / _framebuffer_size.x;
+    float dy = sz * (ymax - ymin) / _framebuffer_size.y;
 
     auto const noise = [](vec2 v) {
-        //return sin(.2f * v.x) * sin(.1f * v.y) + cos(.1f * v.x + 1.f);
-        return .25f * simplex(v * .001f)
-             + .5f * simplex(vec2(-9, 17) + v * .0005f)
-             + 1.f * simplex(vec2(13, 7) + v * .00025f)
-             + 2.f * simplex(vec2(29, -51) + v * .000125f)
-             + 1.f
-             + v.length_sqr() * .0000000025f;
+        return -.25f * simplex(v * .001f * .5f)
+             - .5f * simplex(vec2(-9, 17) + v * .0005f * .5f)
+             - 1.f * simplex(vec2(13, 7) + v * .00025f * .5f)
+             - 2.f * simplex(vec2(29, -51) + v * .000125f * .5f)
+             - 1.f * simplex(vec2(7, 13) + v * .0000625f * .5f)
+             - 1.f * simplex(vec2(7, 13) + v * .00003125f * .5f)
+             - 1.5f
+             - v.length_sqr() * .00000000015f;
     };
 
-    for (int jj = 0; 16 * jj < _framebuffer_size.y; ++jj) {
+    static tree my_tree;
+    static bool initialized = false;
+    if (!initialized) {
+        //my_tree.build({{-131072.f, -131072.f}, {131072.f, 131072.f}}, 64.f, noise);
+        my_tree.build({{-16384.f, -16384.f}, {16384.f, 16384.f}}, 64.f, noise);
+        //my_tree.build({_view.origin - _view.size, _view.origin + _view.size}, dx, noise);
+        initialized = true;
+    }
+    my_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, .125f * (dx + dy));
+
+#if 1
+    (void)dx;
+    (void)dy;
+#else
+    glBegin(GL_LINES);
+    glColor4f(1,1,1,1);
+
+    for (int jj = 0; sz * jj < _framebuffer_size.y; ++jj) {
         float y0 = ymin + dy * jj;
 
-        for (int ii = 0; 16 * ii < _framebuffer_size.x; ++ii) {
+        for (int ii = 0; sz * ii < _framebuffer_size.x; ++ii) {
             float x0 = xmin + dx * ii;
 
             float h00, h10;
@@ -690,22 +706,23 @@ void system::draw_starfield(vec2 streak_vector)
             }
         }
     }
-
     glEnd();
+#endif
 
+#if 0
     glBegin(GL_TRIANGLES);
-    for (int jj = 0; 16 * jj < _framebuffer_size.y; ++jj) {
+    for (int jj = 0; sz * jj < _framebuffer_size.y; ++jj) {
         float y0 = ymin + dy * jj;
 
-        for (int ii = 0; 16 * ii < _framebuffer_size.x; ++ii) {
+        for (int ii = 0; sz * ii < _framebuffer_size.x; ++ii) {
             float x0 = xmin + dx * ii;
 
             float h0 = noise(vec2(x0,      y0     ));
 
             if (h0 < 0.f) {
-                glColor4f(0,1,0,.1f);
-            } else {
                 glColor4f(0,0,1,.1f);
+            } else {
+                glColor4f(0,1,0,.1f);
             }
 
             glVertex2f(x0 - dx * .5f, y0 - dy * .5f);
@@ -718,6 +735,7 @@ void system::draw_starfield(vec2 streak_vector)
         }
     }
     glEnd();
+#endif
 
 #endif
 }

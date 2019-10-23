@@ -225,4 +225,118 @@ private:
     PFNGLBLENDCOLOR glBlendColor = NULL;
 };
 
+//------------------------------------------------------------------------------
+class tree
+{
+public:
+    using heightfield = float(*)(vec2);
+    void build(bounds aabb, float resolution, heightfield fn) {
+        _nodes.resize(4);
+        _aabb = aabb;
+        _nodes[0] = build_r(_aabb, resolution, fn);
+    }
+
+    bool is_below(bounds aabb) const {
+        return overlaps_r(0, _aabb, aabb, BELOW);
+    }
+
+    bool is_above(bounds aabb) const {
+        return overlaps_r(0, _aabb, aabb, ABOVE);
+    }
+
+    void draw(system* r, bounds view_aabb, float resolution = 0.f) const {
+        draw_r(r, 0, _aabb, view_aabb,
+            resolution ? std::ilogb(_aabb.size().length() / resolution) : INT_MAX);
+    }
+
+private:
+    enum {
+        BELOW = (1 << 0),
+        ABOVE = (1 << 1),
+        MIXED = BELOW | ABOVE,
+    };
+
+    struct node {
+        uint32_t mask : 2;
+        uint32_t child_index : 30;
+    };
+
+    bounds _aabb;
+    std::vector<node> _nodes;
+
+private:
+    // 2 3
+    // 0 1
+    void split(bounds aabb, bounds (&out)[4]) const {
+        vec2 min = aabb[0], max = aabb[1], mid = aabb.center();
+        out[0] = bounds{{min.x, min.y}, {mid.x, mid.y}};
+        out[1] = bounds{{mid.x, min.y}, {max.x, mid.y}};
+        out[2] = bounds{{min.x, mid.y}, {mid.x, max.y}};
+        out[3] = bounds{{mid.x, mid.y}, {max.x, max.y}};
+    }
+
+    node build_r(bounds aabb, float resolution, heightfield fn) {
+        if (aabb.maxs().x - aabb.mins().x < resolution) {
+            return fn(aabb.center()) < 0.f ? node{BELOW} : node{ABOVE};
+        }
+
+        uint32_t idx = narrow_cast<uint32_t>(_nodes.size());
+        assert(idx < (1u << 30));
+        _nodes.resize(_nodes.size() + 4);
+
+        bounds children[4]; split(aabb, children);
+
+        _nodes[idx + 0] = build_r(children[0], resolution, fn);
+        _nodes[idx + 1] = build_r(children[1], resolution, fn);
+        _nodes[idx + 2] = build_r(children[2], resolution, fn);
+        _nodes[idx + 3] = build_r(children[3], resolution, fn);
+
+        uint32_t mask = _nodes[idx + 0].mask
+                      | _nodes[idx + 1].mask
+                      | _nodes[idx + 2].mask
+                      | _nodes[idx + 3].mask;
+
+        if (mask != MIXED) {
+            assert(_nodes.size() == idx + 4);
+            _nodes.resize(idx);
+            return node{mask};
+        } else {
+            return node{mask, idx};
+        }
+    }
+
+    bool overlaps_r(uint32_t node_index, bounds node_aabb, bounds aabb, uint32_t mask) const {
+        uint32_t child_index = _nodes[node_index].child_index;
+
+        if (!(_nodes[node_index].mask & mask) || !child_index) {
+            return false;
+        }
+
+        bounds children[4]; split(node_aabb, children);
+        return overlaps_r(child_index + 0, children[0], aabb, mask)
+            || overlaps_r(child_index + 1, children[1], aabb, mask)
+            || overlaps_r(child_index + 2, children[2], aabb, mask)
+            || overlaps_r(child_index + 3, children[3], aabb, mask);
+    }
+
+    void draw_r(system* r, uint32_t node_index, bounds node_aabb, bounds view_aabb, int max_depth) const {
+        if (!node_aabb.intersects(view_aabb)) {
+            return;
+        }
+        uint32_t child_index = _nodes[node_index].child_index;
+        if (!child_index || !max_depth) {
+            r->draw_box(node_aabb.size(), node_aabb.center(),
+                _nodes[node_index].mask == MIXED ? color4(0,1,1,.2f) :
+                _nodes[node_index].mask == ABOVE ? color4(0,1,0,.2f) :
+                _nodes[node_index].mask == BELOW ? color4(0,0,1,.2f) : color4(1,1,1,1));
+        } else {
+            bounds children[4]; split(node_aabb, children);
+            draw_r(r, child_index + 0, children[0], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 1, children[1], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 2, children[2], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 3, children[3], view_aabb, max_depth - 1);
+        }
+    }
+};
+
 } // namespace render
