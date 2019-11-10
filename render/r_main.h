@@ -246,10 +246,26 @@ public:
         return overlap_r(0, _aabb, aabb, ABOVE);
     }
 
+    //! Returns the fraction along <start, end> to the first point on the line with height >= 0, or 1.f if no such point exists
+    float trace_below(vec2 start, vec2 end) const {
+        //return trace_r(0, _aabb, bounds::from_points({start, end}), start, end, ABOVE);
+        return trace(start, end, ABOVE);
+    }
+
+    //! Returns the fraction along <start, end> to the first point on the line with height <= 0, or 1.f if no such point exists
+    float trace_above(vec2 start, vec2 end) const {
+        //return trace_r(0, _aabb, bounds::from_points({start, end}), start, end, BELOW);
+        return trace(start, end, BELOW);
+    }
+
     void draw(system* r, bounds view_aabb, float resolution = 0.f) const {
         draw_r(r, 0, _aabb, view_aabb,
             resolution ? std::ilogb(_aabb.size().length() / resolution) : INT_MAX);
     }
+
+    static uint64_t debug_index;
+    static uint64_t debug_count;
+    static bounds debug_aabb;
 
 private:
     enum {
@@ -323,6 +339,72 @@ private:
             || overlap_r(child_index + 1, children[1], aabb, mask)
             || overlap_r(child_index + 2, children[2], aabb, mask)
             || overlap_r(child_index + 3, children[3], aabb, mask);
+    }
+
+    float trace(vec2 start, vec2 end, uint32_t mask) const {
+        uint32_t node_mask = 0;
+        vec2 inverse_dir = {1.f / (end.x - start.x),
+                            1.f / (end.y - start.y)};
+        vec2 tmin = (_aabb[0] - start) * inverse_dir;
+        vec2 tmax = (_aabb[1] - start) * inverse_dir;
+        if (tmin.x > tmax.x) {
+            std::swap(tmin.x, tmax.x);
+            node_mask ^= 1;
+        }
+        if (tmin.y > tmax.y) {
+            std::swap(tmin.y, tmax.y);
+            node_mask ^= 2;
+        }
+        if (debug_index >= debug_count) {
+            debug_index = 0;
+        }
+        debug_count = 0;
+        return trace_r(0, _aabb, start, inverse_dir, node_mask, tmin, tmax, mask);
+    }
+
+    float trace_r(uint32_t node_index, bounds node_aabb, vec2 start, vec2 inverse_dir, uint32_t node_mask, vec2 tmin, vec2 tmax, uint32_t mask) const {
+        float t0 = max(tmin.x, tmin.y);
+        float t1 = min(tmax.x, tmax.y);
+
+        uint32_t child_index = _nodes[node_index].child_index;
+
+        if (debug_count++ == debug_index) {
+            debug_aabb = node_aabb;
+        }
+
+        if (!(_nodes[node_index].mask & mask)) {
+            return 1.f;
+        } else if (t0 >= t1 || t0 >= 1.f || t1 < 0.f) {
+            return 1.f;
+        } else if (!child_index) {
+            return max(0.f, t0);
+        }
+
+        vec2 min = node_aabb[0];
+        vec2 max = node_aabb[1];
+        vec2 mid = node_aabb.center();
+        vec2 tmid = (tmin + tmax) * .5f;
+        for (int ii = 0; ii < 4; ++ii) {
+            int idx = ii ^ node_mask;
+            float t = trace_r(child_index + idx,
+                              {{idx & 1 ? mid.x : min.x,
+                                idx & 2 ? mid.y : min.y},
+                               {idx & 1 ? max.x : mid.x,
+                                idx & 2 ? max.y : mid.y}},
+                              start,
+                              inverse_dir,
+                              node_mask,
+                              { ii & 1 ? tmid.x : tmin.x,
+                                ii & 2 ? tmid.y : tmin.y},
+                              { ii & 1 ? tmax.x : tmid.x,
+                                ii & 2 ? tmax.y : tmid.y},
+                              mask);
+            if (t < 1.f) {
+                return t;
+            }
+        }
+
+        return 1.f;
     }
 
     void draw_r(system* r, uint32_t node_index, bounds node_aabb, bounds view_aabb, int max_depth) const {

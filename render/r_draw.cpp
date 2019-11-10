@@ -484,6 +484,10 @@ float simplex(vec2 P)
 } // anonymous namespace
 
 //------------------------------------------------------------------------------
+uint64_t tree::debug_index = 0;
+uint64_t tree::debug_count = 0;
+bounds tree::debug_aabb = {};
+
 void system::draw_starfield(vec2 streak_vector)
 {
 #if 0
@@ -623,6 +627,44 @@ void system::draw_starfield(vec2 streak_vector)
             glVertex2f(aabb[0][0], aabb[1][1]);
             glEnd();
         }
+    }
+
+    {
+        static vec2 v0;
+        static vec2 v1;
+        static random r;
+        static uint64_t n = 0;
+        if (n++ % 3000 == 0) {
+            v0 = _view.origin + _view.size * vec2{r.uniform_real(-.5f, .5f), r.uniform_real(-.5f, .5f)};
+            v1 = _view.origin + _view.size * vec2{r.uniform_real(-.5f, .5f), r.uniform_real(-.5f, .5f)};
+            tree::debug_index = 0;
+        } else if (n % 10 == 0) {
+            tree::debug_index++;
+        }
+
+        float tr_above = my_tree.trace_above(v0, v1);
+        {
+            glBegin(GL_LINE_LOOP);
+            glColor4f(1,1,1,1);
+            glVertex2f(tree::debug_aabb[0][0], tree::debug_aabb[0][1]);
+            glVertex2f(tree::debug_aabb[1][0], tree::debug_aabb[0][1]);
+            glVertex2f(tree::debug_aabb[1][0], tree::debug_aabb[1][1]);
+            glVertex2f(tree::debug_aabb[0][0], tree::debug_aabb[1][1]);
+            glEnd();
+        }
+        //float tr_below = my_tree.trace_below(v0, v1);
+
+        glBegin(GL_LINES);
+        glColor4f(.5f,1,.5f,1);
+        glVertex2fv(v0 - (v1 - v0).cross(1.f) * .05f);
+        glVertex2fv(v0 + (v1 - v0).cross(1.f) * .05f);
+        glVertex2fv(v0);
+        glVertex2fv(v0 + (v1 - v0) * tr_above);
+
+        glColor4f(.5f,.5f,1,1);
+        glVertex2fv(v0 + (v1 - v0) * tr_above);
+        glVertex2fv(v1);
+        glEnd();
     }
 
 #if 1
