@@ -600,6 +600,31 @@ void system::draw_starfield(vec2 streak_vector)
     }
     my_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, .125f * (dx + dy));
 
+    {
+        for (int ii = 0; ii < 4; ++ii) {
+            bounds aabb{_view.origin - _view.size * .05f, _view.origin + _view.size * .05f};
+            aabb += _view.size * vec2((ii & 1) ? -.35f : .35f, (ii & 2) ? -.15f : .15f);
+
+            glBegin(GL_LINE_LOOP);
+            bool is_above = my_tree.is_above(aabb);
+            bool is_below = my_tree.is_below(aabb);
+            if (is_above && is_below) {
+                glColor4f(1,1,1,1);
+            } else if (is_above) {
+                glColor4f(.5f,1,.5f,1);
+            } else if (is_below) {
+                glColor4f(.5f,.5f,1,1);
+            } else {
+                glColor4f(1,.75f,.5f,1);
+            }
+            glVertex2f(aabb[0][0], aabb[0][1]);
+            glVertex2f(aabb[1][0], aabb[0][1]);
+            glVertex2f(aabb[1][0], aabb[1][1]);
+            glVertex2f(aabb[0][0], aabb[1][1]);
+            glEnd();
+        }
+    }
+
 #if 1
     (void)dx;
     (void)dy;

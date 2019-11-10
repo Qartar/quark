@@ -236,12 +236,14 @@ public:
         _nodes[0] = build_r(_aabb, resolution, fn);
     }
 
+    //! Returns true if the height in the entire region of the given aabb is <= 0
     bool is_below(bounds aabb) const {
-        return overlaps_r(0, _aabb, aabb, BELOW);
+        return overlap_r(0, _aabb, aabb, BELOW);
     }
 
+    //! Returns true if the height in the entire region of the given aabb is >= 0
     bool is_above(bounds aabb) const {
-        return overlaps_r(0, _aabb, aabb, ABOVE);
+        return overlap_r(0, _aabb, aabb, ABOVE);
     }
 
     void draw(system* r, bounds view_aabb, float resolution = 0.f) const {
@@ -305,18 +307,22 @@ private:
         }
     }
 
-    bool overlaps_r(uint32_t node_index, bounds node_aabb, bounds aabb, uint32_t mask) const {
+    bool overlap_r(uint32_t node_index, bounds node_aabb, bounds aabb, uint32_t mask) const {
         uint32_t child_index = _nodes[node_index].child_index;
 
-        if (!(_nodes[node_index].mask & mask) || !child_index) {
+        if (!(_nodes[node_index].mask & mask)) {
             return false;
+        } else if (!node_aabb.intersects(aabb)) {
+            return false;
+        } else if (!child_index) {
+            return true;
         }
 
         bounds children[4]; split(node_aabb, children);
-        return overlaps_r(child_index + 0, children[0], aabb, mask)
-            || overlaps_r(child_index + 1, children[1], aabb, mask)
-            || overlaps_r(child_index + 2, children[2], aabb, mask)
-            || overlaps_r(child_index + 3, children[3], aabb, mask);
+        return overlap_r(child_index + 0, children[0], aabb, mask)
+            || overlap_r(child_index + 1, children[1], aabb, mask)
+            || overlap_r(child_index + 2, children[2], aabb, mask)
+            || overlap_r(child_index + 3, children[3], aabb, mask);
     }
 
     void draw_r(system* r, uint32_t node_index, bounds node_aabb, bounds view_aabb, int max_depth) const {
