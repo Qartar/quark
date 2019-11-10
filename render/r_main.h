@@ -288,14 +288,17 @@ private:
     }
 
     node build_r(bounds aabb, float resolution, heightfield fn) {
+        // If at maximum resolution create leaf using the mask at the midpoint
         if (aabb.maxs().x - aabb.mins().x < resolution) {
             return fn(aabb.center()) < 0.f ? node{BELOW} : node{ABOVE};
         }
 
+        // Reserve space for contiguous child nodes
         uint32_t idx = narrow_cast<uint32_t>(_nodes.size());
         assert(idx < (1u << 30));
         _nodes.resize(_nodes.size() + 4);
 
+        // Calculate bounds for each child node and recurse
         bounds children[4]; split(aabb, children);
 
         _nodes[idx + 0] = build_r(children[0], resolution, fn);
@@ -308,7 +311,9 @@ private:
                       | _nodes[idx + 2].mask
                       | _nodes[idx + 3].mask;
 
+        // If all children have the same mask then collapse the node
         if (mask != MIXED) {
+            // Assert that all children have also been collapsed
             assert(_nodes.size() == idx + 4);
             _nodes.resize(idx);
             return node{mask};
@@ -339,12 +344,15 @@ private:
         uint32_t node_mask = 0;
         vec2 inverse_dir = {1.f / (end.x - start.x),
                             1.f / (end.y - start.y)};
+        // Calculate intersection fractions with the root AABB
         vec2 tmin = (_aabb[0] - start) * inverse_dir;
         vec2 tmax = (_aabb[1] - start) * inverse_dir;
+        // If going in -x direction swap min/max and traverse order
         if (tmin.x > tmax.x) {
             std::swap(tmin.x, tmax.x);
             node_mask ^= 1;
         }
+        // If going in -y direction swap min/max and traverse order
         if (tmin.y > tmax.y) {
             std::swap(tmin.y, tmax.y);
             node_mask ^= 2;
@@ -366,12 +374,17 @@ private:
             return max(0.f, t0);
         }
 
+        // Intersection fraction with the splitting planes is just the
+        // midpoint of the intersection fractions of the full AABB.
         bounds children[4]; split(trace_aabb, children);
         for (int ii = 0; ii < 4; ++ii) {
+            // Node mask controls the order of traversal
             float t = trace_r(child_index + (ii ^ node_mask),
                               node_mask,
                               children[ii],
                               mask);
+            // Traversal order guarantees that first intersection
+            // is the nearest intersection
             if (t < 1.f) {
                 return t;
             }
