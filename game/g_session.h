@@ -221,6 +221,8 @@ private:
     time_value _restart_time;
 
     float _zoom;
+    vec2 _origin;
+    vec3 _scroll;
 
     time_value _worldtime;
     time_value _frametime;
