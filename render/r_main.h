@@ -229,14 +229,24 @@ private:
 class tree
 {
 public:
-    using heightfield = float(*)(vec2);
-    void build(bounds aabb, float resolution, heightfield fn) {
+    using heightfield_fn = float(*)(vec2);
+
+    tree()
+        : _aabb{}
+    {}
+
+    //! Build tree over the given region using the heightfield function
+    //! to classify leaves as either above or below 0. Leaf nodes will be
+    //! no smaller than the given resolution along the x-axis.
+    void build(bounds region, float resolution, heightfield_fn fn) {
+        _aabb = region;
+        // Child nodes are allocated contiguously, do the same for the
+        // root node for consistency, this means nodes 1-3 are unused.
         _nodes.resize(4);
-        _aabb = aabb;
         _nodes[0] = build_r(_aabb, resolution, fn);
     }
 
-    //! Returns true if the height in the entire region of the given aabb is <= 0
+    //! Returns true if the height in the entire region of the given aabb is < 0
     bool is_below(bounds aabb) const {
         return overlap_r(0, _aabb, aabb, BELOW);
     }
@@ -251,7 +261,7 @@ public:
         return trace(start, end, ABOVE);
     }
 
-    //! Returns the fraction along <start, end> to the first point on the line with height <= 0, or 1.f if no such point exists
+    //! Returns the fraction along <start, end> to the first point on the line with height < 0, or 1.f if no such point exists
     float trace_above(vec2 start, vec2 end) const {
         return trace(start, end, BELOW);
     }
@@ -270,26 +280,29 @@ private:
 
     struct node {
         uint32_t mask : 2;
-        uint32_t child_index : 30;
+        uint32_t child_index : 30; //!< Index of first of four contiguous child nodes or 0 if this is a leaf
     };
 
-    bounds _aabb;
+    bounds _aabb; //!< Axis-aligned bounding box for the tree
     std::vector<node> _nodes;
 
 private:
-    // 2 3
-    // 0 1
-    void split(bounds aabb, bounds (&out)[4]) const {
-        vec2 min = aabb[0], max = aabb[1], mid = aabb.center();
-        out[0] = bounds{{min.x, min.y}, {mid.x, mid.y}};
-        out[1] = bounds{{mid.x, min.y}, {max.x, mid.y}};
-        out[2] = bounds{{min.x, mid.y}, {mid.x, max.y}};
-        out[3] = bounds{{mid.x, mid.y}, {max.x, max.y}};
+    //! Split the given bounds at its midpoint into four equally sized bounds.
+    //!     2 3
+    //!     0 1
+    std::array<bounds, 4> split(bounds in) const {
+        vec2 min = in[0], max = in[1], mid = in.center();
+        return {
+            bounds{{min.x, min.y}, {mid.x, mid.y}},
+            bounds{{mid.x, min.y}, {max.x, mid.y}},
+            bounds{{min.x, mid.y}, {mid.x, max.y}},
+            bounds{{mid.x, mid.y}, {max.x, max.y}},
+        };
     }
 
-    node build_r(bounds aabb, float resolution, heightfield fn) {
+    node build_r(bounds aabb, float resolution, heightfield_fn fn) {
         // If at maximum resolution create leaf using the mask at the midpoint
-        if (aabb.maxs().x - aabb.mins().x < resolution) {
+        if (aabb.size().x < resolution) {
             return fn(aabb.center()) < 0.f ? node{BELOW} : node{ABOVE};
         }
 
@@ -299,13 +312,14 @@ private:
         _nodes.resize(_nodes.size() + 4);
 
         // Calculate bounds for each child node and recurse
-        bounds children[4]; split(aabb, children);
+        std::array<bounds, 4> children = split(aabb);
 
         _nodes[idx + 0] = build_r(children[0], resolution, fn);
         _nodes[idx + 1] = build_r(children[1], resolution, fn);
         _nodes[idx + 2] = build_r(children[2], resolution, fn);
         _nodes[idx + 3] = build_r(children[3], resolution, fn);
 
+        // Node mask is the combination of all child masks
         uint32_t mask = _nodes[idx + 0].mask
                       | _nodes[idx + 1].mask
                       | _nodes[idx + 2].mask
@@ -333,7 +347,8 @@ private:
             return true;
         }
 
-        bounds children[4]; split(node_aabb, children);
+        // Calculate bounds for each child node and recurse
+        std::array<bounds, 4> children = split(node_aabb);
         return overlap_r(child_index + 0, children[0], aabb, mask)
             || overlap_r(child_index + 1, children[1], aabb, mask)
             || overlap_r(child_index + 2, children[2], aabb, mask)
@@ -341,7 +356,7 @@ private:
     }
 
     float trace(vec2 start, vec2 end, uint32_t mask) const {
-        uint32_t node_mask = 0;
+        uint32_t trace_bits = 0;
         vec2 inverse_dir = {1.f / (end.x - start.x),
                             1.f / (end.y - start.y)};
         // Calculate intersection fractions with the root AABB
@@ -350,17 +365,17 @@ private:
         // If going in -x direction swap min/max and traverse order
         if (tmin.x > tmax.x) {
             std::swap(tmin.x, tmax.x);
-            node_mask ^= 1;
+            trace_bits ^= 1;
         }
         // If going in -y direction swap min/max and traverse order
         if (tmin.y > tmax.y) {
             std::swap(tmin.y, tmax.y);
-            node_mask ^= 2;
+            trace_bits ^= 2;
         }
-        return trace_r(0, node_mask, {tmin, tmax}, mask);
+        return trace_r(0, trace_bits, {tmin, tmax}, mask);
     }
 
-    float trace_r(uint32_t node_index, uint32_t node_mask, bounds trace_aabb, uint32_t mask) const {
+    float trace_r(uint32_t node_index, uint32_t trace_bits, bounds trace_aabb, uint32_t mask) const {
         uint32_t child_index = _nodes[node_index].child_index;
 
         float t0 = max(trace_aabb[0].x, trace_aabb[0].y);
@@ -376,14 +391,14 @@ private:
 
         // Intersection fraction with the splitting planes is just the
         // midpoint of the intersection fractions of the full AABB.
-        bounds children[4]; split(trace_aabb, children);
+        std::array<bounds, 4> children = split(trace_aabb);
         for (int ii = 0; ii < 4; ++ii) {
-            // Node mask controls the order of traversal
-            float t = trace_r(child_index + (ii ^ node_mask),
-                              node_mask,
+            // Trace bits control the order of traversal
+            float t = trace_r(child_index + (ii ^ trace_bits),
+                              trace_bits,
                               children[ii],
                               mask);
-            // Traversal order guarantees that first intersection
+            // Traversal order guarantees that the first intersection
             // is the nearest intersection
             if (t < 1.f) {
                 return t;
@@ -404,7 +419,7 @@ private:
                 _nodes[node_index].mask == ABOVE ? color4(0,1,0,.2f) :
                 _nodes[node_index].mask == BELOW ? color4(0,0,1,.2f) : color4(1,1,1,1));
         } else {
-            bounds children[4]; split(node_aabb, children);
+            std::array<bounds, 4> children = split(node_aabb);
             draw_r(r, child_index + 0, children[0], view_aabb, max_depth - 1);
             draw_r(r, child_index + 1, children[1], view_aabb, max_depth - 1);
             draw_r(r, child_index + 2, children[2], view_aabb, max_depth - 1);
