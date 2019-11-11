@@ -38,6 +38,8 @@ session::session()
     , _timescale("timescale", 1.f, config::server, "")
     , _restart_time(time_value::zero)
     , _zoom(1)
+    , _origin(vec2_zero)
+    , _scroll(vec3_zero)
     , _worldtime(time_value::zero)
     , _frametime(time_value::zero)
     , _framenum(0)
@@ -150,6 +152,9 @@ result session::run_frame(time_delta time)
     get_packets( );
 
     _frametime += time;
+
+    _zoom *= std::exp(_scroll.z * time.to_seconds());
+    _origin += _scroll.to_vec2() / _zoom * time.to_seconds();
 
     // step session
 
@@ -357,10 +362,22 @@ void session::key_event(int key, bool down)
         for (int i = 0; i < MAX_MESSAGES; i++) {
             _messages[i].time = _frametime;
         }
-    } else if ((key == K_MWHEELUP || key == '+' || key =='=') && down) {
+    } else if ((key == K_MWHEELUP) && down) {
         _zoom = _zoom * 1.1f;
-    } else if ((key == K_MWHEELDOWN || key == '-') && down) {
+    } else if ((key == K_MWHEELDOWN) && down) {
         _zoom = _zoom / 1.1f;
+    } else if (key == '+' || key == '=') {
+        _scroll.z = down ? 1.f : 0.f;
+    } else if (key == '-') {
+        _scroll.z = down ? -1.f : 0.f;
+    } else if (key == K_LEFTARROW) {
+        _scroll.x = down ? -1000.f : 0.f;
+    } else if (key == K_RIGHTARROW) {
+        _scroll.x = down ? 1000.f : 0.f;
+    } else if (key == K_UPARROW) {
+        _scroll.y = down ? 1000.f : 0.f;
+    } else if (key == K_DOWNARROW) {
+        _scroll.y = down ? -1000.f : 0.f;
     }
 
     // user commands here

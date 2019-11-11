@@ -305,7 +305,6 @@ void session::draw_world()
     //
 
     vec2 world_size = vec2(640, 480);
-    vec2 world_center = vec2_zero;
 
     render::view view{};
     view.size = world_size;
@@ -329,7 +328,7 @@ void session::draw_world()
             view.angle = 0;
         }
     } else {
-        view.origin = world_center;
+        view.origin = _origin;
         view.size /= _zoom;
         // maintain aspect ratio
         view.size.x = view.size.y * aspect_ratio;
