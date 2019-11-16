@@ -281,12 +281,19 @@ void player::update_usercmd(usercmd cmd, time_value time)
             break;
     }
 
+    if ((cmd.buttons & usercmd::button::zoom_in) == usercmd::button::zoom_in) {
+        _view.size *= std::exp(-1.f * (time - _usercmd_time).to_seconds());
+    } else if ((cmd.buttons & usercmd::button::zoom_out) == usercmd::button::zoom_out) {
+        _view.size *= std::exp(1.f * (time - _usercmd_time).to_seconds());
+    }
+
     if (_move_appending && !(cmd.modifiers & usercmd::modifier::shift)) {
         _move_selection = false;
         _move_appending = false;
     }
 
     _usercmd = cmd;
+    _usercmd_time = time;
 }
 
 //------------------------------------------------------------------------------

@@ -46,6 +46,7 @@ protected:
     handle<ship> _ship;
     player_view _view;
     usercmd _usercmd;
+    time_value _usercmd_time;
 
     std::vector<vec2> _waypoints;
     bool _move_selection;
