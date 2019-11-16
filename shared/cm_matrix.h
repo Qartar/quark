@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "cm_rotor.h"
 #include "cm_vector.h"
 #include <cmath>
 
@@ -25,6 +26,10 @@ public:
     constexpr mat2(vec2 r1, vec2 r2)
         : _rows{r1, r2}
     {}
+    explicit constexpr mat2(rot2 r)
+        : _rows{vec2{ r.x, r.y},
+                vec2{-r.y, r.x}}
+    {}
 
     bool operator==(mat2 const& M) const { return _rows[0] == M[0] && _rows[1] == M[1]; }
     bool operator!=(mat2 const& M) const { return _rows[0] != M[0] || _rows[1] != M[1]; }
@@ -40,19 +45,20 @@ public:
 
 // rotation
 
-    void set_rotation(float theta) {
-        float cost = std::cos(theta);
-        float sint = std::sin(theta);
+    void set_rotation(rot2 r) {
+        *this = rotate(r);
+    }
 
-        _rows[0][0] = +cost; _rows[0][1] = +sint;
-        _rows[1][0] = -sint; _rows[1][1] = +cost;
+    constexpr static mat2 rotate(rot2 r) {
+        return mat2(+r.x, +r.y, -r.y, +r.x);
+    }
+
+    void set_rotation(float theta) {
+        set_rotation(rot2(theta));
     }
 
     static mat2 rotate(float theta) {
-        float cost = std::cos(theta);
-        float sint = std::sin(theta);
-
-        return mat2(+cost, +sint, -sint, +cost);
+        return rotate(rot2(theta));
     }
 
 // scale
@@ -118,19 +124,30 @@ public:
 
 // rotation
 
-    template<int axis> void set_rotation(float theta) {
-        float cost = std::cos(theta);
-        float sint = std::sin(theta);
+    template<int axis> void set_rotation(rot2 r) {
+        *this = rotate<axis>(r);
+    }
 
+    template<int axis> constexpr static mat3 rotate(rot2 r) {
         constexpr int i0 = axis, i1 = (axis + 1) % 3, i2 = (axis + 2) % 3;
 
-        _rows[i0][i0] = 1.f; _rows[i0][i1] =   0.f; _rows[i0][i2] =   0.f;
-        _rows[i1][i0] = 0.f; _rows[i1][i1] = +cost; _rows[i1][i2] = +sint;
-        _rows[i2][i0] = 0.f; _rows[i2][i1] = -sint; _rows[i2][i2] = +cost;
+        constexpr float rows[3][3] = {
+            { 1.f,  0.f,  0.f },
+            { 0.f, +r.x, +r.y },
+            { 0.f, -r.y, +r.x }
+        };
+
+        return mat3(rows[i0][i0], rows[i0][i1], rows[i0][i2],
+                    rows[i1][i0], rows[i1][i1], rows[i1][i2],
+                    rows[i2][i0], rows[i2][i1], rows[i2][i2]);
+    }
+
+    template<int axis> void set_rotation(float theta) {
+        set_rotation<axis>(rot2(theta));
     }
 
     template<int axis> static mat3 rotate(float theta) {
-        mat3 m; m.set_rotation<axis>(theta); return m;
+        mat3 m; m.set_rotation<axis>(rot2(theta)); return m;
     }
 
 // scale
@@ -149,27 +166,24 @@ public:
 
 // homogenous transformation in two dimensions
 
-    static mat3 transform(vec2 translation, float rotation) {
-        float cosa = std::cos(rotation);
-        float sina = std::sin(rotation);
+    constexpr static mat3 transform(vec2 translation, rot2 rotation) {
+        return mat3( rotation.x,    rotation.y,    0,
+                    -rotation.y,    rotation.x,    0,
+                     translation.x, translation.y, 1);
+    }
 
-        return mat3( cosa, sina, 0,
-                    -sina, cosa, 0,
-                    translation.x, translation.y, 1);
+    static mat3 transform(vec2 translation, float rotation) {
+        return transform(translation, rot2(rotation));
     }
 
 // homogenous inverse transformation in two dimensions
 
+    constexpr static mat3 inverse_transform(vec2 translation, rot2 rotation) {
+        return transform(-translation * rotation, rotation.inverse());
+    }
+
     static mat3 inverse_transform(vec2 translation, float rotation) {
-        float cosa = std::cos(rotation);
-        float sina = std::sin(rotation);
-
-        float tx = -translation.x * cosa - translation.y * sina;
-        float ty =  translation.x * sina - translation.y * cosa;
-
-        return mat3( cosa,-sina, 0,
-                     sina, cosa, 0,
-                     tx,   ty,   1);
+        return inverse_transform(translation, rot2(rotation));
     }
 
 // multiplication
@@ -232,20 +246,25 @@ public:
 
 // rotation
 
-    template<int axis> void set_rotation(float theta) {
-        float cost = std::cos(theta);
-        float sint = std::sin(theta);
-
+    template<int axis> void set_rotation(rot2 r) {
         constexpr int i0 = axis, i1 = (axis + 1) % 3, i2 = (axis + 2) % 3;
 
-        _rows[i0][i0] = 1.f; _rows[i0][i1] =   0.f; _rows[i0][i2] =   0.f; _rows[ 0][ 3] = 0.f;
-        _rows[i1][i0] = 0.f; _rows[i1][i1] = +cost; _rows[i1][i2] = +sint; _rows[ 1][ 3] = 0.f;
-        _rows[i2][i0] = 0.f; _rows[i2][i1] = -sint; _rows[i2][i2] = +cost; _rows[ 2][ 3] = 0.f;
-        _rows[ 3][ 0] = 0.f; _rows[ 3][ 1] =   0.f; _rows[ 3][ 2] =   0.f; _rows[ 3][ 3] = 1.f;
+        _rows[i0][i0] = 1.f; _rows[i0][i1] =  0.f; _rows[i0][i2] =  0.f; _rows[ 0][ 3] = 0.f;
+        _rows[i1][i0] = 0.f; _rows[i1][i1] = +r.x; _rows[i1][i2] = +r.y; _rows[ 1][ 3] = 0.f;
+        _rows[i2][i0] = 0.f; _rows[i2][i1] = -r.y; _rows[i2][i2] = +r.x; _rows[ 2][ 3] = 0.f;
+        _rows[ 3][ 0] = 0.f; _rows[ 3][ 1] =  0.f; _rows[ 3][ 2] =  0.f; _rows[ 3][ 3] = 1.f;
+    }
+
+    template<int axis> static mat4 rotate(rot2 r) {
+        mat4 m; m.set_rotation<axis>(r); return m;
+    }
+
+    template<int axis> void set_rotation(float theta) {
+        set_rotation<axis>(rot2(theta));
     }
 
     template<int axis> static mat4 rotate(float theta) {
-        mat4 m; m.set_rotation<axis>(theta); return m;
+        return rotate<axis>(rot2(theta));
     }
 
 // translation

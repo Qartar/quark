@@ -15,6 +15,7 @@ set(SHARED_SOURCES
     cm_parser.cpp
     cm_parser.h
     cm_random.h
+    cm_rotor.h
     cm_shared.cpp
     cm_shared.h
     cm_sound.h
