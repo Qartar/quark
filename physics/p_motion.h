@@ -18,7 +18,7 @@ class motion
 public:
     explicit motion(shape const* shape,
                     vec2 position = vec2_zero,
-                    float rotation = 0,
+                    rot2 rotation = rot2_identity,
                     vec2 linear_velocity = vec2_zero,
                     float angular_velocity = 0)
         : _shape(shape)
@@ -44,11 +44,11 @@ public:
         _position = position;
     }
 
-    float get_rotation() const {
+    rot2 get_rotation() const {
         return _rotation;
     }
 
-    void set_rotation(float rotation) {
+    void set_rotation(rot2 rotation) {
         _rotation = rotation;
     }
 
@@ -84,7 +84,7 @@ protected:
     shape const* _shape;
 
     vec2 _position;
-    float _rotation;
+    rot2 _rotation;
 
     vec2 _linear_velocity;
     float _angular_velocity;

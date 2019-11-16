@@ -17,18 +17,17 @@ class compound_shape : public shape
 public:
     struct child_shape {
         std::unique_ptr<physics::shape> shape;
-        vec2 position;
-        float rotation;
-        mat3 transform;
-        mat3 inverse_transform;
+        vec2 position = vec2_zero;
+        rot2 rotation = rot2_identity;
+        constexpr mat3 transform() const { return mat3::transform(position, rotation); }
+        constexpr mat3 inverse_transform() const { return mat3::inverse_transform(position, rotation); }
     };
 
 public:
     template<std::size_t size> compound_shape(child_shape (&&children)[size]) {
+        _children.reserve(size);
         for (std::size_t ii = 0; ii < size; ++ii) {
             _children.push_back(std::move(children[ii]));
-            _children.back().transform = mat3::transform(_children.back().position, _children.back().rotation);
-            _children.back().inverse_transform = mat3::inverse_transform(_children.back().position, _children.back().rotation);
         }
     }
 

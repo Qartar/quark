@@ -168,7 +168,7 @@ bool shield::damage(vec2 position, float damage)
     int best = 0;
  
     vec2 pos = get_position();
-    mat2 rot; rot.set_rotation(-get_rotation());
+    mat2 rot; rot.set_rotation(get_rotation().inverse());
     vec2 local = (position - pos) * rot;
 
     // find the nearest vertex to the impact point

@@ -153,8 +153,8 @@ void player::think()
         if (target_position == _ship->get_position()) {
             _ship->engines()->set_target_velocity(vec2_zero, 0);
         } else {
-            vec2 delta_move = target_position - _ship->get_position();
-            float delta_angle = std::remainder(std::atan2(delta_move.y, delta_move.x) - _ship->get_rotation(), 2.f * math::pi<float>);
+            vec2 delta_move = (target_position - _ship->get_position()) / _ship->get_rotation();
+            float delta_angle = std::remainder(std::atan2(delta_move.y, delta_move.x), 2.f * math::pi<float>);
             vec2 move_target = (vec3(linear_speed,0,0) * _ship->get_transform()).to_vec2();
 
             _ship->engines()->set_target_linear_velocity(move_target);
@@ -176,7 +176,7 @@ void player::think()
             // spawn a new ship to replace the destroyed ship's place
             _ship = get_world()->spawn<ship>();
             _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
-            _ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
+            _ship->set_rotation(rot2(_random.uniform_real(2.f * math::pi<float>)), true);
 
         }
     }
@@ -189,9 +189,9 @@ vec2 player::get_position(time_value time) const
 }
 
 //------------------------------------------------------------------------------
-float player::get_rotation(time_value time) const
+rot2 player::get_rotation(time_value time) const
 {
-    return _ship ? _ship->get_rotation(time) : 0.f;
+    return _ship ? _ship->get_rotation(time) : rot2_identity;
 }
 
 //------------------------------------------------------------------------------

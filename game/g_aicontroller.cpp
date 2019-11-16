@@ -141,7 +141,7 @@ void aicontroller::think()
             // spawn a new ship to replace the destroyed ship's place
             _ship = get_world()->spawn<ship>();
             _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
-            _ship->set_rotation(_random.uniform_real(2.f * math::pi<float>), true);
+            _ship->set_rotation(rot2(_random.uniform_real(2.f * math::pi<float>)), true);
 
         }
     }
@@ -154,9 +154,9 @@ vec2 aicontroller::get_position(time_value time) const
 }
 
 //------------------------------------------------------------------------------
-float aicontroller::get_rotation(time_value time) const
+rot2 aicontroller::get_rotation(time_value time) const
 {
-    return _ship ? _ship->get_rotation(time) : 0.f;
+    return _ship ? _ship->get_rotation(time) : rot2_identity;
 }
 
 //------------------------------------------------------------------------------

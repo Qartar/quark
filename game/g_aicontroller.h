@@ -26,7 +26,7 @@ public:
     virtual void think() override;
 
     virtual vec2 get_position(time_value time) const override;
-    virtual float get_rotation(time_value time) const override;
+    virtual rot2 get_rotation(time_value time) const override;
     virtual mat3 get_transform(time_value time) const override;
 
 protected:
