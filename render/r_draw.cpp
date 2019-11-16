@@ -139,6 +139,10 @@ void system::draw_box(vec2 size, vec2 position, color4 color)
 //------------------------------------------------------------------------------
 void system::draw_triangles(vec2 const* position, color4 const* color, int const* indices, std::size_t num_indices)
 {
+    if (_draw_tris) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
 
@@ -149,6 +153,10 @@ void system::draw_triangles(vec2 const* position, color4 const* color, int const
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
+
+    if (_draw_tris) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -574,7 +582,7 @@ void system::draw_starfield(vec2 streak_vector)
     float ymin = _view.origin.y - _view.size.y * .5f;
     float ymax = _view.origin.y + _view.size.y * .5f;
 
-    constexpr int sz = 16;
+    constexpr int sz = 8;
 
     float dx = sz * (xmax - xmin) / _framebuffer_size.x;
     float dy = sz * (ymax - ymin) / _framebuffer_size.y;
@@ -586,19 +594,33 @@ void system::draw_starfield(vec2 streak_vector)
              - 2.f * simplex(vec2(29, -51) + v * .000125f * .5f)
              - 1.f * simplex(vec2(7, 13) + v * .0000625f * .5f)
              - 1.f * simplex(vec2(7, 13) + v * .00003125f * .5f)
-             - 1.5f
-             - v.length_sqr() * .00000000015f;
+             - 1.75f
+             - v.length_sqr() * .000000000085f;
     };
 
     static tree my_tree;
+    static line_tree my_line_tree;
+    static line_tree my_line_tree2;
     static bool initialized = false;
     if (!initialized) {
-        //my_tree.build({{-131072.f, -131072.f}, {131072.f, 131072.f}}, 64.f, noise);
-        my_tree.build({{-16384.f, -16384.f}, {16384.f, 16384.f}}, 64.f, noise);
-        //my_tree.build({_view.origin - _view.size, _view.origin + _view.size}, dx, noise);
+        float tree_resolution = 64.f;
+        //bounds tree_aabb = {{-131072.f, -131072.f}, {131072.f, 131072.f}};
+        bounds tree_aabb = {{-16384.f, -16384.f}, {16384.f, 16384.f}};
+        //bounds tree_aabb = {_view.origin - _view.size, _view.origin + _view.size};
+        time_value t0 = time_value::current();
+        my_tree.build(tree_aabb, tree_resolution, noise);
+        time_value t1 = time_value::current();
+        my_line_tree.build(tree_aabb, tree_resolution, noise);
+        time_value t2 = time_value::current();
+        my_line_tree2.build(tree_aabb, tree_resolution, [noise](vec2 v){return noise(v) + .5f;});
+        log::message("tree build: %.3f us\n", (t1 - t0).to_seconds() * 1e6f);
+        log::message("line tree build: %.3f us\n", (t2 - t1).to_seconds() * 1e6f);
         initialized = true;
     }
+
     my_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, .125f * (dx + dy));
+    my_line_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, color4(1,1,1,1), .125f * (dx + dy));
+    my_line_tree2.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, color4(0,.5f,1,.75f), .125f * (dx + dy));
 
     {
         for (int ii = 0; ii < 4; ++ii) {
@@ -656,144 +678,6 @@ void system::draw_starfield(vec2 streak_vector)
         glVertex2fv(v1);
         glEnd();
     }
-
-#if 1
-    (void)dx;
-    (void)dy;
-#else
-    glBegin(GL_LINES);
-    glColor4f(1,1,1,1);
-
-    for (int jj = 0; sz * jj < _framebuffer_size.y; ++jj) {
-        float y0 = ymin + dy * jj;
-
-        for (int ii = 0; sz * ii < _framebuffer_size.x; ++ii) {
-            float x0 = xmin + dx * ii;
-
-            float h00, h10;
-            float h01, h11;
-
-            h00 = noise(vec2(x0,      y0     ));
-            h10 = noise(vec2(x0 + dx, y0     ));
-            h01 = noise(vec2(x0,      y0 + dy));
-            h11 = noise(vec2(x0 + dx, y0 + dy));
-
-            /*
-                h00 h10
-                h01 h11
-
-                --      +-      ++      ++      +-      ++
-                --      --      --      -+      -+      ++
-
-                h0 + (h1 - h0)t = 0
-                t = -h0 / (h1 - h0)
-
-            */
-
-            float x2 = x0 - dx * h00 / (h10 - h00);
-            float x3 = x0 - dx * h01 / (h11 - h01);
-            float y2 = y0 - dy * h00 / (h01 - h00);
-            float y3 = y0 - dy * h10 / (h11 - h10);
-
-            /*
-
-                (x0, y0)        (x2, y0)        (x0 + dx, y0)
-
-                (x0, y2)                        (x0 + dx, y3)
-
-                (x0, y0 + dy)   (x3, y0 + dy)   (x0 + dx, y0 + dy)
-
-            */
-
-            int mask = ((h00 < 0.f) ? 1 : 0)
-                     | ((h10 < 0.f) ? 2 : 0)
-                     | ((h01 < 0.f) ? 4 : 0)
-                     | ((h11 < 0.f) ? 8 : 0);
-
-            switch (mask) {
-            case 1:
-            case 15 ^ 1:
-                glVertex2f(x0, y2);
-                glVertex2f(x2, y0);
-                break;
-
-            case 2:
-            case 15 ^ 2:
-                glVertex2f(x2, y0);
-                glVertex2f(x0 + dx, y3);
-                break;
-
-            case 4:
-            case 15 ^ 4:
-                glVertex2f(x0, y2);
-                glVertex2f(x3, y0 + dy);
-                break;
-
-            case 8:
-            case 15 ^ 8:
-                glVertex2f(x3, y0 + dy);
-                glVertex2f(x0 + dx, y3);
-                break;
-
-            case 1 | 2:
-            case 4 | 8:
-                glVertex2f(x0, y2);
-                glVertex2f(x0 + dx, y3);
-                break;
-
-            case 1 | 4:
-            case 2 | 8:
-                glVertex2f(x2, y0);
-                glVertex2f(x3, y0 + dx);
-                break;
-
-            case 1 | 8:
-                glVertex2f(x2, y0);
-                glVertex2f(x0 + dx, y3);
-                glVertex2f(x0, y2);
-                glVertex2f(x3, y0 + dy);
-                break;
-
-            case 2 | 4:
-                glVertex2f(x0, y2);
-                glVertex2f(x2, y0);
-                glVertex2f(x3, y0 + dy);
-                glVertex2f(x0 + dx, y3);
-                break;
-            }
-        }
-    }
-    glEnd();
-#endif
-
-#if 0
-    glBegin(GL_TRIANGLES);
-    for (int jj = 0; sz * jj < _framebuffer_size.y; ++jj) {
-        float y0 = ymin + dy * jj;
-
-        for (int ii = 0; sz * ii < _framebuffer_size.x; ++ii) {
-            float x0 = xmin + dx * ii;
-
-            float h0 = noise(vec2(x0,      y0     ));
-
-            if (h0 < 0.f) {
-                glColor4f(0,0,1,.1f);
-            } else {
-                glColor4f(0,1,0,.1f);
-            }
-
-            glVertex2f(x0 - dx * .5f, y0 - dy * .5f);
-            glVertex2f(x0 + dx * .5f, y0 - dy * .5f);
-            glVertex2f(x0 + dx * .5f, y0 + dy * .5f);
-
-            glVertex2f(x0 - dx * .5f, y0 - dy * .5f);
-            glVertex2f(x0 + dx * .5f, y0 + dy * .5f);
-            glVertex2f(x0 - dx * .5f, y0 + dy * .5f);
-        }
-    }
-    glEnd();
-#endif
-
 #endif
 }
 

@@ -23,7 +23,7 @@ shield::shield(physics::shape const* base, game::ship* owner)
     , _damage_time(time_value::zero)
     , _prev_strength(_strength)
 {
-    float radius = 32.f;
+    float radius = .6f * _base->calculate_bounds(mat3_identity).size().length();
 
     for (int ii = 0; ii < kNumVertices; ++ii) {
         float a = ii * (2.f * math::pi<float> / kNumVertices);
@@ -214,6 +214,7 @@ bool shield::damage(vec2 position, float damage)
 //------------------------------------------------------------------------------
 void shield::step_vertices()
 {
+#if 0
     float hull_radius[kNumVertices];
     float prev_radius[kNumVertices];
     float shield_radius[kNumVertices];
@@ -247,6 +248,27 @@ void shield::step_vertices()
     for (int ii = 0; ii < kNumVertices; ++ii) {
         _vertices[ii] = _vertices[ii].normalize() * shield_radius[ii];
     }
+#else
+    vec2 vtx[kNumVertices];
+
+    for (int ii = 0; ii < kNumVertices; ++ii) {
+        vec2 v = physics::collide::closest_point(_base, _vertices[ii]);
+        vec2 r = (_vertices[ii] - v).normalize();
+        vtx[ii] = v + r * 8.f;
+    }
+
+    for (int ii = 0; ii < kNumVertices; ++ii) {
+        vec2 v = vtx[ii];
+        for (int jj = 0; jj < kNumVertices; ++jj) {
+            if (ii == jj) {
+                continue;
+            }
+            vec2 r = (v - vtx[jj]);
+            v += r / r.length_sqr();
+        }
+        _vertices[ii] = v;
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------

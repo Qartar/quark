@@ -229,7 +229,7 @@ private:
 class tree
 {
 public:
-    using heightfield_fn = float(*)(vec2);
+    using heightfield_fn = std::function<float(vec2)>;
 
     tree()
         : _aabb{}
@@ -426,6 +426,199 @@ private:
             draw_r(r, child_index + 3, children[3], view_aabb, max_depth - 1);
         }
     }
+};
+
+//------------------------------------------------------------------------------
+class line_tree
+{
+public:
+    using heightfield_fn = std::function<float(vec2)>;
+
+    line_tree()
+        : _aabb{}
+    {}
+
+    //! Build tree over the given region using the heightfield function
+    //! to classify leaves as either above or below 0. Leaf nodes will be
+    //! no smaller than the given resolution along the x-axis.
+    void build(bounds region, float resolution, heightfield_fn fn) {
+        _aabb = region;
+        // Child nodes are allocated contiguously, do the same for the
+        // root node for consistency, this means nodes 1-3 are unused.
+        _nodes.resize(4);
+        _nodes[0] = build_r(_aabb,
+                            std::ilogb(_aabb.size().length() / resolution) - leaf_depth,
+                            fn);
+    }
+
+    void draw(system* r, bounds view_aabb, color4 color, float resolution = 0.f) const;
+
+private:
+    constexpr static int leaf_depth = 8;
+    constexpr static int leaf_size = 1 << leaf_depth;
+
+    bounds _aabb;
+    struct node {
+        uint32_t child_index;
+        uint32_t vertex_offset;
+        uint32_t vertex_count;
+    };
+    std::vector<node> _nodes;
+    std::vector<vec2> _vertices;
+
+private:
+    //! Split the given bounds at its midpoint into four equally sized bounds.
+    //!     2 3
+    //!     0 1
+    std::array<bounds, 4> split(bounds in) const {
+        vec2 min = in[0], max = in[1], mid = in.center();
+        return {
+            bounds{{min.x, min.y}, {mid.x, mid.y}},
+            bounds{{mid.x, min.y}, {max.x, mid.y}},
+            bounds{{min.x, mid.y}, {mid.x, max.y}},
+            bounds{{mid.x, mid.y}, {max.x, max.y}},
+        };
+    }
+
+    node build_r(bounds aabb, int max_depth, heightfield_fn fn) {
+        node out = tessellate(aabb, fn);
+        if (max_depth > 0) {
+            out.child_index = narrow_cast<uint32_t>(_nodes.size());
+            _nodes.resize(out.child_index + 4);
+
+            // Calculate bounds for each child node and recurse
+            std::array<bounds, 4> children = split(aabb);
+
+            _nodes[out.child_index + 0] = build_r(children[0], max_depth - 1, fn);
+            _nodes[out.child_index + 1] = build_r(children[1], max_depth - 1, fn);
+            _nodes[out.child_index + 2] = build_r(children[2], max_depth - 1, fn);
+            _nodes[out.child_index + 3] = build_r(children[3], max_depth - 1, fn);
+
+            // If all children have no vertices then collapse the node
+            if (!_nodes[out.child_index + 0].vertex_count
+                && !_nodes[out.child_index + 1].vertex_count
+                && !_nodes[out.child_index + 2].vertex_count
+                && !_nodes[out.child_index + 3].vertex_count) {
+
+                // Assert that all children have also been collapsed
+                assert(_nodes.size() == out.child_index + 4);
+                _nodes.resize(out.child_index);
+                return node{};
+            }
+        }
+        return out;
+    }
+
+    node tessellate(bounds aabb, heightfield_fn fn) {
+        float dx = aabb.size().x / leaf_size;
+        float dy = aabb.size().y / leaf_size;
+
+        node out = {};
+        out.vertex_offset = narrow_cast<uint32_t>(_vertices.size());
+
+        auto emit_vertex = [this, &out](vec2 v) {
+            _vertices.push_back(v);
+            ++out.vertex_count;
+        };
+
+        for (int jj = 0; jj < leaf_size; ++jj) {
+            float y0 = aabb[0][1] + dy * jj;
+
+            for (int ii = 0; ii < leaf_size; ++ii) {
+                float x0 = aabb[0][0] + dx * ii;
+
+                float h00, h10;
+                float h01, h11;
+
+                h00 = fn(vec2(x0,      y0     ));
+                h10 = fn(vec2(x0 + dx, y0     ));
+                h01 = fn(vec2(x0,      y0 + dy));
+                h11 = fn(vec2(x0 + dx, y0 + dy));
+
+                float x2 = x0 - dx * h00 / (h10 - h00);
+                float x3 = x0 - dx * h01 / (h11 - h01);
+                float y2 = y0 - dy * h00 / (h01 - h00);
+                float y3 = y0 - dy * h10 / (h11 - h10);
+
+                int mask = ((h00 < 0.f) ? 1 : 0)
+                         | ((h10 < 0.f) ? 2 : 0)
+                         | ((h01 < 0.f) ? 4 : 0)
+                         | ((h11 < 0.f) ? 8 : 0);
+
+                switch (mask) {
+                case 1:
+                case 15 ^ 1:
+                    emit_vertex({x0, y2});
+                    emit_vertex({x2, y0});
+                    break;
+
+                case 2:
+                case 15 ^ 2:
+                    emit_vertex({x2, y0});
+                    emit_vertex({x0 + dx, y3});
+                    break;
+
+                case 4:
+                case 15 ^ 4:
+                    emit_vertex({x0, y2});
+                    emit_vertex({x3, y0 + dy});
+                    break;
+
+                case 8:
+                case 15 ^ 8:
+                    emit_vertex({x3, y0 + dy});
+                    emit_vertex({x0 + dx, y3});
+                    break;
+
+                case 1 | 2:
+                case 4 | 8:
+                    emit_vertex({x0, y2});
+                    emit_vertex({x0 + dx, y3});
+                    break;
+
+                case 1 | 4:
+                case 2 | 8:
+                    emit_vertex({x2, y0});
+                    emit_vertex({x3, y0 + dx});
+                    break;
+
+                case 1 | 8:
+                    emit_vertex({x2, y0});
+                    emit_vertex({x0 + dx, y3});
+                    emit_vertex({x0, y2});
+                    emit_vertex({x3, y0 + dy});
+                    break;
+
+                case 2 | 4:
+                    emit_vertex({x0, y2});
+                    emit_vertex({x2, y0});
+                    emit_vertex({x3, y0 + dy});
+                    emit_vertex({x0 + dx, y3});
+                    break;
+                }
+            }
+        }
+
+        return out;
+    }
+
+    void draw_r(system* r, uint32_t node_index, bounds node_aabb, bounds view_aabb, int max_depth) const {
+        if (!node_aabb.intersects(view_aabb)) {
+            return;
+        }
+        uint32_t child_index = _nodes[node_index].child_index;
+        if (!child_index || max_depth <= 0) {
+            draw_lines(node_index);
+        } else {
+            std::array<bounds, 4> children = split(node_aabb);
+            draw_r(r, child_index + 0, children[0], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 1, children[1], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 2, children[2], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 3, children[3], view_aabb, max_depth - 1);
+        }
+    }
+
+    void draw_lines(uint32_t node_index) const;
 };
 
 } // namespace render

@@ -56,16 +56,47 @@ vec2 right_engine_vertices[] = {
     vec2(8, 8) + vec2{-7.0000000, -5.00000000 },
 };
 
+#define SHIP(L,B)           \
+    {vec2{L * .5f, B * 0.f},     \
+    vec2{L * 0.f, B * .5f},     \
+    vec2{L * -.5f, B * .4f},    \
+    vec2{L * -.5f, B * -.4f},   \
+    vec2{L * 0.f, B * -.5f}}
+
+const vec2 ship_hulls[][5] = {
+    // yamato-class battleship
+    SHIP(263.f, 39.f),
+
+    // iowa-class battleship
+    SHIP(270.f, 33.f),
+
+    // king george v-class battleship
+    SHIP(227.f, 31.5f),
+
+    // deutschland-class cruiser
+    SHIP(186.f, 21.7f),
+
+    // town-class cruiser
+    SHIP(180.f, 19.f),
+
+    // tribal-class destroyer
+    SHIP(115.f, 11.f),
+};
+
+static int hull_idx = 0;
+
 //------------------------------------------------------------------------------
 ship::ship()
     : _usercmd{}
     , _shield(nullptr)
     , _dead_time(time_value::max)
     , _is_destroyed(false)
+    //, _shape({
+    //    {std::make_unique<physics::convex_shape>(main_body_vertices)},
+    //    {std::make_unique<physics::convex_shape>(left_engine_vertices), vec2(-8, 8)},
+    //    {std::make_unique<physics::convex_shape>(right_engine_vertices), vec2(-8, -8)}})
     , _shape({
-        {std::make_unique<physics::convex_shape>(main_body_vertices)},
-        {std::make_unique<physics::convex_shape>(left_engine_vertices), vec2(-8, 8)},
-        {std::make_unique<physics::convex_shape>(right_engine_vertices), vec2(-8, -8)}})
+        {std::make_unique<physics::convex_shape>(ship_hulls[hull_idx++ % countof(ship_hulls)])}})
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
 
@@ -89,7 +120,7 @@ void ship::spawn()
         _crew.push_back(get_world()->spawn<character>());
     }
 
-    _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 8});
+    _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 12});
     _subsystems.push_back(_reactor);
 
     _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
@@ -98,9 +129,11 @@ void ship::spawn()
     _shield = get_world()->spawn<game::shield>(&_shape, this);
     _subsystems.push_back(_shield);
 
-    for (int ii = 0; ii < 2; ++ii) {
+    bounds b = _shape.calculate_bounds(mat3_identity);
+    constexpr vec2 ofs[] = {{.2f,0}, {.1f, 0}, {-.2f, 0}, {-.3f, 0}};
+    for (int ii = 0; ii < 4; ++ii) {
         weapon_info info = weapon::by_random(_random);
-        _weapons.push_back(get_world()->spawn<weapon>(this, info, vec2(11.f, ii ? 6.f : -6.f)));
+        _weapons.push_back(get_world()->spawn<weapon>(this, info, ofs[ii] * b.size().x + vec2(b.center().x,0)));
         _subsystems.push_back(_weapons.back());
     }
 
@@ -117,21 +150,11 @@ void ship::spawn()
 //------------------------------------------------------------------------------
 void ship::draw(render::system* renderer, time_value time) const
 {
-#if 1
+#if 0
         {
             auto tx = get_transform(time);
-#define SHIP(L,B)           \
-    {vec2{L * .5f, B * 0.f},     \
-    vec2{L * .3f, B * .4f},     \
-    vec2{L * 0.f, B * .5f},     \
-    vec2{L * -.35f, B * .4f},    \
-    vec2{L * -.5f, B * .2f},    \
-    vec2{L * -.5f, B * -.2f},   \
-    vec2{L * -.35f, B * -.4f},   \
-    vec2{L * 0.f, B * -.5f},    \
-    vec2{L * .3f, B * -.4f}}
 
-            const vec2 pts[][9] = {
+            const vec2 pts[][5] = {
                 // yamato-class battleship
                 SHIP(263.f, 39.f),
 
@@ -159,6 +182,19 @@ void ship::draw(render::system* renderer, time_value time) const
                 renderer->draw_line(v0, v1, color4(0,1,0,1), color4(0,1,0,1));
             }
         }
+#elif 1
+    if (!_is_destroyed) {
+        auto tx = get_transform(time);
+
+        for (auto const& child : _shape) {
+            auto child_shape = static_cast<physics::convex_shape const*>(child.shape.get());
+            for (int ii = 0; ii < child_shape->num_vertices(); ++ii) {
+                vec2 v0 = (*child_shape)[ii] * tx;
+                vec2 v1 = (*child_shape)[(ii + 1)] * tx;
+                renderer->draw_line(v0, v1, color4(0,1,0,1), color4(0,1,0,1));
+            }
+        }
+    }
 #else
 
     if (!_is_destroyed) {
@@ -291,10 +327,11 @@ void ship::think()
             // random explosion at a random point on the ship
             if (s > .2f) {
                 // find a random point on the ship's model
+                bounds b = _shape.calculate_bounds(mat3_identity);
                 vec2 v;
                 do {
-                    v = _model->bounds().mins() + _model->bounds().size() * vec2(_random.uniform_real(), _random.uniform_real());
-                } while (!_model->contains(v));
+                    v = b.mins() + b.size() * vec2(_random.uniform_real(), _random.uniform_real());
+                } while (!_shape.contains_point(v));
 
                 get_world()->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
                 if (s * s > t) {

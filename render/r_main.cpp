@@ -341,4 +341,26 @@ void system::draw_timers() const
     glPopMatrix();
 }
 
+//------------------------------------------------------------------------------
+void line_tree::draw(system* r, bounds view_aabb, color4 color, float resolution) const
+{
+    glEnableClientState(GL_VERTEX_ARRAY);
+
+    glColor4fv(color);
+    glVertexPointer(2, GL_FLOAT, 0, _vertices.data());
+
+    draw_r(r, 0, _aabb, view_aabb,
+        resolution ? std::ilogb(_aabb.size().length() / resolution) - leaf_depth : INT_MAX);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+//------------------------------------------------------------------------------
+void line_tree::draw_lines(uint32_t node_index) const
+{
+    glDrawArrays(GL_LINES,
+                _nodes[node_index].vertex_offset,
+                _nodes[node_index].vertex_count);
+}
+
 } // namespace render
