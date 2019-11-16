@@ -161,10 +161,10 @@ vec2 object::get_position(time_value time) const
 }
 
 //------------------------------------------------------------------------------
-float object::get_rotation(time_value time) const
+rot2 object::get_rotation(time_value time) const
 {
     float lerp = (time - get_world()->frametime()) / FRAMETIME;
-    return _old_rotation + (get_rotation() - _old_rotation) * lerp;
+    return _old_rotation * rot2((get_rotation() / _old_rotation).radians() * lerp);
 }
 
 //------------------------------------------------------------------------------
@@ -189,11 +189,11 @@ void object::set_position(vec2 position, bool teleport/* = false*/)
 }
 
 //------------------------------------------------------------------------------
-void object::set_rotation(float rotation, bool teleport/* = false*/)
+void object::set_rotation(rot2 rotation, bool teleport/* = false*/)
 {
     _rigid_body.set_rotation(rotation);
     if (teleport) {
-        _old_rotation =  rotation;
+        _old_rotation = rotation;
     }
 }
 

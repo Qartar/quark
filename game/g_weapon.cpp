@@ -250,7 +250,7 @@ void weapon::think()
 
                 proj->set_position(start, true);
                 proj->set_linear_velocity(projectile_velocity);
-                proj->set_rotation(std::atan2(dir.y, dir.x), true);
+                proj->set_rotation(rot2(dir.x, dir.y), true);
 
                 if (projectile_info.projectile.launch_effect != effect_type::none) {
                     get_world()->add_effect(time, projectile_info.projectile.launch_effect, start, dir * 2);

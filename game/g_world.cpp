@@ -69,7 +69,7 @@ void world::reset()
 
         ship* sh = spawn<ship>();
         sh->set_position(-dir * 192.f, true);
-        sh->set_rotation(angle, true);
+        sh->set_rotation(rot2(dir.x, dir.y), true);
 
         // spawn ai controller to control the ship
         if (ii == 0) {

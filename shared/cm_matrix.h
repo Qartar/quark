@@ -53,14 +53,6 @@ public:
         return mat2(+r.x, +r.y, -r.y, +r.x);
     }
 
-    void set_rotation(float theta) {
-        set_rotation(rot2(theta));
-    }
-
-    static mat2 rotate(float theta) {
-        return rotate(rot2(theta));
-    }
-
 // scale
 
     void set_scale(vec2 const& s) {
@@ -142,14 +134,6 @@ public:
                     rows[i2][i0], rows[i2][i1], rows[i2][i2]);
     }
 
-    template<int axis> void set_rotation(float theta) {
-        set_rotation<axis>(rot2(theta));
-    }
-
-    template<int axis> static mat3 rotate(float theta) {
-        mat3 m; m.set_rotation<axis>(rot2(theta)); return m;
-    }
-
 // scale
 
     void set_scale(vec3 const& s) {
@@ -172,18 +156,10 @@ public:
                      translation.x, translation.y, 1);
     }
 
-    static mat3 transform(vec2 translation, float rotation) {
-        return transform(translation, rot2(rotation));
-    }
-
 // homogenous inverse transformation in two dimensions
 
     constexpr static mat3 inverse_transform(vec2 translation, rot2 rotation) {
         return transform(-translation * rotation, rotation.inverse());
-    }
-
-    static mat3 inverse_transform(vec2 translation, float rotation) {
-        return inverse_transform(translation, rot2(rotation));
     }
 
 // multiplication

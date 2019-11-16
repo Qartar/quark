@@ -11,7 +11,7 @@ namespace physics {
 bool compound_shape::contains_point(vec2 point) const
 {
     for (auto& child : _children) {
-        if (child.shape->contains_point(point * child.inverse_transform)) {
+        if (child.shape->contains_point(point * child.inverse_transform())) {
             return true;
         }
     }
@@ -56,7 +56,7 @@ void compound_shape::calculate_mass_properties(float inverse_mass, vec2& center_
             child_center_of_mass,
             child_inverse_inertia);
 
-        center_of_mass += child_center_of_mass * child.transform * child_mass;
+        center_of_mass += child_center_of_mass * child.transform() * child_mass;
         // by parallel axis theorem: I = I0 + md^2
         if (child_inverse_inertia) {
             inertia += 1.f / child_inverse_inertia + child_mass * child.position.length_sqr();
@@ -71,9 +71,9 @@ void compound_shape::calculate_mass_properties(float inverse_mass, vec2& center_
 bounds compound_shape::calculate_bounds(mat3 transform) const
 {
     assert(_children.size());
-    bounds out = _children[0].shape->calculate_bounds(_children[0].transform * transform);
+    bounds out = _children[0].shape->calculate_bounds(_children[0].transform() * transform);
     for (std::size_t ii = 1, sz = _children.size(); ii < sz; ++ii) {
-        out |= _children[ii].shape->calculate_bounds(_children[ii].transform * transform);
+        out |= _children[ii].shape->calculate_bounds(_children[ii].transform() * transform);
     }
     return out;
 }
