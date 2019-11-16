@@ -140,6 +140,10 @@ void system::draw_box(vec2 size, vec2 position, color4 color)
 //------------------------------------------------------------------------------
 void system::draw_triangles(vec2 const* position, color4 const* color, int const* indices, std::size_t num_indices)
 {
+    if (_draw_tris) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
 
@@ -150,6 +154,10 @@ void system::draw_triangles(vec2 const* position, color4 const* color, int const
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
+
+    if (_draw_tris) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 }
 
 //------------------------------------------------------------------------------
