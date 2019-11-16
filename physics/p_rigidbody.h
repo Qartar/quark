@@ -41,11 +41,11 @@ public:
         _motion.set_position(position);
     }
 
-    float get_rotation() const {
+    rot2 get_rotation() const {
         return _motion.get_rotation();
     }
 
-    void set_rotation(float rotation) {
+    void set_rotation(rot2 rotation) {
         _motion.set_rotation(rotation);
     }
 

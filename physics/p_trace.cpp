@@ -23,7 +23,7 @@ trace::trace(rigid_body const* body, vec2 start, vec2 end)
     physics::motion point_motion{
         &shape,
         start,
-        0,
+        rot2_identity,
         end - start
     };
 
@@ -87,7 +87,7 @@ float trace::compound_compound_dispatch(contact& contact, motion motion_a, motio
         motion child_motion{
             child.shape.get(),
             child.position * transform,
-            child.rotation + motion_b.get_rotation(),
+            child.rotation * motion_b.get_rotation(),
             motion_b.get_linear_velocity(),
             motion_b.get_angular_velocity()};
 
@@ -121,7 +121,7 @@ float trace::compound_convex_dispatch(contact& contact, motion motion_a, motion 
         motion child_motion{
             child.shape.get(),
             child.position * transform,
-            child.rotation + motion_a.get_rotation(),
+            child.rotation * motion_a.get_rotation(),
             motion_a.get_linear_velocity(),
             motion_a.get_angular_velocity()};
 
@@ -160,8 +160,8 @@ float trace::convex_convex_dispatch(contact& contact, motion motion_a, motion mo
 
     vec2 p0_a = motion_a.get_position();
     vec2 p0_b = motion_b.get_position();
-    float r0_a = motion_a.get_rotation();
-    float r0_b = motion_b.get_rotation();
+    rot2 r0_a = motion_a.get_rotation();
+    rot2 r0_b = motion_b.get_rotation();
 
     vec2 dp_a = motion_a.get_linear_velocity() * delta_time;
     vec2 dp_b = motion_b.get_linear_velocity() * delta_time;
@@ -186,9 +186,9 @@ float trace::convex_convex_dispatch(contact& contact, motion motion_a, motion mo
 
     for (int num_iterations = 0; num_iterations < max_iterations && fraction < 1.0f; ++num_iterations) {
         motion_a.set_position(p0_a + dp_a * fraction);
-        motion_a.set_rotation(r0_a + dr_a * fraction);
+        motion_a.set_rotation(r0_a * rot2(dr_a * fraction));
         motion_b.set_position(p0_b + dp_b * fraction);
-        motion_b.set_rotation(r0_b + dr_b * fraction);
+        motion_b.set_rotation(r0_b * rot2(dr_b * fraction));
 
         contact = physics::collide(motion_a, motion_b).get_contact();
 

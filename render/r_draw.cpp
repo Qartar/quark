@@ -387,7 +387,7 @@ void system::draw_starfield(vec2 streak_vector)
     for (int ii = 0; ii < 5; ++ii) {
         float r = (std::floor(s) + ii) * 145.f;
 
-        vec2 p = _view.origin * mat2::rotate(math::deg2rad(-r));
+        vec2 p = _view.origin * rot2(math::deg2rad(-r));
 
         float tx = -p.x / scale[ii];
         float ty = -p.y / scale[ii];

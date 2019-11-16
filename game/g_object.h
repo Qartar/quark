@@ -98,7 +98,7 @@ public:
     virtual vec2 get_position(time_value time) const;
 
     //! Get frame-interpolated rotation
-    virtual float get_rotation(time_value time) const;
+    virtual rot2 get_rotation(time_value time) const;
 
     //! Get frame-interpolated transform matrix
     virtual mat3 get_transform(time_value time) const;
@@ -109,12 +109,12 @@ public:
     physics::rigid_body const& rigid_body() const { return _rigid_body; }
 
     void set_position(vec2 position, bool teleport = false);
-    void set_rotation(float rotation, bool teleport = false);
+    void set_rotation(rot2 rotation, bool teleport = false);
     void set_linear_velocity(vec2 linear_velocity) { _rigid_body.set_linear_velocity(linear_velocity); }
     void set_angular_velocity(float angular_velocity) { _rigid_body.set_angular_velocity(angular_velocity); }
 
     vec2 get_position() const { return _rigid_body.get_position(); }
-    float get_rotation() const { return _rigid_body.get_rotation(); }
+    rot2 get_rotation() const { return _rigid_body.get_rotation(); }
     mat3 get_transform() const { return _rigid_body.get_transform(); }
     mat3 get_inverse_transform() const { return _rigid_body.get_inverse_transform(); }
     vec2 get_linear_velocity() const { return _rigid_body.get_linear_velocity(); }
@@ -127,7 +127,7 @@ public:
     color4 _color;
 
     vec2 _old_position;
-    float _old_rotation;
+    rot2 _old_rotation;
 
 protected:
     friend world;

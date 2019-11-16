@@ -100,7 +100,7 @@ void world::step(float delta_time)
 
     for (std::size_t ii = 0; ii < _bodies.size(); ++ii) {
         _bodies[ii]->set_position(_bodies[ii]->get_position() + _bodies[ii]->get_linear_velocity() * delta_time);
-        _bodies[ii]->set_rotation(_bodies[ii]->get_rotation() + _bodies[ii]->get_angular_velocity() * delta_time);
+        _bodies[ii]->set_rotation(_bodies[ii]->get_rotation() * rot2(_bodies[ii]->get_angular_velocity() * delta_time));
     }
 }
 
