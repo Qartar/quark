@@ -159,7 +159,7 @@ public:
 // homogenous inverse transformation in two dimensions
 
     constexpr static mat3 inverse_transform(vec2 translation, rot2 rotation) {
-        return transform(-translation * rotation, rotation.inverse());
+        return transform(-translation * rotation.inverse(), rotation.inverse());
     }
 
 // multiplication
