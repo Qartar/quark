@@ -27,6 +27,70 @@ void navigation::spawn()
 }
 
 //------------------------------------------------------------------------------
+void navigation::draw(render::system* renderer, time_value time) const
+{
+    // get a list of all ships in the world
+    std::vector<game::ship const*> ships;
+    for (auto const* object : get_world()->objects()) {
+        if (object != _owner && object->is_type<ship>()) {
+            if (!object->cast<ship>()->is_destroyed()) {
+                ships.push_back(object->cast<ship>());
+            }
+        }
+    }
+
+    for (auto const* ship : ships) {
+        vec2 relative_position = ship->get_position(time) - _owner->get_position(time);
+        vec2 relative_velocity = ship->get_linear_velocity() - _owner->get_linear_velocity();
+
+        // find t s.t. |relative_position + t * relative_velocity|^2 < r^2
+        float a = relative_velocity.dot(relative_velocity);
+        float b = 2.f * relative_position.dot(relative_velocity);
+        float c = relative_position.dot(relative_position) - 256.f * 256.f;
+        float d = b * b - 4.f * a * c;
+
+        // no collision
+        if (d < 0.f) {
+            continue;
+        }
+
+        float q = -.5f * (b + std::copysign(std::sqrt(d), b));
+        auto t12 = std::minmax({q / a, c / q});
+        if (t12.second < 0.f) {
+            continue;
+        }
+        float t = std::max(0.f, t12.first);
+
+        renderer->draw_arc(
+            _owner->get_position(time) + _owner->get_linear_velocity() * t,
+            128.f,
+            0.f,
+            -math::pi<float>,
+            math::pi<float>,
+            color4(1,0,0,1));
+        renderer->draw_line(
+            _owner->get_position(time),
+            _owner->get_position(time) +  _owner->get_linear_velocity() * t
+            -  _owner->get_linear_velocity().normalize() * 128.f,
+            color4(1,0,0,1),
+            color4(1,0,0,1));
+
+        rot2 halfangle = rot2(std::asin(256.f / relative_position.length()));
+        vec2 dir1 = (relative_position * halfangle).normalize();
+        vec2 dir2 = (relative_position / halfangle).normalize();
+
+        //float d2 = 2.f * halfangle.x * halfangle.y;
+        //float s = -.5f * relative_velocity.cross(dir1) / d2;
+        //vec2 apex = ship->get_linear_velocity() + dir2 * s - relative_position * (1.f / 256.f);
+        vec2 apex = ship->get_linear_velocity();// + dir2 * s - relative_position * (1.f / 256.f);
+
+        renderer->draw_line(_owner->get_position(time) + apex, _owner->get_position(time) + apex + dir1 * 64.f, color4(1,1,0,1), color4(1,1,0,0));
+        renderer->draw_line(_owner->get_position(time) + apex, _owner->get_position(time) + apex + dir2 * 64.f, color4(1,1,0,1), color4(1,1,0,0));
+        renderer->draw_line(_owner->get_position(time), _owner->get_position(time) + _owner->get_linear_velocity(), color4(0,1,0,1), color4(0,1,0,1));
+    }
+}
+
+//------------------------------------------------------------------------------
 void navigation::think()
 {
     subsystem::think();

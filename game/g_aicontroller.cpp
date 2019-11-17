@@ -87,6 +87,7 @@ void aicontroller::think()
     // update weapons
     //
 
+#if 0
     for (auto& weapon : _ship->weapons()) {
         if (!_ship->is_destroyed() && _random.uniform_real() < .01f) {
             // get a list of all ships in the world
@@ -121,6 +122,7 @@ void aicontroller::think()
             }
         }
     }
+#endif
 
     //
     // handle respawn
