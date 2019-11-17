@@ -6,6 +6,7 @@
 
 #include "g_ship.h"
 #include "g_character.h"
+#include "g_navigation.h"
 #include "g_shield.h"
 #include "g_weapon.h"
 #include "g_subsystem.h"
@@ -120,7 +121,7 @@ void ship::spawn()
         _crew.push_back(get_world()->spawn<character>());
     }
 
-    _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 12});
+    _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 13});
     _subsystems.push_back(_reactor);
 
     _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
@@ -128,6 +129,9 @@ void ship::spawn()
 
     _shield = get_world()->spawn<game::shield>(&_shape, this);
     _subsystems.push_back(_shield);
+
+    _navigation = get_world()->spawn<game::navigation>(this);
+    _subsystems.push_back(_navigation);
 
     bounds b = _shape.calculate_bounds(mat3_identity);
     constexpr vec2 ofs[] = {{.2f,0}, {.1f, 0}, {-.2f, 0}, {-.3f, 0}};
