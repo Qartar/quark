@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_aicontroller.h"
+#include "g_navigation.h"
 #include "g_ship.h"
 #include "g_subsystem.h"
 #include "g_weapon.h"
@@ -78,14 +79,8 @@ void aicontroller::think()
 
     if (!_ship->is_destroyed()) {
         constexpr float radius = 128.f;
-        constexpr float speed = 16.f;
-        constexpr float angular_speed = speed / radius;
-
-        float linear_speed = _ship->engines()->maximum_linear_speed();
-        vec2 forward = (vec3(1,0,0) * _ship->get_transform()).to_vec2();
-
-        _ship->engines()->set_target_linear_velocity(forward * linear_speed);
-        _ship->engines()->set_target_angular_velocity(angular_speed);
+        vec2 target = vec2(radius, -radius) * _ship->get_transform();
+        _ship->navigation()->set_waypoint(target);
     }
 
     //
