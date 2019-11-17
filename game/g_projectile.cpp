@@ -172,6 +172,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
 //------------------------------------------------------------------------------
 void projectile::draw(render::system* renderer, time_value time) const
 {
+#if 0
     constexpr time_delta tail_time = time_delta::from_seconds(.04f);
 
     if (time - _info.tail_time > _impact_time) {
@@ -187,6 +188,19 @@ void projectile::draw(render::system* renderer, time_value time) const
         _info.color * color4(1,1,1,0),
         _info.color * color4(1,1,1,a),
         _info.color * color4(1,1,1,0));
+#else
+    mat3 tx = get_transform(std::min(_impact_time, time));
+    vec2 p[4] = {
+        vec2( 1, 0) * tx,
+        vec2( 0, 1) * tx,
+        vec2(-1, 0) * tx,
+        vec2( 0,-1) * tx,
+    };
+    renderer->draw_line(p[0], p[1], color4(0,1,0,1), color4(0,1,0,1));
+    renderer->draw_line(p[1], p[2], color4(0,1,0,1), color4(0,1,0,1));
+    renderer->draw_line(p[2], p[3], color4(0,1,0,1), color4(0,1,0,1));
+    renderer->draw_line(p[3], p[0], color4(0,1,0,1), color4(0,1,0,1));
+#endif
 }
 
 //------------------------------------------------------------------------------
