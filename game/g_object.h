@@ -86,6 +86,18 @@ public:
         return type().is_type(other_type::_type);
     }
 
+    //! Returns this object casted to `other_type` if the object is convertible
+    //! to that type, otherwise `nullptr`
+    template<typename other_type> other_type const* cast() const {
+        return is_type<other_type>() ? static_cast<other_type const*>(this) : nullptr;
+    }
+
+    //! Returns this object casted to `other_type` if the object is convertible
+    //! to that type, otherwise `nullptr`
+    template<typename other_type> other_type* cast() {
+        return is_type<other_type>() ? static_cast<other_type*>(this) : nullptr;
+    }
+
     virtual object_type const& type() const { return _type; }
     virtual void draw(render::system* renderer, time_value time) const;
     virtual bool touch(object *other, physics::collision const* collision);
