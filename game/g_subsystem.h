@@ -35,6 +35,7 @@ enum class subsystem_type
     engines,
     weapons,
     shields,
+    navigation,
 
     // miscellaneous:
 

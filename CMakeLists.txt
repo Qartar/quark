@@ -55,6 +55,8 @@ set(QUARK_SOURCES
     game/g_handle.natvis
     game/g_menu.cpp
     game/g_menu.h
+    game/g_navigation.cpp
+    game/g_navigation.h
     game/g_network.cpp
     game/g_object.cpp
     game/g_object.h

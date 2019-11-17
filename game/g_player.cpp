@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_player.h"
+#include "g_navigation.h"
 #include "g_shield.h"
 #include "g_ship.h"
 
@@ -44,8 +45,9 @@ void player::draw(render::system* renderer, time_value time) const
 
     vec2 pos = get_position(time);
 
-    for (std::size_t ii = 0, sz = _waypoints.size(); ii < sz; ++ii) {
-        vec2 next = _waypoints[ii];
+    auto const& waypoints = _ship->navigation()->waypoints();
+    for (std::size_t ii = 0, sz = waypoints.size(); ii < sz; ++ii) {
+        vec2 next = waypoints[ii];
         renderer->draw_line(pos, next, color4(0,1,0,.5f), color4(0,1,0,.5f));
         pos = next;
     }
@@ -61,7 +63,7 @@ void player::draw(render::system* renderer, time_value time) const
 
         if (!_ship->engines()->current_power()) {
             renderer->draw_box(box_size, vec2(0,0) * transform, color4(.5f,.5f,.5f,1));
-        } else if (_waypoints.size()) {
+        } else if (waypoints.size()) {
             renderer->draw_box(box_size, vec2(0,0) * transform, color4(1.f,.8f,.2f,1));
         } else {
             renderer->draw_box(box_size, vec2(0,0) * transform, color4(1.f,1.f,1.f,1));
@@ -120,47 +122,6 @@ void player::think()
     }
 
     _view = view(time);
-
-    //
-    // update navigation
-    //
-
-    if (!_ship->is_destroyed()) {
-        float linear_speed = _ship->engines()->maximum_linear_speed();
-        float angular_speed = _ship->engines()->maximum_angular_speed();
-        vec2 target_position = _ship->get_position();
-
-        while (_waypoints.size() && (_waypoints[0] - _view.origin).length_sqr() < square(32.f)) {
-            _waypoints.erase(_waypoints.begin());
-        }
-
-        if (_waypoints.size()) {
-            target_position = _waypoints[0];
-        }
-
-        if (linear_speed && angular_speed && target_position != _ship->get_position()) {
-            vec2 local = target_position * _ship->get_inverse_transform();
-            float target_radius = std::abs((square(local.x) + square(local.y)) / (2.f * local.y));
-            float turn_radius = linear_speed / angular_speed;
-            linear_speed *= min(1.f, target_radius / turn_radius);
-            float arc_angle = std::atan2(local.x, target_radius - std::abs(local.y));
-            arc_angle = std::fmod(arc_angle + 2.f * math::pi<float>, 2.f * math::pi<float>);
-            float arc_length = target_radius * arc_angle;
-            float arc_ratio = arc_length / local.length();
-            angular_speed *= clamp(turn_radius / target_radius, 1.f - std::exp(100.f * (1.f - arc_ratio)), 1.f);
-        }
-
-        if (target_position == _ship->get_position()) {
-            _ship->engines()->set_target_velocity(vec2_zero, 0);
-        } else {
-            vec2 delta_move = (target_position - _ship->get_position()) / _ship->get_rotation();
-            float delta_angle = std::remainder(std::atan2(delta_move.y, delta_move.x), 2.f * math::pi<float>);
-            vec2 move_target = (vec3(linear_speed,0,0) * _ship->get_transform()).to_vec2();
-
-            _ship->engines()->set_target_linear_velocity(move_target);
-            _ship->engines()->set_target_angular_velocity(std::copysign(angular_speed, delta_angle));
-        }
-    }
 
     //
     // handle respawn
@@ -225,10 +186,10 @@ void player::update_usercmd(usercmd cmd, time_value time)
             if (_move_selection) {
                 vec2 world_cursor = (cmd.cursor - vec2(.5f, .5f)) * _view.size + _ship->get_position(time);
                 if (!!(cmd.modifiers & usercmd::modifier::shift)) {
-                    _waypoints.push_back(world_cursor);
+                    _ship->navigation()->add_waypoint(world_cursor);
                     _move_appending = true;
                 } else {
-                    _waypoints = {world_cursor};
+                    _ship->navigation()->set_waypoint(world_cursor);
                     _move_selection = false;
                 }
             } else if (_weapon_selection) {
