@@ -38,7 +38,17 @@ public:
     }
 
 protected:
+    struct obstacle {
+        vec2 apex;
+        vec2 dir[2];
+    };
+
+    vec2 _ideal_velocity;
+
     std::vector<vec2> _waypoints;
+
+protected:
+    void update_obstacles(render::system* renderer, time_value time) const;
 };
 
 } // namespace game
