@@ -9,19 +9,6 @@ set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/cmake")
 set(VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/version.h")
 set(USE_SDL ON)
 
-if(APPLE)
-    add_compile_options(-DGL_SILENCE_DEPRECATION)
-    include_directories (
-            /usr/local/include
-            /System/Library/Frameworks
-    )
-    find_library(OpenGL_LIBRARY OpenGL)
-    mark_as_advanced (OpenGL_LIBRARY)
-    set(EXTRA_LIBS ${OpenGL_LIBRARY})
-    link_libraries(${EXTRA_LIBS})
-    link_directories(/usr/local/lib)
-endif(APPLE)
-
 if(GIT_FOUND)
     add_custom_target(quark-version ALL
         COMMAND ${CMAKE_COMMAND}
@@ -38,6 +25,10 @@ if(GIT_FOUND)
 else()
     configure_file(${SCRIPTS_DIR}/version.h.in ${VERSION_FILE})
 endif()
+
+##
+## Compiler configuration
+##
 
 if(MSVC)
     # Remove bad default compiler flags for Visual Studio
@@ -67,6 +58,64 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         "-Wno-unused-function"
     )
 endif()
+
+##
+## Platform configuration
+##
+
+if (USE_SDL)
+    add_compile_options(-DUSE_SDL)
+    set(SDL_SOURCES
+        render/r_window.h
+        render/sdl_window.cpp
+        render/sdl_window.h
+        system/sdl_main.cpp
+        system/sdl_main.h
+    )
+    set(SDL_LIBRARIES
+        SDL2
+    )
+elseif (MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(WIN32_SOURCES
+        render/r_window.cpp
+        render/r_window.h
+        system/resource.h
+        system/resource.rc
+        system/win_main.cpp
+        system/win_main.h
+        system/win_include.h
+        system/win_types.h
+    )
+endif()
+
+if(WIN32)
+    set(WIN32_LIBRARIES
+        Shcore
+        ws2_32
+        opengl32
+        Pathcch
+        Xinput
+    )
+elseif(APPLE)
+    add_compile_options(
+        -framework OpenGL           #
+        -DGL_SILENCE_DEPRECATION    #
+    )
+    include_directories(
+        /usr/local/include
+        /System/Library/Frameworks
+    )
+    link_directories(/usr/local/lib)
+    find_library(OpenGL_LIBRARY OpenGL)
+    mark_as_advanced(OpenGL_LIBRARY)
+    set(APPLE_LIBRARIES ${OpenGL_LIBRARY})
+else()
+    set(LINUX_LIBRARIES GL)
+endif()
+
+##
+## Target configuration
+##
 
 add_subdirectory(shared)
 add_subdirectory(sound)
@@ -133,31 +182,7 @@ set(QUARK_SOURCES
     render/r_particle.h
     render/r_shader.cpp
     render/r_shader.h
-    render/r_window.cpp
-    render/r_window.h
 )
-
-if (USE_SDL)
-    add_compile_options(-DUSE_SDL)
-    set(SDL_SOURCES
-        render/sdl_window.cpp
-        render/sdl_window.h
-        system/sdl_main.cpp
-        system/sdl_main.h
-    )
-    set(SDL_LIBRARIES
-        SDL2
-    )
-elseif (MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(WIN32_SOURCES
-        system/resource.h
-        system/resource.rc
-        system/win_main.cpp
-        system/win_main.h
-        system/win_include.h
-        system/win_types.h
-    )
-endif()
 
 add_executable(quark WIN32
     ${QUARK_SOURCES}
@@ -183,7 +208,7 @@ if(WIN32)
 elseif(APPLE)
     add_compile_options("-framework OpenGL")
 else()
-    set(POSIX_LIBRARIES
+    set(LINUX_LIBRARIES
         GL
         pthread
     )
@@ -196,9 +221,10 @@ target_link_libraries(quark
     physics
     network
     # system libraries
-    ${WIN32_LIBRARIES}
-    ${POSIX_LIBRARIES}
     ${SDL_LIBRARIES}
+    ${WIN32_LIBRARIES}
+    ${APPLE_LIBRARIES}
+    ${LINUX_LIBRARIES}
 )
 
 target_include_directories(quark
