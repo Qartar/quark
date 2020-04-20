@@ -31,6 +31,7 @@ public:
     static cAudioDevice *create (HWND hwnd);
     static void destroy(cAudioDevice* device);
 
+    virtual ~cAudioDevice() = 0 {};
     virtual void destroy() = 0;
 
     virtual device_state_t get_state() = 0;

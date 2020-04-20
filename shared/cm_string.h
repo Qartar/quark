@@ -222,6 +222,16 @@ char* strcpy(T<char, S>& destination, view source)
     return strzcpy(destination.data(), source, destination.size());
 }
 
+//! Copies the characters of `source` to `destination`, including the terminating
+//! null character (and stopping at that point). If the length of `source` is
+//! greater than or equal to `destination_size` then the destination string is
+//! truncated and a terminating null character is inserted at the end of the buffer.
+template<template<class, std::size_t> typename T, std::size_t S>
+char* strcpy(T<char, S>& destination, buffer&& source)
+{
+    return strzcpy(destination.data(), source, destination.size());
+}
+
 //! Compares the string `str1` to the string `str2`.
 int strcmp(view str1, view str2);
 
