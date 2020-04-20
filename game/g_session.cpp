@@ -813,13 +813,13 @@ void session::command_eval(parser::text const& args)
         std::vector<expression::value> map(parser.num_values());
         expression ex = parser.compile(map.data());
         std::vector<float> values(ex.num_values());
-        auto idx = map[std::get<expression::value>(v)];
+        auto idx = map[std::get<expression::type_value>(v).value];
 
 #ifdef _DEBUG
         // assert that parsed result is the same as compiled result
         std::vector<float> parser_values(parser.num_values());
         float parser_value = parser.evaluate_one(
-            std::get<expression::value>(v),
+            std::get<expression::type_value>(v).value,
             r,
             nullptr,
             parser_values.data());

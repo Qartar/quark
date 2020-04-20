@@ -121,7 +121,7 @@ bool particle_effect::parse_layer_value(parser::context& context, expression_par
     if (std::holds_alternative<parser::error>(result)) {
         return false;
     } else {
-        value = std::get<expression::value>(result);
+        value = std::get<expression::type_value>(result).value;
     }
 
     return context.expect_token(";");
@@ -142,7 +142,7 @@ bool particle_effect::parse_layer_vector(parser::context& context, expression_pa
         if (std::holds_alternative<parser::error>(result)) {
             return false;
         } else {
-            vector[ii] = std::get<expression::value>(result);
+            vector[ii] = std::get<expression::type_value>(result).value;
         }
     }
 
@@ -167,7 +167,7 @@ bool particle_effect::parse_local_value(parser::context& context, expression_par
     } else {
         parser.assign({std::get<parser::token>(localname).begin,
                        std::get<parser::token>(localname).end},
-                      std::get<expression::value>(result));
+                       std::get<expression::type_value>(result));
     }
 
     return context.expect_token(";");
@@ -230,7 +230,7 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
     // zero-initialize all values
     for (auto& v : values) {
         for (std::size_t ii = 0; ii < v.size; ++ii) {
-            v.value[ii] = parser.add_constant(0.f);
+            v.value[ii] = parser.add_constant(0.f).value;
         }
     }
 

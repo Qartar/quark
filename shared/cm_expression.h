@@ -23,6 +23,11 @@ public:
         vec4,
     };
 
+    struct type_value {
+        expression::value value;
+        expression::type type;
+    };
+
     enum class op_type {
         none,
         constant,
@@ -110,8 +115,10 @@ public:
 
     expression compile(expression::value* map) const;
 
-    expression::value add_constant(float value);
-    expression::value add_op(expression::op_type type, expression::value lhs, expression::value rhs);
+    expression::type_value add_constant(float value);
+    expression::type_value add_op(expression::op_type type, expression::value lhs, expression::value rhs);
+    expression::type_value add_op(expression::op_type type, expression::type_value lhs, expression::type_value rhs);
+    expression::type_value add_op(expression::op_type type, expression::value lhs, expression::type lhs_type, expression::value rhs, expression::type rhs_type);
 
     bool is_constant(expression::value value) const;
 
@@ -146,9 +153,13 @@ protected:
 protected:
     expression::value alloc_type(expression::type type);
 
-    bool is_constant(expression::type type, expression::value value) const;
-    bool is_random(expression::type type, expression::value value) const;
-    void mark_used(expression::type type, expression::value value);
+    bool is_constant(expression::type_value value) const { return is_constant(value.value, value.type); }
+    bool is_random(expression::type_value value) const { return is_random(value.value, value.type); }
+    void mark_used(expression::type_value value) { mark_used(value.value, value.type); }
+
+    bool is_constant(expression::value value, expression::type type) const;
+    bool is_random(expression::value value, expression::type type) const;
+    void mark_used(expression::value value, expression::type type);
 };
 
 //------------------------------------------------------------------------------
@@ -167,17 +178,17 @@ public:
         return _expression.evaluate_one(val, r, inputs, values);
     }
 
-    void assign(string::view name, expression::value value);
+    void assign(string::view name, expression::type_value value);
 
-    result<expression::value> parse_expression(parser::context& context) {
+    result<expression::type_value> parse_expression(parser::context& context) {
         auto result = parse_expression(context, INT_MAX);
-        if (std::holds_alternative<expression::value>(result)) {
-            mark_used(std::get<expression::value>(result));
+        if (std::holds_alternative<expression::type_value>(result)) {
+            mark_used(std::get<expression::type_value>(result));
         }
         return result;
     }
 
-    result<expression::value> parse_temporary(parser::context& context) {
+    result<expression::type_value> parse_temporary(parser::context& context) {
         return parse_expression(context, INT_MAX);
     }
 
@@ -185,9 +196,9 @@ protected:
     result<expression::op_type> peek_operator(parser::context const& context) const;
     result<expression::op_type> parse_operator(parser::context& context);
     //result<expression> parse_binary_function(parser::context& context, expression::op_type type)
-    result<expression::value> parse_unary_function(parser::context& context, expression::op_type type, expression::value rhs = 0);
-    result<expression::value> parse_operand_explicit(parser::context& context);
-    result<expression::value> parse_operand(parser::context& context);
-    result<expression::value> parse_expression(parser::context& context, int precedence);
-    result<expression::value> parse_member(parser::context& context, type_info const& type);
+    result<expression::type_value> parse_unary_function(parser::context& context, expression::op_type type, expression::type_value rhs = {});
+    result<expression::type_value> parse_operand_explicit(parser::context& context);
+    result<expression::type_value> parse_operand(parser::context& context);
+    result<expression::type_value> parse_expression(parser::context& context, int precedence);
+    result<expression::type_value> parse_member(parser::context& context, expression::type_value lhs);
 };

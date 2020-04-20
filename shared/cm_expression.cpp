@@ -58,9 +58,6 @@ float expression::evaluate_op(random& r, op_type type, float lhs, float rhs)
             assert(false);
             return 0.f;
 
-        case op_type::member:
-            return lhs;
-
         case op_type::sum:
             return lhs + rhs;
 
@@ -90,6 +87,10 @@ float expression::evaluate_op(random& r, op_type type, float lhs, float rhs)
 
         case op_type::random:
             return r.uniform_real();
+
+        case op_type::member:
+            assert(false);
+            return lhs;
     }
     // rely on compiler warnings to detect missing case labels
     __assume(false);
@@ -182,9 +183,7 @@ expression expression_builder::compile(expression::value* map) const
     }
 
     for (std::size_t ii = _expression.num_inputs(), sz = _used.size(); ii < sz; ++ii) {
-        if (_expression._ops[ii].type == expression::op_type::member) {
-            map[ii] = map[_expression._ops[ii].lhs];
-        } else if (_used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
+        if (_used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
             map[ii] = num_used++;
         }
     }
@@ -206,18 +205,18 @@ expression expression_builder::compile(expression::value* map) const
 }
 
 //------------------------------------------------------------------------------
-expression::value expression_builder::add_constant(float value)
+expression::type_value expression_builder::add_constant(float value)
 {
     auto it = _constants.find(value);
     if (it != _constants.cend()) {
-        return it->second;
+        return {it->second, _types[it->second]};
     } else {
         _expression._ops.push_back({expression::op_type::constant, 0, 0});
         _expression._constants.push_back(value);
         _constants[value] = _expression._ops.size() - 1;
         _used.push_back(false);
         _types.push_back(expression::type::scalar);
-        return _expression._ops.size() - 1;
+        return {narrow_cast<expression::value>(_expression._ops.size() - 1), expression::type::scalar};
     }
 }
 
@@ -245,28 +244,30 @@ expression::value expression_builder::alloc_type(expression::type type)
 }
 
 //------------------------------------------------------------------------------
-expression::value expression_builder::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
+expression::type_value expression_builder::add_op(expression::op_type type, expression::value lhs, expression::value rhs)
 {
-    //
-    // wtf is this nightmare?
-    //
+    return add_op(type, lhs, _types[lhs], rhs, _types[rhs]);
+}
 
-    if (type == expression::op_type::member) {
-        type_info const& parent_type = _type_info[static_cast<std::size_t>(_types[lhs])];
-        type_info const& member_type = _type_info[static_cast<std::size_t>(parent_type.fields[rhs].type)];
+//------------------------------------------------------------------------------
+expression::type_value expression_builder::add_op(expression::op_type type, expression::type_value lhs, expression::type_value rhs)
+{
+    return add_op(type, lhs.value, lhs.type, rhs.value, rhs.type);
+}
 
-        expression::value base = alloc_type(parent_type.fields[rhs].type);
-        for (std::size_t ii = 0; ii < member_type.size; ++ii) {
-            _expression._ops[base + ii] = {expression::op_type::member, expression::value(lhs + ii)};
-        }
-        return base;
-    } else if (is_nullary(type)) {
+//------------------------------------------------------------------------------
+expression::type_value expression_builder::add_op(
+    expression::op_type type,
+    expression::value lhs, expression::type lhs_type,
+    expression::value rhs, expression::type rhs_type)
+{
+    if (is_nullary(type)) {
         _expression._constants.push_back(0.f);
         _expression._ops.push_back({type, lhs, rhs});
         _used.push_back(false);
         _types.push_back(expression::type::scalar);
-        return _expression._ops.size() - 1;
-    } else if (is_constant(lhs) && is_constant(rhs)) {
+        return {narrow_cast<expression::value>(_expression._ops.size() - 1), expression::type::scalar};
+    } else if (is_constant(lhs, lhs_type) && is_constant(rhs, rhs_type)) {
         static random r; // not used
         return add_constant(
             expression::evaluate_op(
@@ -274,47 +275,47 @@ expression::value expression_builder::add_op(expression::op_type type, expressio
                 type,
                 _expression._constants[lhs - _expression._num_inputs],
                 _expression._constants[rhs - _expression._num_inputs]));
-    } else if (is_unary(type) || _types[rhs] == expression::type::scalar) {
-        type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
-        expression::value base = alloc_type(_types[lhs]);
-        for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
+    } else if (is_unary(type) || rhs_type == expression::type::scalar) {
+        type_info const& lhs_type_info = _type_info[static_cast<std::size_t>(lhs_type)];
+        expression::value base = alloc_type(lhs_type);
+        for (std::size_t ii = 0; ii < lhs_type_info.size; ++ii) {
             _expression._ops[base + ii] = {type, expression::value(lhs + ii), rhs};
         }
-        return base;
+        return {base, _types[base]};
     } else if (is_binary(type)) {
-        if (_types[lhs] == expression::type::scalar) {
-            type_info const& rhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
-            expression::value base = alloc_type(_types[rhs]);
-            for (std::size_t ii = 0; ii < rhs_type.size; ++ii) {
+        if (lhs_type == expression::type::scalar) {
+            type_info const& rhs_type_info = _type_info[static_cast<std::size_t>(rhs_type)];
+            expression::value base = alloc_type(rhs_type);
+            for (std::size_t ii = 0; ii < rhs_type_info.size; ++ii) {
                 _expression._ops[base + ii] = {type, lhs, expression::value(rhs + ii)};
             }
-            return base;
-        } else if (_types[lhs] == _types[rhs]) {
-            type_info const& lhs_type = _type_info[static_cast<std::size_t>(_types[lhs])];
-            expression::value base = alloc_type(_types[lhs]);
-            for (std::size_t ii = 0; ii < lhs_type.size; ++ii) {
+            return {base, _types[base]};
+        } else if (lhs_type == rhs_type) {
+            type_info const& lhs_type_info = _type_info[static_cast<std::size_t>(lhs_type)];
+            expression::value base = alloc_type(lhs_type);
+            for (std::size_t ii = 0; ii < lhs_type_info.size; ++ii) {
                 _expression._ops[base + ii] = {type, expression::value(lhs + ii), expression::value(rhs + ii)};
             }
-            return base;
+            return {base, _types[base]};
         } else {
             // fail bad no
             assert(false);
-            return 0;
+            return {0, expression::type::scalar};
         }
     }
     assert(false);
-    return 0;
+    return {0, expression::type::scalar};
 }
 
 
 //------------------------------------------------------------------------------
 bool expression_builder::is_constant(expression::value value) const
 {
-    return is_constant(_types[value], value);
+    return is_constant(value, _types[value]);
 }
 
 //------------------------------------------------------------------------------
-bool expression_builder::is_constant(expression::type type, expression::value value) const
+bool expression_builder::is_constant(expression::value value, expression::type type) const
 {
     type_info const& info = _type_info[static_cast<std::size_t>(type)];
     if (info.fields.empty()) {
@@ -322,7 +323,7 @@ bool expression_builder::is_constant(expression::type type, expression::value va
         return _expression._ops[value].type == expression::op_type::constant;
     } else {
         for (auto const& field : info.fields) {
-            if (!is_constant(field.type, value + field.offset)) {
+            if (!is_constant(value + field.offset, field.type)) {
                 return false;
             }
         }
@@ -333,11 +334,11 @@ bool expression_builder::is_constant(expression::type type, expression::value va
 //------------------------------------------------------------------------------
 bool expression_builder::is_random(expression::value value) const
 {
-    return is_random(_types[value], value);
+    return is_random(value, _types[value]);
 }
 
 //------------------------------------------------------------------------------
-bool expression_builder::is_random(expression::type type, expression::value value) const
+bool expression_builder::is_random(expression::value value, expression::type type) const
 {
     type_info const& info = _type_info[static_cast<std::size_t>(type)];
     if (info.fields.empty()) {
@@ -361,7 +362,7 @@ bool expression_builder::is_random(expression::type type, expression::value valu
         }
     } else {
         for (auto const& field : info.fields) {
-            if (is_random(field.type, value + field.offset)) {
+            if (is_random(value + field.offset, field.type)) {
                 return true;
             }
         }
@@ -372,11 +373,11 @@ bool expression_builder::is_random(expression::type type, expression::value valu
 //------------------------------------------------------------------------------
 void expression_builder::mark_used(expression::value value)
 {
-    return mark_used(_types[value], value);
+    return mark_used(value, _types[value]);
 }
 
 //------------------------------------------------------------------------------
-void expression_builder::mark_used(expression::type type, expression::value value)
+void expression_builder::mark_used(expression::value value, expression::type type)
 {
     type_info const& info = _type_info[static_cast<std::size_t>(type)];
     if (info.fields.empty()) {
@@ -405,7 +406,7 @@ void expression_builder::mark_used(expression::type type, expression::value valu
         }
     } else {
         for (auto const& field : info.fields) {
-            mark_used(field.type, value + field.offset);
+            mark_used(value + field.offset, field.type);
         }
     }
 }
@@ -418,12 +419,12 @@ expression_parser::expression_parser(string::view const* inputs, std::size_t num
 }
 
 //------------------------------------------------------------------------------
-void expression_parser::assign(string::view name, expression::value value)
+void expression_parser::assign(string::view name, expression::type_value value)
 {
     //if (_symbols.find(name) != _symbols.cend()) {
     //    //log::warning("
     //} else {
-        _symbols[string::buffer(name)] = value;
+        _symbols[string::buffer(name)] = value.value;
     //}
 }
 
@@ -523,17 +524,17 @@ parser::result<expression::op_type> expression_parser::parse_operator(parser::co
 //}
 
 //------------------------------------------------------------------------------
-parser::result<expression::value> expression_parser::parse_unary_function(parser::context& context, expression::op_type type, expression::value rhs)
+parser::result<expression::type_value> expression_parser::parse_unary_function(parser::context& context, expression::op_type type, expression::type_value rhs)
 {
-    result<expression::value> arg = parse_operand(context);
+    result<expression::type_value> arg = parse_operand(context);
     if (std::holds_alternative<parser::error>(arg)) {
         return context.set_error(std::get<parser::error>(arg));
     }
-    return add_op(type, std::get<expression::value>(arg), rhs);
+    return add_op(type, std::get<expression::type_value>(arg), rhs);
 }
 
 //------------------------------------------------------------------------------
-parser::result<expression::value> expression_parser::parse_operand_explicit(parser::context& context)
+parser::result<expression::type_value> expression_parser::parse_operand_explicit(parser::context& context)
 {
     auto result = context.next_token();
     if (std::holds_alternative<parser::error>(result)) {
@@ -549,14 +550,14 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(pars
     }
 
     if (token == '(') {
-        parser::result<expression::value> expr = parse_expression(context);
+        parser::result<expression::type_value> expr = parse_expression(context);
         if (std::holds_alternative<parser::error>(expr)) {
             return context.set_error(std::get<parser::error>(expr));
         }
         if (!context.expect_token(")")) {
             return context.get_error();
         } else {
-            return std::get<expression::value>(expr);
+            return std::get<expression::type_value>(expr);
         }
 
     //
@@ -598,7 +599,7 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(pars
     //
 
     } else if (*token.begin >= '0' && *token.begin <= '9' || *token.begin == '.') {
-        expression::value v = add_constant((float)std::atof(token.begin));
+        expression::type_value v = add_constant((float)std::atof(token.begin));
         return v;
 
     //
@@ -610,7 +611,7 @@ parser::result<expression::value> expression_parser::parse_operand_explicit(pars
         if (s == _symbols.cend()) {
             return context.set_error({token, "unrecognized symbol: '" + token + "'"});
         }
-        return s->second;
+        return expression::type_value{s->second, _types[s->second]};
 
     } else {
         return context.set_error({token, "syntax error: '" + token + "'"});
@@ -632,7 +633,7 @@ constexpr int op_precedence(expression::op_type t)
 }
 
 //------------------------------------------------------------------------------
-parser::result<expression::value> expression_parser::parse_operand(parser::context& context)
+parser::result<expression::type_value> expression_parser::parse_operand(parser::context& context)
 {
 #if 0
     auto result = context.next_token();
@@ -674,7 +675,7 @@ parser::result<expression::value> expression_parser::parse_operand(parser::conte
         if (std::holds_alternative<parser::error>(lhs)) {
             return context.set_error(std::get<parser::error>(lhs));
         } else {
-            return add_op(expression::op_type::negative, std::get<expression::value>(lhs), 0);
+            return add_op(expression::op_type::negative, std::get<expression::type_value>(lhs), {});
         }
     } else {
         return parse_operand_explicit(context);
@@ -685,17 +686,18 @@ parser::result<expression::value> expression_parser::parse_operand(parser::conte
 }
 
 //------------------------------------------------------------------------------
-parser::result<expression::value> expression_parser::parse_member(parser::context& context, type_info const& type)
+parser::result<expression::type_value> expression_parser::parse_member(parser::context& context, expression::type_value lhs)
 {
     auto result = context.next_token();
     if (std::holds_alternative<parser::error>(result)) {
         return std::get<parser::error>(result);
     }
 
+    auto const& type = _type_info[static_cast<size_t>(lhs.type)];
     auto name = std::get<parser::token>(result);
     for (std::size_t ii = 0; ii < type.fields.size(); ++ii) {
         if (name == type.fields[ii].name) {
-            return expression::value(ii);
+            return expression::type_value{expression::value(lhs.value + type.fields[ii].offset), type.fields[ii].type};
         }
     }
 
@@ -703,9 +705,9 @@ parser::result<expression::value> expression_parser::parse_member(parser::contex
 }
 
 //------------------------------------------------------------------------------
-parser::result<expression::value> expression_parser::parse_expression(parser::context& context, int precedence)
+parser::result<expression::type_value> expression_parser::parse_expression(parser::context& context, int precedence)
 {
-    parser::result<expression::value> lhs = parse_operand(context);
+    parser::result<expression::type_value> lhs = parse_operand(context);
     if (std::holds_alternative<parser::error>(lhs)) {
         return context.set_error(std::get<parser::error>(lhs));
     }
@@ -730,24 +732,22 @@ parser::result<expression::value> expression_parser::parse_expression(parser::co
         }
 
         if (std::get<expression::op_type>(lhs_op) == expression::op_type::member) {
-            parser::result<expression::value> rhs = parse_member(context, _type_info[static_cast<std::size_t>(_types[std::get<expression::value>(lhs)])]);
+            parser::result<expression::type_value> rhs = parse_member(context, std::get<expression::type_value>(lhs));
             if (std::holds_alternative<parser::error>(rhs)) {
                 return std::get<parser::error>(rhs);
             } else {
-                lhs = add_op(std::get<expression::op_type>(lhs_op),
-                             std::get<expression::value>(lhs),
-                             std::get<expression::value>(rhs));
+                lhs = rhs;
                 continue;
             }
         }
 
-        parser::result<expression::value> rhs = parse_expression(context, lhs_precedence);
+        parser::result<expression::type_value> rhs = parse_expression(context, lhs_precedence);
         if (std::holds_alternative<parser::error>(rhs)) {
             return context.set_error(std::get<parser::error>(rhs));
         } else {
             lhs = add_op(std::get<expression::op_type>(lhs_op),
-                         std::get<expression::value>(lhs),
-                         std::get<expression::value>(rhs));
+                         std::get<expression::type_value>(lhs),
+                         std::get<expression::type_value>(rhs));
         }
     }
 
