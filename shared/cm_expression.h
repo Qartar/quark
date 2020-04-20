@@ -143,7 +143,7 @@ protected:
 protected:
     expression _expression;
 
-    std::map<string::buffer, expression::value> _symbols;
+    std::map<string::buffer, expression::type_value> _symbols;
     std::map<float, expression::value> _constants;
     std::vector<bool> _used;
     std::vector<expression::type> _types;

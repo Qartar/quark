@@ -151,7 +151,7 @@ expression_builder::expression_builder(string::view const* inputs, std::size_t n
     });
 
     for (std::size_t ii = 0; ii < num_inputs; ++ii) {
-        _symbols[string::buffer(inputs[ii])] = ii;
+        _symbols[string::buffer(inputs[ii])] = {expression::value(ii), expression::type::scalar};
         _expression._ops.push_back({expression::op_type::none, 0, 0});
         _used.push_back(true); // assume inputs are always used
         _types.push_back(expression::type::scalar);
@@ -159,7 +159,7 @@ expression_builder::expression_builder(string::view const* inputs, std::size_t n
     _expression._num_inputs = num_inputs;
 
     _types[0] = static_cast<expression::type>(3);
-    _symbols["in"] = 0;
+    _symbols["in"] = {0, _types[0]};
 }
 
 //------------------------------------------------------------------------------
@@ -424,7 +424,7 @@ void expression_parser::assign(string::view name, expression::type_value value)
     //if (_symbols.find(name) != _symbols.cend()) {
     //    //log::warning("
     //} else {
-        _symbols[string::buffer(name)] = value.value;
+        _symbols[string::buffer(name)] = value;
     //}
 }
 
@@ -611,7 +611,7 @@ parser::result<expression::type_value> expression_parser::parse_operand_explicit
         if (s == _symbols.cend()) {
             return context.set_error({token, "unrecognized symbol: '" + token + "'"});
         }
-        return expression::type_value{s->second, _types[s->second]};
+        return s->second;
 
     } else {
         return context.set_error({token, "syntax error: '" + token + "'"});
