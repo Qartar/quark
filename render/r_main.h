@@ -429,6 +429,172 @@ private:
 };
 
 //------------------------------------------------------------------------------
+class minmax_tree
+{
+public:
+    using heightfield_fn = std::function<float(vec2)>;
+
+    minmax_tree()
+        : _aabb{}
+    {}
+
+    //! Build tree over the given region using the heightfield function
+    //! to classify leaves as either above or below 0. Leaf nodes will be
+    //! no smaller than the given resolution along the x-axis.
+    void build(bounds region, float resolution, heightfield_fn fn) {
+        _aabb = region;
+        // Child nodes are allocated contiguously, do the same for the
+        // root node for consistency, this means nodes 1-3 are unused.
+        _nodes.resize(4);
+        _nodes[0] = build_r(_aabb, resolution, fn);
+    }
+
+    //! Returns the fraction along <start, end> to the first point on the line with height >= 0, or 1.f if no such point exists
+    float trace(vec3 start, vec3 end) const {
+        uint32_t trace_bits = 0;
+        vec2 inverse_dir = {1.f / (end.x - start.x),
+                            1.f / (end.y - start.y)};
+        // Calculate intersection fractions with the root AABB
+        vec2 tmin = (_aabb[0] - start.to_vec2()) * inverse_dir;
+        vec2 tmax = (_aabb[1] - start.to_vec2()) * inverse_dir;
+        // If going in -x direction swap min/max and traverse order
+        if (tmin.x > tmax.x) {
+            std::swap(tmin.x, tmax.x);
+            trace_bits ^= 1;
+        }
+        // If going in -y direction swap min/max and traverse order
+        if (tmin.y > tmax.y) {
+            std::swap(tmin.y, tmax.y);
+            trace_bits ^= 2;
+        }
+        return trace_r(0, trace_bits, {tmin, tmax}, start.z, end.z - start.z);
+    }
+
+    void draw(system* r, bounds view_aabb, float resolution = 0.f) const {
+        draw_r(r, 0, _aabb, view_aabb,
+            resolution ? std::ilogb(_aabb.size().length() / resolution) : INT_MAX);
+    }
+
+private:
+    struct node {
+        float min;
+        float max;
+        uint32_t child_index; //!< Index of first of four contiguous child nodes or 0 if this is a leaf
+    };
+
+    bounds _aabb; //!< Axis-aligned bounding box for the tree
+    std::vector<node> _nodes;
+
+private:
+    //! Split the given bounds at its midpoint into four equally sized bounds.
+    //!     2 3
+    //!     0 1
+    std::array<bounds, 4> split(bounds in) const {
+        vec2 min = in[0], max = in[1], mid = in.center();
+        return {
+            bounds{{min.x, min.y}, {mid.x, mid.y}},
+            bounds{{mid.x, min.y}, {max.x, mid.y}},
+            bounds{{min.x, mid.y}, {mid.x, max.y}},
+            bounds{{mid.x, mid.y}, {max.x, max.y}},
+        };
+    }
+
+    node build_r(bounds aabb, float resolution, heightfield_fn fn) {
+        // If at maximum resolution create leaf using the mask at the midpoint
+        if (aabb.size().x < resolution) {
+            float h = fn(aabb.center());
+            return node{h, h};
+        }
+
+        // Reserve space for contiguous child nodes
+        uint32_t idx = narrow_cast<uint32_t>(_nodes.size());
+        assert(idx < (1u << 30));
+        _nodes.resize(_nodes.size() + 4);
+
+        // Calculate bounds for each child node and recurse
+        std::array<bounds, 4> children = split(aabb);
+
+        _nodes[idx + 0] = build_r(children[0], resolution, fn);
+        _nodes[idx + 1] = build_r(children[1], resolution, fn);
+        _nodes[idx + 2] = build_r(children[2], resolution, fn);
+        _nodes[idx + 3] = build_r(children[3], resolution, fn);
+
+        float min = std::min({_nodes[idx + 0].min,
+                              _nodes[idx + 1].min,
+                              _nodes[idx + 2].min,
+                              _nodes[idx + 3].min});
+
+        float max = std::max({_nodes[idx + 0].max,
+                              _nodes[idx + 1].max,
+                              _nodes[idx + 2].max,
+                              _nodes[idx + 3].max});
+
+        return node{min, max, idx};
+    }
+
+    float trace_r(uint32_t node_index, uint32_t trace_bits, bounds trace_aabb, float h, float dh) const {
+        uint32_t child_index = _nodes[node_index].child_index;
+
+        float t0 = max(trace_aabb[0].x, trace_aabb[0].y);
+        float t1 = min(trace_aabb[1].x, trace_aabb[1].y);
+
+        float h0 = h + t0 * dh;
+        float h1 = h + t1 * dh;
+
+        if (t0 >= t1 || t0 >= 1.f || t1 < 0.f) {
+            return 1.f;
+        } else if (!child_index) {
+            // TODO: Return the intersection fraction against the implicit surface
+            return dh ? t0 + (t1 - t0) * (_nodes[node_index].min - h0) / (h1 - h0) : max(0.f, t0);
+        } else if (min(h0, h1) > _nodes[node_index].max || max(h0, h1) < _nodes[node_index].min) {
+            return 1.f;
+        }
+
+        // Intersection fraction with the splitting planes is just the
+        // midpoint of the intersection fractions of the full AABB.
+        std::array<bounds, 4> children = split(trace_aabb);
+        for (int ii = 0; ii < 4; ++ii) {
+            // Trace bits control the order of traversal
+            float t = trace_r(child_index + (ii ^ trace_bits),
+                              trace_bits,
+                              children[ii],
+                              h,
+                              dh);
+            // Traversal order guarantees that the first intersection
+            // is the nearest intersection
+            if (t < 1.f) {
+                return t;
+            }
+        }
+
+        return 1.f;
+    }
+
+    void draw_r(system* r, uint32_t node_index, bounds node_aabb, bounds view_aabb, int max_depth) const {
+        if (!node_aabb.intersects(view_aabb)) {
+            return;
+        }
+        uint32_t child_index = _nodes[node_index].child_index;
+        if (!child_index || !max_depth) {
+            r->draw_box(node_aabb.size(), node_aabb.center(),
+                _nodes[node_index].min < 0.f && _nodes[node_index].max > 0.f ? color4(0,1,1,.2f) :
+                _nodes[node_index].min > 0.f ? color4(0,1,0,.2f) :
+                _nodes[node_index].max < 0.f ? color4(0,0,1,.2f) : color4(1,1,1,1));
+        } else if (_nodes[node_index].min > 0.f) {
+            r->draw_box(node_aabb.size(), node_aabb.center(), color4(0,1,0,.2f));
+        } else if (_nodes[node_index].max < 0.f) {
+            r->draw_box(node_aabb.size(), node_aabb.center(), color4(0,0,1,.2f));
+        } else {
+            std::array<bounds, 4> children = split(node_aabb);
+            draw_r(r, child_index + 0, children[0], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 1, children[1], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 2, children[2], view_aabb, max_depth - 1);
+            draw_r(r, child_index + 3, children[3], view_aabb, max_depth - 1);
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
 class line_tree
 {
 public:

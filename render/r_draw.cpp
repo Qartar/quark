@@ -599,6 +599,7 @@ void system::draw_starfield(vec2 streak_vector)
     };
 
     static tree my_tree;
+    static minmax_tree my_minmax_tree;
     static line_tree my_line_tree;
     static line_tree my_line_tree2;
     static bool initialized = false;
@@ -613,12 +614,16 @@ void system::draw_starfield(vec2 streak_vector)
         my_line_tree.build(tree_aabb, tree_resolution, noise);
         time_value t2 = time_value::current();
         my_line_tree2.build(tree_aabb, tree_resolution, [noise](vec2 v){return noise(v) + .5f;});
+        time_value t3 = time_value::current();
+        my_minmax_tree.build(tree_aabb, tree_resolution, [noise](vec2 v){return noise(v) + .5f;});
         log::message("tree build: %.3f us\n", (t1 - t0).to_seconds() * 1e6f);
         log::message("line tree build: %.3f us\n", (t2 - t1).to_seconds() * 1e6f);
+        log::message("minmax tree build: %.3f us\n", (t3 - t2).to_seconds() * 1e6f);
         initialized = true;
     }
 
-    my_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, .125f * (dx + dy));
+//    my_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, .125f * (dx + dy));
+    my_minmax_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, .125f * (dx + dy));
     my_line_tree.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, color4(1,1,1,1), .125f * (dx + dy));
     my_line_tree2.draw(this, {_view.origin - _view.size * .5f, _view.origin + _view.size * .5f}, color4(0,.5f,1,.75f), .125f * (dx + dy));
 
@@ -657,12 +662,12 @@ void system::draw_starfield(vec2 streak_vector)
             v1 = _view.origin + _view.size * vec2{r.uniform_real(-.5f, .5f), r.uniform_real(-.5f, .5f)};
         }
 
-        float tr = my_tree.trace_above(v0, v1);
+        float tr = my_minmax_tree.trace(vec3(v0), vec3(v1));
         color4 c0 = color4(.5f,1,.5f,1);
         color4 c1 = color4(.5f,.5f,1,1);
 
         if (tr == 0.f) {
-            tr = my_tree.trace_below(v0, v1);
+            //tr = my_tree.trace_below(v0, v1);
             std::swap(c0, c1);
         }
 
