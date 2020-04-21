@@ -138,11 +138,35 @@ bool particle_effect::parse_layer_vector(parser::context& context, expression_pa
         if (ii && !context.expect_token(",")) {
             return false;
         }
+        auto token = std::get<parser::token>(context.peek_token());
         auto result = parser.parse_expression(context);
         if (std::holds_alternative<parser::error>(result)) {
             return false;
         } else {
-            vector[ii] = std::get<expression::type_value>(result).value;
+            expression::type_value const& value = std::get<expression::type_value>(result);
+            switch (value.type) {
+                case expression::type::scalar:
+                    vector[ii] = std::get<expression::type_value>(result).value;
+                    break;
+
+                case expression::type::vec2:
+                case expression::type::vec4:
+                    if (vector_size != parser.type_size(value.type)) {
+                        context.set_error({token});
+                        return false;
+                    } else if (ii != 0) {
+                        context.set_error({token});
+                        return false;
+                    }
+                    for (; ii < vector_size; ++ii) {
+                        vector[ii] = value.value + ii;
+                    }
+                    break;
+
+                default:
+                    context.set_error({token});
+                    return false;
+            }
         }
     }
 
@@ -429,13 +453,13 @@ R"(
 R"(
 {
     layer shock_wave {
-        let scale = sqrt(str);
+        let scale = sqrt(in.str);
 
         count = 1;
         flags = invert;
 
-        position = posx, posy;
-        velocity = dirx * 48 * scale, diry * 48 * scale;
+        position = in.pos;
+        velocity = in.dir * 48 * scale;
         acceleration = 0, 0;
 
         color = 1, 1, 0.5, 0.5;
@@ -446,32 +470,32 @@ R"(
     }
 
     layer fire {
-        let scale = sqrt(str);
+        let scale = sqrt(in.str);
 
         count = 64 * scale;
 
         let r = random * 2 * pi;
         let d = random * 8 * scale;
 
-        position = posx + cos(r) * d, posy + sin(r) * d;
+        position = in.pos.x + cos(r) * d, in.pos.y + sin(r) * d;
 
         let r = random * 2 * pi;
-        let d = sqrt(random) * 128 * str;
+        let d = sqrt(random) * 128 * in.str;
 
-        velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
+        velocity = (in.dir.x * 0.5 + cos(r)) * d, (in.dir.y * 0.5 + sin(r)) * d;
         acceleration = 0, 0;
 
         color = 1, random, 0, 0.1;
         color_velocity = 0, 0, 0, -0.1 / (0.5 + (random ^ 2) * 2);
 
         size = (random * (24 - 8) + 8) * scale;
-        size_velocity = str;
+        size_velocity = in.str;
 
         drag = (random * (4 - 2) + 2) * scale;
     }
 
     layer debris {
-        let scale = sqrt(str);
+        let scale = sqrt(in.str);
 
         count = 32 * scale;
         flags = tail;
@@ -479,12 +503,12 @@ R"(
         let r = random * 2 * pi;
         let d = random * 2 * scale;
 
-        position = posx + cos(r) * d, posy + sin(r) * d;
+        position = in.pos.x + cos(r) * d, in.pos.y + sin(r) * d;
 
         let r = random * 2 * pi;
         let d = sqrt(random) * 128 * scale;
 
-        velocity = (dirx * 0.5 + cos(r)) * d, (diry * 0.5 + sin(r)) * d;
+        velocity = (in.dir.x * 0.5 + cos(r)) * d, (in.dir.y * 0.5 + sin(r)) * d;
         acceleration = 0, 0;
 
         color = 1, random * .5 + .5, 0, 1;

@@ -411,6 +411,13 @@ void expression_builder::mark_used(expression::value value, expression::type typ
     }
 }
 
+//------------------------------------------------------------------------------
+std::size_t expression_builder::type_size(expression::type type) const
+{
+    assert(static_cast<std::size_t>(type) < _type_info.size());
+    return _type_info[static_cast<std::size_t>(type)].size;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //------------------------------------------------------------------------------
 expression_parser::expression_parser(string::view const* inputs, std::size_t num_inputs)

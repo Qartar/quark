@@ -127,6 +127,8 @@ public:
 
     void mark_used(expression::value value);
 
+    std::size_t type_size(expression::type type) const;
+
 protected:
     struct field_info {
         string::buffer name;
