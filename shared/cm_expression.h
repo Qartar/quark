@@ -116,9 +116,7 @@ public:
     expression compile(expression::value* map) const;
 
     expression::type_value add_constant(float value);
-    expression::type_value add_op(expression::op_type type, expression::value lhs, expression::value rhs);
     expression::type_value add_op(expression::op_type type, expression::type_value lhs, expression::type_value rhs);
-    expression::type_value add_op(expression::op_type type, expression::value lhs, expression::type lhs_type, expression::value rhs, expression::type rhs_type);
 
     bool is_constant(expression::value value) const;
 
@@ -155,13 +153,9 @@ protected:
 protected:
     expression::value alloc_type(expression::type type);
 
-    bool is_constant(expression::type_value value) const { return is_constant(value.value, value.type); }
-    bool is_random(expression::type_value value) const { return is_random(value.value, value.type); }
-    void mark_used(expression::type_value value) { mark_used(value.value, value.type); }
-
-    bool is_constant(expression::value value, expression::type type) const;
-    bool is_random(expression::value value, expression::type type) const;
-    void mark_used(expression::value value, expression::type type);
+    bool is_constant(expression::type_value value) const;
+    bool is_random(expression::type_value value) const;
+    void mark_used(expression::type_value value);
 
     void add_builtin_types();
 };
