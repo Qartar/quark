@@ -37,6 +37,7 @@ public:
         product,
         quotient,
         exponent,
+        logarithm,
         sqrt,
         sine,
         cosine,
@@ -80,6 +81,7 @@ public:
             case expression::op_type::product:
             case expression::op_type::quotient:
             case expression::op_type::exponent:
+            case expression::op_type::logarithm:
                 return op_arity::binary;
         }
         // rely on compiler warnings to detect missing case labels
@@ -118,6 +120,7 @@ public:
     expression::type_value add_constant(float value);
     expression::type_value add_op(expression::op_type type, expression::type_value lhs, expression::type_value rhs);
 
+    //! Returns true if the given value can be determined at compile-time
     bool is_constant(expression::value value) const;
 
     //! Returns true if the given value depends on the random generator during evaluation
@@ -193,8 +196,12 @@ public:
 protected:
     result<expression::op_type> peek_operator(parser::context const& context) const;
     result<expression::op_type> parse_operator(parser::context& context);
-    //result<expression> parse_binary_function(parser::context& context, expression::op_type type)
-    result<expression::type_value> parse_unary_function(parser::context& context, expression::op_type type, expression::type_value rhs = {});
+    result<std::monostate> parse_arguments(parser::context& context, parser::token fn, expression::type_value* arguments, std::size_t num_arguments);
+    template<std::size_t num_arguments> result<std::monostate> parse_arguments(parser::context& context, parser::token fn, expression::type_value (&arguments)[num_arguments]) {
+        return parse_arguments(context, fn, arguments, num_arguments);
+    }
+    result<expression::type_value> parse_unary_function(parser::context& context, parser::token fn, expression::op_type type, expression::type_value rhs = {});
+    result<expression::type_value> parse_binary_function(parser::context& context, parser::token fn, expression::op_type type);
     result<expression::type_value> parse_operand_explicit(parser::context& context);
     result<expression::type_value> parse_operand(parser::context& context);
     result<expression::type_value> parse_expression(parser::context& context, int precedence);

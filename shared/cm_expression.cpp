@@ -76,6 +76,9 @@ float expression::evaluate_op(random& r, op_type type, float lhs, float rhs)
         case op_type::exponent:
             return std::pow(lhs, rhs);
 
+        case op_type::logarithm:
+            return std::log(lhs) / std::log(rhs);
+
         case op_type::sqrt:
             return std::sqrt(lhs);
 
@@ -488,53 +491,62 @@ parser::result<expression::op_type> expression_parser::parse_operator(parser::co
 }
 
 //------------------------------------------------------------------------------
-//result<expression> parse_binary_function(token const*& tokens, token const* end, expression::op_type type)
-//{
-//    if (tokens >= end) {
-//        return error{*(tokens - 1), "expected '(' after '" + *(tokens - 1) + "'"};
-//    } else if (*tokens != '(') {
-//        return error{*tokens, "expected '(' after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
-//    } else {
-//        ++tokens;
-//    }
-//
-//    result<expression> lhs = parse_expression(context);
-//    if (std::holds_alternative<error>(lhs)) {
-//        return std::get<error>(lhs);
-//    }
-//
-//    if (tokens >= end) {
-//        return error{*(tokens - 1), "expected ',' after '" + *(tokens - 1) + "'"};
-//    } else if (*tokens != ',') {
-//        return error{*tokens, "expected ',' after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
-//    } else {
-//        ++tokens;
-//    }
-//
-//    result<expression> rhs = parse_expression(context);
-//    if (std::holds_alternative<error>(rhs)) {
-//        return std::get<error>(rhs);
-//    }
-//
-//    if (tokens >= end) {
-//        return error{*(tokens - 1), "expected ')' after '" + *(tokens - 1) + "'"};
-//    } else if (*tokens != ')') {
-//        return error{*tokens, "expected ')' after '" + *(tokens - 1) + "', found '" + *tokens + "'"};
-//    } else {
-//        ++tokens;
-//    }
-//
-//    return expression::op{type, std::get<expression>(lhs), std::get<expression>(rhs)};
-//}
+parser::result<std::monostate> expression_parser::parse_arguments(parser::context& context, parser::token fn, expression::type_value* arguments, std::size_t num_arguments)
+{
+    auto result = context.next_token();
+    if (std::holds_alternative<parser::error>(result)) {
+        return context.set_error({std::get<parser::token>(result), "expected '(' after '" + fn + "'"});
+    } else if (std::get<parser::token>(result) != '(') {
+        return context.set_error({std::get<parser::token>(result), "expected '(' after '" + fn + "', found '" + std::get<parser::token>(result) + "'"});
+    }
+
+    for (int ii = 0; ii < num_arguments; ++ii) {
+        auto arg = parse_expression(context, INT_MAX);
+        if (std::holds_alternative<parser::error>(arg)) {
+            return std::get<parser::error>(arg);
+        } else {
+            arguments[ii] = std::get<expression::type_value>(arg);
+        }
+
+        auto next = context.peek_token();
+        if (!std::holds_alternative<parser::token>(next)) {
+            return context.set_error({std::get<parser::token>(result), "expected token"});
+        }
+
+        if (ii < num_arguments - 1 && std::get<parser::token>(next) != ",") {
+            return context.set_error({std::get<parser::token>(next), "insufficient arguments for function '" + fn + "'"});
+        } else if (ii == num_arguments - 1 && std::get<parser::token>(next) == ",") {
+            return context.set_error({std::get<parser::token>(next), "too many arguments for function '" + fn + "'"});
+        } else if (ii == num_arguments - 1 && std::get<parser::token>(next) != ")") {
+            return context.set_error({std::get<parser::token>(next), "expected ')', found '" + std::get<parser::token>(next) + "'"});
+        } else {
+            context.next_token(); // consume token
+        }
+    }
+
+    return std::monostate();
+}
 
 //------------------------------------------------------------------------------
-parser::result<expression::type_value> expression_parser::parse_unary_function(parser::context& context, expression::op_type type, expression::type_value rhs)
+parser::result<expression::type_value> expression_parser::parse_unary_function(parser::context& context, parser::token fn, expression::op_type type, expression::type_value rhs)
 {
-    result<expression::type_value> arg = parse_operand(context);
-    if (std::holds_alternative<parser::error>(arg)) {
-        return context.set_error(std::get<parser::error>(arg));
+    expression::type_value arguments[1];
+    auto result = parse_arguments(context, fn, arguments);
+    if (std::holds_alternative<parser::error>(result)) {
+        return std::get<parser::error>(result);
     }
-    return add_op(type, std::get<expression::type_value>(arg), rhs);
+    return add_op(type, arguments[0], rhs);
+}
+
+//------------------------------------------------------------------------------
+parser::result<expression::type_value> expression_parser::parse_binary_function(parser::context& context, parser::token fn, expression::op_type type)
+{
+    expression::type_value arguments[2];
+    auto result = parse_arguments(context, fn, arguments);
+    if (std::holds_alternative<parser::error>(result)) {
+        return std::get<parser::error>(result);
+    }
+    return add_op(type, arguments[0], arguments[1]);
 }
 
 //------------------------------------------------------------------------------
@@ -570,16 +582,16 @@ parser::result<expression::type_value> expression_parser::parse_operand_explicit
 
     } else if (token == "random") {
         return add_op(expression::op_type::random, {}, {});
-    //} else if (token == "ln") {
-    //    return parse_unary_function(context, op_type::logarithm, constant::e);
-    //} else if (token == "log") {
-    //    return parse_binary_function(context, op_type::logarithm);
+    } else if (token == "ln") {
+        return parse_unary_function(context, token, expression::op_type::logarithm, add_constant(math::e<float>));
+    } else if (token == "log") {
+        return parse_binary_function(context, token, expression::op_type::logarithm);
     } else if (token == "sqrt") {
-        return parse_unary_function(context, expression::op_type::sqrt);
+        return parse_unary_function(context, token, expression::op_type::sqrt);
     } else if (token == "sin") {
-        return parse_unary_function(context, expression::op_type::sine);
+        return parse_unary_function(context, token, expression::op_type::sine);
     } else if (token == "cos") {
-        return parse_unary_function(context, expression::op_type::cosine);
+        return parse_unary_function(context, token, expression::op_type::cosine);
     //} else if (token == "tan") {
     //    return parse_unary_function(context, op_type::tangent);
     //} else if (token == "sec") {
