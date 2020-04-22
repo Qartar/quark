@@ -135,20 +135,7 @@ float expression::evaluate_op_r(std::ptrdiff_t index, random& r, float* values) 
 //------------------------------------------------------------------------------
 expression_builder::expression_builder(string::view const* inputs, std::size_t num_inputs)
 {
-    _type_info.push_back({"scalar", {}, 1});
-    _type_info.push_back({"vec2", {{"x", expression::type::scalar, 0}, {"y", expression::type::scalar, 1}}, 2});
-    _type_info.push_back({"vec4", {{"x", expression::type::scalar, 0}, {"y", expression::type::scalar, 1}, {"z", expression::type::scalar, 2}, {"w", expression::type::scalar, 3}}, 4});
-
-    _type_info.push_back({"in",
-        {
-            {"pos", expression::type::vec2, 0},
-            {"vel", expression::type::vec2, 2},
-            {"dir", expression::type::vec2, 4},
-            {"str", expression::type::scalar, 6},
-            {"idx", expression::type::scalar, 7},
-        },
-        8
-    });
+    add_builtin_types();
 
     for (std::size_t ii = 0; ii < num_inputs; ++ii) {
         _symbols[string::buffer(inputs[ii])] = {expression::value(ii), expression::type::scalar};
@@ -158,8 +145,34 @@ expression_builder::expression_builder(string::view const* inputs, std::size_t n
     }
     _expression._num_inputs = num_inputs;
 
+    // hard-coded particles input structure
     _types[0] = static_cast<expression::type>(3);
     _symbols["in"] = {0, _types[0]};
+}
+
+//------------------------------------------------------------------------------
+void expression_builder::add_builtin_types()
+{
+    _type_info.push_back({"scalar", 1, {}});
+    _type_info.push_back({"vec2", 2, {
+        {"x", expression::type::scalar, 0},
+        {"y", expression::type::scalar, 1}}
+    });
+    _type_info.push_back({"vec4", 4, {
+        {"x", expression::type::scalar, 0},
+        {"y", expression::type::scalar, 1},
+        {"z", expression::type::scalar, 2},
+        {"w", expression::type::scalar, 3}}
+    });
+
+    // hard-coded particles input structure
+    _type_info.push_back({"in", 8, {
+        {"pos", expression::type::vec2, 0},
+        {"vel", expression::type::vec2, 2},
+        {"dir", expression::type::vec2, 4},
+        {"str", expression::type::scalar, 6},
+        {"idx", expression::type::scalar, 7},
+    }});
 }
 
 //------------------------------------------------------------------------------

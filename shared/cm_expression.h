@@ -138,8 +138,8 @@ protected:
 
     struct type_info {
         string::buffer name;
-        std::vector<field_info> fields;
         std::size_t size;
+        std::vector<field_info> fields;
     };
 
 protected:
@@ -162,6 +162,8 @@ protected:
     bool is_constant(expression::value value, expression::type type) const;
     bool is_random(expression::value value, expression::type type) const;
     void mark_used(expression::value value, expression::type type);
+
+    void add_builtin_types();
 };
 
 //------------------------------------------------------------------------------
