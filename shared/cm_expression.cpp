@@ -149,8 +149,10 @@ expression_builder::expression_builder(string::view const* inputs, std::size_t n
     _expression._num_inputs = num_inputs;
 
     // hard-coded particles input structure
-    _types[0] = static_cast<expression::type>(3);
-    _symbols["in"] = {0, _types[0]};
+    if (num_inputs) {
+        _types[0] = static_cast<expression::type>(3);
+        _symbols["in"] = {0, _types[0]};
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -169,7 +171,7 @@ void expression_builder::add_builtin_types()
     });
 
     // hard-coded particles input structure
-    _type_info.push_back({"in", 8, {
+    _type_info.push_back({"!in", 8, {
         {"pos", expression::type::vec2, 0},
         {"vel", expression::type::vec2, 2},
         {"dir", expression::type::vec2, 4},
@@ -257,6 +259,37 @@ expression::value expression_builder::alloc_type(expression::type type)
     assert(_expression._ops.size() - base == info.size);
     _types[base] = type;
     return base;
+}
+
+//------------------------------------------------------------------------------
+expression::value expression_builder::alloc_type(expression::type type, expression::type_value const* values, std::size_t num_values)
+{
+    type_info const& info = _type_info[static_cast<std::size_t>(type)];
+    expression::value base = _expression._ops.size();
+    assert(num_values == info.size);
+    if (info.fields.size()) {
+        // sub-allocate child types
+        for (auto field : info.fields) {
+            alloc_type(field.type, values + field.offset, _type_info[static_cast<std::size_t>(field.type)].size);
+        }
+    } else {
+        for (std::size_t ii = 0; ii < info.size; ++ii) {
+            _expression._ops.push_back(_expression._ops[values[ii].value]);
+            _expression._constants.push_back(_expression._constants[values[ii].value]);
+            _used.push_back(_used[values[ii].value]);
+            _types.push_back(expression::type::scalar);
+        }
+    }
+    assert(_expression._ops.size() - base == info.size);
+    _types[base] = type;
+    return base;
+}
+
+//------------------------------------------------------------------------------
+bool expression_builder::is_valid_op(expression::op_type type, expression::type lhs, expression::type rhs) const
+{
+    return (is_unary(type) || rhs == expression::type::scalar)
+        || (is_binary(type) && (lhs == expression::type::scalar || lhs == rhs));
 }
 
 //------------------------------------------------------------------------------
@@ -619,10 +652,24 @@ parser::result<expression::type_value> expression_parser::parse_operand_explicit
         return v;
 
     //
-    //  symbols
+    //  types and symbols
     //
 
     } else if (*token.begin >= 'a' && *token.begin <= 'z' || *token.begin >= 'A' && *token.begin <= 'Z') {
+        auto t = std::find_if(_type_info.begin(), _type_info.end(), [token](type_info const& info) {
+            return token == info.name;
+        });
+        if (t != _type_info.cend()) {
+            auto type = static_cast<expression::type>(std::distance(_type_info.begin(), t));
+            std::vector<expression::type_value> arguments(t->size);
+            auto result2 = parse_arguments(context, token, arguments.data(), arguments.size());
+            if (!std::holds_alternative<parser::error>(result2)) {
+                return expression::type_value{alloc_type(type, arguments.data(), arguments.size()), type};
+            } else {
+                return std::get<parser::error>(result2);
+            }
+        }
+
         auto s = _symbols.find(string::view(token.begin, token.end));
         if (s == _symbols.cend()) {
             return context.set_error({token, "unrecognized symbol: '" + token + "'"});
@@ -739,6 +786,7 @@ parser::result<expression::type_value> expression_parser::parse_expression(parse
             return context.set_error(std::get<parser::error>(lhs_op));
         }
 
+        auto lhs_op_token = context.peek_token();
         int lhs_precedence = op_precedence(std::get<expression::op_type>(lhs_op));
         if (precedence <= lhs_precedence) {
             break;
@@ -760,6 +808,12 @@ parser::result<expression::type_value> expression_parser::parse_expression(parse
         parser::result<expression::type_value> rhs = parse_expression(context, lhs_precedence);
         if (std::holds_alternative<parser::error>(rhs)) {
             return context.set_error(std::get<parser::error>(rhs));
+        } else if (!is_valid_op(std::get<expression::op_type>(lhs_op),
+                                std::get<expression::type_value>(lhs).type,
+                                std::get<expression::type_value>(rhs).type)) {
+            auto lhs_typename = _type_info[static_cast<std::size_t>(std::get<expression::type_value>(lhs).type)].name;
+            auto rhs_typename = _type_info[static_cast<std::size_t>(std::get<expression::type_value>(rhs).type)].name;
+            return context.set_error({std::get<parser::token>(lhs_op_token), "" + parser::token{} + "invalid operator '" + lhs_typename + " " + std::get<parser::token>(lhs_op_token) + " " + rhs_typename + "'"});
         } else {
             lhs = add_op(std::get<expression::op_type>(lhs_op),
                          std::get<expression::type_value>(lhs),

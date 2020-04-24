@@ -204,7 +204,7 @@ result<tokenized> tokenize(string::view text)
         }
 
         if (*str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z') {
-            while (str < end && (*str == '_' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z')) {
+            while (str < end && (*str >= '0' && *str <= '9' || *str == '_' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z')) {
                 ++t.end;
                 ++str;
             }

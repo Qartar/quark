@@ -813,7 +813,20 @@ void session::command_eval(parser::text const& args)
         std::vector<expression::value> map(parser.num_values());
         expression ex = parser.compile(map.data());
         std::vector<float> values(ex.num_values());
-        auto idx = map[std::get<expression::type_value>(v).value];
+        expression::value idx[4] = {};
+        auto value = std::get<expression::type_value>(v);
+        switch (value.type) {
+            case expression::type::vec4:
+                idx[3] = map[value.value + 3];
+                idx[2] = map[value.value + 2];
+            case expression::type::vec2:
+                idx[1] = map[value.value + 1];
+            case expression::type::scalar:
+                idx[0] = map[value.value + 0];
+            default:
+                break;
+
+        }
 
 #ifdef _DEBUG
         // assert that parsed result is the same as compiled result
@@ -823,16 +836,37 @@ void session::command_eval(parser::text const& args)
             r,
             nullptr,
             parser_values.data());
-        assert(parser_value == ex.evaluate_one(idx, r, nullptr, values.data()));
+        assert(parser_value == ex.evaluate_one(idx[0], r, nullptr, values.data()));
 #endif
 
-        log::message("^fff%s^xxx = %0g\n",
-                     expr.c_str(),
-                     ex.evaluate_one(
-                         idx,
-                         r,
-                         nullptr,
-                         values.data()));
+        switch (value.type) {
+            case expression::type::scalar:
+                log::message("^fff%s^xxx = %0g\n",
+                             expr.c_str(),
+                             ex.evaluate_one(
+                                 idx[0],
+                                 r,
+                                 nullptr,
+                                 values.data()));
+                break;
+            case expression::type::vec2:
+                log::message("^fff%s^xxx = vec2(%0g,%0g)\n",
+                             expr.c_str(),
+                             ex.evaluate_one(idx[0], r, nullptr, values.data()),
+                             ex.evaluate_one(idx[1], r, nullptr, values.data()));
+                break;
+            case expression::type::vec4:
+                log::message("^fff%s^xxx = vec4(%0g,%0g,%0g,%0g)\n",
+                             expr.c_str(),
+                             ex.evaluate_one(idx[0], r, nullptr, values.data()),
+                             ex.evaluate_one(idx[1], r, nullptr, values.data()),
+                             ex.evaluate_one(idx[2], r, nullptr, values.data()),
+                             ex.evaluate_one(idx[3], r, nullptr, values.data()));
+                break;
+            default:
+                break;
+
+        }
     }
 }
 
