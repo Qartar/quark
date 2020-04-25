@@ -180,11 +180,402 @@ void expression_builder::add_builtin_types()
     }});
 }
 
+////////////////////////////////////////////////////////////////////////////////
+#include <set>
+#include "cm_filesystem.h"
+//------------------------------------------------------------------------------
+class dgml {
+public:
+    void add_node(string::view node) {
+        _nodes.insert(string::buffer(node));
+    }
+    void add_link(string::view source, string::view target) {
+        _nodes.insert(string::buffer(source));
+        _nodes.insert(string::buffer(target));
+        _links.insert({string::buffer(source), string::buffer(target)});
+    }
+    bool write(file::stream& s) {
+        s.printf("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+        s.printf("<DirectedGraph xmlns=\"http://schemas.microsoft.com/vs/2009/dgml\">\n");
+        // write nodes
+        s.printf("  <Nodes>\n");
+        for (auto const& node : _nodes) {
+            s.printf("    <Node Id=\"%s\" Label=\"%s\"/>\n", node.c_str(), node.c_str());
+        }
+        s.printf("  </Nodes>\n");
+        // write links
+        s.printf("  <Links>\n");
+        for (auto const& link : _links) {
+            s.printf("    <Link Source=\"%s\" Target=\"%s\"/>\n", link.source.c_str(), link.target.c_str());
+        }
+        s.printf("  </Links>\n");
+        s.printf("</DirectedGraph>");
+        return true;
+    }
+protected:
+    struct link {
+        string::buffer source;
+        string::buffer target;
+        bool operator<(link const& l) const {
+            int c0 = strcmp(source, l.source);
+            return c0 < 0 || (c0 == 0 && strcmp(target, l.target) < 0);
+        }
+    };
+    std::set<string::buffer> _nodes;
+    std::set<link> _links;
+};
+
 //------------------------------------------------------------------------------
 expression expression_builder::compile(expression::value* map) const
 {
     expression out;
     std::size_t num_used = 0;
+
+    std::vector<int> num_references(_expression._ops.size(), 0);
+    for (std::size_t ii = 0, sz = _expression._ops.size(); ii < sz; ++ii) {
+        if (_used[ii]) {
+            ++num_references[ii];
+        }
+        switch (expression::arity(_expression._ops[ii].type)) {
+            case expression::op_arity::binary:
+                ++num_references[_expression._ops[ii].rhs];
+                [[fallthrough]];
+            case expression::op_arity::unary:
+                ++num_references[_expression._ops[ii].lhs];
+                [[fallthrough]];
+            case expression::op_arity::nullary:
+                break;
+        }
+    }
+
+    {
+        std::size_t num_folded = 0;
+        std::size_t num_merged = 0;
+        std::size_t num_removed = 0;
+
+        struct op_info {
+            string::view symbol;
+            expression::op op;
+            float constant;
+            int num_references;
+        };
+
+        auto dump_ast = [](std::vector<op_info> const& info, int n) {
+            static int num_random = 0;
+            dgml ast;
+            std::vector<string::buffer> names(info.size());
+            for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
+                if (info[ii].symbol != "") {
+                    names[ii] = string::buffer(info[ii].symbol);
+                } else if (info[ii].op.type == expression::op_type::constant) {
+                    names[ii] = string::buffer(va("%0g", info[ii].constant));
+                }
+            }
+            for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
+                if (info[ii].symbol == "") {
+                    switch (info[ii].op.type) {
+                        case expression::op_type::constant:
+                            names[ii] = string::buffer(va("%0g", info[ii].constant));
+                            break;
+
+                        case expression::op_type::random:
+                            names[ii] = string::buffer(va("random_%d", ++num_random));
+                            break;
+
+                        case expression::op_type::negative:
+                            names[ii] = string::buffer(va("-(%s)", names[info[ii].op.lhs].c_str()));
+                            break;
+
+                        case expression::op_type::sqrt:
+                            names[ii] = string::buffer(va("sqrt(%s)", names[info[ii].op.lhs].c_str()));
+                            break;
+
+                        case expression::op_type::sine:
+                            names[ii] = string::buffer(va("sin(%s)", names[info[ii].op.lhs].c_str()));
+                            break;
+
+                        case expression::op_type::cosine:
+                            names[ii] = string::buffer(va("cos(%s)", names[info[ii].op.lhs].c_str()));
+                            break;
+
+                        case expression::op_type::sum:
+                            names[ii] = string::buffer(va("(%s)+(%s)", names[info[ii].op.lhs].c_str(), names[info[ii].op.rhs].c_str()));
+                            break;
+
+                        case expression::op_type::difference:
+                            names[ii] = string::buffer(va("(%s)-(%s)", names[info[ii].op.lhs].c_str(), names[info[ii].op.rhs].c_str()));
+                            break;
+
+                        case expression::op_type::product:
+                            names[ii] = string::buffer(va("(%s)*(%s)", names[info[ii].op.lhs].c_str(), names[info[ii].op.rhs].c_str()));
+                            break;
+
+                        case expression::op_type::quotient:
+                            names[ii] = string::buffer(va("(%s)/(%s)", names[info[ii].op.lhs].c_str(), names[info[ii].op.rhs].c_str()));
+                            break;
+
+                        case expression::op_type::exponent:
+                            names[ii] = string::buffer(va("(%s)^(%s)", names[info[ii].op.lhs].c_str(), names[info[ii].op.rhs].c_str()));
+                            break;
+
+                        case expression::op_type::logarithm:
+                            names[ii] = string::buffer(va("log(%s, %s)", names[info[ii].op.lhs].c_str(), names[info[ii].op.rhs].c_str()));
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+            for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
+                switch(expression::arity(info[ii].op.type)) {
+                    case expression::op_arity::binary:
+                        ast.add_link(names[ii], names[info[ii].op.rhs]);
+                        [[fallthrough]];
+                    case expression::op_arity::unary:
+                        ast.add_link(names[ii], names[info[ii].op.lhs]);
+                        [[fallthrough]];
+                    case expression::op_arity::nullary:
+                        ast.add_node(names[ii]);
+                        break;
+                }
+            }
+            file::stream s = file::open(va("ast_%02d.dgml", n), file::mode::write);
+            ast.write(s);
+        };
+
+        std::vector<op_info> info(_expression._ops.size());
+        for (std::size_t ii = 0, sz = _expression._ops.size(); ii < sz; ++ii) {
+            for (auto& kv : _symbols) {
+                if (kv.second.value == expression::value(ii)) {
+                    info[ii].symbol = kv.first;
+                    break;
+                }
+            }
+            info[ii].op = _expression._ops[ii];
+            if (info[ii].op.type == expression::op_type::constant) {
+                info[ii].constant = _expression._constants[ii - _expression.num_inputs()];
+            } else {
+                info[ii].constant = NAN;
+            }
+            info[ii].num_references = num_references[ii];
+        }
+
+        dump_ast(info, 0);
+
+        // constant folding
+        {
+            random r;
+            for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
+                bool is_constant = true;
+                bool has_constant = false;
+                if (expression::arity(info[ii].op.type) == expression::op_arity::nullary) {
+                    continue;
+                }
+                switch (expression::arity(info[ii].op.type)) {
+                    case expression::op_arity::binary:
+                        is_constant &= info[info[ii].op.rhs].op.type == expression::op_type::constant;
+                        has_constant |= info[info[ii].op.rhs].op.type == expression::op_type::constant;
+                        [[fallthrough]];
+                    case expression::op_arity::unary:
+                        is_constant &= info[info[ii].op.lhs].op.type == expression::op_type::constant;
+                        has_constant |= info[info[ii].op.lhs].op.type == expression::op_type::constant;
+                        [[fallthrough]];
+                    case expression::op_arity::nullary:
+                        break;
+                }
+                // update in-place
+                if (is_constant) {
+                    ++num_folded;
+                    info[ii].constant = expression::evaluate_op(
+                        r,
+                        info[ii].op.type,
+                        info[info[ii].op.lhs].constant,
+                        info[info[ii].op.rhs].constant);
+                    switch (expression::arity(info[ii].op.type)) {
+                        case expression::op_arity::binary:
+                            assert(info[info[ii].op.rhs].num_references);
+                            --info[info[ii].op.rhs].num_references;
+                            [[fallthrough]];
+                        case expression::op_arity::unary:
+                            assert(info[info[ii].op.lhs].num_references);
+                            --info[info[ii].op.lhs].num_references;
+                            [[fallthrough]];
+                        case expression::op_arity::nullary:
+                            break;
+                    }
+                    info[ii].op.type = expression::op_type::constant;
+                } else if (has_constant) {
+                    if (info[ii].op.type == expression::op_type::product) {
+                        expression::value a = info[info[ii].op.lhs].op.type == expression::op_type::constant
+                                ? info[ii].op.lhs
+                                : info[ii].op.rhs;
+                        expression::value y = info[info[ii].op.lhs].op.type == expression::op_type::constant
+                                ? info[ii].op.rhs
+                                : info[ii].op.lhs;
+                        if (info[y].op.type == expression::op_type::product) {
+                            // a * (b * x) = (a * b) * x
+                            //
+                            //    *               *             *
+                            //   / \             / \           / \
+                            //  a   *     =>    *   x   =>  (a*b) x
+                            //     / \         / \
+                            //    b   x       a   b
+
+                            if (info[info[y].op.lhs].op.type == expression::op_type::constant ||
+                                info[info[y].op.rhs].op.type == expression::op_type::constant) {
+
+                                assert(info[info[y].op.lhs].op.type != expression::op_type::constant ||
+                                       info[info[y].op.rhs].op.type != expression::op_type::constant);
+
+                                expression::value b = info[info[y].op.lhs].op.type == expression::op_type::constant
+                                    ? info[y].op.lhs
+                                    : info[y].op.rhs;
+                                expression::value x = info[info[y].op.lhs].op.type != expression::op_type::constant
+                                    ? info[y].op.lhs
+                                    : info[y].op.rhs;
+
+                                info.push_back({
+                                    "",
+                                    {expression::op_type::constant},
+                                    expression::evaluate_op(
+                                        r,
+                                        expression::op_type::product,
+                                        info[a].constant,
+                                        info[b].constant),
+                                    });
+                                expression::value c = info.size() - 1;
+                                // remove references to old operands
+                                assert(info[a].num_references);
+                                --info[a].num_references;
+                                assert(info[y].num_references);
+                                --info[y].num_references;
+                                // replace operands
+                                info[ii].op.lhs = c;
+                                info[ii].op.rhs = x;
+                                // add references to new operands
+                                ++info[c].num_references;
+                                ++info[x].num_references;
+                                ++num_folded;
+                                // re-evaluate current operation
+                                --ii;
+                            }
+                        }
+                            //    +               +             +
+                            //   / \             / \           / \
+                            //  a   +     =>    +   x   =>  (a+b) x
+                            //     / \         / \
+                            //    b   x       a   b
+
+                            //    -               -             -
+                            //   / \             / \           / \
+                            //  a   +     =>    -   x   =>  (a-b) x
+                            //     / \         / \
+                            //    b   x       a   b
+
+                            //    -               +             +
+                            //   / \             / \           / \
+                            //  a   -     =>    -   x   =>  (a-b) x
+                            //     / \         / \
+                            //    b   x       a   b
+
+                            //      -           -           -
+                            //     / \         / \         / \
+                            //    -  b  =>    x   +   =>  x (a+b)
+                            //   / \             / \
+                            //  x   a           a   b
+                    }
+                }
+            }
+        }
+
+        dump_ast(info, 1);
+
+        // common sub-expression elimination
+        {
+            for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
+                for (std::size_t jj = ii + 1; jj < sz; ++jj) {
+                    if (info[ii].op.type == info[jj].op.type) {
+                        bool can_merge = false;
+                        if (info[ii].op.type == expression::op_type::constant && info[ii].constant == info[jj].constant) {
+                            can_merge = true;
+                        } else if (expression::arity(info[ii].op.type) == expression::op_arity::binary) {
+                            if (info[ii].op.lhs == info[jj].op.lhs && info[ii].op.rhs == info[jj].op.rhs) {
+                                can_merge = true;
+                            }
+                        } else if (expression::arity(info[ii].op.type) == expression::op_arity::unary) {
+                            if (info[ii].op.lhs == info[jj].op.lhs) {
+                                can_merge = true;
+                            }
+                        }
+                        if (can_merge) {
+                            // need to check all ops, not just (jj,num_ops), since
+                            // constant folding can introduce out-of-order constants
+                            for (std::size_t kk = 0; kk < sz; ++kk) {
+                                switch (expression::arity(info[kk].op.type)) {
+                                    case expression::op_arity::binary:
+                                        if (info[kk].op.rhs == expression::value(jj)) {
+                                            info[kk].op.rhs = ii;
+                                            ++info[ii].num_references;
+                                            assert(info[jj].num_references);
+                                            --info[jj].num_references;
+                                            ++num_merged;
+                                        }
+                                        [[fallthrough]];
+                                    case expression::op_arity::unary:
+                                        if (info[kk].op.lhs == expression::value(jj)) {
+                                            info[kk].op.lhs = ii;
+                                            ++info[ii].num_references;
+                                            assert(info[jj].num_references);
+                                            --info[jj].num_references;
+                                            ++num_merged;
+                                        }
+                                        [[fallthrough]];
+                                    case expression::op_arity::nullary:
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        dump_ast(info, 2);
+
+        // dead code elimination
+        {
+            for (std::size_t ii = info.size(); ii > 0; --ii) {
+                if (!info[ii - 1].num_references) {
+                    auto const& op = info[ii - 1].op;
+                    switch (expression::arity(op.type)) {
+                        case expression::op_arity::binary:
+                            assert (info[op.rhs].num_references);
+                            --info[op.rhs].num_references;
+                            ii = std::max<std::size_t>(ii, op.rhs + 1);
+                            [[fallthrough]];
+                        case expression::op_arity::unary:
+                            assert (info[op.lhs].num_references);
+                            --info[op.lhs].num_references;
+                            ii = std::max<std::size_t>(ii, op.lhs + 1);
+                            [[fallthrough]];
+                        case expression::op_arity::nullary:
+                            break;
+                    }
+                    if (info[ii - 1].op.type != expression::op_type::none) {
+                        info[ii - 1].op.type = expression::op_type::none;
+                        ++num_removed;
+                    }
+                }
+            }
+        }
+
+        dump_ast(info, 3);
+
+        num_folded = num_folded;
+        num_merged = num_merged;
+        num_removed = num_removed;
+    }
 
     // always use all inputs, even if they aren't referenced
     out._num_inputs = _expression._num_inputs;
@@ -194,21 +585,21 @@ expression expression_builder::compile(expression::value* map) const
 
     // make sure all constants are placed in front of the calculated values
     for (std::size_t ii = _expression.num_inputs(), sz = _used.size(); ii < sz; ++ii) {
-        if (_used[ii] && _expression._ops[ii].type == expression::op_type::constant) {
+        if (num_references[ii] && _expression._ops[ii].type == expression::op_type::constant) {
             out._constants.push_back(_expression._constants[ii - _expression.num_inputs()]);
             map[ii] = num_used++;
         }
     }
 
     for (std::size_t ii = _expression.num_inputs(), sz = _used.size(); ii < sz; ++ii) {
-        if (_used[ii] && _expression._ops[ii].type != expression::op_type::constant) {
+        if (num_references[ii] && _expression._ops[ii].type != expression::op_type::constant) {
             map[ii] = num_used++;
         }
     }
 
     out._ops.resize(num_used);
-    for (std::size_t ii = 0, sz = _used.size(); ii < sz; ++ii) {
-        if (_used[ii]) {
+    for (std::size_t ii = 0, sz = num_references.size(); ii < sz; ++ii) {
+        if (num_references[ii]) {
             expression::value jj = map[ii];
             out._ops[jj].type = _expression._ops[ii].type;
             out._ops[jj].lhs = map[_expression._ops[ii].lhs];
@@ -227,11 +618,11 @@ expression::type_value expression_builder::add_constant(float value)
 {
     auto it = _constants.find(value);
     if (it != _constants.cend()) {
-        return {it->second, _types[it->second]};
+        return it->second;
     } else {
         _expression._ops.push_back({expression::op_type::constant, 0, 0});
         _expression._constants.push_back(value);
-        _constants[value] = _expression._ops.size() - 1;
+        _constants[value] = {expression::value(_expression._ops.size() - 1), expression::type::scalar};
         _used.push_back(false);
         _types.push_back(expression::type::scalar);
         return {narrow_cast<expression::value>(_expression._ops.size() - 1), expression::type::scalar};
@@ -301,14 +692,6 @@ expression::type_value expression_builder::add_op(expression::op_type type, expr
         _used.push_back(false);
         _types.push_back(expression::type::scalar);
         return {narrow_cast<expression::value>(_expression._ops.size() - 1), expression::type::scalar};
-    } else if (is_constant(lhs) && is_constant(rhs)) {
-        static random r; // not used
-        return add_constant(
-            expression::evaluate_op(
-                r,
-                type,
-                _expression._constants[lhs.value - _expression._num_inputs],
-                _expression._constants[rhs.value - _expression._num_inputs]));
     } else if (is_unary(type) || rhs.type == expression::type::scalar) {
         type_info const& lhs_type_info = _type_info[static_cast<std::size_t>(lhs.type)];
         expression::value base = alloc_type(lhs.type);
@@ -423,20 +806,8 @@ void expression_builder::mark_used(expression::type_value value)
 
         _used[value.value] = true;
 
-        expression::op const& op = _expression._ops[value.value];
-        switch (expression::arity(op.type)) {
-            case expression::op_arity::nullary:
-                break;
 
-            case expression::op_arity::unary:
-                mark_used(op.lhs);
-                break;
 
-            case expression::op_arity::binary:
-                mark_used(op.lhs);
-                mark_used(op.rhs);
-                break;
-        }
     } else {
         for (auto const& field : info.fields) {
             mark_used({expression::value(value.value + field.offset), field.type});
