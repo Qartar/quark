@@ -454,6 +454,13 @@ public:
         uint32_t trace_bits = 0;
         vec2 inverse_dir = {1.f / (end.x - start.x),
                             1.f / (end.y - start.y)};
+        // If completely vertical use a point trace instead
+        if (isinf(inverse_dir.x) && isinf(inverse_dir.x)) {
+            if (end.z - start.z == 0.f || !_aabb.contains(start.to_vec2())) {
+                return 1.f;
+            }
+            return trace_point(0, _aabb, start.to_vec2(), start.z, 1.f / (end.z - start.z));
+        }
         // Calculate intersection fractions with the root AABB
         vec2 tmin = (_aabb[0] - start.to_vec2()) * inverse_dir;
         vec2 tmax = (_aabb[1] - start.to_vec2()) * inverse_dir;
@@ -583,6 +590,32 @@ private:
         }
 
         return 1.f;
+    }
+
+    float trace_point(uint32_t node_index, bounds node_aabb, vec2 trace_point, float h, float dtdh) const {
+        // No branching required so use stackless traversal
+        while (true) {
+            uint32_t child_index = _nodes[node_index].child_index;
+
+            // Find intersection fraction on the z-axis
+            float t0 = (_nodes[node_index].min - h) * dtdh;
+            float t1 = (_nodes[node_index].max - h) * dtdh;
+
+            if (max(t0, t1) < 0.f || min(t0, t1) >= 1.f) {
+                return 1.f; // no intersection
+            } else if (!child_index) {
+                // TODO: Return the intersection fraction against the implicit surface
+                return min(t0, t1);
+            }
+
+            vec2 node_center = node_aabb.center();
+            std::array<bounds, 4> children = split(node_aabb);
+            int idx = (trace_point.x < node_center.x ? 0 : 1)
+                    | (trace_point.y < node_center.y ? 0 : 2);
+
+            node_index = child_index + idx;
+            node_aabb = children[idx];
+        }
     }
 
     void draw_r(system* r, uint32_t node_index, bounds node_aabb, bounds view_aabb, int max_depth) const {

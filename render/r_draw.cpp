@@ -712,6 +712,16 @@ void system::draw_starfield(vec2 streak_vector)
             glVertex2fv(project(_view, v0, v1, vec3(x, noise(x) + .5f)));
         }
         glEnd();
+
+        glBegin(GL_LINE_STRIP);
+        glColor4f(1,0,0,1);
+        for (int ii = 0; ii < 1024; ++ii) {
+            float t = ii / 1023.f;
+            vec2 x = v0 + (v1 - v0) * t;
+            float th = my_minmax_tree.trace(vec3(x, 100.f), vec3(x, -100.f));
+            glVertex2fv(project(_view, v0, v1, vec3(x, 100.f - 200.f * th)));
+        }
+        glEnd();
     }
 #endif
 }
