@@ -438,9 +438,8 @@ public:
         : _aabb{}
     {}
 
-    //! Build tree over the given region using the heightfield function
-    //! to classify leaves as either above or below 0. Leaf nodes will be
-    //! no smaller than the given resolution along the x-axis.
+    //! Build min-max tree over the given region using the heightfield function.
+    //! Leaf nodes will be no smaller than the given resolution along the x-axis.
     void build(bounds region, float resolution, heightfield_fn fn) {
         _aabb = region;
         // Child nodes are allocated contiguously, do the same for the
@@ -449,7 +448,8 @@ public:
         _nodes[0] = build_r(_aabb, resolution, fn);
     }
 
-    //! Returns the fraction along <start, end> to the first point on the line with height >= 0, or 1.f if no such point exists
+    //! Returns the fraction along <start, end> to the first point on the line
+    //! which intersects the heightfield.
     float trace(vec3 start, vec3 end) const {
         uint32_t trace_bits = 0;
         vec2 inverse_dir = {1.f / (end.x - start.x),
@@ -500,10 +500,20 @@ private:
     }
 
     node build_r(bounds aabb, float resolution, heightfield_fn fn) {
-        // If at maximum resolution create leaf using the mask at the midpoint
+        // If at maximum resolution create leaf using height at each corner
         if (aabb.size().x < resolution) {
-            float h = fn(aabb.center());
-            return node{h, h};
+            float const h[4] = {
+                fn(vec2(aabb[0][0], aabb[0][1])),
+                fn(vec2(aabb[1][0], aabb[0][1])),
+                fn(vec2(aabb[1][0], aabb[1][1])),
+                fn(vec2(aabb[0][0], aabb[1][1])),
+            };
+            float hmin = h[0], hmax = h[0];
+            for (int ii = 1; ii < countof(h); ++ii) {
+                hmin = min(h[ii], hmin);
+                hmax = max(h[ii], hmax);
+            }
+            return node{hmin, hmax};
         }
 
         // Reserve space for contiguous child nodes
@@ -532,22 +542,27 @@ private:
         return node{min, max, idx};
     }
 
-    float trace_r(uint32_t node_index, uint32_t trace_bits, bounds trace_aabb, float h, float dh) const {
+    float trace_r(uint32_t node_index, uint32_t trace_bits, bounds trace_aabb, float h, float dhdt) const {
         uint32_t child_index = _nodes[node_index].child_index;
 
         float t0 = max(trace_aabb[0].x, trace_aabb[0].y);
         float t1 = min(trace_aabb[1].x, trace_aabb[1].y);
 
-        float h0 = h + t0 * dh;
-        float h1 = h + t1 * dh;
+        float h0 = h + t0 * dhdt;
+        float h1 = h + t1 * dhdt;
 
         if (t0 >= t1 || t0 >= 1.f || t1 < 0.f) {
             return 1.f;
-        } else if (!child_index) {
-            // TODO: Return the intersection fraction against the implicit surface
-            return dh ? t0 + (t1 - t0) * (_nodes[node_index].min - h0) / (h1 - h0) : max(0.f, t0);
         } else if (min(h0, h1) > _nodes[node_index].max || max(h0, h1) < _nodes[node_index].min) {
             return 1.f;
+        } else if (!child_index) {
+            // TODO: Return the intersection fraction against the implicit surface
+            // Find intersection fraction on the z-plane
+            float th = dhdt > 0.f ? (_nodes[node_index].min - h) / dhdt
+                     : dhdt < 0.f ? (_nodes[node_index].max - h) / dhdt
+                     : t0;
+            // Return intersection fraction against the leaf's AABB
+            return max(t0, th);
         }
 
         // Intersection fraction with the splitting planes is just the
@@ -559,7 +574,7 @@ private:
                               trace_bits,
                               children[ii],
                               h,
-                              dh);
+                              dhdt);
             // Traversal order guarantees that the first intersection
             // is the nearest intersection
             if (t < 1.f) {

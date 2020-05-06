@@ -662,7 +662,10 @@ void system::draw_starfield(vec2 streak_vector)
             v1 = _view.origin + _view.size * vec2{r.uniform_real(-.5f, .5f), r.uniform_real(-.5f, .5f)};
         }
 
-        float tr = my_minmax_tree.trace(vec3(v0), vec3(v1));
+        float h0 = (n % 300) / 30.f;
+        float h1 = -10.f;
+
+        float tr = my_minmax_tree.trace(vec3(v0,h0), vec3(v1,h1));
         color4 c0 = color4(.5f,1,.5f,1);
         color4 c1 = color4(.5f,.5f,1,1);
 
@@ -681,6 +684,33 @@ void system::draw_starfield(vec2 streak_vector)
         glColor4fv(c1);
         glVertex2fv(v0 + (v1 - v0) * tr);
         glVertex2fv(v1);
+        glEnd();
+
+        // draw horizonal projection of trace
+
+        auto project = [](render::view& v, vec2 v0, vec2 v1, vec3 x) -> vec2 {
+            vec2 p((x.to_vec2() - v0).dot(v1 - v0) / (v1 - v0).length_sqr(), x.z);
+            return vec2(v.origin.x + v.size.x * .9f * (p.x - .5f), v.origin.y + v.size.y * p.y * .05f);
+        };
+
+        glBegin(GL_LINES);
+        vec2 x0 = project(_view, v0, v1, vec3(v0,h0));
+        vec2 x1 = project(_view, v0, v1, vec3(v1,h1));
+        glColor4fv(c0);
+        glVertex2fv(x0);
+        glVertex2fv(x0 + (x1 - x0) * tr);
+        glColor4fv(c1);
+        glVertex2fv(x0 + (x1 - x0) * tr);
+        glVertex2fv(x1);
+        glEnd();
+
+        glBegin(GL_LINE_STRIP);
+        glColor4f(1,1,1,1);
+        for (int ii = 0; ii < 128; ++ii) {
+            float t = ii / 127.f;
+            vec2 x = v0 + (v1 - v0) * t;
+            glVertex2fv(project(_view, v0, v1, vec3(x, noise(x) + .5f)));
+        }
         glEnd();
     }
 #endif
