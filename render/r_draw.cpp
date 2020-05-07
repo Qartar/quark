@@ -8,6 +8,8 @@
 #include "win_include.h"
 #include <GL/gl.h>
 
+#include "cm_delaunay.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
@@ -652,6 +654,7 @@ void system::draw_starfield(vec2 streak_vector)
         }
     }
 
+#if 0
     {
         static vec2 v0;
         static vec2 v1;
@@ -722,6 +725,56 @@ void system::draw_starfield(vec2 streak_vector)
             glVertex2fv(project(_view, v0, v1, vec3(x, 100.f - 200.f * th)));
         }
         glEnd();
+    }
+#endif
+
+    {
+        static delaunay my_delaunay;
+        static random r;
+        static uint64_t n = 0;
+        if (n++ % 300 == 0) {
+            while (!my_delaunay.insert_vertex(_view.origin + _view.size * vec2{r.uniform_real(-.5f, .5f), r.uniform_real(-.5f, .5f)}))
+                ;
+        }
+
+        if (my_delaunay._faces.size()) {
+            glBegin(GL_LINES);
+            glColor4fv(color4(1,1,1,1));
+            for (auto const& f : my_delaunay._faces) {
+                glVertex2fv(my_delaunay._verts[f.vert[0]]);
+                glVertex2fv(my_delaunay._verts[f.vert[1]]);
+                glVertex2fv(my_delaunay._verts[f.vert[1]]);
+                glVertex2fv(my_delaunay._verts[f.vert[2]]);
+                glVertex2fv(my_delaunay._verts[f.vert[2]]);
+                glVertex2fv(my_delaunay._verts[f.vert[0]]);
+
+                for (int ii = 0; ii < 3; ++ii) {
+                    vec2 v0 = my_delaunay._verts[f.vert[(ii + 0)    ]];
+                    vec2 v1 = my_delaunay._verts[f.vert[(ii + 1) % 3]];
+                    vec2 vc = (v1 + v0) * .5f;
+
+                    vec2 vx = (v1 - v0).normalize() * _view.size.length() * .01f;
+                    vec2 vy = vx.cross(-1.f);
+
+                    // draw edge orientation
+                    glVertex2fv(v0 + (v1 - v0) * .75f);
+                    glVertex2fv(v0 + (v1 - v0) * .75f - vx * .5f + vy * .5f);
+
+                    if (f.opposite[ii] != -1) {
+                        continue;
+                    }
+
+                    // draw edge normal
+                    glVertex2fv(vc);
+                    glVertex2fv(vc + vy);
+                    glVertex2fv(vc + vy);
+                    glVertex2fv(vc + vy * .8f + vx * .2f);
+                    glVertex2fv(vc + vy);
+                    glVertex2fv(vc + vy * .8f - vx * .2f);
+                }
+            }
+            glEnd();
+        }
     }
 #endif
 }
