@@ -45,6 +45,9 @@ public:
     constexpr vec2 operator*(float S) const { return vec2(x*S, y*S); }
     constexpr vec2 operator/(float S) const { return vec2(x/S, y/S); }
 
+    constexpr friend vec2 operator*(float S, vec2 const& V) { return vec2(S*V.x, S*V.y); }
+    constexpr friend vec2 operator/(float S, vec2 const& V) { return vec2(S/V.x, S/V.y); }
+
 // algebraic vector assignment operations
 
     vec2& operator+=(vec2 const& V) { x+=V.x; y+=V.y; return *this; }
@@ -57,7 +60,7 @@ public:
 // utility functions
 
     float length() const { return std::sqrt(length_sqr()); }
-    float length_sqr() const { return x*x + y*y; }
+    constexpr float length_sqr() const { return x*x + y*y; }
     vec2 normalize() const { float len = length(); return len ? *this / len : *this; }
     void normalize_self() { float len = length(); if (len) { *this /= len; } }
     float normalize_length() { float len = length(); if (len) { *this /= len; } return len; }
@@ -66,6 +69,14 @@ public:
     constexpr float dot(vec2 const& V) const { return x*V.x + y*V.y; }
     constexpr vec2 cross(float V) const { return vec2(y*V, -x*V); }
     constexpr float cross(vec2 const& V) const { return x*V.y - y*V.x; }
+
+// argument dependent lookup
+
+    friend float length(vec2 const& v) { return v.length(); }
+    constexpr friend float length_sqr(vec2 const& v) { return v.length_sqr(); }
+    friend vec2 normalize(vec2 const& v) { return v.normalize(); }
+    constexpr friend float dot(vec2 const& lhs, vec2 const& rhs) { return lhs.dot(rhs); }
+    constexpr friend float cross(vec2 const& lhs, vec2 const& rhs) { return lhs.cross(rhs); }
 };
 
 //------------------------------------------------------------------------------
@@ -102,6 +113,9 @@ public:
     constexpr vec3 operator*(float S) const { return vec3(x*S, y*S, z*S); }
     constexpr vec3 operator/(float S) const { return vec3(x/S, y/S, z/S); }
 
+    constexpr friend vec3 operator*(float S, vec3 const& V) { return vec3(S*V.x, S*V.y, S*V.z); }
+    constexpr friend vec3 operator/(float S, vec3 const& V) { return vec3(S/V.x, S/V.y, S/V.z); }
+
 // algebraic vector assignment operations
 
     vec3& operator+=(vec3 const& V) { x+=V.x; y+=V.y; z+=V.z; return *this; }
@@ -114,7 +128,7 @@ public:
 // utility functions
 
     float length() const {return std::sqrt(length_sqr()); }
-    float length_sqr() const {return x*x + y*y + z*z; }
+    constexpr float length_sqr() const {return x*x + y*y + z*z; }
     vec3 normalize() const { float len = length(); return len ? *this / len : *this; }
     void normalize_self() { float len = length(); if (len) { *this /= len; } }
     float normalize_length() { float len = length(); if (len) { *this /= len; } return len; }
@@ -124,6 +138,14 @@ public:
     constexpr vec3 cross(vec3 const& V) const { return vec3( y*V.z - z*V.y, z*V.x - x*V.z, x*V.y - y*V.x ); }
 
     constexpr vec2 to_vec2() const { return vec2(x, y); }
+
+// argument dependent lookup
+
+    friend float length(vec3 const& v) { return v.length(); }
+    constexpr friend float length_sqr(vec3 const& v) { return v.length_sqr(); }
+    friend vec3 normalize(vec3 const& v) { return v.normalize(); }
+    constexpr friend float dot(vec3 const& lhs, vec3 const& rhs) { return lhs.dot(rhs); }
+    constexpr friend vec3 cross(vec3 const& lhs, vec3 const& rhs) { return lhs.cross(rhs); }
 };
 
 //------------------------------------------------------------------------------
@@ -161,6 +183,9 @@ public:
     constexpr vec4 operator*(float S) const { return vec4(x*S, y*S, z*S, w*S); }
     constexpr vec4 operator/(float S) const { return vec4(x/S, y/S, z/S, w/S); }
 
+    constexpr friend vec4 operator*(float S, vec4 const& V) { return vec4(S*V.x, S*V.y, S*V.z, S*V.w); }
+    constexpr friend vec4 operator/(float S, vec4 const& V) { return vec4(S/V.x, S/V.y, S/V.z, S/V.w); }
+
 // algebraic vector assignment operations
 
     vec4& operator+=(vec4 const& V) { x+=V.x; y+=V.y; z+=V.z; w+=V.w; return *this; }
@@ -173,7 +198,7 @@ public:
 // utility functions
 
     float length() const { return std::sqrt(length_sqr()); }
-    float length_sqr() const { return x*x + y*y + z*z + w*w; }
+    constexpr float length_sqr() const { return x*x + y*y + z*z + w*w; }
     vec4 normalize() const { float len = length(); return len ? *this / len : *this; }
     void normalize_self() { float len = length(); if (len) { *this /= len; } }
     float normalize_length() { float len = length(); if (len) { *this /= len; } return len; }
@@ -183,6 +208,14 @@ public:
     constexpr vec4 cross(vec4 const& V) const { return vec4(y*V.z - z*V.y, z*V.x - x*V.z, x*V.y - y*V.x, 0.0f); }
 
     constexpr vec3 to_vec3() const { return vec3(x, y, z); }
+
+// argument dependent lookup
+
+    friend float length(vec4 const& v) { return v.length(); }
+    constexpr friend float length_sqr(vec4 const& v) { return v.length_sqr(); }
+    friend vec4 normalize(vec4 const& v) { return v.normalize(); }
+    constexpr friend float dot(vec4 const& lhs, vec4 const& rhs) { return lhs.dot(rhs); }
+    constexpr friend vec4 cross(vec4 const& lhs, vec4 const& rhs) { return lhs.cross(rhs); }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -218,6 +251,9 @@ public:
     constexpr vec2i operator*(int S) const { return vec2i(x*S, y*S); }
     constexpr vec2i operator/(int S) const { return vec2i(x/S, y/S); }
 
+    constexpr friend vec2i operator*(int S, vec2i const& V) { return vec2i(S*V.x, S*V.y); }
+    constexpr friend vec2i operator/(int S, vec2i const& V) { return vec2i(S/V.x, S/V.y); }
+
 // algebraic vector assignment operations
 
     vec2i& operator+=(vec2i const& V) { x+=V.x; y+=V.y; return *this; }
@@ -230,23 +266,21 @@ public:
 // utility functions
 
     double length() const { return std::sqrt(length_sqr()); }
-    int length_sqr() const { return x*x + y*y; }
+    constexpr int length_sqr() const { return x*x + y*y; }
     void clear() { x=0; y=0; }
 
     constexpr int dot(vec2i const& V) const { return x*V.x + y*V.y; }
     constexpr vec2i cross(int V) const { return vec2i(y*V, -x*V); }
+    constexpr int cross(vec2i const& V) const { return y*V.x - x*V.y; }
     explicit constexpr operator vec2() const { return vec2((float)x, (float)y); }
+
+// argument dependent lookup
+
+    friend double length(vec2i const& v) { return v.length(); }
+    constexpr friend int length_sqr(vec2i const& v) { return v.length_sqr(); }
+    constexpr friend int dot(vec2i const& lhs, vec2i const& rhs) { return lhs.dot(rhs); }
+    constexpr friend int cross(vec2i const& lhs, vec2i const& rhs) { return lhs.cross(rhs); }
 };
-
-//------------------------------------------------------------------------------
-inline vec2 rotate(vec2 v, float rad)
-{
-    float cosa = std::cos(rad);
-    float sina = std::sin(rad);
-
-    return vec2(v.x * cosa - v.y * sina,
-                v.x * sina + v.y * cosa);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // integer rectangle
@@ -269,26 +303,26 @@ public:
 
     vec2i& mins() { return _mins; }
     vec2i& maxs() { return _mins; }
-    vec2i mins() const { return _mins; }
-    vec2i maxs() const { return _maxs; }
+    constexpr vec2i mins() const { return _mins; }
+    constexpr vec2i maxs() const { return _maxs; }
 
 // algebraic vector operations
 
-    rect operator+(vec2i const& V) const { return rect(_mins+V, _maxs+V); }
-    rect operator-(vec2i const& V) const { return rect(_mins-V, _maxs-V); }
-    rect operator*(int S) const { return rect(_mins*S, _maxs*S); }
-    rect operator/(int S) const { return rect(_mins/S, _maxs/S); }
+    constexpr rect operator+(vec2i const& V) const { return rect(_mins+V, _maxs+V); }
+    constexpr rect operator-(vec2i const& V) const { return rect(_mins-V, _maxs-V); }
+    constexpr rect operator*(int S) const { return rect(_mins*S, _maxs*S); }
+    constexpr rect operator/(int S) const { return rect(_mins/S, _maxs/S); }
 
 // boolean operations
 
-    rect operator|(rect const& R) const {
+    constexpr rect operator|(rect const& R) const {
         return rect(vec2i(std::min<int>(_mins.x, R._mins.x),
                           std::min<int>(_mins.y, R._mins.y)),
                     vec2i(std::max<int>(_maxs.x, R._maxs.x),
                           std::max<int>(_maxs.y, R._maxs.y)));
     }
 
-    rect operator&(rect const& R) const {
+    constexpr rect operator&(rect const& R) const {
         return rect(vec2i(std::max<int>(_mins.x, R._mins.x),
                           std::max<int>(_mins.y, R._mins.y)),
                     vec2i(std::min<int>(_maxs.x, R._maxs.x),
@@ -309,11 +343,11 @@ public:
 
 // utility functions
 
-    vec2i center() const { return _mins + (_maxs - _mins) / 2; }
-    vec2i size() const { return _maxs - _mins; }
-    int area() const { return (_maxs.x - _mins.x) * (_maxs.y - _mins.y); }
+    constexpr vec2i center() const { return _mins + (_maxs - _mins) / 2; }
+    constexpr vec2i size() const { return _maxs - _mins; }
+    constexpr int area() const { return (_maxs.x - _mins.x) * (_maxs.y - _mins.y); }
 
-    bool contains(vec2i point) const {
+    constexpr bool contains(vec2i point) const {
         return point.x >= _mins.x
             && point.y >= _mins.y
             && point.x <= _maxs.x
@@ -322,10 +356,10 @@ public:
 
     void clear() { _mins.clear(); _maxs.clear(); }
 
-    bool empty() const { return _maxs.x <= _mins.x || _maxs.y <= _mins.y; }
-    bool inverted() const { return _maxs.x < _mins.x && _maxs.y < _mins.y; }
+    constexpr bool empty() const { return _maxs.x <= _mins.x || _maxs.y <= _mins.y; }
+    constexpr bool inverted() const { return _maxs.x < _mins.x && _maxs.y < _mins.y; }
 
-    static rect from_center(vec2i center, vec2i size) {
+    static constexpr rect from_center(vec2i center, vec2i size) {
         return rect(center - size / 2, center + (size - size / 2));
     }
 
