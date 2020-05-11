@@ -26,22 +26,66 @@ bool delaunay::insert_vertex(vec2 v)
     // general case
 
     // find the face that contains v
-    for (auto const& f : _faces) {
-        vec2 v0 = _verts[f.vert[0]];
-        vec2 v1 = _verts[f.vert[1]];
-        vec2 v2 = _verts[f.vert[2]];
+    for (int f0 = 0, num_faces = narrow_cast<int>(_faces.size()); f0 < num_faces; ++f0) {
+        int v0 = _faces[f0].vert[0];
+        int v1 = _faces[f0].vert[1];
+        int v2 = _faces[f0].vert[2];
+        vec2 p0 = _verts[v0];
+        vec2 p1 = _verts[v1];
+        vec2 p2 = _verts[v2];
 
-        // calculate barycentric coordinates of v within [v0,v1,v2]
-        float det = (v0 - v2).cross(v2 - v1);
-        float x = (v - v2).cross(v2 - v1) / det;
-        float y = (v - v2).cross(v0 - v2) / det;
+        // calculate barycentric coordinates of v within [p0,p1,p2]
+        float det = (p0 - p2).cross(p2 - p1);
+        float x = (v - p2).cross(p2 - p1) / det;
+        float y = (v - p2).cross(p0 - p2) / det;
 
         if (x < 0.f || y < 0.f || x + y > 1.f) {
             continue;
         }
 
-        // ignore extra interior vertices
-        return false;
+        /*
+            split face
+
+                  v0
+                 /| \
+             f2 / |  \ f0
+               /  v3  \
+              /  /  \  \
+             v2--------v1
+                  f1
+                                 v0 > v1 > v3
+             v0 > v1 > v2   =>   v1 > v2 > v3
+                                 v2 > v0 > v3
+        */
+        int v3 = narrow_cast<int>(_verts.size());
+        _verts.push_back(v);
+
+        int o0 = _faces[f0].opposite[0];
+        int o1 = _faces[f0].opposite[1];
+        int o2 = _faces[f0].opposite[2];
+
+        int f1 = narrow_cast<int>(_faces.size() + 0);
+        int f2 = narrow_cast<int>(_faces.size() + 1);
+        _faces.resize(f2 + 1);
+
+        _faces[f0] = {{v0, v1, v3}, {o0, f1, f2}};
+        _faces[f1] = {{v1, v2, v3}, {o1, f2, f0}};
+        _faces[f2] = {{v2, v0, v3}, {o2, f0, f1}};
+
+        for (int ii = 0; ii < 3; ++ii) {
+            if (o1 != -1 && _faces[o1].opposite[ii] == f0) {
+                _faces[o1].opposite[ii] = f1;
+            }
+            if (o2 != -1 && _faces[o2].opposite[ii] == f0) {
+                _faces[o2].opposite[ii] = f2;
+            }
+        }
+
+        // TODO: update edge-pairs, not faces
+        update(f0);
+        update(f1);
+        update(f2);
+        return true;
     }
 
     // find the nearest edge to v
@@ -154,15 +198,14 @@ void delaunay::update(int face)
             assert(v3 != -1); // this indicates internal inconsistency (bad!)
 
             // check delaunay condition
-            mat3 m(vec3(a - d, (a - d).length_sqr()),
-                   vec3(b - d, (b - d).length_sqr()),
-                   vec3(c - d, (c - d).length_sqr()));
+            mat3 m(vec3(a - d, length_sqr(a - d)),
+                   vec3(b - d, length_sqr(b - d)),
+                   vec3(c - d, length_sqr(c - d)));
 
-            float det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
-                      - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-                      + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+            float det = dot(m[0], cross(m[1], m[2]));
 
-            if (det > 0.f) {
+            // i.e. det > 0 and !nan(det)
+            if (!(det <= 0.f)) {
                 continue;
             }
 
