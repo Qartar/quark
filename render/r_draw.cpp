@@ -737,20 +737,20 @@ void system::draw_starfield(vec2 streak_vector)
                 ;
         }
 
-        if (my_delaunay._faces.size()) {
+        if (my_delaunay._edge_verts.size()) {
             glBegin(GL_LINES);
             glColor4fv(color4(1,1,1,1));
-            for (auto const& f : my_delaunay._faces) {
-                glVertex2fv(my_delaunay._verts[f.vert[0]]);
-                glVertex2fv(my_delaunay._verts[f.vert[1]]);
-                glVertex2fv(my_delaunay._verts[f.vert[1]]);
-                glVertex2fv(my_delaunay._verts[f.vert[2]]);
-                glVertex2fv(my_delaunay._verts[f.vert[2]]);
-                glVertex2fv(my_delaunay._verts[f.vert[0]]);
+            for (int ei = 0, en = narrow_cast<int>(my_delaunay._edge_verts.size()); ei < en; ei += 3) {
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 0]]);
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 1]]);
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 1]]);
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 2]]);
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 2]]);
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 0]]);
 
                 for (int ii = 0; ii < 3; ++ii) {
-                    vec2 v0 = my_delaunay._verts[f.vert[(ii + 0)    ]];
-                    vec2 v1 = my_delaunay._verts[f.vert[(ii + 1) % 3]];
+                    vec2 v0 = my_delaunay._verts[my_delaunay._edge_verts[ei + (ii + 0)    ]];
+                    vec2 v1 = my_delaunay._verts[my_delaunay._edge_verts[ei + (ii + 1) % 3]];
                     vec2 vc = (v1 + v0) * .5f;
 
                     vec2 vx = (v1 - v0).normalize() * _view.size.length() * .01f;
@@ -760,7 +760,7 @@ void system::draw_starfield(vec2 streak_vector)
                     glVertex2fv(v0 + (v1 - v0) * .75f);
                     glVertex2fv(v0 + (v1 - v0) * .75f - vx * .5f + vy * .5f);
 
-                    if (f.opposite[ii] != -1) {
+                    if (my_delaunay._edge_pairs[ei + ii] != -1) {
                         continue;
                     }
 
