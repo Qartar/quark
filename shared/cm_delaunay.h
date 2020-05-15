@@ -17,6 +17,16 @@ public:
 
     bool insert_vertex(vec2 v);
 
+    //! return the previous edge starting from the same vertex as the given edge or -1 if no such edge exists
+    int prev_vertex_edge(int edge_index) const { return _edge_pairs[edge_offset<2>(edge_index)]; }
+    //! return the next edge starting from the same vertex as the given edge or -1 if no such edge exists
+    int next_vertex_edge(int edge_index) const { return _edge_pairs[edge_offset<1>(edge_index)]; }
+
+    //! return the previous boundary edge or -1 if the given edge is not a boundary edge
+    int prev_boundary_edge(int edge_index) const;
+    //! return the next boundary edge or -1 if the given edge is not a boundary edge
+    int next_boundary_edge(int edge_index) const;
+
 protected:
     friend render::system;
 
@@ -36,5 +46,3 @@ protected:
         return (edge_index / 3) * 3 + (edge_index + N) % 3;
     }
 };
-
-template<> inline constexpr int delaunay::edge_offset<0>(int edge_index) { return edge_index; }

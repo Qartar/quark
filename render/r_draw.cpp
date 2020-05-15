@@ -773,6 +773,49 @@ void system::draw_starfield(vec2 streak_vector)
                     glVertex2fv(vc + vy * .8f - vx * .2f);
                 }
             }
+            {
+                glColor4fv(color4(1,0,0,1));
+                for (int ei = 0, en = narrow_cast<int>(my_delaunay._edge_verts.size()); ei < en; ++ei) {
+                    if (my_delaunay._edge_pairs[ei] == -1) {
+                        vec2 v0 = my_delaunay._verts[my_delaunay._edge_verts[ei]];
+                        int next = my_delaunay.next_boundary_edge(ei);
+                        while (true) {
+                            assert(next != -1);
+                            vec2 v1 = my_delaunay._verts[my_delaunay._edge_verts[next]];
+                            glVertex2fv(v0);
+                            glVertex2fv(v1);
+                            v0 = v1;
+                            if (next == ei) {
+                                break;
+                            }
+                            next = my_delaunay.next_boundary_edge(next);
+                        }
+                        break;
+                    }
+                }
+            }
+            {
+                glColor4fv(color4(0,1,0,1));
+                for (int ei = 0, en = narrow_cast<int>(my_delaunay._edge_verts.size()); ei < en; ++ei) {
+                    if (my_delaunay._edge_pairs[ei] == -1) {
+                        vec2 v0 = my_delaunay._verts[my_delaunay._edge_verts[ei]];
+                        int prev = my_delaunay.prev_boundary_edge(ei);
+                        while (true) {
+                            assert(prev != -1);
+                            vec2 v1 = my_delaunay._verts[my_delaunay._edge_verts[prev]];
+                            glVertex2fv(v0);
+                            glVertex2fv(v1);
+                            v0 = v1;
+                            if (prev == ei) {
+                                break;
+                            }
+                            prev = my_delaunay.prev_boundary_edge(prev);
+                        }
+                        break;
+                    }
+                }
+            }
+
             glEnd();
         }
     }

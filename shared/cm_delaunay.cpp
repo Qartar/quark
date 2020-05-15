@@ -191,6 +191,7 @@ void delaunay::update_edges(int const* edges, int num_edges)
         int edge_index = queue.front();
         queue.pop();
 
+        // this occurs when a face containing a boundary edge is flipped
         if (edge_index == -1) {
             continue;
         }
@@ -276,5 +277,43 @@ void delaunay::update_edges(int const* edges, int num_edges)
         queue.push(_edge_pairs[e2]);
         queue.push(_edge_pairs[e3]);
         queue.push(_edge_pairs[e5]);
+    }
+}
+
+//------------------------------------------------------------------------------
+int delaunay::prev_boundary_edge(int edge_index) const
+{
+    int pivot_index = edge_offset<2>(edge_index);
+    while (true) {
+        int prev_index = _edge_pairs[pivot_index];
+        // prev_index and edge_index start at the same vertex
+        assert(prev_index == -1 || _edge_verts[prev_index] == _edge_verts[edge_index]);
+        if (prev_index == -1) {
+            return pivot_index;
+        } else if (prev_index == edge_index) {
+            // the given edge is not a boundary edge
+            return -1;
+        } else {
+            pivot_index = edge_offset<2>(prev_index);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+int delaunay::next_boundary_edge(int edge_index) const
+{
+    int pivot_index = edge_offset<1>(edge_index);
+    while (true) {
+        int next_index = _edge_pairs[pivot_index];
+        // edge_index and next_index end at the same vertex
+        assert(next_index == -1 || _edge_verts[edge_offset<1>(edge_index)] == _edge_verts[edge_offset<1>(next_index)]);
+        if (next_index == -1) {
+            return pivot_index;
+        } else if (next_index == edge_index) {
+            // the given edge is not a boundary edge
+            return -1;
+        } else {
+            pivot_index = edge_offset<1>(next_index);
+        }
     }
 }
