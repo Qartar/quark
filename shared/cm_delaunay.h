@@ -13,8 +13,6 @@ namespace render { class system; }
 class delaunay
 {
 public:
-    delaunay();
-
     bool insert_vertex(vec2 v);
 
     //! return the previous edge starting from the same vertex as the given edge or -1 if no such edge exists
