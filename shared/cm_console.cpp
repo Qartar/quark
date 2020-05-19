@@ -9,6 +9,7 @@
 #include "cm_shared.h"
 
 #include <cassert>
+#include <cctype>
 #include <cstdarg>
 
 
