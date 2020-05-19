@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.11)
 project(quark)
 
 # Configure version file
-find_package(git)
+find_package(Git)
 
 set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/cmake")
 set(VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/version.h")
