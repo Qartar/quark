@@ -156,10 +156,13 @@ void world::run_frame()
             continue;
         }
 
+        vec2 old_position = _objects[ii]->get_position();
+        float old_rotation = _objects[ii]->get_rotation();
+
         _objects[ii]->think();
 
-        _objects[ii]->_old_position = _objects[ii]->get_position();
-        _objects[ii]->_old_rotation = _objects[ii]->get_rotation();
+        _objects[ii]->_old_position = old_position;
+        _objects[ii]->_old_rotation = old_rotation;
     }
 
     _physics.step(FRAMETIME.to_seconds());
