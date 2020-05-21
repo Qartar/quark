@@ -2,10 +2,12 @@
 //
 
 #include "cm_delaunay.h"
+#include "cm_geometry.h"
 #include "cm_matrix.h"
 #include "cm_shared.h"
 
 #include <queue>
+#include <unordered_set>
 
 //------------------------------------------------------------------------------
 bool delaunay::insert_vertex(vec2 v)
@@ -122,22 +124,6 @@ bool delaunay::insert_vertex(vec2 v)
             continue;
         }
 
-        // return point on line [a,b] nearest to c
-        auto const nearest_point = [](vec2 a, vec2 b, vec2 c) {
-            vec2 v = b - a;
-            float num = (c - a).dot(v);
-            float den = v.dot(v);
-            if (num >= den) {
-                return b;
-            } else if (num < 0.f) {
-                return a;
-            } else {
-                float t = num / den;
-                float s = 1.f - t;
-                return a * s + b * t;
-            }
-        };
-
         vec2 v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
         vec2 v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
 
@@ -147,7 +133,7 @@ bool delaunay::insert_vertex(vec2 v)
         }
 
         // distance to point on line [v0,v1] nearest to v
-        vec2 p = nearest_point(v0, v1, v);
+        vec2 p = nearest_point_on_line(v0, v1, v);
         float dsqr = (v - p).length_sqr();
         if (dsqr < min_dist) {
             min_dist = dsqr;
@@ -277,6 +263,287 @@ void delaunay::update_edges(int const* edges, int num_edges)
         queue.push(_edge_pairs[e2]);
         queue.push(_edge_pairs[e3]);
         queue.push(_edge_pairs[e5]);
+    }
+}
+
+//------------------------------------------------------------------------------
+int delaunay::find_path(vec2* points, int max_points, vec2 start, vec2 end) const
+{
+    int best_start_edge = -1, best_end_edge = -1;
+    int best_start_face = -1, best_end_face = -1;
+    float best_start_dist = INFINITY, best_end_dist = INFINITY;
+    float best_heuristic = INFINITY;
+    vec2 best_position = vec2_zero;
+
+    // find the faces containing start and end points
+    for (int edge_index = 0, num_edges  = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; edge_index += 3) {
+        vec2 v0 = _verts[_edge_verts[edge_index + 0]];
+        vec2 v1 = _verts[_edge_verts[edge_index + 1]];
+        vec2 v2 = _verts[_edge_verts[edge_index + 2]];
+
+        // calculate barycentric coordinates of start and end within [p0,p1,p2]
+        float det = (v0 - v2).cross(v2 - v1);
+
+        if (best_start_face == -1) {
+            float x = (start - v2).cross(v2 - v1);
+            float y = (start - v2).cross(v0 - v2);
+
+            if (!(x < 0.f || y < 0.f || x + y > det)) {
+                best_start_face = edge_index;
+                if (best_end_face != -1) {
+                    break;
+                }
+            }
+        }
+
+        if (best_end_face == -1) {
+            float x = (end - v2).cross(v2 - v1);
+            float y = (end - v2).cross(v0 - v2);
+
+            if (!(x < 0.f || y < 0.f || x + y > det)) {
+                best_end_face = edge_index;
+                if (best_start_face != -1) {
+                    break;
+                }
+            }
+        }
+    }
+
+    // if start or end are not contained in the triangulation
+    // then find the edge nearest to both start and end points
+    if (best_start_face == -1 || best_end_face == -1) {
+        for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; ++edge_index) {
+            vec2 v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
+            vec2 v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
+
+            // ignore back-facing edges
+            if ((end - v0).cross(v1 - v0) >= 0.f) {
+                // distance to point on line [v0,v1] nearest to v
+                vec2 p = nearest_point_on_line(v0, v1, end);
+                float dsqr = (end - p).length_sqr();
+                if (dsqr < best_end_dist) {
+                    best_end_dist = dsqr;
+                    best_end_edge = edge_index;
+                }
+            }
+
+            // ignore back-facing edges
+            if ((start - v0).cross(v1 - v0) >= 0.f) {
+                // distance to point on line [v0,v1] nearest to v
+                vec2 p = nearest_point_on_line(v0, v1, start);
+                float dsqr = (start - p).length_sqr();
+                if (dsqr < best_start_dist) {
+                    best_start_dist = dsqr;
+                    best_heuristic = (start - nearest_point_on_line(v0, v1, end)).length_sqr();
+                    best_position = p;
+                    best_start_edge = edge_index;
+                }
+            }
+        }
+    }
+
+    if ((best_start_face == -1 && best_start_edge == -1) || (best_end_face == -1 && best_end_edge == -1)) {
+        return -1;
+    }
+
+    // if start and end are in the same face
+    if (best_start_face != -1 && best_start_face == best_end_face) {
+        return 0;
+    }
+
+    struct search_state {
+        vec2 position;
+        float distance;
+        float heuristic;
+        std::size_t previous;
+        int edge_index;
+        int depth;
+    };
+
+    std::vector<search_state> search;
+
+    struct search_comparator {
+        decltype(search) const& _search;
+        bool operator()(std::size_t lhs, std::size_t rhs) const {
+            float d1 = _search[lhs].distance + _search[lhs].heuristic;
+            float d2 = _search[rhs].distance + _search[rhs].heuristic;
+            return d1 > d2;
+        }
+    };
+
+    std::priority_queue<std::size_t, std::vector<std::size_t>, search_comparator> queue{{search}};
+    std::unordered_set<int> closed_set;
+
+    if (best_start_face == -1) {
+        search.push_back({best_position, std::sqrt(best_start_dist), std::sqrt(best_heuristic), SIZE_MAX, best_start_edge, 1});
+        queue.push(search.size() - 1);
+    } else {
+        int e[3] = {
+            edge_offset<0>(best_start_face),
+            edge_offset<1>(best_start_face),
+            edge_offset<2>(best_start_face),
+        };
+        vec2 v[3] = {
+            _verts[_edge_verts[e[0]]],
+            _verts[_edge_verts[e[1]]],
+            _verts[_edge_verts[e[2]]],
+        };
+
+        for (int ii = 0; ii < 3; ++ii) {
+            if (_edge_pairs[e[ii]] != -1) {
+                // get midpoint of the edge
+                vec2 p = (1.f / 2.f) * (v[ii] + v[(ii + 1) % 3]);
+                search.push_back({p, length(p - start), length(p - end), SIZE_MAX, _edge_pairs[e[ii]], 1});
+                queue.push(search.size() - 1);
+            }
+        }
+    }
+
+    while (queue.size()) {
+        std::size_t idx = queue.top(); queue.pop();
+        if (closed_set.find(search[idx].edge_index) != closed_set.cend()) {
+            continue;
+        }
+        closed_set.insert(search[idx].edge_index);
+
+        // search succeeded if edge index is in the same face or edge as the end point
+        if (((search[idx].edge_index / 3) * 3 == best_end_face)
+            || (best_end_face == -1 && (search[idx].edge_index / 3 == best_end_edge / 3))) {
+            // copy path into buffer
+            for (std::size_t ii = idx; ii != SIZE_MAX; ii = search[ii].previous) {
+                points[search[ii].depth - 1] = search[ii].position;
+            }
+            return search[idx].depth;
+        }
+
+        // search failed
+        if (search[idx].depth >= max_points) {
+            return -1;
+        }
+
+        // iterate
+        for (int edge_index = edge_offset<1>(search[idx].edge_index)
+            ; edge_index != search[idx].edge_index
+            ; edge_index = edge_offset<1>(edge_index)) {
+            int opposite_edge = _edge_pairs[edge_index];
+            // skip exterior edges
+            if (opposite_edge == -1) {
+                continue;
+            }
+
+            // get midpoint of next edge
+            int v0 = _edge_verts[edge_offset<0>(opposite_edge)];
+            int v1 = _edge_verts[edge_offset<1>(opposite_edge)];
+            vec2 b = (1.f / 2.f) * (_verts[v0] + _verts[v1]);
+
+            // add to search state
+            search.push_back({
+                b,
+                search[idx].distance + length(b - search[idx].position),
+                length(b - end),
+                idx,
+                opposite_edge,
+                search[idx].depth + 1,
+            });
+            queue.push(search.size() - 1);
+        }
+    }
+
+    // search failed
+    return -1;
+}
+
+//------------------------------------------------------------------------------
+int delaunay::line_of_sight(vec2* points, int max_points, vec2 start, vec2 end) const
+{
+    // find the nearest edge to v
+    float min_dist = INFINITY;
+    int min_edge = -1;
+    vec2 min_point = vec2_zero;
+    for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; ++edge_index) {
+        vec2 v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
+        vec2 v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
+
+        // ignore back-facing edges
+        if ((start - v0).cross(v1 - v0) < 0.f) {
+            continue;
+        }
+
+        vec2 p;
+        if (intersect_lines(v0, v1, start, end, p)) {
+            float d = (p - start).dot(end - start);
+            if (d >= 0.f && d < min_dist) {
+                min_dist = d;
+                min_edge = edge_index;
+                min_point = p;
+            }
+        }
+    }
+
+    if (min_edge == -1) {
+        return -1;
+    }
+
+    int num_points = 0;
+    points[num_points++] = min_point;
+
+    for (int edge_index = min_edge;;) {
+        if (num_points == max_points) {
+            return -1;
+        }
+
+        // find the boundary edge where the ray enters the triangulation
+        if (edge_index == -1) {
+            float best_d = INFINITY;
+            int best_edge = -1;
+            for (int ii = 0, num_edges = narrow_cast<int>(_edge_verts.size()); ii < num_edges; ++ii) {
+                // skip interior edges
+                if (_edge_pairs[ii] != -1) {
+                    continue;
+                }
+
+                vec2 v0 = _verts[_edge_verts[edge_offset<1>(ii)]];
+                vec2 v1 = _verts[_edge_verts[edge_offset<0>(ii)]];
+
+                // ignore back-facing edges
+                if ((start - v0).cross(v1 - v0) < 0.f) {
+                    continue;
+                }
+
+                vec2 p;
+                if (intersect_lines(v0, v1, start, end, p)) {
+                    float d = (p - points[num_points - 1]).dot(end - start);
+                    if (d > 0.f && d < best_d) {
+                        best_d = d;
+                        best_edge = ii;
+                        points[num_points] = p;
+                    }
+                }
+            }
+
+            if (best_edge == -1) {
+                return num_points;
+            }
+
+            edge_index = best_edge;
+            ++num_points;
+
+        // find the next edge in the current face along the ray direction
+        } else {
+            vec2 v0 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
+            vec2 v1 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
+            vec2 v2 = _verts[_edge_verts[edge_offset<2>(edge_index)]];
+
+            if (intersect_lines(v1, v2, start, end, points[num_points])) {
+                ++num_points;
+                edge_index = _edge_pairs[edge_offset<1>(edge_index)];
+            } else if (intersect_lines(v2, v0, start, end, points[num_points])) {
+                ++num_points;
+                edge_index = _edge_pairs[edge_offset<2>(edge_index)];
+            } else {
+                return num_points;
+            }
+        }
     }
 }
 

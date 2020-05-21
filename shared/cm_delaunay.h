@@ -15,6 +15,14 @@ class delaunay
 public:
     bool insert_vertex(vec2 v);
 
+    template<int N>
+    int find_path(vec2 (&points)[N], vec2 start, vec2 end) const { return find_path(points, N, start, end); }
+    int find_path(vec2* points, int max_points, vec2 start, vec2 end) const;
+
+    template<int N>
+    int line_of_sight(vec2 (&points)[N], vec2 start, vec2 end) const { return line_of_sight(points, N, start, end); }
+    int line_of_sight(vec2* points, int max_points, vec2 start, vec2 end) const;
+
     //! return the previous edge starting from the same vertex as the given edge or -1 if no such edge exists
     int prev_vertex_edge(int edge_index) const { return _edge_pairs[edge_offset<2>(edge_index)]; }
     //! return the next edge starting from the same vertex as the given edge or -1 if no such edge exists

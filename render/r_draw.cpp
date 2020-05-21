@@ -732,9 +732,23 @@ void system::draw_starfield(vec2 streak_vector)
         static delaunay my_delaunay;
         static random r;
         static uint64_t n = 0;
+        static vec2 path[1024];
+        static int path_size = -1;
+        static vec2 sight[1024];
+        static int sight_size = -1;
+        static vec2 path_start;
+        static vec2 path_end;
         if (n++ % 300 == 0) {
-            while (!my_delaunay.insert_vertex(_view.origin + _view.size * vec2{r.uniform_real(-.5f, .5f), r.uniform_real(-.5f, .5f)}))
+            while (!my_delaunay.insert_vertex(_view.origin + _view.size * vec2{r.uniform_real(-.5f, .5f), r.uniform_real(-.5f, .5f)})
+                || my_delaunay._verts.size() < 3)
                 ;
+        }
+
+        {
+            path_start = _view.origin + .4f * _view.size * vec2(0,1) * rot2(n / 200.f);
+            path_end = _view.origin + .2f * _view.size * vec2(0,1) * rot2(n / 300.f + math::pi<float>);
+            path_size = my_delaunay.find_path(path, path_start, path_end);
+            sight_size = my_delaunay.line_of_sight(sight, path_start, path_end);
         }
 
         if (my_delaunay._edge_verts.size()) {
@@ -755,10 +769,6 @@ void system::draw_starfield(vec2 streak_vector)
 
                     vec2 vx = (v1 - v0).normalize() * _view.size.length() * .01f;
                     vec2 vy = vx.cross(-1.f);
-
-                    // draw edge orientation
-                    glVertex2fv(v0 + (v1 - v0) * .75f);
-                    glVertex2fv(v0 + (v1 - v0) * .75f - vx * .5f + vy * .5f);
 
                     if (my_delaunay._edge_pairs[ei + ii] != -1) {
                         continue;
@@ -813,6 +823,48 @@ void system::draw_starfield(vec2 streak_vector)
                         }
                         break;
                     }
+                }
+            }
+
+            if (path_size >= 0) {
+                if (path_size == 0) {
+                    glColor4f(1.f, 0.f, 0.f, 1.f);
+                    glVertex2fv(path_start);
+                    glColor4f(0.f, 1.f, 0.f, 1.f);
+                    glVertex2fv(path_end);
+                } else {
+                    glColor4f(1.f, 0.f, 0.f, 1.f);
+                    glVertex2fv(path_start);
+                    glColor4f(.5f, .5f, 1.f, 1.f);
+                    glVertex2fv(path[0]);
+                    for (int ii = 1; ii < path_size; ++ii) {
+                        glVertex2fv(path[ii - 1]);
+                        glVertex2fv(path[ii    ]);
+                    }
+                    glVertex2fv(path[path_size - 1]);
+                    glColor4f(0.f, 1.f, 0.f, 1.f);
+                    glVertex2fv(path_end);
+                }
+            }
+
+            if (sight_size > 0) {
+                glColor4f(.5f, .5f, .5f, 1.f);
+                vec2 vx = (path_end - path_start).normalize() * _view.size.length() * .005f;
+                vec2 vy = vx.cross(1.f);
+                glVertex2fv(path_start);
+                glVertex2fv(sight[0]);
+                for (int ii = 1; ii < sight_size; ++ii) {
+                    glVertex2fv(sight[ii - 1]);
+                    glVertex2fv(sight[ii    ]);
+                }
+                glVertex2fv(sight[sight_size - 1]);
+                glVertex2fv(path_end);
+
+                for (int ii = 0; ii < sight_size; ++ii) {
+                    glVertex2fv(sight[ii] + vx + vy);
+                    glVertex2fv(sight[ii] - vx - vy);
+                    glVertex2fv(sight[ii] + vx - vy);
+                    glVertex2fv(sight[ii] - vx + vy);
                 }
             }
 
