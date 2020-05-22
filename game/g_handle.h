@@ -51,8 +51,8 @@ public:
         _value = other._value;
     }
 
-    //! implicit conversion to bool
-    operator bool() const {
+    //! explicit conversion to bool
+    explicit operator bool() const {
         return get() != nullptr;
     }
 
