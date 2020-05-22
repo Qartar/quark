@@ -46,60 +46,145 @@ void aicontroller::think()
     //
 
     {
-        subsystem* medical_bay = nullptr;
+        struct task {
+            game::handle<game::character> character;
+            game::handle<game::subsystem> subsystem;
+            character::action_type action;
+            float priority;
+            float distance;
+
+            // sort by priority (descending) then by distance (ascending)
+            bool operator<(task const& rhs) const {
+                return priority > rhs.priority ? true
+                     : priority == rhs.priority ? distance < rhs.distance : false;
+            }
+
+            bool execute() {
+                switch (action) {
+                    case character::action_type::repair:
+                        return character->repair(subsystem);
+                    case character::action_type::operate:
+                        return character->operate(subsystem);
+                    case character::action_type::move:
+                    case character::action_type::idle:
+                        return character->move(subsystem);
+                    default:
+                        return false;
+                }
+            }
+        };
+
+        // calculate repair priority of the subsystem
+        auto const subsystem_priority = [](game::handle<game::subsystem> ss) -> float {
+            switch (ss->info().type) {
+                case subsystem_type::shields:
+                    return 4.f;
+                case subsystem_type::reactor:
+                    return 3.f;
+                case subsystem_type::life_support:
+                    return 3.f;
+                case subsystem_type::medical_bay:
+                    return 2.f;
+                default:
+                    return 1.f;
+            }
+        };
+
+        // calculate distance from the given character to the given compartment
+        auto const task_distance = [this](game::handle<game::subsystem> ss, game::handle<game::character> ch) {
+            auto compartment = _ship ? _ship->layout().intersect_compartment(ch->get_position())
+                                     : ship_layout::invalid_compartment;
+
+            if (compartment == ship_layout::invalid_compartment) {
+                return INFINITY;
+            } else if (compartment == ss->compartment()) {
+                return 0.f;
+            }
+
+            vec2 path[32]; // FIXME: hard-coded path limit in character
+            std::size_t path_len = _ship->layout().find_path(
+                ch->get_position(),
+                // FIXME: want shortest path to compartment, not path to random
+                // point in compartment. this can give different results for
+                // compartments with multiple entrypoints even if ignoring the
+                // last segment of the path.
+                _ship->layout().random_point(_random, ss->compartment()),
+                .3f, // FIXME: hard-coded constant in character::move
+                path,
+                countof(path));
+
+            float distance = path_len ? length(ch->get_position() - path[0]) : INFINITY;
+            // ignore last segment which is to a random point within the destination compartment
+            for (std::size_t ii = 1; ii < path_len - 1; ++ii) {
+                distance += length(path[ii] - path[ii - 1]);
+            }
+            return distance;
+        };
+
+        std::vector<task> tasks;
+
+        game::handle<subsystem> medical_bay = nullptr;
 
         for (auto& ss : _ship->subsystems()) {
             if (ss->info().type == subsystem_type::medical_bay) {
-                medical_bay = ss.get();
+                medical_bay = ss;
                 break;
             }
         }
 
-        for (auto& ss : _ship->subsystems()) {
-            if (ss->damage()) {
-                for (auto& ch : _ship->crew()) {
-                    // ignore character if low health
-                    if (medical_bay && ch->health() < .5f) {
-                        continue;
-                    }
-                    // ignore character if currently healing at medical bay
-                    else if (medical_bay && ch->health() < 1.f && medical_bay->compartment() == ch->compartment()) {
-                        continue;
-                    }
-                    // order character to repair the damaged subsystem if idle
-                    else if (ch->is_idle()) {
-                        ch->repair(ss);
-                        break;
+        for (auto& ch : _ship->crew()) {
+            // nothing to do for dead crew members
+            if (!ch->health()) {
+                continue;
+            }
+
+            for (auto& ss : _ship->subsystems()) {
+                if (ss->damage()) {
+                    float d = task_distance(ss, ch);
+                    float p = subsystem_priority(ss);
+                    // all crew members can repair the same subsystem simultaneously
+                    // but the priority for each subsequent crew member decreases.
+                    // this creates a unique task for each crew/slot combination
+                    // which are then pruned from the task list as each slot is taken.
+                    for (std::size_t ii = 0; ii < _ship->crew().size(); ++ii) {
+                        tasks.push_back({ch, ss, character::action_type::repair, p / (ii + 1), d});
                     }
                 }
+            }
+
+            if (medical_bay && ch->health() < 1.f) {
+                float d = task_distance(medical_bay, ch);
+                // priority is inversely proportional to remaining health
+                tasks.push_back({ch, medical_bay, character::action_type::move, 1.f / ch->health(), d});
             }
         }
 
-        for (auto& ch : _ship->crew()) {
-            // move to medical bay if character is idle and not at full health
-            if (medical_bay && ch->is_idle() && ch->health() < 1.f) {
-                if (ch->compartment() != medical_bay->compartment()) {
-                    if (ch->move_target() != medical_bay->compartment()) {
-                        ch->move(medical_bay->compartment());
-                    }
+        // simple greedy task assignment
+
+        std::sort(tasks.begin(), tasks.end());
+
+        while (tasks.size()) {
+            std::size_t skipped = 0;
+            // skip any tasks that fail to execute
+            for (; skipped < tasks.size() && !tasks[skipped].execute(); ++skipped)
+                ;
+
+            // save executed task information for reference
+            task const t = tasks[skipped];
+
+            // starting from the executed task, remove any remaining tasks for
+            // the same character or same subsystem/action/priority combination
+            std::size_t remaining = 0;
+            for (std::size_t ii = skipped + 1; ii < tasks.size(); ++ii) {
+                if (tasks[ii].character == t.character
+                    || (tasks[ii].subsystem == t.subsystem
+                        && tasks[ii].action == t.action
+                        && tasks[ii].priority == t.priority)) {
+                    continue;
                 }
+                tasks[remaining++] = tasks[ii];
             }
-            // move to medical bay even if not idle when health is low
-            else if (medical_bay && ch->health() < .5f) {
-                if (medical_bay->damage()) {
-                    if (ch->repair_target() != medical_bay) {
-                        ch->repair(medical_bay);
-                    }
-                } else if (ch->compartment() != medical_bay->compartment()) {
-                    if (ch->move_target() != medical_bay->compartment()) {
-                        ch->move(medical_bay->compartment());
-                    }
-                }
-            }
-            // randomly wander if idle
-            else if (ch->is_idle() && _random.uniform_real() < .01f) {
-                ch->move(narrow_cast<uint16_t>(_random.uniform_int(_ship->layout().compartments().size())));
-            }
+            tasks.resize(remaining);
         }
     }
 
