@@ -69,6 +69,9 @@ public:
     //! operate the given subsystem, moving if necessary
     bool operate(handle<game::subsystem> subsystem);
 
+    //! move to a random point in the compartment containing the given subsystem
+    bool move(handle<game::subsystem> subsystem);
+
     //! move to specific point in ship-local space
     bool move(vec2 goal);
 

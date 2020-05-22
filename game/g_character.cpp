@@ -238,11 +238,20 @@ bool character::is_repairing(handle<game::subsystem> subsystem) const
 //------------------------------------------------------------------------------
 bool character::operate(handle<game::subsystem> subsystem)
 {
+    if (!_health) {
+        return false;
+    }
+
     auto compartment = !subsystem ? ship_layout::invalid_compartment
                                   : subsystem->compartment();
 
     if (compartment == ship_layout::invalid_compartment) {
         return false;
+    }
+
+    // return true if this action is already in progress
+    if (_action == action_type::operate && _target_subsystem == subsystem) {
+        return true;
     }
 
     if (move(compartment)) {
@@ -258,11 +267,20 @@ bool character::operate(handle<game::subsystem> subsystem)
 //------------------------------------------------------------------------------
 bool character::repair(handle<game::subsystem> subsystem)
 {
+    if (!_health) {
+        return false;
+    }
+
     auto compartment = !subsystem ? ship_layout::invalid_compartment
                                   : subsystem->compartment();
 
     if (compartment == ship_layout::invalid_compartment) {
         return false;
+    }
+
+    // return true if this action is already in progress
+    if (_action == action_type::repair && _target_subsystem == subsystem) {
+        return true;
     }
 
     if (move(compartment)) {
@@ -276,8 +294,18 @@ bool character::repair(handle<game::subsystem> subsystem)
 }
 
 //------------------------------------------------------------------------------
+bool character::move(handle<game::subsystem> subsystem)
+{
+    return subsystem ? move(subsystem->compartment()) : false;
+}
+
+//------------------------------------------------------------------------------
 bool character::move(vec2 goal)
 {
+    if (!_health) {
+        return false;
+    }
+
     if (!_ship || _ship->layout().intersect_compartment(get_position()) == ship_layout::invalid_compartment) {
         return false;
     }
@@ -290,8 +318,17 @@ bool character::move(vec2 goal)
 //------------------------------------------------------------------------------
 bool character::move(uint16_t compartment)
 {
+    if (!_health) {
+        return false;
+    }
+
     if (!_ship || compartment == ship_layout::invalid_compartment) {
         return false;
+    }
+
+    // return true if this action is already in progress
+    if (_action == action_type::move && _target_compartment == compartment) {
+        return true;
     }
 
     // already inside the given compartment
