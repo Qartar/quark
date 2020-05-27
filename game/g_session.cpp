@@ -70,6 +70,12 @@ result session::init (string::view cmdline)
     uint8_t utf8[] = {
         0xce, 0xbc, /* greek letter mu */
         ' ',
+        0xd9, 0x84, /* arabic letter lam */
+        0xd8, 0xa7, /* arabic letter alef */
+        0xd9, 0x86, /* arabic letter noon */
+        0xd9, 0x84, /* arabic letter lam */
+        0xd8, 0xa7, /* arabic letter alef */
+        ' ',
         0xd0, 0xbf, /* cyrillic letter pe */
         0xd1, 0x80, /* cyrillic letter er */
         0xd0, 0xb8, /* cyrillic letter i */

@@ -148,11 +148,7 @@ protected:
     std::array<unicode_block_layout, sz> _blocks;
 };
 
-#if defined(__INTELLISENSE__)
-constexpr unicode_block_data<14> unicode_data(
-#else
 constexpr unicode_block_data unicode_data(
-#endif
     {
         { 0x0000, 0x007f, "Basic Latin" },
         { 0x0080, 0x00ff, "Latin-1 Supplement" },
@@ -342,7 +338,9 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
             }
 
             // Rewrite text based on directionality/joining
-            unicode::rewrite(buffer, buffer + n);
+            char32_t* p = unicode::rewrite(buffer, buffer + n);
+            // Contextual conversion may result in fewer codepoints
+            n = narrow_cast<GLsizei>(p - buffer);
 
             // Convert codepoints to character indices
             for (int ii = 0; ii < n; ++ii) {
