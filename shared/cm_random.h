@@ -9,13 +9,13 @@
 template<typename engine_type> class random_base
 {
 public:
-    random_base() : _engine({0}) {}
+    random_base() : _engine() {}
 
     //! Construct using the given sequence as a seed
     explicit random_base(std::seed_seq seed) : _engine(seed) {}
 
     //! Construct using the given generator as a seed
-    template<typename other_type> explicit random_base(random_base<other_type>& seed) : random_base({seed._engine()}) {}
+    template<typename other_type> explicit random_base(random_base<other_type>& seed) : _engine(seed._engine) {}
 
     //! Returns internal number generator
     engine_type& engine() { return _engine; }
@@ -84,5 +84,73 @@ protected:
     engine_type _engine;
 };
 
+namespace detail {
+
 //------------------------------------------------------------------------------
-using random = random_base<std::minstd_rand>;
+class pcg
+{
+public:
+    using result_type = uint32_t;
+    static constexpr result_type (min)() { return 0; }
+    static constexpr result_type (max)() { return UINT32_MAX; }
+    friend bool operator==(pcg const &, pcg const &);
+    friend bool operator!=(pcg const &, pcg const &);
+
+    pcg()
+        : m_state(0x853c49e6748fea9bULL)
+        , m_inc(0xda3e39cb94b95bdbULL)
+    {}
+    template<typename engine_type>
+    explicit pcg(engine_type &rd)
+    {
+        seed(rd);
+    }
+
+    template<typename engine_type>
+    void seed(engine_type &rd)
+    {
+        uint64_t s0 = uint64_t(rd()) << 31 | uint64_t(rd());
+        uint64_t s1 = uint64_t(rd()) << 31 | uint64_t(rd());
+
+        m_state = 0;
+        m_inc = (s1 << 1) | 1;
+        (void)operator()();
+        m_state += s0;
+        (void)operator()();
+    }
+
+    result_type operator()()
+    {
+        uint64_t oldstate = m_state;
+        m_state = oldstate * 6364136223846793005ULL + m_inc;
+        uint32_t xorshifted = uint32_t(((oldstate >> 18u) ^ oldstate) >> 27u);
+        int rot = oldstate >> 59u;
+        return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
+    }
+
+    void discard(unsigned long long n)
+    {
+        for (unsigned long long i = 0; i < n; ++i)
+            operator()();
+    }
+
+private:
+    uint64_t m_state;
+    uint64_t m_inc;
+};
+
+bool operator==(pcg const &lhs, pcg const &rhs)
+{
+    return lhs.m_state == rhs.m_state
+        && lhs.m_inc == rhs.m_inc;
+}
+bool operator!=(pcg const &lhs, pcg const &rhs)
+{
+    return lhs.m_state != rhs.m_state
+        || lhs.m_inc != rhs.m_inc;
+}
+
+} // namespace detail
+
+//------------------------------------------------------------------------------
+using random = random_base<detail::pcg>;
