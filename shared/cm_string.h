@@ -238,4 +238,14 @@ template<> struct less<::string::buffer>
     }
 };
 
+//------------------------------------------------------------------------------
+template<> struct less<::string::literal>
+{
+    using is_transparent = void;
+
+    bool operator()(::string::view lhs, ::string::view rhs) const {
+        return strcmp(lhs, rhs) < 0;
+    }
+};
+
 } // namespace std

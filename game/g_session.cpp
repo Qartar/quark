@@ -8,6 +8,7 @@
 #include "cm_parser.h"
 #include "cm_unicode.h"
 #include "g_aicontroller.h"
+#include "g_onomastics.h"
 #include "g_player.h"
 #include "resource.h"
 #include "version.h"
@@ -168,6 +169,8 @@ result session::init (string::view cmdline)
     pSound->load_sound("assets/sound/cannon_fire.wav");
     pSound->load_sound("assets/sound/cannon_impact.wav");
     pSound->load_sound("assets/sound/missile_flight.wav");
+
+    onomastics::check_name_overlap();
 
     return result::success;
 }

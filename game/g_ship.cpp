@@ -6,14 +6,11 @@
 
 #include "g_ship.h"
 #include "g_character.h"
+#include "g_onomastics.h"
 #include "g_shield.h"
 #include "g_weapon.h"
 #include "g_subsystem.h"
 #include "r_model.h"
-
-#include <intrin.h>
-#include <cfloat>
-#include <random>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -327,6 +324,15 @@ ship::~ship()
 void ship::spawn()
 {
     object::spawn();
+
+    _name = string::buffer(
+        onomastics::random_name_including(
+            _random,
+            //{name_category::violent},
+            //{name_category::resistance, name_category::weapon, name_category::heroic, name_category::evil})
+            {name_category::heroic},
+            {name_category::resistance})
+    );
 
     get_world()->add_body(this, &_rigid_body);
 
@@ -930,6 +936,19 @@ void ship::draw(render::system* renderer, time_value time) const
                     renderer->draw_line(vec2(x0, y0) * scale + bias, vec2(x1, y1) * scale + bias, color4(1,1,1,1), color4(1,1,1,1));
                 }
             }
+        }
+
+        //
+        //  draw ship name
+        //
+
+        {
+
+            float t = renderer->view().size.length_sqr() / (_model->bounds().maxs() - _model->bounds().mins()).length_sqr();
+            float a = alpha * clamp(1.f - t * (1.f / 64.f), 0.f, 1.f);
+
+            vec2 size = renderer->string_size(_name);
+            renderer->draw_string(_name, get_position(time) - vec2(.5f * size.x, 20.f), color4(1,1,1,a));
         }
     }
 

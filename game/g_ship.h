@@ -66,14 +66,15 @@ public:
     handle<game::engines const> engines() const { return _engines; }
     handle<game::shield> shield() { return _shield; }
     handle<game::shield const> shield() const { return _shield; }
-    std::vector<handle<weapon>>& weapons() { return _weapons; }
-    std::vector<handle<weapon>> const& weapons() const { return _weapons; }
+    std::vector<handle<game::weapon>>& weapons() { return _weapons; }
+    std::vector<handle<game::weapon>> const& weapons() const { return _weapons; }
 
     bool is_destroyed() const { return _is_destroyed; }
 
     static ship_info const& by_random(random& r);
 
 protected:
+    string::buffer _name;
     ship_info const& _info;
 
     std::vector<unique_handle<character>> _crew;
@@ -84,7 +85,7 @@ protected:
     handle<subsystem> _reactor;
     handle<game::engines> _engines;
     handle<game::shield> _shield;
-    std::vector<handle<weapon>> _weapons;
+    std::vector<handle<game::weapon>> _weapons;
 
     time_value _dead_time;
 

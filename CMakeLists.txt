@@ -58,6 +58,8 @@ set(QUARK_SOURCES
     game/g_network.cpp
     game/g_object.cpp
     game/g_object.h
+    game/g_onomastics.cpp
+    game/g_onomastics.h
     game/g_player.cpp
     game/g_player.h
     game/g_particles.cpp
