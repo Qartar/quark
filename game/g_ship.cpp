@@ -1068,6 +1068,7 @@ void ship::set_rotation(float rotation, bool teleport)
 //------------------------------------------------------------------------------
 void ship::damage(object* inflictor, vec2 /*point*/, float amount)
 {
+#if 0
     // get list of subsystems that can take additional damage
     std::vector<subsystem*> subsystems;
     for (auto& subsystem : _subsystems) {
@@ -1086,6 +1087,24 @@ void ship::damage(object* inflictor, vec2 /*point*/, float amount)
             }
         }
     }
+#else
+    uint16_t idx = _random.uniform_int(narrow_cast<uint16_t>(_info.layout.compartments().size()));
+    for (auto& ch : _crew) {
+        if (ch->compartment() == idx) {
+            ch->damage(inflictor, amount);
+        }
+    }
+    for (auto& subsystem : _subsystems) {
+        if (subsystem->compartment() == idx) {
+            if (subsystem->damage() < subsystem->maximum_power()
+                && _random.uniform_real() < .5f) {
+                subsystem->damage(inflictor, amount * 6.f);
+                return;
+            }
+        }
+    }
+    _state.damage(idx, amount * 6.f);
+#endif
 }
 
 //------------------------------------------------------------------------------

@@ -358,7 +358,7 @@ void ship_state::think()
         _compartments[ii].flow[1] = 0.f;
 
         // calculate atmosphere loss through hull damage separately
-        float delta = -_compartments[ii].damage * FRAMETIME.to_seconds();
+        float delta = .1f * _compartments[ii].atmosphere * _compartments[ii].damage * FRAMETIME.to_seconds();
         if (delta > _compartments[ii].atmosphere) {
             _compartments[ii].atmosphere = 0.f;
         } else {
@@ -514,6 +514,13 @@ void ship_state::recharge(float atmosphere_per_second)
     for (std::size_t ii = 0, sz = _compartments.size(); ii < sz; ++ii) {
         _compartments[ii].atmosphere = clamp(_compartments[ii].atmosphere + delta, 0.f, 1.f);
     }
+}
+
+//------------------------------------------------------------------------------
+void ship_state::repair(uint16_t index, float damage_per_second)
+{
+    float delta = damage_per_second * FRAMETIME.to_seconds();
+    _compartments[index].damage = max(_compartments[index].damage - delta, 0.f);
 }
 
 } // namespace game

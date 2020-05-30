@@ -82,6 +82,11 @@ public:
 
     void think();
     void recharge(float atmosphere_per_second);
+    void repair(uint16_t index, float damage_per_second);
+
+    void damage(uint16_t index, float amount) {
+        _compartments[index].damage += amount;
+    }
 
     void set_connection(uint16_t index, bool opened) {
         _connections[index].opened = opened;
