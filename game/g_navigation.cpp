@@ -65,7 +65,7 @@ void navigation::think()
             // Radius of circle tangent to the current position and velocity
             // which also contains the target position. This will be infinite
             // if the ship is pointing directly towards the target position.
-            float target_radius = std::abs((square(local.x) + square(local.y)) / (2.f * local.y));
+            float target_radius = std::abs(local.dot(local) / (2.f * local.y));
 
             // Decrease linear speed if turn radius is too large
             float turn_radius = linear_speed / angular_speed;
