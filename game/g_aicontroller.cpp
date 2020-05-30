@@ -49,6 +49,7 @@ void aicontroller::think()
         struct task {
             game::handle<game::character> character;
             game::handle<game::subsystem> subsystem;
+            uint16_t compartment;
             character::action_type action;
             float priority;
             float distance;
@@ -62,12 +63,12 @@ void aicontroller::think()
             bool execute() {
                 switch (action) {
                     case character::action_type::repair:
-                        return character->repair(subsystem);
+                        return character->repair(compartment);
                     case character::action_type::operate:
                         return character->operate(subsystem);
                     case character::action_type::move:
                     case character::action_type::idle:
-                        return character->move(subsystem);
+                        return character->move(compartment);
                     default:
                         return false;
                 }
@@ -91,13 +92,13 @@ void aicontroller::think()
         };
 
         // calculate distance from the given character to the given compartment
-        auto const task_distance = [this](game::handle<game::subsystem> ss, game::handle<game::character> ch) {
+        auto const task_distance = [this](uint16_t task_compartment, game::handle<game::character> ch) {
             auto compartment = _ship ? _ship->layout().intersect_compartment(ch->get_position())
                                      : ship_layout::invalid_compartment;
 
             if (compartment == ship_layout::invalid_compartment) {
                 return INFINITY;
-            } else if (compartment == ss->compartment()) {
+            } else if (compartment == task_compartment) {
                 return 0.f;
             }
 
@@ -108,7 +109,7 @@ void aicontroller::think()
                 // point in compartment. this can give different results for
                 // compartments with multiple entrypoints even if ignoring the
                 // last segment of the path.
-                _ship->layout().random_point(_random, ss->compartment()),
+                _ship->layout().random_point(_random, task_compartment),
                 .3f, // FIXME: hard-coded constant in character::move
                 path,
                 countof(path));
@@ -140,22 +141,29 @@ void aicontroller::think()
 
             for (auto& ss : _ship->subsystems()) {
                 if (ss->damage()) {
-                    float d = task_distance(ss, ch);
+                    float d = task_distance(ss->compartment(), ch);
                     float p = subsystem_priority(ss);
                     // all crew members can repair the same subsystem simultaneously
                     // but the priority for each subsequent crew member decreases.
                     // this creates a unique task for each crew/slot combination
                     // which are then pruned from the task list as each slot is taken.
                     for (std::size_t ii = 0; ii < _ship->crew().size(); ++ii) {
-                        tasks.push_back({ch, ss, character::action_type::repair, p / (ii + 1), d});
+                        tasks.push_back({ch, ss, ss->compartment(), character::action_type::repair, p / (ii + 1), d});
                     }
                 }
             }
 
             if (medical_bay && ch->health() < 1.f) {
-                float d = task_distance(medical_bay, ch);
+                float d = task_distance(medical_bay->compartment(), ch);
                 // priority is inversely proportional to remaining health
-                tasks.push_back({ch, medical_bay, character::action_type::move, 1.f / ch->health(), d});
+                tasks.push_back({ch, medical_bay, medical_bay->compartment(), character::action_type::move, 1.f / ch->health(), d});
+            }
+
+            for (uint16_t ii = 0, num = narrow_cast<uint16_t>(_ship->state().compartments().size()); ii < num; ++ii) {
+                if (_ship->state().compartments()[ii].damage) {
+                    float d = task_distance(ii, ch);
+                    tasks.push_back({ch, nullptr, ii, character::action_type::move, 1.f, d});
+                }
             }
         }
 
@@ -178,6 +186,7 @@ void aicontroller::think()
             for (std::size_t ii = skipped + 1; ii < tasks.size(); ++ii) {
                 if (tasks[ii].character == t.character
                     || (tasks[ii].subsystem == t.subsystem
+                        && tasks[ii].compartment == t.compartment
                         && tasks[ii].action == t.action
                         && tasks[ii].priority == t.priority)) {
                     continue;

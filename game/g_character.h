@@ -66,6 +66,9 @@ public:
     //! repair the given subsystem, moving if necessary
     bool repair(handle<game::subsystem> subsystem);
 
+    //! repair the given ship compartment, moving if necessary
+    bool repair(uint16_t compartment);
+
     //! operate the given subsystem, moving if necessary
     bool operate(handle<game::subsystem> subsystem);
 

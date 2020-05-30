@@ -61,7 +61,7 @@ void subsystem::think()
             if (_current_power > .5f) {
                 owner->state().recharge((1.0f / 90.f) * (_current_power - .5f));
             } else {
-                owner->state().recharge(-1.0f / 90.f);
+                owner->state().recharge(-1.0f / 300.f);
             }
         }
     }

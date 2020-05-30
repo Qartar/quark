@@ -114,7 +114,7 @@ void character::think()
     }
 
     if (_health) {
-        constexpr float speed = 1.5f;
+        constexpr float speed = 2.5f;
         vec2 position = get_position();
 
         while (_path_start < _path_end) {
@@ -148,8 +148,10 @@ void character::think()
         }
 
         if (effective_action == action_type::idle) {
-            // automatically repair if idle and the subsystem is damaged
-            if (subsystem && subsystem->damage()) {
+            // automatically repair if idle and the compartment or subsystem is damaged
+            if ((compartment != ship_layout::invalid_compartment
+                && _ship->state().compartments()[compartment].damage)
+                    || subsystem && subsystem->damage()) {
                 effective_action = action_type::repair;
             }
             // TODO: automatically operate?
@@ -162,7 +164,10 @@ void character::think()
         }
 
         if (effective_action == action_type::repair) {
-            if (subsystem && subsystem->damage()) {
+            if (compartment != ship_layout::invalid_compartment
+                && _ship->state().compartments()[compartment].damage) {
+                _ship->state().repair(compartment, repair_rate);
+            } else if (subsystem && subsystem->damage()) {
                 subsystem->repair(repair_rate);
             }
             // automatically become idle if the subsystem finishes repairing
@@ -287,6 +292,33 @@ bool character::repair(handle<game::subsystem> subsystem)
         // keep path but override action type
         _action = action_type::repair;
         _target_subsystem = subsystem;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool character::repair(uint16_t compartment)
+{
+    if (!_health) {
+        return false;
+    }
+
+    if (compartment == ship_layout::invalid_compartment) {
+        return false;
+    }
+
+    // return true if this action is already in progress
+    if (_action == action_type::repair && _target_compartment == compartment) {
+        return true;
+    }
+
+    if (move(compartment)) {
+        // keep path but override action type
+        _action = action_type::repair;
+        _target_compartment = compartment;
+        _target_subsystem = nullptr;
         return true;
     } else {
         return false;
