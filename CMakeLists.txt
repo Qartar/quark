@@ -70,6 +70,8 @@ set(QUARK_SOURCES
     game/g_shield.h
     game/g_ship.cpp
     game/g_ship.h
+    game/g_ship_editor.cpp
+    game/g_ship_editor.h
     game/g_ship_layout.cpp
     game/g_ship_layout.h
     game/g_subsystem.cpp
