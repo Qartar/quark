@@ -8,6 +8,7 @@
 #include "cm_parser.h"
 #include "g_aicontroller.h"
 #include "g_player.h"
+#include "g_ship_editor.h"
 #include "resource.h"
 #include "version.h"
 
@@ -45,6 +46,8 @@ session::session()
     , _show_cursor(true)
     , _num_messages(0)
     , _net_graph("net_graph", false, config::archive, "draw network usage graph")
+    , _ship_editor(nullptr)
+    , _command_editor("editor", this, &session::command_editor)
     , _client_button_down(false)
     , _server_button_down(false)
     , _client_say(false)
@@ -201,7 +204,11 @@ void session::update_screen()
 {
     _renderer->begin_frame();
 
-    draw_world();
+    if (_ship_editor) {
+        _ship_editor->draw(_renderer, _frametime);
+    } else {
+        draw_world();
+    }
 
     //
     // calculate view for ui
@@ -236,6 +243,16 @@ void session::draw_menu()
 
     if (_menu_active) {
         _menu.draw(_renderer);
+    }
+}
+
+//------------------------------------------------------------------------------
+void session::command_editor(parser::text const& /*args*/)
+{
+    _ship_editor = new game::ship_editor();
+    _menu_active = false;
+    if (_console.active()) {
+        _console.char_event('`');
     }
 }
 
@@ -353,6 +370,10 @@ void session::key_event(int key, bool down)
         }
     }
 
+    if (_ship_editor && _ship_editor->key_event(key, down)) {
+        return;
+    }
+
     if (key == K_PGDN && down) {
         for (int i = 0; i < MAX_MESSAGES; i++) {
             _messages[i].time = _frametime;
@@ -425,6 +446,10 @@ void session::cursor_event(vec2 position)
     vec2i size = _renderer->window()->size();
     _cursor.x = static_cast<int>(position.x * 640 / size.x);
     _cursor.y = static_cast<int>(position.y * 480 / size.y);
+
+    if (_ship_editor) {
+        _ship_editor->cursor_event(position / vec2(size) * vec2(1,-1) + vec2(-.5f,.5f));
+    }
 
     _clients[0].input.cursor_event(position / vec2(size) * vec2(1,-1) + vec2(0,1));
     if (_player && _player->is_type<player>()) {
