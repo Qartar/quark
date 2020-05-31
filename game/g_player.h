@@ -40,7 +40,7 @@ public:
     player_view view(time_value time) const;
 
     void set_aspect(float aspect);
-    void update_usercmd(usercmd cmd, time_value time);
+    virtual void update_usercmd(usercmd cmd, time_value time);
 
 protected:
     handle<ship> _ship;
