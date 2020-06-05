@@ -141,6 +141,11 @@ result session::init (string::view cmdline)
 //------------------------------------------------------------------------------
 void session::shutdown()
 {
+    if (_ship_editor) {
+        delete _ship_editor;
+        _ship_editor = nullptr;
+    }
+
     stop_client( );
     shutdown_client();
 
