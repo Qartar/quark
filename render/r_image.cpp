@@ -179,8 +179,8 @@ bool image::upload(HBITMAP bitmap)
     _texture = gl::texture2d(1, GL_RGB8, _width, _height);
     _texture.upload(0, 0, 0, _width, _height, GL_BGR, GL_UNSIGNED_BYTE, buffer.data());
 
-    _texture.parameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    _texture.parameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    _texture.parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    _texture.parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     return true;
 }
