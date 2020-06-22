@@ -4,8 +4,9 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "win_include.h"
-#include <GL/gl.h>
+#include "gl/gl_include.h"
+#include "gl/gl_framebuffer.h"
+#include "gl/gl_texture.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
@@ -16,8 +17,6 @@ system::system(render::window* window)
     , _framebuffer_height("r_height", 0, config::archive, "framebuffer height, or 0 to use window height")
     , _framebuffer_scale("r_scale", 1, config::archive, "framebuffer scale if using window dimensions")
     , _framebuffer_samples("r_samples", -1, config::archive, "framebuffer samples, or -1 to use maximum supported")
-    , _fbo(0)
-    , _rbo{0, 0}
     , _window(window)
     , _view{}
     , _view_bounds{}
@@ -30,17 +29,10 @@ result system::init()
 {
     random r;
 
-    glBindRenderbuffer = (PFNGLBINDRENDERBUFFER )wglGetProcAddress("glBindRenderbuffer");
-    glDeleteRenderbuffers = (PFNGLDELETERENDERBUFFERS )wglGetProcAddress("glDeleteRenderbuffers");
-    glGenRenderbuffers = (PFNGLGENRENDERBUFFERS )wglGetProcAddress("glGenRenderbuffers");
-    glRenderbufferStorage = (PFNGLRENDERBUFFERSTORAGE )wglGetProcAddress("glRenderbufferStorage");
-    glRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLE )wglGetProcAddress("glRenderbufferStorageMultisample");
-    glBindFramebuffer = (PFNGLBINDFRAMEBUFFER )wglGetProcAddress("glBindFramebuffer");
-    glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERS )wglGetProcAddress("glDeleteFramebuffers");
-    glGenFramebuffers = (PFNGLGENFRAMEBUFFERS )wglGetProcAddress("glGenFramebuffers");
-    glFramebufferRenderbuffer = (PFNGLFRAMEBUFFERRENDERBUFFER )wglGetProcAddress("glFramebufferRenderbuffer");
-    glBlitFramebuffer = (PFNGLBLITFRAMEBUFFER )wglGetProcAddress("glBlitFramebuffer");
     glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
+
+    gl::framebuffer::init();
+    gl::texture::init();
 
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;
@@ -85,6 +77,9 @@ void system::begin_frame()
 {
     _timers[_timer_index % _timers.size()].begin_frame = time_value::current();
 
+    _framebuffer.draw();
+    _framebuffer.draw_buffer(GL_COLOR_ATTACHMENT0);
+
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -95,16 +90,11 @@ void system::end_frame()
         draw_timers();
     }
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-    glDrawBuffer(GL_BACK);
-
-    glBlitFramebuffer(
-        0, 0, _framebuffer_size.x, _framebuffer_size.y,
+    gl::framebuffer().draw_buffer(GL_BACK);
+    gl::framebuffer().blit(_framebuffer,
+        0, 0, _framebuffer.width(), _framebuffer.height(),
         0, 0, _window->size().x, _window->size().y,
-        GL_COLOR_BUFFER_BIT, GL_LINEAR
-    );
+        GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     _timers[_timer_index % _timers.size()].end_frame = time_value::current();
 
@@ -119,10 +109,6 @@ void system::end_frame()
             || _framebuffer_scale.modified()) {
         resize(_window->size());
     }
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-
-    glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
 //------------------------------------------------------------------------------
@@ -136,7 +122,7 @@ void system::set_view(render::view const& view)
 //------------------------------------------------------------------------------
 void system::resize(vec2i size)
 {
-    if (!glGenFramebuffers) {
+    if (!glBlendColor) {
         return;
     }
 
@@ -164,7 +150,7 @@ void system::resize(vec2i size)
 //------------------------------------------------------------------------------
 void system::create_default_font()
 {
-    int size = static_cast<int>((12.f / 480.f) * float(_framebuffer_size.y));
+    int size = static_cast<int>((12.f / 480.f) * float(_framebuffer.height()));
 
     if (!_default_font || !_default_font->compare("Tahoma", size)) {
         _default_font = std::make_unique<render::font>("Tahoma", size);
@@ -210,7 +196,7 @@ void system::set_default_state()
             _view.viewport.size().y
         );
     } else {
-        glViewport(0, 0, _framebuffer_size.x, _framebuffer_size.y);
+        glViewport(0, 0, _framebuffer.width(), _framebuffer.height());
     }
 
     glMatrixMode(GL_PROJECTION);
@@ -236,39 +222,23 @@ void system::set_default_state()
 //------------------------------------------------------------------------------
 void system::create_framebuffer(vec2i size, int samples)
 {
-    if (_fbo) {
-        destroy_framebuffer();
-    }
-
-    glGenFramebuffers(1, &_fbo);
-    glGenRenderbuffers(2, _rbo);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, _rbo[0]);
     if (samples) {
-        glRenderbufferStorageMultisample( GL_RENDERBUFFER, samples, GL_RGBA, size.x, size.y);
+        _framebuffer = gl::framebuffer(samples, size.x, size.y, {
+            {gl::attachment_type::color, GL_RGBA8},
+            {gl::attachment_type::depth_stencil, GL_DEPTH24_STENCIL8},
+        });
     } else {
-        glRenderbufferStorage( GL_RENDERBUFFER, GL_RGBA, size.x, size.y);
+        _framebuffer = gl::framebuffer(size.x, size.y, {
+            {gl::attachment_type::color, GL_RGBA8},
+            {gl::attachment_type::depth_stencil, GL_DEPTH24_STENCIL8},
+        });
     }
-    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, _rbo[0]);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, _rbo[1]);
-    if (samples) {
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, size.x, size.y);
-    } else {
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size.x, size.y);
-    }
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _rbo[1]);
-
-    _framebuffer_size = size;
 }
 
 //------------------------------------------------------------------------------
 void system::destroy_framebuffer()
 {
-    glDeleteRenderbuffers(2, _rbo);
-    glDeleteFramebuffers(1, &_fbo);
+    _framebuffer = gl::framebuffer();
 }
 
 //------------------------------------------------------------------------------

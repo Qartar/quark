@@ -7,33 +7,13 @@
 #include "cm_string.h"
 #include "cm_time.h"
 
-#ifndef _WINDOWS_
-#define WINAPI __stdcall
-#define APIENTRY WINAPI
+#include "gl/gl_framebuffer.h"
+#include "gl/gl_types.h"
+
+#if defined(_WIN32)
 typedef struct HFONT__* HFONT;
 typedef struct HBITMAP__* HBITMAP;
-#endif // _WINDOWS_
-
-typedef unsigned int GLenum;
-typedef unsigned int GLbitfield;
-typedef int GLint;
-typedef int GLsizei;
-typedef unsigned int GLuint;
-typedef float GLfloat;
-
-#define GL_FRAMEBUFFER                  0x8D40
-#define GL_READ_FRAMEBUFFER             0x8CA8
-#define GL_DRAW_FRAMEBUFFER             0x8CA9
-#define GL_RENDERBUFFER                 0x8D41
-#define GL_MAX_SAMPLES                  0x8D57
-#define GL_COLOR_ATTACHMENT0            0x8CE0
-#define GL_DEPTH_STENCIL_ATTACHMENT     0x821A
-#define GL_DEPTH24_STENCIL8             0x88F0
-
-#define GL_CONSTANT_COLOR               0x8001
-#define GL_ONE_MINUS_CONSTANT_COLOR     0x8002
-#define GL_CONSTANT_ALPHA               0x8003
-#define GL_ONE_MINUS_CONSTANT_ALPHA     0x8004
+#endif // defined(_WIN32)
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
@@ -74,13 +54,13 @@ public:
     ~image();
 
     string::view name() const { return _name; }
-    unsigned int texnum() const { return _texnum; }
+    gl::texture const& texture() const { return _texture; }
     int width() const { return _width; }
     int height() const { return _height; }
 
 protected:
     string::buffer _name;
-    unsigned int _texnum;
+    gl::texture2d _texture;
     int _width;
     int _height;
 
@@ -164,9 +144,7 @@ private:
     config::scalar _framebuffer_scale;
     config::integer _framebuffer_samples;
 
-    GLuint _fbo;
-    GLuint _rbo[2];
-    vec2i _framebuffer_size;
+    gl::framebuffer _framebuffer;
 
     render::window* _window;
 
@@ -200,28 +178,8 @@ private:
 private:
 
     // additional opengl bindings
-    typedef void (APIENTRY* PFNGLBINDRENDERBUFFER)(GLenum target, GLuint renderbuffer);
-    typedef void (APIENTRY* PFNGLDELETERENDERBUFFERS)(GLsizei n, GLuint const* renderbuffers);
-    typedef void (APIENTRY* PFNGLGENRENDERBUFFERS)(GLsizei n, GLuint* renderbuffers);
-    typedef void (APIENTRY* PFNGLRENDERBUFFERSTORAGE)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
-    typedef void (APIENTRY* PFNGLRENDERBUFFERSTORAGEMULTISAMPLE)(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
-    typedef void (APIENTRY* PFNGLBINDFRAMEBUFFER)(GLenum target, GLuint framebuffer);
-    typedef void (APIENTRY* PFNGLDELETEFRAMEBUFFERS)(GLsizei n, GLuint const* framebuffers);
-    typedef void (APIENTRY* PFNGLGENFRAMEBUFFERS)(GLsizei n, GLuint* framebuffers);
-    typedef void (APIENTRY* PFNGLFRAMEBUFFERRENDERBUFFER)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
-    typedef void (APIENTRY* PFNGLBLITFRAMEBUFFER)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
     typedef void (APIENTRY* PFNGLBLENDCOLOR)(GLfloat red, GLfloat greed, GLfloat blue, GLfloat alpha);
 
-    PFNGLBINDRENDERBUFFER glBindRenderbuffer = NULL;
-    PFNGLDELETERENDERBUFFERS glDeleteRenderbuffers = NULL;
-    PFNGLGENRENDERBUFFERS glGenRenderbuffers = NULL;
-    PFNGLRENDERBUFFERSTORAGE glRenderbufferStorage = NULL;
-    PFNGLRENDERBUFFERSTORAGEMULTISAMPLE glRenderbufferStorageMultisample = NULL;
-    PFNGLBINDFRAMEBUFFER glBindFramebuffer = NULL;
-    PFNGLDELETEFRAMEBUFFERS glDeleteFramebuffers = NULL;
-    PFNGLGENFRAMEBUFFERS glGenFramebuffers = NULL;
-    PFNGLFRAMEBUFFERRENDERBUFFER glFramebufferRenderbuffer = NULL;
-    PFNGLBLITFRAMEBUFFER glBlitFramebuffer = NULL;
     PFNGLBLENDCOLOR glBlendColor = NULL;
 };
 
