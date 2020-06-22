@@ -5,7 +5,7 @@
 #pragma hdrstop
 
 #include "win_include.h"
-#include <GL/gl.h>
+#include "gl/gl_include.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {

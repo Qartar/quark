@@ -4,9 +4,8 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "gl/gl_include.h"
 #include "r_model.h"
-#include "win_include.h"
-#include <GL/gl.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
@@ -14,32 +13,32 @@ namespace render {
 //------------------------------------------------------------------------------
 void system::draw_string(string::view string, vec2 position, color4 color)
 {
-    vec2 scale(_view.size.x / _framebuffer_size.x,
-               _view.size.y / _framebuffer_size.y);
+    vec2 scale(_view.size.x / _framebuffer.width(),
+               _view.size.y / _framebuffer.height());
     _default_font->draw(string, position, color, scale);
 }
 
 //------------------------------------------------------------------------------
 vec2 system::string_size(string::view string) const
 {
-    vec2 scale(_view.size.x / _framebuffer_size.x,
-               _view.size.y / _framebuffer_size.y);
+    vec2 scale(_view.size.x / _framebuffer.width(),
+               _view.size.y / _framebuffer.height());
     return _default_font->size(string, scale);
 }
 
 //------------------------------------------------------------------------------
 void system::draw_monospace(string::view string, vec2 position, color4 color)
 {
-    vec2 scale(_view.size.x / _framebuffer_size.x,
-               _view.size.y / _framebuffer_size.y);
+    vec2 scale(_view.size.x / _framebuffer.width(),
+               _view.size.y / _framebuffer.height());
     _monospace_font->draw(string, position, color, scale);
 }
 
 //------------------------------------------------------------------------------
 vec2 system::monospace_size(string::view string) const
 {
-    vec2 scale(_view.size.x / _framebuffer_size.x,
-               _view.size.y / _framebuffer_size.y);
+    vec2 scale(_view.size.x / _framebuffer.width(),
+               _view.size.y / _framebuffer.height());
     return _monospace_font->size(string, scale);
 }
 
@@ -84,7 +83,8 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
     }
 
     // Scaling factor for circle tessellation
-    const float view_scale = sqrtf(_framebuffer_size.length_sqr() / _view.size.length_sqr());
+    vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
+    const float view_scale = sqrtf(framebuffer_size.length_sqr() / _view.size.length_sqr());
 
     // Number of circle segments, approximation for pi / acos(1 - 1/2x)
     int n = 1 + static_cast<int>(0.5f * (max_angle - min_angle) * sqrtf(max(0.f, radius * view_scale - 0.25f)));
@@ -155,7 +155,8 @@ void system::draw_triangles(vec2 const* position, color4 const* color, int const
 void system::draw_particles(time_value time, render::particle const* particles, std::size_t num_particles)
 {
     // Scaling factor for particle tessellation
-    const float view_scale = sqrtf(_framebuffer_size.length_sqr() / _view.size.length_sqr());
+    vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
+    const float view_scale = sqrtf(framebuffer_size.length_sqr() / _view.size.length_sqr());
 
     render::particle const* end = particles + num_particles;
     for (render::particle const*p = particles; p < end; ++p) {
@@ -296,7 +297,8 @@ void system::draw_model(render::model const* model, mat3 tx, color4 color)
 void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, color4 end_color, color4 start_edge_color, color4 end_edge_color)
 {
     // Scaling factor for particle tessellation
-    const float view_scale = sqrtf(_framebuffer_size.length_sqr() / _view.size.length_sqr());
+    vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
+    const float view_scale = sqrtf(framebuffer_size.length_sqr() / _view.size.length_sqr());
 
     vec2 direction = (end - start).normalize() * .5f * width;
     vec2 normal = direction.cross(1.f);
