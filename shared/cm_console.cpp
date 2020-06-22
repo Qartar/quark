@@ -16,8 +16,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 console_buffer::console_buffer()
     : _offset(0)
+    , _rows_begin(0)
+    , _rows_end(0)
     , _row_offset(0)
     , _row_columns(0)
+    , _max_columns(0)
 {
     resize(100);
 }
@@ -25,12 +28,21 @@ console_buffer::console_buffer()
 //------------------------------------------------------------------------------
 void console_buffer::resize(std::size_t num_columns)
 {
+    std::size_t max_rows = 1LL << std::ilogb(buffer_size / num_columns);
+    std::size_t num_rows = _rows_begin - _rows_end;
+
+    // keep the most recent rows in the buffer
+    std::vector<std::size_t> rows(max_rows);
+    for (std::size_t ii = 0, n = min(num_rows, max_rows); ii < n; ++ii) {
+        rows[ii] = _rows[(_rows_begin - n + ii) & _rows_mask];
+    }
+
     _max_columns = num_columns;
-    _rows.resize(1LL << std::ilogb(buffer_size / num_columns));
+    std::swap(rows, _rows);
     _rows_mask = _rows.size() - 1;
-    _rows_begin = 0;
+    _rows_begin = num_rows;
     _rows_end = 0;
-    _rows[0] = _offset;
+    _rows[_rows_begin & _rows_mask] = _offset;
 }
 
 //------------------------------------------------------------------------------
