@@ -6,8 +6,7 @@
 
 #include "cm_filesystem.h"
 #include "cm_unicode.h"
-#include "win_include.h"
-#include <GL/gl.h>
+#include "gl/gl_include.h"
 
 #include <numeric> // iota
 

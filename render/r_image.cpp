@@ -4,12 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "win_include.h"
-#include <GL/gl.h>
-
-#ifndef GL_VERSION_1_2
-#define GL_BGR                            0x80E0
-#endif // GL_VERSION_1_2
+#include "gl/gl_include.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
@@ -29,7 +24,7 @@ void system::draw_image(render::image const* img, vec2 org, vec2 sz, color4 colo
     }
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, img->texnum());
+    img->texture().bind();
 
     glColor4fv(color);
 
@@ -52,8 +47,7 @@ void system::draw_image(render::image const* img, vec2 org, vec2 sz, color4 colo
 
 //------------------------------------------------------------------------------
 image::image(string::view name)
-    : _texnum(0)
-    , _width(0)
+    : _width(0)
     , _height(0)
 {
     HBITMAP bitmap = NULL;
@@ -76,9 +70,6 @@ image::image(string::view name)
 //------------------------------------------------------------------------------
 image::~image()
 {
-    if (_texnum) {
-        glDeleteTextures(1, &_texnum);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +110,7 @@ bool image::upload(HBITMAP bitmap)
     }
 
     BITMAP bm;
-    
+
     if (!GetObjectA(bitmap, sizeof(bm), &bm)) {
         return false;
     }
@@ -133,20 +124,8 @@ bool image::upload(HBITMAP bitmap)
     _width = bm.bmWidth;
     _height = bm.bmHeight;
 
-    glGenTextures(1, &_texnum);
-    glBindTexture(GL_TEXTURE_2D, _texnum);
-
-    glTexImage2D(
-        GL_TEXTURE_2D,      // target
-        0,                  // level
-        GL_RGB,             // internalformat
-        bm.bmWidth,         // width
-        bm.bmHeight,        // height
-        0,                  // border
-        GL_BGR,             // format
-        GL_UNSIGNED_BYTE,   // type
-        buffer.data()       // pixels
-    );
+    _texture = gl::texture2d(1, GL_RGB8, _width, _height);
+    _texture.upload(0, 0, 0, _width, _height, GL_BGR, GL_UNSIGNED_BYTE, buffer.data());
 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
