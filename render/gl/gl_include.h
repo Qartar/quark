@@ -46,6 +46,15 @@
 #define GL_CONSTANT_ALPHA               0x8003
 #define GL_ONE_MINUS_CONSTANT_ALPHA     0x8004
 
+#define GL_FRAGMENT_SHADER              0x8B30
+#define GL_VERTEX_SHADER                0x8B31
+
+#define GL_DELETE_STATUS                0x8B80
+#define GL_COMPILE_STATUS               0x8B81
+#define GL_LINK_STATUS                  0x8B82
+#define GL_VALIDATE_STATUS              0x8B83
+#define GL_INFO_LOG_LENGTH              0x8B84
+
 //------------------------------------------------------------------------------
 // OpenGL 3.0
 

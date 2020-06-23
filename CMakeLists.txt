@@ -83,6 +83,8 @@ set(QUARK_SOURCES
     render/gl/gl_framebuffer.cpp
     render/gl/gl_framebuffer.h
     render/gl/gl_include.h
+    render/gl/gl_shader.cpp
+    render/gl/gl_shader.h
     render/gl/gl_texture.cpp
     render/gl/gl_texture.h
     render/gl/gl_types.h

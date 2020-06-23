@@ -7,6 +7,7 @@
 #include "gl/gl_include.h"
 #include "gl/gl_buffer.h"
 #include "gl/gl_framebuffer.h"
+#include "gl/gl_shader.h"
 #include "gl/gl_texture.h"
 #include "gl/gl_vertex_array.h"
 
@@ -35,6 +36,8 @@ result system::init()
 
     gl::buffer::init();
     gl::framebuffer::init();
+    gl::shader::init();
+    gl::program::init();
     gl::texture::init();
     gl::vertex_array::init();
 
