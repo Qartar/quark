@@ -6,6 +6,7 @@
 
 #include "gl/gl_include.h"
 #include "gl/gl_framebuffer.h"
+#include "gl/gl_shader.h"
 #include "gl/gl_texture.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +33,8 @@ result system::init()
     glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
 
     gl::framebuffer::init();
+    gl::shader::init();
+    gl::program::init();
     gl::texture::init();
 
     _view.size = vec2(_window->size());
