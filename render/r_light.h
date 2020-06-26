@@ -17,7 +17,7 @@ namespace render {
 class light
 {
 public:
-    light();
+    light(render::system* renderer);
 
     void resize(vec2i size);
     void render(gl::framebuffer const& f) const;
@@ -28,13 +28,8 @@ protected:
     std::vector<gl::framebuffer> _framebuffers;
     gl::texture _texture;
 
-    gl::shader _vertex_shader;
-
-    gl::shader _mip_shader;
-    gl::program _mip_program;
-
-    gl::shader _light_shader;
-    gl::program _light_program;
+    render::shader const* _mip_shader;
+    render::shader const* _light_shader;
 
     gl::vertex_buffer<vec2> _vertex_buffer;
     gl::vertex_array _vertex_array;
@@ -42,9 +37,6 @@ protected:
 protected:
     void generate_mips() const;
     void render_light() const;
-
-    void check_shader(gl::shader const& s) const;
-    void check_program(gl::program const& p) const;
 };
 
 } // namespace render

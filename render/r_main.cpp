@@ -51,7 +51,7 @@ result system::init()
     gl::texture::init();
     gl::vertex_array::init();
 
-    _light = std::make_unique<light>();
+    _light = std::make_unique<light>(this);
 
     string::buffer info_log;
     auto vsh = gl::shader(gl::shader_stage::vertex,

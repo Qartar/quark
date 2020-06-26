@@ -5,126 +5,19 @@
 #pragma hdrstop
 
 #include "r_light.h"
+#include "r_shader.h"
 #include "gl/gl_include.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
 //------------------------------------------------------------------------------
-light::light()
+light::light(render::system* renderer)
     : _size(0,0)
     , _light_size(0,0)
+    , _mip_shader(renderer->load_shader("mip", "assets/shader/light_v.glsl", "assets/shader/light_f_mip.glsl"))
+    , _light_shader(renderer->load_shader("light", "assets/shader/light_v.glsl", "assets/shader/light_f.glsl"))
 {
-    _vertex_shader = gl::shader(gl::shader_stage::vertex, R"(
-#version 330
-layout(location = 0) in vec2 position;
-void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-}
-)");
-
-    check_shader(_vertex_shader);
-
-    _mip_shader = gl::shader(gl::shader_stage::fragment, R"(
-#version 420
-layout(binding = 0) uniform sampler2D lightmap;
-void main() {
-    ivec2 uv = ivec2(gl_FragCoord.xy) * 2;
-    ivec2 sz = textureSize(lightmap, 0);
-
-    float xmask = uv.x + 1 < sz.x ? 1.0 : 1.0;
-    float ymask = uv.y + 1 < sz.y ? 1.0 : 1.0;
-    vec4 mask = vec4(1.0, xmask, ymask, xmask * ymask);
-
-    mat4 samples = mat4(
-        texelFetch(lightmap, uv + ivec2(    0,     0), 0),
-        texelFetch(lightmap, uv + ivec2(xmask,     0), 0),
-        texelFetch(lightmap, uv + ivec2(    0, ymask), 0),
-        texelFetch(lightmap, uv + ivec2(xmask, ymask), 0)
-    );
-
-    gl_FragColor = samples * mask;
-}
-)");
-
-    check_shader(_mip_shader);
-
-    _mip_program = gl::program(_vertex_shader, _mip_shader);
-
-    check_program(_mip_program);
-
-    _light_shader = gl::shader(gl::shader_stage::fragment, R"(
-#version 420
-layout(binding = 0) uniform sampler2D lightmap;
-
-vec2 image_to_world(ivec3 i) {
-    return vec2(0.5) + vec2(i.xy * (1 << i.z));
-}
-
-vec4 illuminance(vec2 pos, ivec3 texel)
-{
-    vec2 light_pos = image_to_world(texel);
-    vec2 dir = pos - light_pos;
-    vec4 light = texelFetch(lightmap, texel.xy, texel.z);
-    return light / dot(dir, dir);
-}
-
-const int lods = 13;
-
-vec4 luminance(ivec2 pos)
-{
-    vec2 world_pos = image_to_world(ivec3(pos.xy, 0));
-
-    vec4 total = vec4(0);
-    vec4 prev = vec4(0);
-
-    ivec3 texel = ivec3(0, 0, lods - 1);
-
-    for (int ii = lods; ii > 0; --ii) {
-        total -= prev;
-
-        vec4 L00 = illuminance(world_pos, texel + ivec3(0,0,-1));
-        vec4 L10 = illuminance(world_pos, texel + ivec3(1,0,-1));
-        vec4 L01 = illuminance(world_pos, texel + ivec3(0,1,-1));
-        vec4 L11 = illuminance(world_pos, texel + ivec3(1,1,-1));
-
-        vec4 lum = vec4(0.2126, 0.7152, 0.0722, 0) * mat4(L00, L01, L10, L11);
-        //vec4 lum = mat4(L00, L01, L10, L11) * vec4(0.2126, 0.7152, 0.0722, 0);
-        float lmax = max(lum.x, max(lum.y, max(lum.z, lum.w)));
-
-        total += L00 + L10 + L01 + L11;
-
-        if (lmax == lum.x) {
-            texel += ivec3(0,0,-1);
-            prev = L00;
-        } else if (lmax == lum.y) {
-            texel += ivec3(0,1,-1);
-            prev = L01;
-        } else if (lmax == lum.z) {
-            texel += ivec3(1,0,-1);
-            prev = L10;
-        } else {
-            texel += ivec3(1,1,-1);
-            prev = L11;
-        }
-
-        texel.xy *= 2;
-    }
-
-    return total;
-}
-
-void main() {
-    gl_FragColor = 0.1 * luminance(ivec2(gl_FragCoord.xy));
-}
-)");
-
-    check_shader(_light_shader);
-
-    _light_program = gl::program(_vertex_shader, _light_shader);
-
-    check_program(_light_program);
-
     _vertex_buffer = gl::vertex_buffer<vec2>(
         gl::buffer_usage::static_,
         gl::buffer_access::draw,
@@ -208,7 +101,7 @@ void light::render(gl::framebuffer const& f) const
 //------------------------------------------------------------------------------
 void light::generate_mips() const
 {
-    _mip_program.use();
+    _mip_shader->program().use();
 
     for (int level = 1; level < _texture.levels(); ++level) {
         _framebuffers[level - 1].color_attachment().bind();
@@ -221,49 +114,13 @@ void light::generate_mips() const
 //------------------------------------------------------------------------------
 void light::render_light() const
 {
-    _light_program.use();
+    _light_shader->program().use();
 
     _texture.bind();
     // destination?
 
     glViewport(0, 0, _size.x, _size.y);
     glDrawArrays(GL_TRIANGLES, 0, 3);
-}
-
-//------------------------------------------------------------------------------
-void light::check_shader(gl::shader const& s) const
-{
-    string::buffer info_log;
-
-    if (s.compile_status(info_log)) {
-        if (info_log.length()) {
-            log::warning("%.*s", info_log.length(), info_log.begin());
-        }
-    } else if (info_log.length()) {
-        log::error("%.*s", info_log.length(), info_log.begin());
-    }
-}
-
-//------------------------------------------------------------------------------
-void light::check_program(gl::program const& p) const
-{
-    string::buffer info_log;
-
-    if (p.link_status(info_log)) {
-        if (info_log.length()) {
-            log::warning("%.*s", info_log.length(), info_log.begin());
-        }
-    } else if (info_log.length()) {
-        log::error("%.*s", info_log.length(), info_log.begin());
-    }
-
-    if (p.validate_status(info_log)) {
-        if (info_log.length()) {
-            log::warning("%.*s", info_log.length(), info_log.begin());
-        }
-    } else if (info_log.length()) {
-        log::error("%.*s", info_log.length(), info_log.begin());
-    }
 }
 
 } // namespace render
