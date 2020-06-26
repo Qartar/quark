@@ -78,12 +78,16 @@ set(QUARK_SOURCES
     game/g_weapon.h
     game/g_world.cpp
     game/g_world.h
+    render/gl/gl_buffer.cpp
+    render/gl/gl_buffer.h
     render/gl/gl_framebuffer.cpp
     render/gl/gl_framebuffer.h
     render/gl/gl_include.h
     render/gl/gl_texture.cpp
     render/gl/gl_texture.h
     render/gl/gl_types.h
+    render/gl/gl_vertex_array.cpp
+    render/gl/gl_vertex_array.h
     render/r_draw.cpp
     render/r_font.cpp
     render/r_image.cpp

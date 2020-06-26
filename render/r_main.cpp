@@ -5,8 +5,10 @@
 #pragma hdrstop
 
 #include "gl/gl_include.h"
+#include "gl/gl_buffer.h"
 #include "gl/gl_framebuffer.h"
 #include "gl/gl_texture.h"
+#include "gl/gl_vertex_array.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
@@ -31,8 +33,10 @@ result system::init()
 
     glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
 
+    gl::buffer::init();
     gl::framebuffer::init();
     gl::texture::init();
+    gl::vertex_array::init();
 
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;
