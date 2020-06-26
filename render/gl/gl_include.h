@@ -19,6 +19,26 @@
 #define GL_TEXTURE0                     0x84C0
 
 //------------------------------------------------------------------------------
+// OpenGL 1.5
+
+#define GL_ARRAY_BUFFER                 0x8892
+#define GL_ELEMENT_ARRAY_BUFFER         0x8893
+
+#define GL_READ_ONLY                    0x88B8
+#define GL_WRITE_ONLY                   0x88B9
+#define GL_READ_WRITE                   0x88BA
+
+#define GL_STREAM_DRAW                  0x88E0
+#define GL_STREAM_READ                  0x88E1
+#define GL_STREAM_COPY                  0x88E2
+#define GL_STATIC_DRAW                  0x88E4
+#define GL_STATIC_READ                  0x88E5
+#define GL_STATIC_COPY                  0x88E6
+#define GL_DYNAMIC_DRAW                 0x88E8
+#define GL_DYNAMIC_READ                 0x88E9
+#define GL_DYNAMIC_COPY                 0x88EA
+
+//------------------------------------------------------------------------------
 // OpenGL 2.0
 
 #define GL_CONSTANT_COLOR               0x8001
@@ -39,6 +59,13 @@
 // OpenGL 3.0
 
 #define GL_DEPTH24_STENCIL8             0x88F0
+#define GL_MAP_READ_BIT                 0x0001
+#define GL_MAP_WRITE_BIT                0x0002
+
+//------------------------------------------------------------------------------
+// OpenGL 3.1
+
+#define GL_UNIFORM_BUFFER               0x8A11
 
 //------------------------------------------------------------------------------
 // ARB_framebuffer_object
@@ -85,3 +112,12 @@
 // TexImage2DMultisample:
 
 #define GL_TEXTURE_2D_MULTISAMPLE       0x9100
+
+//------------------------------------------------------------------------------
+// ARB_shader_storage_buffer_object
+
+// Accepted by the <target> parameters of BindBuffer, BufferData,
+// BufferSubData, MapBuffer, UnmapBuffer, GetBufferSubData, and
+// GetBufferPointerv:
+
+#define GL_SHADER_STORAGE_BUFFER                        0x90D2
