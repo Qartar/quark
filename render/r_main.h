@@ -20,6 +20,7 @@ typedef struct HBITMAP__* HBITMAP;
 namespace render {
 
 class window;
+class shader;
 class light;
 
 //------------------------------------------------------------------------------
@@ -109,6 +110,8 @@ public:
     render::image const* load_image(string::view name);
     void draw_image(render::image const* img, vec2 org, vec2 sz, color4 color = color4(1,1,1,1));
 
+    render::shader const* load_shader(string::view name, string::view vertex_shader_filename, string::view fragment_shader_filename);
+
     // Drawing Functions (r_draw.cpp)
 
     void draw_string(string::view string, vec2 position, color4 color);
@@ -139,6 +142,13 @@ private:
     std::vector<std::unique_ptr<render::font>> _fonts;
 
     std::vector<std::unique_ptr<render::image>> _images;
+
+    std::vector<std::unique_ptr<render::shader>> _shaders;
+
+    console_command _command_list_shaders;
+    console_command _command_reload_shaders;
+    void command_list_shaders(parser::text const& args) const;
+    void command_reload_shaders(parser::text const& args) const;
 
     // Internal stuff
 

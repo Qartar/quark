@@ -127,6 +127,10 @@ public:
     console_command(string::view name, T* obj, void(T::*callback)(parser::text const&))
         : console_command(name, [obj, callback](parser::text const& args){ (obj->*callback)(args); })
     {}
+    template<typename T>
+    console_command(string::view name, T* obj, void(T::*callback)(parser::text const&) const)
+        : console_command(name, [obj, callback](parser::text const& args){ (obj->*callback)(args); })
+    {}
 
     void execute(parser::text const& args) const;
 

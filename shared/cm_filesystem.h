@@ -94,4 +94,10 @@ buffer read(string::view filename);
 //------------------------------------------------------------------------------
 std::size_t write(string::view filename, byte const* buffer, std::size_t buffer_size);
 
+//------------------------------------------------------------------------------
+enum class time : uint64_t {};
+
+//------------------------------------------------------------------------------
+time modified_time(string::view filename);
+
 } // namespace file

@@ -12,13 +12,16 @@
 #include "gl/gl_vertex_array.h"
 
 #include "r_light.h"
+#include "r_shader.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
 //------------------------------------------------------------------------------
 system::system(render::window* window)
-    : _framebuffer_width("r_width", 0, config::archive, "framebuffer width, or 0 to use window width")
+    : _command_list_shaders("listShaders", this, &system::command_list_shaders)
+    , _command_reload_shaders("reloadShaders", this, &system::command_reload_shaders)
+    , _framebuffer_width("r_width", 0, config::archive, "framebuffer width, or 0 to use window width")
     , _framebuffer_height("r_height", 0, config::archive, "framebuffer height, or 0 to use window height")
     , _framebuffer_scale("r_scale", 1, config::archive, "framebuffer scale if using window dimensions")
     , _framebuffer_samples("r_samples", -1, config::archive, "framebuffer samples, or -1 to use maximum supported")

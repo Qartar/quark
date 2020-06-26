@@ -6,6 +6,7 @@
 //------------------------------------------------------------------------------
 enum class result
 {
+    none, //!< e.g. no-op
     success,
     failure,
 };
@@ -14,6 +15,7 @@ enum class result
 inline constexpr bool succeeded(result res)
 {
     switch (res) {
+        case result::none:
         case result::success:
             return true;
         default:
