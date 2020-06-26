@@ -30,6 +30,8 @@ public:
 
     shader(shader_stage stage, string::view source);
 
+    explicit operator bool() const { return _shader != 0; }
+
     bool compile_status(string::buffer& info_log) const;
 
 protected:

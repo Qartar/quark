@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <utility>
 
+#include <sys/stat.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace file {
 
@@ -230,6 +232,19 @@ std::size_t write(string::view filename, byte const* buffer, std::size_t buffer_
 {
     stream f = open(filename, mode::write);
     return f.write(buffer, buffer_size);
+}
+
+//------------------------------------------------------------------------------
+time modified_time(string::view filename)
+{
+#if defined(_WIN32)
+    struct _stat64 s;
+    if (!_stat64(filename.c_str(), &s)) {
+        return static_cast<file::time>(s.st_mtime);
+    } else {
+        return static_cast<file::time>(0);
+    }
+#endif
 }
 
 } // namespace file
