@@ -97,6 +97,8 @@ set(QUARK_SOURCES
     render/r_draw.cpp
     render/r_font.cpp
     render/r_image.cpp
+    render/r_light.cpp
+    render/r_light.h
     render/r_main.cpp
     render/r_main.h
     render/r_model.cpp

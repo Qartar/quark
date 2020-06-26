@@ -11,6 +11,8 @@
 #include "gl/gl_texture.h"
 #include "gl/gl_vertex_array.h"
 
+#include "r_light.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
@@ -28,6 +30,11 @@ system::system(render::window* window)
 {}
 
 //------------------------------------------------------------------------------
+system::~system()
+{
+}
+
+//------------------------------------------------------------------------------
 result system::init()
 {
     random r;
@@ -40,6 +47,8 @@ result system::init()
     gl::program::init();
     gl::texture::init();
     gl::vertex_array::init();
+
+    _light = std::make_unique<light>();
 
     string::buffer info_log;
     auto vsh = gl::shader(gl::shader_stage::vertex,
@@ -104,6 +113,7 @@ void main() {
     _view.viewport = {};
 
     resize(_window->size());
+    _light->resize(_window->size());
 
     _starfield_points.resize(2048);
     _starfield_colors.resize(2048);
@@ -151,6 +161,8 @@ void system::begin_frame()
 //------------------------------------------------------------------------------
 void system::end_frame()
 {
+    _light->render(_framebuffer);
+
     if (_graph) {
         draw_timers();
     }

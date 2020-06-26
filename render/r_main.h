@@ -20,6 +20,7 @@ typedef struct HBITMAP__* HBITMAP;
 namespace render {
 
 class window;
+class light;
 
 //------------------------------------------------------------------------------
 class font
@@ -87,6 +88,7 @@ class system
 {
 public:
     system(render::window* window);
+    ~system();
 
     result init();
     void shutdown();
@@ -150,6 +152,8 @@ private:
     gl::framebuffer _framebuffer;
 
     render::window* _window;
+
+    std::unique_ptr<light> _light;
 
     void create_default_font();
     void set_default_state();
