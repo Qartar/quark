@@ -9,6 +9,8 @@
 namespace render {
 namespace gl {
 
+class texture_view;
+
 //------------------------------------------------------------------------------
 class texture
 {
@@ -22,8 +24,11 @@ public:
     ~texture();
 
     GLuint name() const { return _name; }
+    GLsizei levels() const { return _levels; }
 
     void bind(GLuint textureunit = 0) const;
+
+    texture_view view(GLenum internalformat, GLuint level, GLuint numlevels = 1, GLuint layer = 0) const;
 
 protected:
     GLuint _name;
@@ -38,6 +43,11 @@ protected:
     typedef void (APIENTRY* PFNGLACTIVETEXTURE)(GLenum texture);
 
     static PFNGLACTIVETEXTURE glActiveTexture;
+
+    // OpenGL 4.3
+    typedef void (APIENTRY* PFNGLTEXTUREVIEW)(GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers);
+
+    static PFNGLTEXTUREVIEW glTextureView;
 
     // ARB_texture_storage
     typedef void (APIENTRY* PFNGLTEXSTORAGE2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
@@ -58,6 +68,18 @@ protected:
     static PFNGLBINDTEXTUREUNIT glBindTextureUnit;
     static PFNGLTEXTURESTORAGE2D glTextureStorage2D;
     static PFNGLTEXTURESTORAGE2DMULTISAMPLE glTextureStorage2DMultisample;
+};
+
+//------------------------------------------------------------------------------
+class texture_view : public texture
+{
+public:
+    texture_view()
+        : texture() {}
+
+protected:
+    friend texture;
+    texture_view(texture const& origtexture, GLenum target, GLenum internalformat, GLint minlevel, GLint numlevels, GLint minlayer, GLint numlayers);
 };
 
 //------------------------------------------------------------------------------

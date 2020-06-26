@@ -27,12 +27,23 @@ public:
     attachment(attachment_type type, GLenum internalformat)
         : _type(type)
         , _format(internalformat)
+        , _texture(nullptr)
+        , _level(0)
+    {}
+
+    attachment(attachment_type type, GLenum internalformat, gl::texture const* texture, GLint level = 0)
+        : _type(type)
+        , _format(internalformat)
+        , _texture(texture)
+        , _level(level)
     {}
 
 protected:
     friend framebuffer;
     attachment_type _type;
     GLenum _format;
+    texture const* _texture;
+    GLint _level;
 };
 
 //------------------------------------------------------------------------------

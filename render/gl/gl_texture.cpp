@@ -12,6 +12,7 @@ namespace render {
 namespace gl {
 
 texture::PFNGLACTIVETEXTURE texture::glActiveTexture = nullptr;
+texture::PFNGLTEXTUREVIEW texture::glTextureView = nullptr;
 texture::PFNGLTEXSTORAGE2D texture::glTexStorage2D = nullptr;
 texture::PFNGLTEXSTORAGE2DMULTISAMPLE texture::glTexStorage2DMultisample = nullptr;
 texture::PFNGLCREATETEXTURES texture::glCreateTextures = nullptr;
@@ -25,6 +26,8 @@ void texture::init()
 {
     // OpenGL 1.3
     glActiveTexture = (PFNGLACTIVETEXTURE)wglGetProcAddress("glActiveTexture");
+    // OpenGL 4.3
+    glTextureView = (PFNGLTEXTUREVIEW)wglGetProcAddress("glTextureView");
     // ARB_texture_storage
     glTexStorage2D = (PFNGLTEXSTORAGE2D)wglGetProcAddress("glTexStorage2D");
     glTexStorage2DMultisample = (PFNGLTEXSTORAGE2DMULTISAMPLE)wglGetProcAddress("glTexStorage2DMultisample");
@@ -93,6 +96,32 @@ void texture::bind(GLuint textureunit) const
     } else if (glActiveTexture) {
         glActiveTexture(GL_TEXTURE0 + textureunit);
         glBindTexture(_target, _name);
+    }
+}
+
+//------------------------------------------------------------------------------
+texture_view texture::view(GLenum internalformat, GLuint level, GLuint numlevels, GLuint layer) const
+{
+    return texture_view(*this, _target, internalformat, level, numlevels, layer, 1);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+texture_view::texture_view(texture const& origtexture, GLenum target, GLenum internalformat, GLint minlevel, GLint numlevels, GLint minlayer, GLint numlayers)
+    : texture()
+{
+    if (glTextureView) {
+        glGenTextures(1, &_name);
+        glTextureView(
+            _name,
+            target,
+            origtexture.name(),
+            internalformat,
+            minlevel,
+            numlevels,
+            minlayer,
+            numlayers);
+        _target = target;
+        _levels = numlevels;
     }
 }
 

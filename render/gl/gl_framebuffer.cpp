@@ -105,7 +105,11 @@ framebuffer::framebuffer(GLsizei width, GLsizei height, attachment const* attach
     for (std::size_t ii = 0; ii < num_attachments; ++ii) {
         switch (attachments[ii]._type) {
             case attachment_type::color:
-                _color_attachments.push_back(texture2d(1, attachments[ii]._format, _width, _height));
+                if (attachments[ii]._texture) {
+                    _color_attachments.push_back(attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level));
+                } else {
+                    _color_attachments.push_back(texture2d(1, attachments[ii]._format, _width, _height));
+                }
                 attach(
                     narrow_cast<GLenum>(GL_COLOR_ATTACHMENT0 + num_color_attachments),
                     GL_TEXTURE_2D,
@@ -118,7 +122,11 @@ framebuffer::framebuffer(GLsizei width, GLsizei height, attachment const* attach
                 if (num_depth_attachments || num_depth_stencil_attachments) {
                     continue;
                 }
-                _depth_attachment = texture2d(1, attachments[ii]._format, _width, _height);
+                if (attachments[ii]._texture) {
+                    _depth_attachment = attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level);
+                } else {
+                    _depth_attachment = texture2d(1, attachments[ii]._format, _width, _height);
+                }
                 attach(
                     GL_DEPTH_ATTACHMENT,
                     GL_TEXTURE_2D,
@@ -131,7 +139,11 @@ framebuffer::framebuffer(GLsizei width, GLsizei height, attachment const* attach
                 if (num_stencil_attachments || num_depth_stencil_attachments) {
                     continue;
                 }
-                _stencil_attachment = texture2d(1, attachments[ii]._format, _width, _height);
+                if (attachments[ii]._texture) {
+                    _stencil_attachment = attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level);
+                } else {
+                    _stencil_attachment = texture2d(1, attachments[ii]._format, _width, _height);
+                }
                 attach(
                     GL_STENCIL_ATTACHMENT,
                     GL_TEXTURE_2D,
@@ -144,7 +156,11 @@ framebuffer::framebuffer(GLsizei width, GLsizei height, attachment const* attach
                 if (num_depth_attachments || num_stencil_attachments) {
                     continue;
                 }
-                _depth_stencil_attachment = texture2d(1, attachments[ii]._format, _width, _height);
+                if (attachments[ii]._texture) {
+                    _depth_stencil_attachment = attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level);
+                } else {
+                    _depth_stencil_attachment = texture2d(1, attachments[ii]._format, _width, _height);
+                }
                 attach(
                     GL_DEPTH_STENCIL_ATTACHMENT,
                     GL_TEXTURE_2D,
@@ -177,7 +193,11 @@ framebuffer::framebuffer(GLsizei samples, GLsizei width, GLsizei height, attachm
     for (std::size_t ii = 0; ii < num_attachments; ++ii) {
         switch (attachments[ii]._type) {
             case attachment_type::color:
-                _color_attachments.push_back(texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE));
+                if (attachments[ii]._texture) {
+                    _color_attachments.push_back(attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level));
+                } else {
+                    _color_attachments.push_back(texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE));
+                }
                 attach(
                     narrow_cast<GLenum>(GL_COLOR_ATTACHMENT0 + num_color_attachments),
                     GL_TEXTURE_2D_MULTISAMPLE,
@@ -190,7 +210,11 @@ framebuffer::framebuffer(GLsizei samples, GLsizei width, GLsizei height, attachm
                 if (num_depth_attachments || num_depth_stencil_attachments) {
                     continue;
                 }
-                _depth_attachment = texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE);
+                if (attachments[ii]._texture) {
+                    _depth_attachment = attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level);
+                } else {
+                    _depth_attachment = texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE);
+                }
                 attach(
                     GL_DEPTH_ATTACHMENT,
                     GL_TEXTURE_2D_MULTISAMPLE,
@@ -203,7 +227,11 @@ framebuffer::framebuffer(GLsizei samples, GLsizei width, GLsizei height, attachm
                 if (num_stencil_attachments || num_depth_stencil_attachments) {
                     continue;
                 }
-                _stencil_attachment = texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE);
+                if (attachments[ii]._texture) {
+                    _stencil_attachment = attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level);
+                } else {
+                    _stencil_attachment = texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE);
+                }
                 attach(
                     GL_STENCIL_ATTACHMENT,
                     GL_TEXTURE_2D_MULTISAMPLE,
@@ -216,7 +244,11 @@ framebuffer::framebuffer(GLsizei samples, GLsizei width, GLsizei height, attachm
                 if (num_depth_attachments || num_stencil_attachments) {
                     continue;
                 }
-                _depth_stencil_attachment = texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE);
+                if (attachments[ii]._texture) {
+                    _depth_stencil_attachment = attachments[ii]._texture->view(attachments[ii]._format, attachments[ii]._level);
+                } else {
+                    _depth_stencil_attachment = texture2dmultisample(samples, attachments[ii]._format, _width, _height, GL_FALSE);
+                }
                 attach(
                     GL_DEPTH_STENCIL_ATTACHMENT,
                     GL_TEXTURE_2D_MULTISAMPLE,
