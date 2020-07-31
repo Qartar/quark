@@ -59,6 +59,35 @@ void window::end_frame ()
     }
 
     SwapBuffers(_hdc);
+
+    if (_vid_width.modified() || _vid_height.modified()) {
+        if (_fullscreen) {
+            // Note that window dimensions will not be updated when returning to windowed mode either.
+            log::message("cannot set vid_width or vid_height while in fullscreen mode\n");
+        } else {
+            RECT r{0, 0, _vid_width, _vid_height};
+
+            _logical_size.x = _vid_width;
+            _logical_size.y = _vid_height;
+
+            r.right = MulDiv(r.right, _current_dpi, USER_DEFAULT_SCREEN_DPI);
+            r.bottom = MulDiv(r.bottom, _current_dpi, USER_DEFAULT_SCREEN_DPI);
+
+            AdjustWindowRectExForDpi(&r, windowed_style, FALSE, 0, _current_dpi);
+
+            SetWindowPos(
+                _hwnd,
+                NULL,
+                0,
+                0,
+                r.right - r.left,
+                r.bottom - r.top,
+                SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+        }
+
+        _vid_width.reset();
+        _vid_height.reset();
+    }
 }
 
 //------------------------------------------------------------------------------

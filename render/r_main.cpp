@@ -145,6 +145,12 @@ void system::resize(vec2i size)
 
     create_default_font();
     set_default_state();
+
+    // Intel drivers do not invalidate the default framebuffer dimensions until
+    // it is cleared. Do it explicitly now, otherwise framebuffer operations
+    // will not apply to the correct region of the default framebuffer.
+    gl::framebuffer().draw();
+    glClear(0);
 }
 
 //------------------------------------------------------------------------------
