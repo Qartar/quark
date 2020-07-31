@@ -8,6 +8,7 @@
 #include "cm_time.h"
 
 #include "gl/gl_framebuffer.h"
+#include "gl/gl_shader.h"
 #include "gl/gl_types.h"
 
 #if defined(_WIN32)
@@ -143,6 +144,8 @@ private:
     config::integer _framebuffer_height;
     config::scalar _framebuffer_scale;
     config::integer _framebuffer_samples;
+
+    gl::program _program;
 
     gl::framebuffer _framebuffer;
 

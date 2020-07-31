@@ -15,7 +15,9 @@ void system::draw_string(string::view string, vec2 position, color4 color)
 {
     vec2 scale(_view.size.x / _framebuffer.width(),
                _view.size.y / _framebuffer.height());
+    gl::program().use();
     _default_font->draw(string, position, color, scale);
+    _program.use();
 }
 
 //------------------------------------------------------------------------------
@@ -31,7 +33,9 @@ void system::draw_monospace(string::view string, vec2 position, color4 color)
 {
     vec2 scale(_view.size.x / _framebuffer.width(),
                _view.size.y / _framebuffer.height());
+    gl::program().use();
     _monospace_font->draw(string, position, color, scale);
+    _program.use();
 }
 
 //------------------------------------------------------------------------------

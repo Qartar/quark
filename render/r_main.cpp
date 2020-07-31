@@ -41,6 +41,64 @@ result system::init()
     gl::texture::init();
     gl::vertex_array::init();
 
+    string::buffer info_log;
+    auto vsh = gl::shader(gl::shader_stage::vertex,
+R"(
+#version 110
+varying vec4 color;
+void main() {
+    color = gl_Color;
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+}
+)"
+    );
+
+    if (vsh.compile_status(info_log)) {
+        if (info_log.length()) {
+            log::warning("%.*s", info_log.length(), info_log.begin());
+        }
+    } else if (info_log.length()) {
+        log::error("%.*s", info_log.length(), info_log.begin());
+    }
+
+    auto fsh = gl::shader(gl::shader_stage::fragment,
+R"(
+#version 110
+varying vec4 color;
+void main() {
+    gl_FragColor = color;
+}
+)"
+    );
+
+    if (fsh.compile_status(info_log)) {
+        if (info_log.length()) {
+            log::warning("%.*s", info_log.length(), info_log.begin());
+        }
+    } else if (info_log.length()) {
+        log::error("%.*s", info_log.length(), info_log.begin());
+    }
+
+    _program = gl::program(vsh, fsh);
+
+    if (_program.link_status(info_log)) {
+        if (info_log.length()) {
+            log::warning("%.*s", info_log.length(), info_log.begin());
+        }
+    } else if (info_log.length()) {
+        log::error("%.*s", info_log.length(), info_log.begin());
+    }
+
+    if (_program.validate_status(info_log)) {
+        if (info_log.length()) {
+            log::warning("%.*s", info_log.length(), info_log.begin());
+        }
+    } else if (info_log.length()) {
+        log::error("%.*s", info_log.length(), info_log.begin());
+    }
+
+    _program.use();
+
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;
     _view.viewport = {};
