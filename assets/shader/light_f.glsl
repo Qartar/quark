@@ -42,6 +42,17 @@ vec4 luminance(ivec2 pos)
         total -= prev;
         total += L00 + L01 + L10 + L11;
 
+#if 1 // branchless
+        bvec4 lmask = equal(lum, vec4(lmax));
+
+        const mat4x3 texel_offset = mat4x3(0,0,-1,
+                                           0,1,-1,
+                                           1,0,-1,
+                                           1,1,-1);
+
+        texel += ivec3(texel_offset * vec4(lmask));
+        prev = mat4(L00, L01, L10, L11) * vec4(lmask);
+#else
         if (lmax == lum.x) {
             texel += ivec3(0,0,-1);
             prev = L00;
@@ -55,6 +66,7 @@ vec4 luminance(ivec2 pos)
             texel += ivec3(1,1,-1);
             prev = L11;
         }
+#endif
 
         texel.xy *= 2;
     }
