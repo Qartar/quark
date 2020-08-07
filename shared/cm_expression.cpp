@@ -186,13 +186,11 @@ void expression_builder::add_builtin_types()
 //------------------------------------------------------------------------------
 class dgml {
 public:
-    void add_node(string::view node) {
-        _nodes.insert(string::buffer(node));
+    void add_node(string::view id, string::view label) {
+        _nodes[string::buffer(id)] = string::buffer(label);
     }
-    void add_link(string::view source, string::view target) {
-        _nodes.insert(string::buffer(source));
-        _nodes.insert(string::buffer(target));
-        _links.insert({string::buffer(source), string::buffer(target)});
+    void add_link(string::view source_id, string::view target_id) {
+        _links.insert({string::buffer(source_id), string::buffer(target_id)});
     }
     bool write(file::stream& s) {
         s.printf("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -200,7 +198,7 @@ public:
         // write nodes
         s.printf("  <Nodes>\n");
         for (auto const& node : _nodes) {
-            s.printf("    <Node Id=\"%s\" Label=\"%s\"/>\n", node.c_str(), node.c_str());
+            s.printf("    <Node Id=\"%s\" Label=\"%s\"/>\n", node.first.c_str(), node.second.c_str());
         }
         s.printf("  </Nodes>\n");
         // write links
@@ -221,7 +219,7 @@ protected:
             return c0 < 0 || (c0 == 0 && strcmp(target, l.target) < 0);
         }
     };
-    std::set<string::buffer> _nodes;
+    std::map<string::buffer, string::buffer> _nodes;
     std::set<link> _links;
 };
 
@@ -330,18 +328,200 @@ expression expression_builder::compile(expression::value* map) const
             for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
                 switch(expression::arity(info[ii].op.type)) {
                     case expression::op_arity::binary:
-                        ast.add_link(names[ii], names[info[ii].op.rhs]);
+                        ast.add_link(va("%zd", ii), va("%zd", info[ii].op.rhs));
                         [[fallthrough]];
                     case expression::op_arity::unary:
-                        ast.add_link(names[ii], names[info[ii].op.lhs]);
+                        ast.add_link(va("%zd", ii), va("%zd", info[ii].op.lhs));
                         [[fallthrough]];
                     case expression::op_arity::nullary:
-                        ast.add_node(names[ii]);
+                        ast.add_node(va("%zd", ii), names[ii]);
                         break;
                 }
             }
             file::stream s = file::open(va("ast_%02d.dgml", n), file::mode::write);
             ast.write(s);
+        };
+
+        auto rotate_left = [](std::vector<op_info>& info, expression::value root) -> bool {
+            if (root < 0 || root >= narrow_cast<expression::value>(info.size()) || !is_binary(info[root].op.type)) {
+                return false;
+            }
+
+            expression::value pivot = info[root].op.rhs;
+            if (pivot < 0 || pivot >= narrow_cast<expression::value>(info.size()) || !is_binary(info[pivot].op.type)) {
+                return false;
+            }
+
+            //   root              root
+            //   /  \              /  \
+            //  a  pivot   =>   pivot  c
+            //      / \          / \
+            //     b   c        a   b
+
+            expression::value a = info[root].op.lhs;
+            expression::value b = info[pivot].op.lhs;
+            expression::value c = info[pivot].op.rhs;
+
+            // If there are other references to pivot then create a copy, otherwise modify in place
+            if (info[pivot].num_references > 1) {
+                --info[pivot].num_references;
+                info.push_back(info[pivot]);
+                pivot = info.size() - 1;
+                info[pivot].num_references = 1;
+            }
+
+            // (a + (b + c)) => ((a + b) + c)
+            // (a * (b * c)) => ((a * b) * c)
+            // (a ^ (b ^ c)) => ((a ^ b) ^ c)
+            if ((info[root].op.type == expression::op_type::sum && info[pivot].op.type == expression::op_type::sum)
+                || (info[root].op.type == expression::op_type::product && info[pivot].op.type == expression::op_type::product)
+                || (info[root].op.type == expression::op_type::exponent && info[pivot].op.type == expression::op_type::exponent)) {
+                info[pivot].op.lhs = a;
+                info[pivot].op.rhs = b;
+                info[root].op.lhs = pivot;
+                info[root].op.rhs = c;
+                return true;
+
+            // (a + (b - c)) => ((a + b) - c)
+            // (a * (b / c)) => ((a * b) / c)
+            } else if ((info[root].op.type == expression::op_type::sum && info[pivot].op.type == expression::op_type::difference)
+                || (info[root].op.type == expression::op_type::product && info[pivot].op.type == expression::op_type::quotient)) {
+                std::swap(info[pivot].op.type, info[root].op.type);
+                info[pivot].op.lhs = a;
+                info[pivot].op.rhs = b;
+                info[root].op.lhs = pivot;
+                info[root].op.rhs = c;
+                return true;
+
+            // (a - (b + c)) => ((a - b) - c)
+            // (a / (b * c)) => ((a / b) / c)
+            } else if ((info[root].op.type == expression::op_type::difference && info[pivot].op.type == expression::op_type::sum)
+                || (info[root].op.type == expression::op_type::quotient && info[pivot].op.type == expression::op_type::product)) {
+                info[pivot].op.type = info[root].op.type;
+                info[pivot].op.lhs = a;
+                info[pivot].op.rhs = b;
+                info[root].op.lhs = pivot;
+                info[root].op.rhs = c;
+                return true;
+
+            // (a - (b - c)) => ((a - b) + c)
+            } else if (info[root].op.type == expression::op_type::difference && info[pivot].op.type == expression::op_type::difference) {
+                info[pivot].op.lhs = a;
+                info[pivot].op.rhs = b;
+                info[root].op.type = expression::op_type::sum;
+                info[root].op.lhs = pivot;
+                info[root].op.rhs = c;
+                return true;
+
+            // (a / (b / c)) => ((a / b) * c)
+            } else if (info[root].op.type == expression::op_type::quotient && info[pivot].op.type == expression::op_type::quotient) {
+                info[pivot].op.lhs = a;
+                info[pivot].op.rhs = b;
+                info[root].op.type = expression::op_type::product;
+                info[root].op.lhs = pivot;
+                info[root].op.rhs = c;
+                return true;
+
+            } else {
+                // Undo copy
+                if (pivot != info[root].op.rhs) {
+                    assert(pivot == narrow_cast<expression::value>(info.size() - 1));
+                    info.pop_back();
+                    ++info[info[root].op.rhs].num_references;
+                }
+                return false;
+            }
+        };
+
+        auto rotate_right = [](std::vector<op_info>& info, expression::value root) -> bool {
+            if (root < 0 || root >= narrow_cast<expression::value>(info.size()) || !is_binary(info[root].op.type)) {
+                return false;
+            }
+
+            expression::value pivot = info[root].op.lhs;
+            if (pivot < 0 || pivot >= narrow_cast<expression::value>(info.size()) || !is_binary(info[pivot].op.type)) {
+                return false;
+            }
+
+            //     root          root
+            //     /  \          /  \
+            //  pivot  c   =>   a  pivot
+            //   / \                / \
+            //  a   b              b   c
+
+            expression::value a = info[pivot].op.lhs;
+            expression::value b = info[pivot].op.rhs;
+            expression::value c = info[root].op.rhs;
+
+            // If there are other references to pivot then create a copy, otherwise modify in place
+            if (info[pivot].num_references > 1) {
+                --info[pivot].num_references;
+                info.push_back(info[pivot]);
+                pivot = info.size() - 1;
+                info[pivot].num_references = 1;
+            }
+
+            // ((a + b) + c) => (a + (b + c))
+            // ((a * b) * c) => (a * (b * c))
+            // ((a ^ b) ^ c) => (a ^ (b ^ c))
+            if ((info[pivot].op.type == expression::op_type::sum && info[root].op.type == expression::op_type::sum)
+                || (info[pivot].op.type == expression::op_type::product && info[root].op.type == expression::op_type::product)
+                || (info[pivot].op.type == expression::op_type::exponent && info[root].op.type == expression::op_type::exponent)) {
+                info[root].op.lhs = a;
+                info[root].op.rhs = pivot;
+                info[pivot].op.lhs = b;
+                info[pivot].op.rhs = c;
+                return true;
+
+            // ((a + b) - c) => (a + (b - c))
+            // ((a * b) / c) => (a * (b / c))
+            } else if ((info[pivot].op.type == expression::op_type::sum && info[root].op.type == expression::op_type::difference)
+                || (info[pivot].op.type == expression::op_type::product && info[root].op.type == expression::op_type::quotient)) {
+                std::swap(info[pivot].op.type, info[root].op.type);
+                info[root].op.lhs = a;
+                info[root].op.rhs = pivot;
+                info[pivot].op.lhs = b;
+                info[pivot].op.rhs = c;
+                return true;
+
+            // ((a - b) + c) => (a - (b - c))
+            // ((a / b) * c) => (a / (b / c))
+            } else if ((info[pivot].op.type == expression::op_type::difference && info[root].op.type == expression::op_type::sum)
+                || (info[pivot].op.type == expression::op_type::quotient && info[root].op.type == expression::op_type::product)) {
+                info[root].op.type = info[pivot].op.type;
+                info[root].op.lhs = a;
+                info[root].op.rhs = pivot;
+                info[pivot].op.lhs = b;
+                info[pivot].op.rhs = c;
+                return true;
+
+            // ((a - b) - c) => (a - (b + c))
+            } else if (info[pivot].op.type == expression::op_type::difference && info[root].op.type == expression::op_type::difference) {
+                info[root].op.lhs = a;
+                info[root].op.rhs = pivot;
+                info[pivot].op.type = expression::op_type::sum;
+                info[pivot].op.lhs = b;
+                info[pivot].op.rhs = c;
+                return true;
+
+            // ((a / b) / c) => (a / (b * c))
+            } else if (info[pivot].op.type == expression::op_type::quotient && info[root].op.type == expression::op_type::quotient) {
+                info[root].op.lhs = a;
+                info[root].op.rhs = pivot;
+                info[pivot].op.type = expression::op_type::product;
+                info[pivot].op.lhs = b;
+                info[pivot].op.rhs = c;
+                return true;
+
+            } else {
+                // Undo copy
+                if (pivot != info[root].op.lhs) {
+                    assert(pivot == narrow_cast<expression::value>(info.size() - 1));
+                    info.pop_back();
+                    ++info[info[root].op.lhs].num_references;
+                }
+                return false;
+            }
         };
 
         std::vector<op_info> info(_expression._ops.size());
@@ -406,84 +586,26 @@ expression expression_builder::compile(expression::value* map) const
                     }
                     info[ii].op.type = expression::op_type::constant;
                 } else if (has_constant) {
-                    if (info[ii].op.type == expression::op_type::product) {
-                        expression::value a = info[info[ii].op.lhs].op.type == expression::op_type::constant
-                                ? info[ii].op.lhs
-                                : info[ii].op.rhs;
-                        expression::value y = info[info[ii].op.lhs].op.type == expression::op_type::constant
-                                ? info[ii].op.rhs
-                                : info[ii].op.lhs;
-                        if (info[y].op.type == expression::op_type::product) {
-                            // a * (b * x) = (a * b) * x
-                            //
-                            //    *               *             *
-                            //   / \             / \           / \
-                            //  a   *     =>    *   x   =>  (a*b) x
-                            //     / \         / \
-                            //    b   x       a   b
-
-                            if (info[info[y].op.lhs].op.type == expression::op_type::constant ||
-                                info[info[y].op.rhs].op.type == expression::op_type::constant) {
-
-                                assert(info[info[y].op.lhs].op.type != expression::op_type::constant ||
-                                       info[info[y].op.rhs].op.type != expression::op_type::constant);
-
-                                expression::value b = info[info[y].op.lhs].op.type == expression::op_type::constant
-                                    ? info[y].op.lhs
-                                    : info[y].op.rhs;
-                                expression::value x = info[info[y].op.lhs].op.type != expression::op_type::constant
-                                    ? info[y].op.lhs
-                                    : info[y].op.rhs;
-
-                                info.push_back({
-                                    "",
-                                    {expression::op_type::constant},
-                                    expression::evaluate_op(
-                                        r,
-                                        expression::op_type::product,
-                                        info[a].constant,
-                                        info[b].constant),
-                                    });
-                                expression::value c = info.size() - 1;
-                                // remove references to old operands
-                                assert(info[a].num_references);
-                                --info[a].num_references;
-                                assert(info[y].num_references);
-                                --info[y].num_references;
-                                // replace operands
-                                info[ii].op.lhs = c;
-                                info[ii].op.rhs = x;
-                                // add references to new operands
-                                ++info[c].num_references;
-                                ++info[x].num_references;
-                                ++num_folded;
+                    if (info[info[ii].op.lhs].op.type == expression::op_type::constant) {
+                        expression::value pivot = info[ii].op.rhs;
+                        if (is_binary(info[pivot].op.type) && info[info[pivot].op.lhs].op.type == expression::op_type::constant) {
+                            // try to rotate expression to put constant operands together
+                            if (rotate_left(info, ii)) {
                                 // re-evaluate current operation
-                                --ii;
+                                ii = min<std::size_t>(ii, pivot) - 1;
+                                continue;
                             }
                         }
-                            //    +               +             +
-                            //   / \             / \           / \
-                            //  a   +     =>    +   x   =>  (a+b) x
-                            //     / \         / \
-                            //    b   x       a   b
-
-                            //    -               -             -
-                            //   / \             / \           / \
-                            //  a   +     =>    -   x   =>  (a-b) x
-                            //     / \         / \
-                            //    b   x       a   b
-
-                            //    -               +             +
-                            //   / \             / \           / \
-                            //  a   -     =>    -   x   =>  (a-b) x
-                            //     / \         / \
-                            //    b   x       a   b
-
-                            //      -           -           -
-                            //     / \         / \         / \
-                            //    -  b  =>    x   +   =>  x (a+b)
-                            //   / \             / \
-                            //  x   a           a   b
+                    } else if (info[info[ii].op.rhs].op.type == expression::op_type::constant) {
+                        expression::value pivot = info[ii].op.lhs;
+                        if (is_binary(info[pivot].op.type) && info[info[pivot].op.rhs].op.type == expression::op_type::constant) {
+                            // try to rotate expression to put constant operands together
+                            if (rotate_right(info, ii)) {
+                                // re-evaluate current operation
+                                ii = min<std::size_t>(ii, pivot) - 1;
+                                continue;
+                            }
+                        }
                     }
                 }
             }
