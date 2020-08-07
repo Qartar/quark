@@ -544,7 +544,13 @@ expression expression_builder::compile(expression::value* map) const
         dump_ast(info, 0);
 
         // constant folding
+        std::size_t old_folded;
+        std::size_t num_rotated;
+        do
         {
+            old_folded = num_folded;
+            num_rotated = 0;
+
             random r;
             for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
                 bool is_constant = true;
@@ -593,6 +599,7 @@ expression expression_builder::compile(expression::value* map) const
                             if (rotate_left(info, ii)) {
                                 // re-evaluate current operation
                                 ii = min<std::size_t>(ii, pivot) - 1;
+                                ++num_rotated;
                                 continue;
                             }
                         }
@@ -603,18 +610,22 @@ expression expression_builder::compile(expression::value* map) const
                             if (rotate_right(info, ii)) {
                                 // re-evaluate current operation
                                 ii = min<std::size_t>(ii, pivot) - 1;
+                                ++num_rotated;
                                 continue;
                             }
                         }
                     }
                 }
             }
-        }
+        } while (num_rotated || num_folded > old_folded);
 
         dump_ast(info, 1);
 
         // common sub-expression elimination
+        std::size_t old_merged;
+        do
         {
+            old_merged = num_merged;
             for (std::size_t ii = 0, sz = info.size(); ii < sz; ++ii) {
                 for (std::size_t jj = ii + 1; jj < sz; ++jj) {
                     if (info[ii].op.type == info[jj].op.type) {
@@ -661,7 +672,7 @@ expression expression_builder::compile(expression::value* map) const
                     }
                 }
             }
-        }
+        } while (num_merged > old_merged);
 
         dump_ast(info, 2);
 
