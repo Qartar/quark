@@ -142,6 +142,10 @@ void aicontroller::think()
                 if (ss->damage()) {
                     float d = task_distance(ss, ch);
                     float p = subsystem_priority(ss);
+                    // apply a small bias if this is the current repair target
+                    if (ch->repair_target() == ss) {
+                        d *= .95f;
+                    }
                     // all crew members can repair the same subsystem simultaneously
                     // but the priority for each subsequent crew member decreases.
                     // this creates a unique task for each crew/slot combination

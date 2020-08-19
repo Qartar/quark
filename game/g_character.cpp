@@ -71,6 +71,20 @@ void character::draw(render::system* renderer, time_value time) const
 
     {
         color4 color = _health > 0.f ? color4(.4f,.5f,.6f,1.f) : color4(.6f,.5f,.4f,1.f);
+        switch(_action) {
+            case action_type::move:
+                color = color4(0.f,.5f,0.f,1.f);
+                break;
+            case action_type::repair:
+                color = color4(1.f,.5f,0.f,1.f);
+                break;
+            case action_type::operate:
+                color = color4(0.f,.5f,.5f,1.f);
+                break;
+            default:
+                color = color4(1.f,1.f,1.f,1.f);
+                break;
+        }
         renderer->draw_arc(get_position(time) * tx, .25f, .15f, -math::pi<float>, math::pi<float>, color);
     }
 
