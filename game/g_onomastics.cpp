@@ -6,6 +6,7 @@
 
 #include "g_onomastics.h"
 
+#include <iterator>
 #include <set>
 
 namespace game {
