@@ -9,6 +9,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <iterator>
 #include <numeric>
 #include <queue>
 
