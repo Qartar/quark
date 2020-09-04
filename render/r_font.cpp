@@ -493,9 +493,75 @@ void generate_bitmap(glyph const& glyph, mat3 image_to_glyph, std::size_t width,
             vec2 point = vec2(float(xx) + .5f, float(yy) + .5f) * image_to_glyph;
             vec3 d = signed_edge_distance_channels(glyph, point);
             // discretize d and write to bitmap ...
-            data[yy * row_stride + xx * 3 + 0] = clamp<uint8_t>(d[0] * (255.f / 1.f), 0, 255);
-            data[yy * row_stride + xx * 3 + 1] = clamp<uint8_t>(d[1] * (255.f / 1.f), 0, 255);
-            data[yy * row_stride + xx * 3 + 2] = clamp<uint8_t>(d[2] * (255.f / 1.f), 0, 255);
+            data[yy * row_stride + xx * 3 + 0] = clamp<uint8_t>((d[0] + 4.f) * (255.f / 8.f), 0, 255);
+            data[yy * row_stride + xx * 3 + 1] = clamp<uint8_t>((d[1] + 4.f) * (255.f / 8.f), 0, 255);
+            data[yy * row_stride + xx * 3 + 2] = clamp<uint8_t>((d[2] + 4.f) * (255.f / 8.f), 0, 255);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+vec3 sample_texel(std::size_t image_stride, uint8_t const* image_data, std::size_t x, std::size_t y)
+{
+    return vec3(image_data[y * image_stride + x * 3 + 0] * (1.f / 255.f),
+                image_data[y * image_stride + x * 3 + 1] * (1.f / 255.f),
+                image_data[y * image_stride + x * 3 + 2] * (1.f / 255.f));
+}
+
+//------------------------------------------------------------------------------
+vec3 sample_bilinear(std::size_t image_width, std::size_t image_height, std::size_t image_stride, uint8_t const* image_data, vec2 p)
+{
+    // convert normalized texture coordinates to image space, pixel centers
+    vec2 v = p * vec2(float(image_width), float(image_height)) - vec2(.5f);
+    std::size_t x0 = clamp<std::size_t>(std::floor(v.x), 0, image_width - 2);
+    std::size_t y0 = clamp<std::size_t>(std::floor(v.y), 0, image_height - 2);
+    float xt = clamp(v.x - x0, 0.f, 1.f); // could be outside [0,1] if x0 is clamped
+    float yt = clamp(v.y - y0, 0.f, 1.f); // could be outside [0,1] if y0 is clamped
+
+    vec3 samples[4] = {
+        sample_texel(image_stride, image_data, x0 + 0, y0 + 0),
+        sample_texel(image_stride, image_data, x0 + 1, y0 + 0),
+        sample_texel(image_stride, image_data, x0 + 0, y0 + 1),
+        sample_texel(image_stride, image_data, x0 + 1, y0 + 1),
+    };
+
+    vec3 sx0 = samples[0] + (samples[1] - samples[0]) * xt;
+    vec3 sx1 = samples[2] + (samples[3] - samples[2]) * xt;
+    return sx0 + (sx1 - sx0) * yt;
+}
+
+//------------------------------------------------------------------------------
+void generate_test_bitmap(std::size_t in_width, std::size_t in_height, std::size_t in_stride, uint8_t const* in_data,
+                          std::size_t out_width, std::size_t out_height, std::size_t out_stride, uint8_t* out_data)
+{
+    float s[2][2] = {};
+
+    for (std::size_t yy = 0; yy < out_height; ++yy) {
+        for (std::size_t xx = 0; xx < out_width; ++xx) {
+            if ((xx & 1) == 0) { // emulate GPU quad shading
+                vec2 p00 = vec2(float(xx +  .5f) / float(out_width),
+                                float((yy & ~1) +  .5f) / float(out_height));
+                vec2 p01 = vec2(float(xx +  .5f) / float(out_width),
+                                float((yy & ~1) + 1.5f) / float(out_height));
+
+                vec2 p10 = vec2(float(xx + 1.5f) / float(out_width),
+                                float((yy & ~1) +  .5f) / float(out_height));
+                vec2 p11 = vec2(float(xx + 1.5f) / float(out_width),
+                                float((yy & ~1) + 1.5f) / float(out_height));
+
+                s[0][0] = median(sample_bilinear(in_width, in_height, in_stride, in_data, p00));
+                s[0][1] = median(sample_bilinear(in_width, in_height, in_stride, in_data, p01));
+                s[1][0] = median(sample_bilinear(in_width, in_height, in_stride, in_data, p10));
+                s[1][1] = median(sample_bilinear(in_width, in_height, in_stride, in_data, p11));
+            }
+
+            float f = s[xx & 1][yy & 1];
+            float fwidth = std::abs(s[(xx & 1) ^ 1][yy & 1] - f) + std::abs(s[xx & 1][(yy & 1) ^ 1] - f);
+            float d = clamp((f - .5f) / fwidth + .5f, 0.f, 1.f);
+
+            out_data[yy * out_stride + xx * 3 + 0] = clamp<uint8_t>(d * (255.f / 1.f), 0, 255);
+            out_data[yy * out_stride + xx * 3 + 1] = clamp<uint8_t>(d * (255.f / 1.f), 0, 255);
+            out_data[yy * out_stride + xx * 3 + 2] = clamp<uint8_t>(d * (255.f / 1.f), 0, 255);
         }
     }
 }
@@ -834,8 +900,8 @@ void foo(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
 
     GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &gm, 0, NULL, &mat);
 
-    constexpr std::size_t image_width = 256;
-    constexpr std::size_t image_height = 256;
+    constexpr std::size_t image_width = 32;
+    constexpr std::size_t image_height = 32;
 
     float sx = float(max(gm.gmBlackBoxX + 2, gm.gmBlackBoxY + 2)) / float(image_width);
     float sy = float(max(gm.gmBlackBoxX + 2, gm.gmBlackBoxY + 2)) / float(image_height);
@@ -857,6 +923,15 @@ void foo(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
 
     generate_bitmap(g, image_to_glyph, image_width, image_height, image_width * 3, image_data.data());
     write_bitmap(va("sdf/%s.bmp", s), image_width, image_height, image_data);
+
+    {
+        constexpr std::size_t test_width = image_width * 8;
+        constexpr std::size_t test_height = image_height * 8;
+        std::vector<std::uint8_t> test_data(test_width * test_height * 3);
+        generate_test_bitmap(image_width, image_height, image_width * 3, image_data.data(),
+                             test_width, test_height, test_width * 3, test_data.data());
+        write_bitmap(va("sdf/%s_test.bmp", s), test_width, test_height, test_data);
+    }
 
     generate_channel_bitmap(g, image_to_glyph, image_width, image_height, image_width * 3, image_data.data());
     write_bitmap(va("sdf/%s_channels.bmp", s), image_width, image_height, image_data);
