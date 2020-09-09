@@ -9,6 +9,8 @@
 #include "win_include.h"
 #include <GL/gl.h>
 
+#include <numeric> // iota
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
 
@@ -694,6 +696,141 @@ void subdivide_qspline(std::vector<vec2>& points, vec2 p0, vec2 p1, vec2 p2, flo
 }
 
 //------------------------------------------------------------------------------
+int pack_glyphs(int width, std::size_t num_glyphs, vec2i const* sizes, vec2i* offsets)
+{
+    std::vector<std::size_t> index(num_glyphs);
+    std::iota(index.begin(), index.end(), 0);
+    // sort descending by height, i.e.
+    //      sizes[index[N]].y >= sizes[index[N+1]].y
+    std::sort(index.begin(), index.end(), [sizes](std::size_t lhs, std::size_t rhs) {
+        return (sizes[lhs].y > sizes[rhs].y) || (sizes[lhs].y == sizes[rhs].y && sizes[lhs].x > sizes[rhs].x);
+    });
+
+    int pack_height = 0;
+    std::deque<vec2i> prev_steps = {vec2i(0, 0), vec2i(width, 0)};
+    std::size_t step_index = 0;
+    std::deque<vec2i> row_steps;
+    bool left_to_right = true;
+    int x = 0;
+
+    for (std::size_t ii = 0; ii < num_glyphs; ++ii) {
+        // size of current glyph
+        std::size_t idx = index[ii];
+        vec2i sz = sizes[idx];
+
+        // start a new row
+        if ((left_to_right && x + sz.x > width) || (!left_to_right && x - sz.x < 0)) {
+            // failed to place any glyphs on the current row, width is too small
+            if (!row_steps.size()) {
+                return 0;
+            }
+            std::swap(row_steps, prev_steps);
+            row_steps.clear();
+            // extend steps to full width
+            prev_steps.front().x = 0;
+            prev_steps.back().x = width;
+
+            // determine left_to_right
+            left_to_right = prev_steps.front().y < prev_steps.back().y;
+            x = left_to_right ? 0 : width;
+            step_index = left_to_right ? 0 : prev_steps.size() - 2;
+        }
+
+        // place glyph
+
+        if (left_to_right) {
+            // assume fits on the current step
+            offsets[idx] = vec2i(x, prev_steps[step_index].y);
+
+            std::size_t next_index = step_index;
+            while (x + sz.x > prev_steps[next_index + 1].x) {
+                next_index += 2;
+                assert(next_index < prev_steps.size());
+            }
+            // check if the glyph needs to be bumped down
+            if (prev_steps[next_index].y > prev_steps[step_index].y) {
+                offsets[idx].y += prev_steps[next_index].y - prev_steps[step_index].y;
+            }
+            // row_steps are always left-to-right
+            row_steps.push_back(offsets[idx] + vec2i(0, sz.y));
+            row_steps.push_back(offsets[idx] + sz);
+            pack_height = max(pack_height, row_steps.back().y);
+            x += sz.x;
+            // advance step
+            step_index = next_index;
+        } else {
+            // assume fits on the current step
+            offsets[idx] = vec2i(x - sz.x, prev_steps[step_index + 1].y);
+
+            std::size_t next_index = step_index;
+            while (x - sz.x < prev_steps[next_index].x) {
+                next_index -= 2;
+                assert(next_index < prev_steps.size()); // i.e. next_index >= 0 via underflow
+            }
+            // check if the glyph needs to be bumped down
+            if (prev_steps[next_index + 1].y > prev_steps[step_index + 1].y) {
+                offsets[idx].y += prev_steps[next_index + 1].y - prev_steps[step_index + 1].y;
+            }
+            // row_steps are always left-to-right
+            row_steps.push_front(offsets[idx] + sz);
+            row_steps.push_front(offsets[idx] + vec2i(0, sz.y));
+            pack_height = max(pack_height, row_steps.front().y);
+            x -= sz.x;
+            // advance step
+            step_index = next_index;
+        }
+    }
+
+    return pack_height;
+}
+
+//------------------------------------------------------------------------------
+void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
+{
+    std::vector<vec2i> sizes(end - begin);
+    std::vector<vec2i> offsets(end - begin);
+
+    GLYPHMETRICS gm{};
+    MAT2 mat = {
+        {0, 1}, {0, 0},
+        {0, 0}, {0, 1},
+    };
+
+    for (int ii = 0; ii < int(end - begin); ++ii) {
+        GetGlyphOutlineW(hdc, begin + ii, GGO_METRICS, &gm, 0, NULL, &mat);
+        sizes[ii] = {int(gm.gmBlackBoxX), int(gm.gmBlackBoxY)};
+    }
+
+    int pack_height = pack_glyphs(width, sizes.size(), sizes.data(), offsets.data());
+    // brain-dead next power of two
+    int height = 1; while (height < pack_height) { height <<= 1; }
+
+    constexpr int scale = 3;
+    std::vector<std::uint8_t> image_data(width * scale * height * scale * 3);
+    int row_stride = width * scale * 3;
+
+    for (int ii = 0; ii < int(end - begin); ++ii) {
+        int x0 = offsets[ii].x * scale;
+        int y0 = offsets[ii].y * scale;
+
+        uint8_t* glyph_data = image_data.data() + y0 * row_stride + x0 * 3;
+
+        for (int yy = 0; yy < sizes[ii].y * scale; ++yy) {
+            for (int xx = 0; xx < sizes[ii].x * scale; ++xx) {
+                // draw border highlight around each glyph cell
+                bool is_border = yy == 0 || xx == 0 || yy == sizes[ii].y * scale - 1 || xx == sizes[ii].x * scale - 1;
+                // use checker pattern to show pixels
+                bool is_checker = (((x0 + xx) / scale) ^ ((y0 + yy) / scale)) & 1;
+                uint8_t value = (0xdf | (is_checker ? 0x20 : 0x00)) >> (is_border ? 0 : 1);
+                // cycle through primary colors for contrast
+                glyph_data[yy * row_stride + xx * 3 + (ii % 3)] = value;
+            }
+        }
+    }
+    write_bitmap(va("pack/%d-%d.bmp", begin, end), width * scale, height * scale, image_data);
+}
+
+//------------------------------------------------------------------------------
 glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
 {
     glyph g;
@@ -1015,6 +1152,7 @@ font::font(string::view name, int size)
             GetGlyphOutlineW(application::singleton()->window()->hdc(), block.from + ii, GGO_METRICS, &gm, 0, NULL, &m);
             _char_width[block.offset + ii] = gm.gmCellIncX;
         }
+        test_pack_glyphs(application::singleton()->window()->hdc(), block.from, block.from + block.size, 256);
     }
 
     // restore previous font
