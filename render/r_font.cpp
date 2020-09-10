@@ -372,36 +372,41 @@ float median(vec3 x)
 }
 
 //------------------------------------------------------------------------------
-bool intersect_segments(vec2 a, vec2 b, vec2 c, vec2 d)
+int signed_intersect_segments(vec2 a, vec2 b, vec2 c, vec2 d)
 {
     vec2 ab = b - a;
     vec2 cd = d - c;
     float den = determinant(ab, cd);
     if (den == 0.f) {
-        return false;
+        return 0;
     }
     vec2 ac = c - a;
     float sgn = den < 0.f ? -1.f : 1.f;
     den = std::abs(den);
     float u = determinant(ac, cd) * sgn;
     float v = determinant(ac, ab) * sgn;
-    return (0.f <= u && u <= den && 0.f <= v && v <= den);
+    if (0.f <= u && u <= den && 0.f <= v && v <= den) {
+        return sgn < 0.f ? -1 : 1;
+    } else {
+        return 0;
+    }
 }
 
 //------------------------------------------------------------------------------
 bool point_inside_glyph(glyph const& glyph, vec2 p)
 {
-    std::size_t n = 0;
-    // If the line from the point to an arbitrary point outside the glyph crosses
-    // the edges of the glyph an odd number of times then the point is inside.
+    int n = 0;
+    // Count the number of times a segment from the given point to an arbitrary
+    // point outside the glyph crosses segments from the glyph. Since the glyph
+    // can have overlapping contours it is necessary to track whether the line
+    // crosses "into" or "out of" of the contour at each intersection. If the
+    // sum is zero then the point is outside of the glyph.
     for (std::size_t ii = 0, sz = glyph.edges.size(); ii < sz; ++ii) {
         for (std::size_t jj = glyph.edges[ii].first; jj < glyph.edges[ii].last; ++jj) {
-            if (intersect_segments(p, vec2(-32.f, -16.f), glyph.points[jj], glyph.points[jj + 1])) {
-                ++n;
-            }
+            n += signed_intersect_segments(p, vec2(-32.f, -16.f), glyph.points[jj], glyph.points[jj + 1]);
         }
     }
-    return n % 2 == 1;
+    return n == 0;
 }
 
 //------------------------------------------------------------------------------
