@@ -894,13 +894,23 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
             } else if (pc->wType == TT_PRIM_QSPLINE) {
                 // cf. MakeLinesFromTTQSpline
                 vec2 p2, p1, p0 = points.back();
+                // To ensure C2 continuity the spline is specified as a series of
+                // control points corresponding to each curve. The endpoints of
+                // each curve are the midpoints between control points plus the
+                // final point on the previous curve and an explicit endpoint in
+                // the final curve of the spline.
                 for (WORD ii = 0; ii < pc->cpfx - 1; ++ii) {
                     p1 = GetFixedPoint(pc->apfx[ii]);
                     p2 = GetFixedPoint(pc->apfx[ii + 1]);
+                    // If this is not the final curve with explicit endpoint
+                    // calculate the endpoint as midpoint between the current
+                    // and next control points.
                     if (ii != pc->cpfx - 2) {
                         p2 = .5f * (p1 + p2);
                     }
                     subdivide_qspline(points, p0, p1, p2, chordalDeviationSquared);
+                    // First endpoint of the next curve is the last endpoint
+                    // of the current curve.
                     p0 = p2;
                 }
 
