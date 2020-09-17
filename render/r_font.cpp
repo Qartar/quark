@@ -562,6 +562,31 @@ std::size_t signed_edge_index(glyph const& glyph, vec2 p)
 }
 
 //------------------------------------------------------------------------------
+uint32_t pack_r10g10b10a2(color4 color)
+{
+    uint32_t r = color.r < 0.f ? 0 : color.r > 1.f ? 0x3ff : uint32_t(color.r * 1023.f + .5f);
+    uint32_t g = color.g < 0.f ? 0 : color.g > 1.f ? 0x3ff : uint32_t(color.g * 1023.f + .5f);
+    uint32_t b = color.b < 0.f ? 0 : color.b > 1.f ? 0x3ff : uint32_t(color.b * 1023.f + .5f);
+    uint32_t a = color.a < 0.f ? 0 : color.a > 1.f ? 0x003 : uint32_t(color.a *    3.f + .5f);
+    return (a << 30) | (b << 20) | (g << 10) | (r << 0);
+}
+
+//------------------------------------------------------------------------------
+void generate_bitmap_r10g10b10a2(glyph const& glyph, mat3 image_to_glyph, std::size_t width, std::size_t height, std::size_t row_stride, uint32_t* data)
+{
+    for (std::size_t yy = 0; yy < height; ++yy) {
+        for (std::size_t xx = 0; xx < width; ++xx) {
+            // transform pixel center coordinates in image space to glyph space
+            vec2 point = vec2(float(xx) + .5f, float(yy) + .5f) * image_to_glyph;
+            vec3 d = signed_edge_distance_channels(glyph, point);
+            // discretize d and write to bitmap
+            color3 c = color3(d * (1.f / 8.f) + vec3(.5f));
+            data[yy * row_stride + xx] = pack_r10g10b10a2(color4(c));
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 void generate_bitmap(glyph const& glyph, mat3 image_to_glyph, std::size_t width, std::size_t height, std::size_t row_stride, uint8_t* data)
 {
     for (std::size_t yy = 0; yy < height; ++yy) {
