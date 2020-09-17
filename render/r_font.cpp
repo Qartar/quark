@@ -381,6 +381,9 @@ edge_distance signed_ray_distance_squared(vec2 a, vec2 b, vec2 c)
 edge_distance signed_edge_distance_squared(glyph const& glyph, vec2 p, std::size_t edge_index)
 {
     edge_distance sdsqr_min = {FLT_MAX, -FLT_MAX};
+    if (edge_index >= glyph.edges.size()) {
+        return sdsqr_min;
+    }
     std::size_t first = glyph.edges[edge_index].first;
     std::size_t last = glyph.edges[edge_index].last;
     for (std::size_t ii = first; ii < last; ++ii) {
@@ -474,6 +477,10 @@ vec3 signed_edge_distance_channels(glyph const& glyph, vec2 p)
     edge_distance dsqr_min[3] = {{FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}};
     std::size_t emin[3] = {};
 
+    if (!glyph.edges.size()) {
+        return vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+    }
+
     // find closest edge for each channel
     for (std::size_t ii = 0, sz = glyph.edges.size(); ii < sz; ++ii) {
         edge_distance dsqr = signed_edge_distance_squared(glyph, p, ii);
@@ -514,6 +521,10 @@ float signed_edge_distance(glyph const& glyph, vec2 p)
 #if 1
     edge_distance dsqr_min = {FLT_MAX, -FLT_MAX};
     std::size_t emin = {};
+
+    if (!glyph.edges.size()) {
+        return FLT_MAX;
+    }
 
     // find closest edge
     for (std::size_t ii = 0, sz = glyph.edges.size(); ii < sz; ++ii) {
