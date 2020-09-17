@@ -171,6 +171,8 @@ constexpr unicode_block_data unicode_data(
         // ...
         { 0x3040, 0x309f, "Hiragana" },
         // ...
+        { 0xfb50, 0xfdff, "Arabic Presentation Forms-A" },
+        // ...
         { 0xfe70, 0xfeff, "Arabic Presentation Forms-B" },
         // { 0xff00, 0xffef, "Halfwidth and Fullwidth Forms" },
         { 0xfff0, 0xffff, "Specials" },
@@ -798,10 +800,10 @@ void generate_median_bitmap(glyph const& glyph, mat3 image_to_glyph, std::size_t
             vec2 point = vec2(float(xx) + .5f, float(yy) + .5f) * image_to_glyph;
             vec3 d = signed_edge_distance_channels(glyph, point);
             // discretize d and write to bitmap ...
-            float m = median(d);
-            data[yy * row_stride + xx * 3 + 0] = clamp<uint8_t>(m * (4096.f / 1.f), 0, 255);
-            data[yy * row_stride + xx * 3 + 1] = clamp<uint8_t>(m * (4096.f / 1.f), 0, 255);
-            data[yy * row_stride + xx * 3 + 2] = clamp<uint8_t>(m * (4096.f / 1.f), 0, 255);
+            int m = clamp(median(d) * (-4096.f / 1.f), 0, 255);
+            data[yy * row_stride + xx * 3 + 0] = clamp<uint8_t>(m + data[yy * row_stride + xx * 3 + 0], 0, 255);
+            data[yy * row_stride + xx * 3 + 1] = clamp<uint8_t>(m + data[yy * row_stride + xx * 3 + 1], 0, 255);
+            data[yy * row_stride + xx * 3 + 2] = clamp<uint8_t>(m + data[yy * row_stride + xx * 3 + 2], 0, 255);
         }
     }
 }
@@ -1097,7 +1099,7 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
     // brain-dead next power of two
     int height = 1; while (height < pack_height) { height <<= 1; }
 
-    constexpr int scale = 3;
+    constexpr int scale = 1;
     std::vector<std::uint8_t> image_data(width * scale * height * scale * 3);
     int row_stride = width * scale * 3;
 
@@ -1106,6 +1108,7 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
     block.from = begin;
     block.to = end - 1;
 
+#if 0
     for (int ii = 0; ii < glyphs.size(); ++ii) {
         int jj = cell_index[ii];
         int x0 = offsets[jj].x * scale;
@@ -1139,9 +1142,11 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
     }
 
     write_bitmap(va("pack/%d-%d_median.bmp", begin, end), width * scale, height * scale, image_data);
+#endif
 
     for (int ii = 0; ii < glyphs.size(); ++ii) {
         int jj = cell_index[ii];
+#if 1
         int x0 = offsets[jj].x * scale;
         int y0 = offsets[jj].y * scale;
 
@@ -1157,6 +1162,7 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
             generate_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
             //generate_mask_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
         }
+#endif
 
         {
             font_sdf::glyph g;
@@ -1169,7 +1175,7 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
         }
     }
 
-    write_bitmap(va("pack/%d-%d.bmp", begin, end), width * scale, height * scale, image_data);
+    //write_bitmap(va("pack/%d-%d.bmp", begin, end), width * scale, height * scale, image_data);
 
     sdf.blocks.push_back(std::move(block));
     sdf.image.width = width * scale;
@@ -1486,9 +1492,12 @@ font::font(string::view name, int size)
     // set our new font to the system
     HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
 
-    static bool once = false;
+    static bool once = true;
     if (!once) {
         for (int ii = 'A'; ii <= 'Z'; ++ii) {
+            foo(application::singleton()->window()->hdc(), ii, square(1.f / 32.f));
+        }
+        for (int ii = 0xfe70; ii <= 0xfeff; ++ii) {
             foo(application::singleton()->window()->hdc(), ii, square(1.f / 32.f));
         }
         once = true;
@@ -1501,14 +1510,18 @@ font::font(string::view name, int size)
     m.eM21.value = 0;
     m.eM22.value = 1;
 
+    static bool once_again = false;
     for (auto block : unicode_data) {
         wglUseFontBitmapsW(application::singleton()->window()->hdc(), block.from, block.size, _list_base + block.offset);
         for (int ii = 0; ii < block.size; ++ii) {
             GetGlyphOutlineW(application::singleton()->window()->hdc(), block.from + ii, GGO_METRICS, &gm, 0, NULL, &m);
             _char_width[block.offset + ii] = gm.gmCellIncX;
         }
-        test_pack_glyphs(application::singleton()->window()->hdc(), block.from, block.from + block.size, 256);
+        if (!once_again) {
+            test_pack_glyphs(application::singleton()->window()->hdc(), block.from, block.from + block.size, 256);
+        }
     }
+    once_again = true;
 
     // restore previous font
     SelectObject(application::singleton()->window()->hdc(), prev_font);
