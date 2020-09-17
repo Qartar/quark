@@ -204,7 +204,66 @@ struct glyph
     // all edges belong to at least two channels
     // all adjacent edges share one channel in common
     std::vector<uint8_t> edge_channels;
+    // bounding box of points
+    bounds bounds;
+
+    // glyph metrics provided by GetGlyphOutlineW
+    GLYPHMETRICS metrics;
+    // outline data provided by GetGlyphOutlineW
+    std::vector<std::byte> outline;
 };
+
+//------------------------------------------------------------------------------
+struct font_sdf
+{
+    /*
+          cell
+      v0 /
+        o------------o
+        | |          |
+        | | origin   |
+        | |/         | size.y
+        |-x----------|----x
+        | |          |    :
+        o------------o    :
+          : size.x    v1  :
+          :               :
+          : -- advance -- :
+
+        v0 = p - glyph.offset
+        v1 = p - glyph.offset + glyph.size
+
+        uv0 = glyph.cell
+        uv1 = glyph.cell + glyph.size
+    */
+    struct glyph
+    {
+        vec2 size; // size of full glyph rect
+        vec2 cell; // top-left coordinate of glyph rect
+        vec2 offset; // offset of glyph origin relative to cell origin
+        float advance; // horizontal offset to next character in text
+    };
+
+    struct block
+    {
+        char32_t from;
+        char32_t to;
+        std::vector<glyph> glyphs;
+    };
+
+    struct image
+    {
+        std::size_t width;
+        std::size_t height;
+        std::vector<std::uint8_t> data;
+    };
+
+    float line_gap;
+    std::vector<block> blocks;
+    image image;
+};
+
+glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f);
 
 //------------------------------------------------------------------------------
 float determinant(vec2 a, vec2 b)
@@ -790,21 +849,108 @@ int pack_glyphs(int width, std::size_t num_glyphs, vec2i const* sizes, vec2i* of
 }
 
 //------------------------------------------------------------------------------
+void test_font_sdf(font_sdf const& sdf, char const* str, int image_width, int image_height, int scale)
+{
+    std::vector<uint8_t> image_data(image_width * image_height * 3);
+    int cx = image_width + 8;
+    int cy = image_height / 2;
+    int row_stride = image_width * 3;
+
+    for (char const* p = str; *p; ++p) {
+        font_sdf::glyph const& g = sdf.blocks[0].glyphs[int(*p) - sdf.blocks[0].from];
+
+        int x0 = cx + int(g.offset.x * scale);
+        int y0 = cy + int(g.offset.y * scale);
+        float u0 = (g.cell.x + .5f) / float(sdf.image.width);
+        float v0 = (g.cell.y + .5f) / float(sdf.image.height);
+        float du = g.size.x / float(sdf.image.width) / (g.size.x * scale);
+        float dv = g.size.y / float(sdf.image.height) / (g.size.y * scale);
+
+        float s[2][2] = {};
+
+        for (int yy = 0; yy < g.size.y * scale; ++yy) {
+            for (int xx = 0; xx < g.size.x * scale; ++xx) {
+#if 1
+                if ((xx & 1) == 0) { // emulate GPU quad shading
+                    vec2 p00 = vec2(u0 + du * float(xx),
+                                    v0 + dv * float(yy & ~1));
+                    vec2 p01 = vec2(u0 + du * float(xx),
+                                    v0 + dv * float((yy & ~1) + 1));
+                    vec2 p10 = vec2(u0 + du * float(xx + 1),
+                                    v0 + dv * float(yy & ~1));
+                    vec2 p11 = vec2(u0 + du * float(xx + 1),
+                                    v0 + dv * float((yy & ~1) + 1));
+
+                    s[0][0] = median(sample_bilinear(sdf.image.width, sdf.image.height, sdf.image.width * 3, sdf.image.data.data(), p00));
+                    s[0][1] = median(sample_bilinear(sdf.image.width, sdf.image.height, sdf.image.width * 3, sdf.image.data.data(), p01));
+                    s[1][0] = median(sample_bilinear(sdf.image.width, sdf.image.height, sdf.image.width * 3, sdf.image.data.data(), p10));
+                    s[1][1] = median(sample_bilinear(sdf.image.width, sdf.image.height, sdf.image.width * 3, sdf.image.data.data(), p11));
+                }
+
+                float f = s[xx & 1][yy & 1];
+                float fwidth = std::abs(s[(xx & 1) ^ 1][yy & 1] - f) + std::abs(s[xx & 1][(yy & 1) ^ 1] - f);
+                float d = clamp((.5f - f) / fwidth + .5f, 0.f, 1.f);
+
+                image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 0] = clamp<uint8_t>(d * (255.f / 1.f) + image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 0], 0, 255);
+                image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 1] = clamp<uint8_t>(d * (255.f / 1.f) + image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 1], 0, 255);
+                image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 2] = clamp<uint8_t>(d * (255.f / 1.f) + image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 2], 0, 255);
+#else
+                (void)s;
+
+                vec2 uv = vec2(u0 + du * float(xx), v0 + dv * float(yy));
+                vec3 px = sample_bilinear(sdf.image.width, sdf.image.height, sdf.image.width * 3, sdf.image.data.data(), uv);
+
+                image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 0] = clamp<uint8_t>(px[0] * (255.f / 1.f) + image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 0], 0, 255);
+                image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 1] = clamp<uint8_t>(px[1] * (255.f / 1.f) + image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 1], 0, 255);
+                image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 2] = clamp<uint8_t>(px[2] * (255.f / 1.f) + image_data[(y0 + yy) * row_stride + (x0 + xx) * 3 + 2], 0, 255);
+#endif
+            }
+        }
+
+        cx += int(g.advance) * scale;
+    }
+
+    write_bitmap("pack/text.bmp", image_width, image_height, image_data);
+}
+
+//------------------------------------------------------------------------------
 void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
 {
-    std::vector<vec2i> sizes(end - begin);
-    std::vector<vec2i> offsets(end - begin);
+    std::vector<vec2i> sizes;
+    std::vector<glyph> glyphs;
+    std::vector<int> cell_index;
+    sizes.reserve(end - begin);
+    glyphs.reserve(end - begin);
+    cell_index.reserve(end - begin);
 
-    GLYPHMETRICS gm{};
     MAT2 mat = {
         {0, 1}, {0, 0},
         {0, 0}, {0, 1},
     };
 
+    constexpr int margin = 2;
+
     for (int ii = 0; ii < int(end - begin); ++ii) {
-        GetGlyphOutlineW(hdc, begin + ii, GGO_METRICS, &gm, 0, NULL, &mat);
-        sizes[ii] = {int(gm.gmBlackBoxX), int(gm.gmBlackBoxY)};
+        glyphs.push_back(rasterize_glyph(hdc, begin + ii, 0.f));
+        cell_index.push_back(narrow_cast<int>(sizes.size()));
+        for (int jj = 0; jj < ii; ++jj) {
+            if (glyphs[ii].outline.size() != glyphs[jj].outline.size()) {
+                continue;
+            }
+            if (!memcmp(glyphs[ii].outline.data(), glyphs[jj].outline.data(), glyphs[ii].outline.size())) {
+                cell_index[ii] = cell_index[jj];
+                break;
+            }
+        }
+        if (cell_index.back() == sizes.size()) {
+            sizes.push_back({
+                int(glyphs[ii].metrics.gmBlackBoxX + margin * 2),
+                int(glyphs[ii].metrics.gmBlackBoxY + margin * 2)
+            });
+        }
     }
+
+    std::vector<vec2i> offsets(sizes.size());
 
     int pack_height = pack_glyphs(width, sizes.size(), sizes.data(), offsets.data());
     // brain-dead next power of two
@@ -814,16 +960,22 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
     std::vector<std::uint8_t> image_data(width * scale * height * scale * 3);
     int row_stride = width * scale * 3;
 
-    for (int ii = 0; ii < int(end - begin); ++ii) {
-        int x0 = offsets[ii].x * scale;
-        int y0 = offsets[ii].y * scale;
+    font_sdf sdf;
+    font_sdf::block block;
+    block.from = begin;
+    block.to = end - 1;
+
+    for (int ii = 0; ii < glyphs.size(); ++ii) {
+        int jj = cell_index[ii];
+        int x0 = offsets[jj].x * scale;
+        int y0 = offsets[jj].y * scale;
 
         uint8_t* glyph_data = image_data.data() + y0 * row_stride + x0 * 3;
 
-        for (int yy = 0; yy < sizes[ii].y * scale; ++yy) {
-            for (int xx = 0; xx < sizes[ii].x * scale; ++xx) {
+        for (int yy = 0; yy < sizes[jj].y * scale; ++yy) {
+            for (int xx = 0; xx < sizes[jj].x * scale; ++xx) {
                 // draw border highlight around each glyph cell
-                bool is_border = yy == 0 || xx == 0 || yy == sizes[ii].y * scale - 1 || xx == sizes[ii].x * scale - 1;
+                bool is_border = yy == 0 || xx == 0 || yy == sizes[jj].y * scale - 1 || xx == sizes[jj].x * scale - 1;
                 // use checker pattern to show pixels
                 bool is_checker = (((x0 + xx) / scale) ^ ((y0 + yy) / scale)) & 1;
                 uint8_t value = (0xdf | (is_checker ? 0x20 : 0x00)) >> (is_border ? 0 : 1);
@@ -831,12 +983,67 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
                 glyph_data[yy * row_stride + xx * 3 + (ii % 3)] = value;
             }
         }
+
+        {
+            mat3 image_to_glyph = mat3(1.f / float(scale), 0.f, 0.f,
+                                       0.f, 1.f / float(scale), 0.f,
+                                       float(glyphs[ii].metrics.gmptGlyphOrigin.x - margin),
+                                       float(glyphs[ii].metrics.gmptGlyphOrigin.y - sizes[jj].y + margin),
+                                       1.f);
+
+            generate_median_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
+            //generate_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
+            //generate_mask_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
+        }
     }
+
+    write_bitmap(va("pack/%d-%d_median.bmp", begin, end), width * scale, height * scale, image_data);
+
+    for (int ii = 0; ii < glyphs.size(); ++ii) {
+        int jj = cell_index[ii];
+        int x0 = offsets[jj].x * scale;
+        int y0 = offsets[jj].y * scale;
+
+        uint8_t* glyph_data = image_data.data() + y0 * row_stride + x0 * 3;
+        {
+            mat3 image_to_glyph = mat3(1.f / float(scale), 0.f, 0.f,
+                                       0.f, 1.f / float(scale), 0.f,
+                                       float(glyphs[ii].metrics.gmptGlyphOrigin.x - margin),
+                                       float(glyphs[ii].metrics.gmptGlyphOrigin.y - sizes[jj].y + margin),
+                                       1.f);
+
+            //generate_median_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
+            generate_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
+            //generate_mask_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
+        }
+
+        {
+            font_sdf::glyph g;
+            g.size = vec2((sizes[jj] - vec2i(2)) * scale);
+            g.cell = vec2((offsets[jj] + vec2i(1)) * scale);
+            g.offset = vec2(float(glyphs[ii].metrics.gmptGlyphOrigin.x) * scale,
+                            float(glyphs[ii].metrics.gmptGlyphOrigin.y - (sizes[jj].y - margin)) * scale);
+            g.advance = float(glyphs[ii].metrics.gmCellIncX * scale);
+            block.glyphs.push_back(g);
+        }
+    }
+
     write_bitmap(va("pack/%d-%d.bmp", begin, end), width * scale, height * scale, image_data);
+
+    sdf.blocks.push_back(std::move(block));
+    sdf.image.width = width * scale;
+    sdf.image.height = height * scale;
+    sdf.image.data = image_data;
+
+    static bool once = false;
+    if (!once) {
+        test_font_sdf(sdf, "testing TESTING 123!", 1024, 256, 1);
+        once = true;
+    }
 }
 
 //------------------------------------------------------------------------------
-glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
+glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
 {
     glyph g;
 
@@ -851,21 +1058,20 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
     }
 
     // cf. wglUseFontOutlinesAW
-    GLYPHMETRICS gm{};
     MAT2 mat = {
         {0, 1}, {0, 0},
         {0, 0}, {0, 1},
     };
 
-    DWORD glyphBufSize = GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &gm, 0, NULL, &mat);
-    std::vector<std::byte> glyphBuf(glyphBufSize);
+    DWORD glyphBufSize = GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &g.metrics, 0, NULL, &mat);
+    g.outline.resize(glyphBufSize);
     std::vector<vec2> points;
 
-    GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &gm, glyphBufSize, glyphBuf.data(), &mat);
+    GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &g.metrics, glyphBufSize, g.outline.data(), &mat);
 
     // cf. MakeLinesFromGlyph
-    TTPOLYGONHEADER const* ph = reinterpret_cast<TTPOLYGONHEADER const*>(glyphBuf.data());
-    TTPOLYGONHEADER const* hend = reinterpret_cast<TTPOLYGONHEADER const*>(glyphBuf.data() + glyphBufSize);
+    TTPOLYGONHEADER const* ph = reinterpret_cast<TTPOLYGONHEADER const*>(g.outline.data());
+    TTPOLYGONHEADER const* hend = reinterpret_cast<TTPOLYGONHEADER const*>(g.outline.data() + glyphBufSize);
     while (ph < hend) {
 
         // cf. MakeLinesFromTTPolygon
@@ -1036,6 +1242,7 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
     }
 #endif
 
+    g.bounds = bounds::from_points(g.points.data(), g.points.size());
     return g;
 }
 
@@ -1044,19 +1251,11 @@ void foo(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f)
 {
     glyph g = rasterize_glyph(hdc, ch, chordalDeviationSquared);
 
-    GLYPHMETRICS gm{};
-    MAT2 mat = {
-        {0, 1}, {0, 0},
-        {0, 0}, {0, 1},
-    };
-
-    GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &gm, 0, NULL, &mat);
-
     constexpr std::size_t image_width = 32;
     constexpr std::size_t image_height = 32;
 
-    float sx = float(max(gm.gmBlackBoxX + 2, gm.gmBlackBoxY + 2)) / float(image_width);
-    float sy = float(max(gm.gmBlackBoxX + 2, gm.gmBlackBoxY + 2)) / float(image_height);
+    float sx = float(max(g.metrics.gmBlackBoxX + 2, g.metrics.gmBlackBoxY + 2)) / float(image_width);
+    float sy = float(max(g.metrics.gmBlackBoxX + 2, g.metrics.gmBlackBoxY + 2)) / float(image_height);
 
     bounds b = bounds::from_points(g.points.data(), g.points.size());
 
