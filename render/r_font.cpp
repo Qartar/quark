@@ -455,6 +455,111 @@ int signed_intersect_segments(vec2 a, vec2 b, vec2 c, vec2 d)
 }
 
 //------------------------------------------------------------------------------
+float segment_distance_squared(vec2 a, vec2 b, vec2 c)
+{
+    vec2 v = b - a;
+    vec2 r = c - a;
+    float num = dot(v, r);
+    float den = dot(v, v);
+    if (num >= den) {
+        return length_sqr(c - b);
+    } else if (num < 0.f) {
+        return length_sqr(c - a);
+    } else {
+        float det = determinant(v, r);
+        return std::abs(det * det / den);
+    }
+}
+
+//------------------------------------------------------------------------------
+float minimum_segment_distance_squared(vec2 a, vec2 b, vec2 c, vec2 d)
+{
+    // Possible configurations:
+    //      Segments are parallel and overlapping
+    //          result is zero
+    //      Segments are parallel and their projections are overlapping
+    //          result is orthognal distance
+    //      Segments are parallel and non-overlapping
+    //          result is distance between closest endpoints
+    //      Segments are askew and intersecting
+    //          result is zero
+    //      Segments are askew and non-intersecting
+    //          projections are overlapping
+    //              result is minimum orthogonal distance
+    //          projections are non-overlapping
+    //              result is minimum endpoint distance
+
+    float d1 = segment_distance_squared(a, b, c);
+    float d2 = segment_distance_squared(a, b, d);
+    float d3 = segment_distance_squared(c, d, a);
+    float d4 = segment_distance_squared(c, d, b);
+
+    return min(min(d1, d2), min(d3, d4));
+}
+
+//------------------------------------------------------------------------------
+// integral of the minimum distance between p=(a,b) and (c,d) over length of (a,b)
+float segment_segment_distance_metric(vec2 a, vec2 b, vec2 c, vec2 d)
+{
+    //  a---b       a---b       a-------b     a---b
+    //    c---d   c-------d       c---d             c---d
+
+    // there are three potential regions
+    //  where p is nearest to c
+    //  where p is nearest to d
+    //  where p is nearest to a point on the segment (c,d)
+
+    // distance between points on segments is a linear function but distance
+    // to either endpoints is quadratic. to split the integral into three regions
+    // we need to find the fraction along (a,b) at each region boundary
+    //
+    // the linear region occurs when the point is contained in the projection onto
+    // (c,d)
+
+    vec2 ca = a - c;
+    vec2 cb = b - c;
+    vec2 cd = d - c;
+    float den = dot(cd, cd);
+    // note: t_a may be less or greater than t_b
+    float t_a = dot(ca, cd) / den; // proj_a = c + (d - c) t_a
+    float t_b = dot(cb, cd) / den; // proj_b = c + (d - c) t_b
+
+    float t0 = min(t_a, t_b);
+    float t1 = 0.f;
+    float t2 = 1.f;
+    float t3 = max(t_a, t_b);
+
+    // integrate quadratic
+    if (t0 < t1) {
+        vec2 p = t0 == t_a ? c : d;
+    }
+    // integrate linear
+    if (t1 < t2) {
+        //  need to consider whether segments intersect
+    }
+    // integrate quadratic
+    if (t2 < t3) {
+        vec2 p = t3 == t_a ? c : d;
+    }
+    return 0.f;
+}
+
+//------------------------------------------------------------------------------
+float minimum_edge_distance_squared(glyph const& glyph, std::size_t e0, std::size_t e1)
+{
+    float dsqr = FLT_MAX;
+    for (std::size_t ii = glyph.edges[e0].first; ii < glyph.edges[e0].last; ++ii) {
+        for (std::size_t jj = glyph.edges[e1].first; jj < glyph.edges[e1].last; ++jj) {
+            dsqr = min(dsqr, minimum_segment_distance_squared(glyph.points[ii],
+                                                              glyph.points[ii + 1],
+                                                              glyph.points[jj],
+                                                              glyph.points[jj + 1]));
+        }
+    }
+    return dsqr;
+}
+
+//------------------------------------------------------------------------------
 bool point_inside_glyph(glyph const& glyph, vec2 p)
 {
     int n = 0;
