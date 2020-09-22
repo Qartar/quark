@@ -7,6 +7,7 @@
 #include "cm_filesystem.h"
 #include "cm_unicode.h"
 #include "gl/gl_include.h"
+#include "gl/gl_shader.h"
 
 #include <numeric> // iota
 
@@ -256,12 +257,13 @@ struct font_sdf
     {
         std::size_t width;
         std::size_t height;
-        std::vector<std::uint8_t> data;
+        std::vector<std::uint32_t> data;
     };
 
     float line_gap;
     std::vector<block> blocks;
     image image;
+    gl::texture2d texture;
 };
 
 glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f);
@@ -993,6 +995,7 @@ int pack_glyphs(int width, std::size_t num_glyphs, vec2i const* sizes, vec2i* of
 //------------------------------------------------------------------------------
 void test_font_sdf(font_sdf const& sdf, char const* str, int image_width, int image_height, int scale)
 {
+#if 0
     std::vector<uint8_t> image_data(image_width * image_height * 3);
     int cx = image_width + 8;
     int cy = image_height / 2;
@@ -1053,10 +1056,17 @@ void test_font_sdf(font_sdf const& sdf, char const* str, int image_width, int im
     }
 
     write_bitmap("pack/text.bmp", image_width, image_height, image_data);
+#else
+    (void)sdf;
+    (void)str;
+    (void)image_width;
+    (void)image_height;
+    (void)scale;
+#endif
 }
 
 //------------------------------------------------------------------------------
-void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
+void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width, font_sdf* sdf)
 {
     std::vector<vec2i> sizes;
     std::vector<glyph> glyphs;
@@ -1099,34 +1109,19 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
     int height = 1; while (height < pack_height) { height <<= 1; }
 
     constexpr int scale = 1;
-    std::vector<std::uint8_t> image_data(width * scale * height * scale * 3);
-    int row_stride = width * scale * 3;
+    std::vector<uint32_t> image_data(width * scale * height * scale);
+    int row_stride = width * scale;
 
-    font_sdf sdf;
     font_sdf::block block;
     block.from = begin;
     block.to = end - 1;
 
-#if 0
     for (int ii = 0; ii < glyphs.size(); ++ii) {
         int jj = cell_index[ii];
         int x0 = offsets[jj].x * scale;
         int y0 = offsets[jj].y * scale;
 
-        uint8_t* glyph_data = image_data.data() + y0 * row_stride + x0 * 3;
-
-        for (int yy = 0; yy < sizes[jj].y * scale; ++yy) {
-            for (int xx = 0; xx < sizes[jj].x * scale; ++xx) {
-                // draw border highlight around each glyph cell
-                bool is_border = yy == 0 || xx == 0 || yy == sizes[jj].y * scale - 1 || xx == sizes[jj].x * scale - 1;
-                // use checker pattern to show pixels
-                bool is_checker = (((x0 + xx) / scale) ^ ((y0 + yy) / scale)) & 1;
-                uint8_t value = (0xdf | (is_checker ? 0x20 : 0x00)) >> (is_border ? 0 : 1);
-                // cycle through primary colors for contrast
-                glyph_data[yy * row_stride + xx * 3 + (ii % 3)] = value;
-            }
-        }
-
+        uint32_t* glyph_data = image_data.data() + y0 * row_stride + x0;
         {
             mat3 image_to_glyph = mat3(1.f / float(scale), 0.f, 0.f,
                                        0.f, 1.f / float(scale), 0.f,
@@ -1134,34 +1129,8 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
                                        float(glyphs[ii].metrics.gmptGlyphOrigin.y - sizes[jj].y + margin),
                                        1.f);
 
-            generate_median_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
-            //generate_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
-            //generate_mask_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
+            generate_bitmap_r10g10b10a2(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
         }
-    }
-
-    write_bitmap(va("pack/%d-%d_median.bmp", begin, end), width * scale, height * scale, image_data);
-#endif
-
-    for (int ii = 0; ii < glyphs.size(); ++ii) {
-        int jj = cell_index[ii];
-#if 1
-        int x0 = offsets[jj].x * scale;
-        int y0 = offsets[jj].y * scale;
-
-        uint8_t* glyph_data = image_data.data() + y0 * row_stride + x0 * 3;
-        {
-            mat3 image_to_glyph = mat3(1.f / float(scale), 0.f, 0.f,
-                                       0.f, 1.f / float(scale), 0.f,
-                                       float(glyphs[ii].metrics.gmptGlyphOrigin.x - margin),
-                                       float(glyphs[ii].metrics.gmptGlyphOrigin.y - sizes[jj].y + margin),
-                                       1.f);
-
-            //generate_median_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
-            generate_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
-            //generate_mask_bitmap(glyphs[ii], image_to_glyph, sizes[jj].x * scale, sizes[jj].y * scale, row_stride, glyph_data);
-        }
-#endif
 
         {
             font_sdf::glyph g;
@@ -1174,18 +1143,12 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width)
         }
     }
 
-    //write_bitmap(va("pack/%d-%d.bmp", begin, end), width * scale, height * scale, image_data);
-
-    sdf.blocks.push_back(std::move(block));
-    sdf.image.width = width * scale;
-    sdf.image.height = height * scale;
-    sdf.image.data = image_data;
-
-    static bool once = false;
-    if (!once) {
-        test_font_sdf(sdf, "testing TESTING 123!", 1024, 256, 1);
-        once = true;
-    }
+    sdf->blocks.push_back(std::move(block));
+    sdf->image.width = width * scale;
+    sdf->image.height = height * scale;
+    sdf->image.data = image_data;
+    sdf->texture = gl::texture2d(1, GL_RGB10_A2, width, height);
+    sdf->texture.upload(0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, sdf->image.data.data());
 }
 
 //------------------------------------------------------------------------------
@@ -1510,20 +1473,131 @@ font::font(string::view name, int size)
     m.eM22.value = 1;
 
     static bool once_again = false;
-    for (auto block : unicode_data) {
+    for (auto const& block : unicode_data) {
         wglUseFontBitmapsW(application::singleton()->window()->hdc(), block.from, block.size, _list_base + block.offset);
         for (int ii = 0; ii < block.size; ++ii) {
             GetGlyphOutlineW(application::singleton()->window()->hdc(), block.from + ii, GGO_METRICS, &gm, 0, NULL, &m);
             _char_width[block.offset + ii] = gm.gmCellIncX;
         }
         if (!once_again) {
-            test_pack_glyphs(application::singleton()->window()->hdc(), block.from, block.from + block.size, 256);
+            _sdf = std::make_unique<font_sdf>();
+            test_pack_glyphs(application::singleton()->window()->hdc(), block.from, block.from + block.size, 256, _sdf.get());
+            once_again = true;
         }
     }
-    once_again = true;
 
     // restore previous font
     SelectObject(application::singleton()->window()->hdc(), prev_font);
+
+    if (_sdf.get()) {
+        _vao = gl::vertex_array({
+            gl::vertex_array_binding{1, {
+                gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, offsetof(instance, position)}, // position
+                gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, offsetof(instance, size)}, // size
+                gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, offsetof(instance, offset)}, // offset
+                gl::vertex_array_attrib{4, GL_UNSIGNED_BYTE, gl::vertex_attrib_type::normalized, offsetof(instance, color)}, // color
+            }}
+        });
+
+        uint16_t const indices[] = {0, 1, 2, 1, 3, 2};
+        _ibo = gl::index_buffer<uint16_t>(gl::buffer_usage::static_, gl::buffer_access::draw, 6, indices);
+        _vbo = gl::vertex_buffer<instance>(gl::buffer_usage::stream, gl::buffer_access::draw, 1024);
+
+        _vao.bind_buffer(_ibo);
+        _vao.bind_buffer(_vbo, 0);
+
+        string::buffer info_log;
+        auto vsh = gl::shader(gl::shader_stage::vertex,
+R"(
+#version 330 compatibility
+
+layout(location = 0) in vec2 in_position;
+layout(location = 1) in vec2 in_size;
+layout(location = 2) in vec2 in_offset;
+layout(location = 3) in vec4 in_color;
+
+out vec2 vtx_texcoord;
+out vec4 vtx_color;
+
+void main() {
+    vec4 v0 = vec4(in_position,           0.0, 1.0);
+    vec4 v1 = vec4(in_position + in_size * vec2(1,-1), 0.0, 1.0);
+    gl_Position = gl_ModelViewProjectionMatrix * 
+                  vec4((gl_VertexID & 1) == 1 ? v1.x : v0.x,
+                       (gl_VertexID & 2) == 2 ? v1.y : v0.y, 0.0, 1.0);
+
+    vec2 u0 = in_offset;
+    vec2 u1 = in_offset + in_size;
+    vtx_texcoord = vec2((gl_VertexID & 1) == 1 ? u1.x : u0.x,
+                        (gl_VertexID & 2) == 2 ? u1.y : u0.y);
+
+    vtx_color = in_color;
+}
+)"
+        );
+
+        if (vsh.compile_status(info_log)) {
+            if (info_log.length()) {
+                log::warning("%s", info_log.c_str());
+            }
+        } else if (info_log.length()) {
+            log::error("%s", info_log.c_str());
+        }
+
+        auto fsh = gl::shader(gl::shader_stage::fragment,
+R"(
+#version 420
+
+layout(binding = 0) uniform sampler2D sdf;
+
+in vec2 vtx_texcoord;
+in vec4 vtx_color;
+
+out vec4 frag_color;
+
+float median(vec3 v) {
+    float vmin = min(v.x, min(v.y, v.z));
+    float vmax = max(v.x, max(v.y, v.z));
+    return dot(v, vec3(1.0)) - vmin - vmax;
+}
+
+void main() {
+    vec2 uv = vtx_texcoord / vec2(textureSize(sdf, 0));
+    float f = median(texture(sdf, uv).xyz);
+    //float d = clamp((0.5 - f) / fwidth(f), 0.0, 1.0);
+    float g = fwidth(f);
+    float d = smoothstep(-0.5 * g, 0.5 * g, 0.5 - f);
+    frag_color = vec4(1,1,1,d) * vtx_color;
+}
+)"
+        );
+
+        if (fsh.compile_status(info_log)) {
+            if (info_log.length()) {
+                log::warning("%s", info_log.c_str());
+            }
+        } else if (info_log.length()) {
+            log::error("%s", info_log.c_str());
+        }
+
+        _program = gl::program(vsh, fsh);
+
+        if (_program.link_status(info_log)) {
+            if (info_log.length()) {
+                log::warning("%s", info_log.c_str());
+            }
+        } else if (info_log.length()) {
+            log::error("%s", info_log.c_str());
+        }
+
+        if (_program.validate_status(info_log)) {
+            if (info_log.length()) {
+                log::warning("%s", info_log.c_str());
+            }
+        } else if (info_log.length()) {
+            log::error("%s", info_log.c_str());
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1559,6 +1633,103 @@ bool font::compare(string::view name, int size) const
 //------------------------------------------------------------------------------
 void font::draw(string::view string, vec2 position, color4 color, vec2 scale) const
 {
+    bool use_sdf = _sdf.get() != nullptr;
+    for (auto ch : string) {
+        if (!unicode::is_ascii(&ch)) {
+            use_sdf = false;
+            break;
+        }
+    }
+
+    if (use_sdf) {
+        _program.use();
+        _vao.bind();
+        glEnable(GL_TEXTURE_2D);
+        _sdf->texture.bind();
+
+        std::vector<instance> instances;
+
+        using PFNGLDRAWELEMENTSINSTANCED = void (APIENTRY*)(GLenum mode, GLsizei count, GLenum type, void const* indices, GLsizei instancecount);
+        auto glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)wglGetProcAddress("glDrawElementsInstanced");
+
+        int xoffs = 0;
+
+        int r = static_cast<int>(color.r * 255.f + .5f);
+        int g = static_cast<int>(color.g * 255.f + .5f);
+        int b = static_cast<int>(color.b * 255.f + .5f);
+        int a = static_cast<int>(color.a * 255.f + .5f);
+
+        char const* cursor = string.begin();
+        char const* end = string.end();
+
+        constexpr int buffer_size = 1024;
+        char32_t buffer[buffer_size];
+
+        while (cursor < end) {
+            char const* next = find_color(cursor, end);
+            if (!next) {
+                next = end;
+            }
+
+            uint32_t packed_color = (a << 24) | (b << 16) | (g << 8) | r;
+
+            while (cursor < next) {
+                int n = 0;
+
+                // Decode UTF-8 into codepoints
+                while (cursor < next && n < buffer_size) {
+                    int c = unicode_data.decode(cursor);
+                    buffer[n++] = c;
+                }
+
+                // Rewrite text based on directionality/joining
+                char32_t* p = unicode::rewrite(buffer, buffer + n);
+                // Contextual conversion may result in fewer codepoints
+                n = narrow_cast<GLsizei>(p - buffer);
+
+                // Convert codepoints to character indices
+                for (int ii = 0; ii < n; ++ii) {
+                    auto index = unicode_data.codepoint_to_index(buffer[ii]);
+                    instances.push_back({
+                            (_sdf->blocks[0].glyphs[index].offset * vec2(1,-1) + vec2(float(xoffs), 0)),
+                            _sdf->blocks[0].glyphs[index].size,
+                            _sdf->blocks[0].glyphs[index].cell,
+                            packed_color,
+                        });
+                    xoffs += _char_width[buffer[ii]];
+                }
+
+
+                glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
+                glScalef(scale.x, scale.y, 1);
+                glTranslatef(position.x / scale.x, position.y / scale.y, 0);
+
+                _vbo.upload(0, instances.size(), instances.data());
+                glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr, narrow_cast<GLsizei>(instances.size()));
+                instances.resize(0);
+
+                glPopMatrix();
+            }
+
+            if (cursor < end && is_color(cursor)) {
+                if (!get_color(cursor, r, g, b)) {
+                    r = static_cast<int>(color.r * 255.f + .5f);
+                    g = static_cast<int>(color.g * 255.f + .5f);
+                    b = static_cast<int>(color.b * 255.f + .5f);
+                }
+                cursor += 4;
+            }
+        }
+
+        gl::program().use();
+        gl::vertex_array().bind();
+        glDisable(GL_TEXTURE_2D);
+        gl::texture2d().bind();
+        return;
+    }
+
+
     // activate font if it isn't already
     if (_active_font != _handle) {
         HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
@@ -1574,10 +1745,10 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
     int xoffs = 0;
 
-    int r = static_cast<int>(color.r * 255.5f);
-    int g = static_cast<int>(color.g * 255.5f);
-    int b = static_cast<int>(color.b * 255.5f);
-    int a = static_cast<int>(color.a * 255.5f);
+    int r = static_cast<int>(color.r * 255.f + .5f);
+    int g = static_cast<int>(color.g * 255.f + .5f);
+    int b = static_cast<int>(color.b * 255.f + .5f);
+    int a = static_cast<int>(color.a * 255.f + .5f);
 
     char const* cursor = string.begin();
     char const* end = string.end();
@@ -1622,9 +1793,9 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
         if (cursor < end && is_color(cursor)) {
             if (!get_color(cursor, r, g, b)) {
-                r = static_cast<int>(color.r * 255.5f);
-                g = static_cast<int>(color.g * 255.5f);
-                b = static_cast<int>(color.b * 255.5f);
+                r = static_cast<int>(color.r * 255.f + .5f);
+                g = static_cast<int>(color.g * 255.f + .5f);
+                b = static_cast<int>(color.b * 255.f + .5f);
             }
             cursor += 4;
         }

@@ -7,7 +7,10 @@
 #include "cm_string.h"
 #include "cm_time.h"
 
+#include "gl/gl_buffer.h"
 #include "gl/gl_framebuffer.h"
+#include "gl/gl_shader.h"
+#include "gl/gl_vertex_array.h"
 #include "gl/gl_types.h"
 
 #if defined(_WIN32)
@@ -19,6 +22,7 @@ typedef struct HBITMAP__* HBITMAP;
 namespace render {
 
 class window;
+struct font_sdf;
 
 //------------------------------------------------------------------------------
 class font
@@ -39,6 +43,19 @@ private:
     unsigned int _list_base;
 
     std::vector<short> _char_width;
+    std::unique_ptr<font_sdf> _sdf;
+
+    struct instance {
+        vec2 position;
+        vec2 size;
+        vec2 offset;
+        uint32_t color;
+    };
+
+    gl::vertex_array _vao;
+    gl::vertex_buffer<instance> _vbo;
+    gl::index_buffer<uint16_t> _ibo;
+    gl::program _program;
 
     static HFONT _system_font;
     static HFONT _active_font;
