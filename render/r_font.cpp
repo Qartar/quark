@@ -1518,6 +1518,9 @@ font::font(string::view name, int size)
         _vao.bind_buffer(_ibo);
         _vao.bind_buffer(_vbo, 0);
 
+        gl::index_buffer<int>().bind();
+        gl::vertex_buffer<int>().bind();
+
         string::buffer info_log;
         auto vsh = gl::shader(gl::shader_stage::vertex,
 R"(
@@ -1738,6 +1741,9 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         gl::vertex_array().bind();
         glDisable(GL_TEXTURE_2D);
         gl::texture2d().bind();
+
+        gl::index_buffer<int>().bind();
+        gl::vertex_buffer<int>().bind();
         return;
     }
 
