@@ -96,6 +96,9 @@ public:
     //! Returns an iterator to the end of the Unicode block layouts
     constexpr auto end() const { return _blocks.end(); }
 
+    //! Returns a pointer to the beginning of the Unicode block layouts
+    constexpr auto data() const { return _blocks.data(); }
+
     //! Returns the number of loaded Unicode blocks
     constexpr int size() const { return sz; }
 
@@ -1066,24 +1069,30 @@ void test_font_sdf(font_sdf const& sdf, char const* str, int image_width, int im
 }
 
 //------------------------------------------------------------------------------
-void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width, font_sdf* sdf)
+void test_pack_glyphs(HDC hdc, unicode_block_layout const* blocks, std::size_t num_blocks, int width, font_sdf* sdf)
 {
+    constexpr int scale = 1;
+    constexpr int margin = 2;
+
+    int total_height = 0;
+    std::vector<uint32_t> image_data;
+
+    for (std::size_t block_index = 0; block_index < num_blocks; ++block_index) {
+
     std::vector<vec2i> sizes;
     std::vector<glyph> glyphs;
     std::vector<int> cell_index;
-    sizes.reserve(end - begin);
-    glyphs.reserve(end - begin);
-    cell_index.reserve(end - begin);
+    sizes.reserve(blocks[block_index].size);
+    glyphs.reserve(blocks[block_index].size);
+    cell_index.reserve(blocks[block_index].size);
 
     MAT2 mat = {
         {0, 1}, {0, 0},
         {0, 0}, {0, 1},
     };
 
-    constexpr int margin = 2;
-
-    for (int ii = 0; ii < int(end - begin); ++ii) {
-        glyphs.push_back(rasterize_glyph(hdc, begin + ii, 0.f));
+    for (int ii = 0; ii < blocks[block_index].size; ++ii) {
+        glyphs.push_back(rasterize_glyph(hdc, blocks[block_index].from + ii, 0.f));
         cell_index.push_back(narrow_cast<int>(sizes.size()));
         for (int jj = 0; jj < ii; ++jj) {
             if (glyphs[ii].outline.size() != glyphs[jj].outline.size()) {
@@ -1105,16 +1114,16 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width, font_sdf* sdf)
     std::vector<vec2i> offsets(sizes.size());
 
     int pack_height = pack_glyphs(width, sizes.size(), sizes.data(), offsets.data());
-    // brain-dead next power of two
-    int height = 1; while (height < pack_height) { height <<= 1; }
-
-    constexpr int scale = 1;
-    std::vector<uint32_t> image_data(width * scale * height * scale);
+    image_data.resize(width * scale * (total_height + pack_height) * scale);
     int row_stride = width * scale;
 
     font_sdf::block block;
-    block.from = begin;
-    block.to = end - 1;
+    block.from = blocks[block_index].from;
+    block.to = blocks[block_index].to;
+
+    for (int ii = 0; ii < offsets.size(); ++ii) {
+        offsets[ii].y += total_height;
+    }
 
     for (int ii = 0; ii < glyphs.size(); ++ii) {
         int jj = cell_index[ii];
@@ -1144,6 +1153,12 @@ void test_pack_glyphs(HDC hdc, UINT begin, UINT end, int width, font_sdf* sdf)
     }
 
     sdf->blocks.push_back(std::move(block));
+    total_height += pack_height;
+    }
+
+    int height = 1; while (height < total_height) { height <<= 1; }
+    image_data.resize(width * scale * height * scale);
+
     sdf->image.width = width * scale;
     sdf->image.height = height * scale;
     sdf->image.data = image_data;
@@ -1241,7 +1256,7 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
             pc = reinterpret_cast<TTPOLYCURVE const*>(&pc->apfx[pc->cpfx]);
         }
 
-#if 1
+#if 0
         for (std::size_t ii = pstart; ii < points.size(); ++ii) {
             OutputDebugStringA(va("%g, %g\n\0", points[ii].x, points[ii].y).begin());
         }
@@ -1283,7 +1298,7 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
             }
             corners.push_back(pmax);
         }
-#if 1
+#if 0
         for (std::size_t ii = 0; ii < corners.size(); ++ii) {
             OutputDebugStringA(va("    %g, %g\n\0", points[corners[ii]].x, points[corners[ii]].y).begin());
         }
@@ -1339,7 +1354,7 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
         ph = reinterpret_cast<TTPOLYGONHEADER const*>(cend);
     }
 
-#if 1
+#if 0
     {
         for (std::size_t jj = 0, sz = g.edges.size(); jj < sz; ++jj) {
                 OutputDebugStringA("edge\n");
@@ -1472,19 +1487,16 @@ font::font(string::view name, int size)
     m.eM21.value = 0;
     m.eM22.value = 1;
 
-    static bool once_again = false;
     for (auto const& block : unicode_data) {
         wglUseFontBitmapsW(application::singleton()->window()->hdc(), block.from, block.size, _list_base + block.offset);
         for (int ii = 0; ii < block.size; ++ii) {
             GetGlyphOutlineW(application::singleton()->window()->hdc(), block.from + ii, GGO_METRICS, &gm, 0, NULL, &m);
             _char_width[block.offset + ii] = gm.gmCellIncX;
         }
-        if (!once_again) {
-            _sdf = std::make_unique<font_sdf>();
-            test_pack_glyphs(application::singleton()->window()->hdc(), block.from, block.from + block.size, 256, _sdf.get());
-            once_again = true;
-        }
     }
+
+    _sdf = std::make_unique<font_sdf>();
+    test_pack_glyphs(application::singleton()->window()->hdc(), unicode_data.data(), unicode_data.size(), 512, _sdf.get());
 
     // restore previous font
     SelectObject(application::singleton()->window()->hdc(), prev_font);
@@ -1634,12 +1646,6 @@ bool font::compare(string::view name, int size) const
 void font::draw(string::view string, vec2 position, color4 color, vec2 scale) const
 {
     bool use_sdf = _sdf.get() != nullptr;
-    for (auto ch : string) {
-        if (!unicode::is_ascii(&ch)) {
-            use_sdf = false;
-            break;
-        }
-    }
 
     if (use_sdf) {
         _program.use();
@@ -1690,10 +1696,16 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
                 // Convert codepoints to character indices
                 for (int ii = 0; ii < n; ++ii) {
                     auto index = unicode_data.codepoint_to_index(buffer[ii]);
+                    int block_index = 0;
+                    int glyph_index = index;
+                    while (glyph_index >= narrow_cast<int>(_sdf->blocks[block_index].to + 1 - _sdf->blocks[block_index].from)) {
+                        glyph_index -= _sdf->blocks[block_index].to + 1 - _sdf->blocks[block_index].from;
+                        ++block_index;
+                    }
                     instances.push_back({
-                            (_sdf->blocks[0].glyphs[index].offset * vec2(1,-1) + vec2(float(xoffs), 0)),
-                            _sdf->blocks[0].glyphs[index].size,
-                            _sdf->blocks[0].glyphs[index].cell,
+                            (_sdf->blocks[block_index].glyphs[glyph_index].offset * vec2(1,-1) + vec2(float(xoffs), 0)),
+                            _sdf->blocks[block_index].glyphs[glyph_index].size,
+                            _sdf->blocks[block_index].glyphs[glyph_index].cell,
                             packed_color,
                         });
                     xoffs += _char_width[buffer[ii]];
