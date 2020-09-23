@@ -1698,20 +1698,18 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
                 // Convert codepoints to character indices
                 for (int ii = 0; ii < n; ++ii) {
-                    auto index = unicode_data.codepoint_to_index(buffer[ii]);
                     int block_index = 0;
-                    int glyph_index = index;
-                    while (glyph_index >= narrow_cast<int>(_sdf->blocks[block_index].to + 1 - _sdf->blocks[block_index].from)) {
-                        glyph_index -= _sdf->blocks[block_index].to + 1 - _sdf->blocks[block_index].from;
+                    while (block_index < _sdf->blocks.size() && buffer[ii] >= _sdf->blocks[block_index].to) {
                         ++block_index;
                     }
+                    int glyph_index = buffer[ii] - _sdf->blocks[block_index].from;
                     instances.push_back({
                             (_sdf->blocks[block_index].glyphs[glyph_index].offset * vec2(1,-1) + vec2(float(xoffs), 0)),
                             _sdf->blocks[block_index].glyphs[glyph_index].size,
                             _sdf->blocks[block_index].glyphs[glyph_index].cell,
                             packed_color,
                         });
-                    xoffs += _char_width[buffer[ii]];
+                    xoffs += int(_sdf->blocks[block_index].glyphs[glyph_index].advance);
                 }
 
 
