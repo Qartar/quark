@@ -216,6 +216,13 @@ struct glyph
     GLYPHMETRICS metrics;
     // outline data provided by GetGlyphOutlineW
     std::vector<std::byte> outline;
+
+    //! offset into outline data to TTPOLYCURVE for each point on a bezier curve
+    std::vector<std::ptrdiff_t> qspline_offset;
+    //! number of points from this point to the first point not on the bezier curve
+    std::vector<std::size_t> qspline_points;
+    //! starting point of the bezier curve (which is not stored in the TTPOLYCURVE data)
+    std::vector<vec2> qspline_start;
 };
 
 //------------------------------------------------------------------------------
@@ -370,6 +377,46 @@ edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
 }
 
 //------------------------------------------------------------------------------
+edge_distance signed_qspline_distance_squared(TTPOLYCURVE const* pc, vec2 p0, vec2 pos)
+{
+    edge_distance sdsqr_min = {FLT_MAX, -FLT_MAX};
+
+    auto const GetFixedPoint = [](POINTFX const& pfx) {
+        return vec2(float(pfx.x.value) + pfx.x.fract * (1.f / 65536.f),
+                    float(pfx.y.value) + pfx.y.fract * (1.f / 65536.f));
+    };
+
+    assert(pc->wType == TT_PRIM_QSPLINE);
+
+    // cf. MakeLinesFromTTQSpline
+    vec2 p2, p1;
+    // To ensure C2 continuity the spline is specified as a series of
+    // control points corresponding to each curve. The endpoints of
+    // each curve are the midpoints between control points plus the
+    // final point on the previous curve and an explicit endpoint in
+    // the final curve of the spline.
+    for (WORD ii = 0; ii < pc->cpfx - 1; ++ii) {
+        p1 = GetFixedPoint(pc->apfx[ii]);
+        p2 = GetFixedPoint(pc->apfx[ii + 1]);
+        // If this is not the final curve with explicit endpoint
+        // calculate the endpoint as midpoint between the current
+        // and next control points.
+        if (ii != pc->cpfx - 2) {
+            p2 = .5f * (p1 + p2);
+        }
+        edge_distance sdsqr = signed_qspline_distance_squared(p0, p1, p2, pos);
+        if (sdsqr < sdsqr_min) {
+            sdsqr_min = sdsqr;
+        }
+        // First endpoint of the next curve is the last endpoint
+        // of the current curve.
+        p0 = p2;
+    }
+
+    return sdsqr_min;
+}
+
+//------------------------------------------------------------------------------
 edge_distance signed_segment_distance_squared(vec2 a, vec2 b, vec2 c)
 {
     vec2 v = b - a;
@@ -413,9 +460,33 @@ edge_distance signed_edge_distance_squared(glyph const& glyph, vec2 p, std::size
     std::size_t first = glyph.edges[edge_index].first;
     std::size_t last = glyph.edges[edge_index].last;
     for (std::size_t ii = first; ii < last; ++ii) {
-        edge_distance sdsqr = signed_segment_distance_squared(glyph.points[ii], glyph.points[ii + 1], p);
-        if (sdsqr < sdsqr_min) {
-            sdsqr_min = sdsqr;
+#if 1
+        // Corner detection may insert corners into the middle of a bezier curve.
+        // These corners are spurious since the curves are by construction C1
+        // continuous. This effectively ignores detected corners by checking the
+        // distance along the entire curve regardless of where the 'edge' starts
+        // within the curve. In theory this could cause incorrect per-channel
+        // distances across corners but since the corners are spurious this
+        // doesn't seem to affect the quality resulting SDF.
+        if (glyph.qspline_offset[ii]) {
+            TTPOLYCURVE const* pc = reinterpret_cast<TTPOLYCURVE const*>(glyph.outline.data() + glyph.qspline_offset[ii]);
+            edge_distance sdsqr = signed_qspline_distance_squared(pc, glyph.qspline_start[ii], p);
+            if (sdsqr < sdsqr_min) {
+                sdsqr_min = sdsqr;
+            }
+            assert(ii + glyph.qspline_points[ii] >= glyph.qspline_offset.size()
+                || glyph.qspline_offset[ii] != glyph.qspline_offset[ii + glyph.qspline_points[ii]]);
+            ii += glyph.qspline_points[ii] - 1;
+        }
+        // Also need to check the segment between the last point on this curve
+        // and the first point in the next segment or curve.
+        if (ii < last)
+#endif
+        {
+            edge_distance sdsqr = signed_segment_distance_squared(glyph.points[ii], glyph.points[ii + 1], p);
+            if (sdsqr < sdsqr_min) {
+                sdsqr_min = sdsqr;
+            }
         }
     }
     return sdsqr_min;
@@ -1132,6 +1203,10 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
     g.outline.resize(glyphBufSize);
     std::vector<vec2> points;
 
+    std::vector<std::ptrdiff_t> qspline_offset;
+    std::vector<std::size_t> qspline_points;
+    std::vector<vec2> qspline_start;
+
     GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &g.metrics, glyphBufSize, g.outline.data(), &mat);
 
     // cf. MakeLinesFromGlyph
@@ -1151,6 +1226,9 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
 
         std::size_t pstart = points.size();
         points.push_back(GetFixedPoint(ph->pfxStart));
+        qspline_offset.push_back(0);
+        qspline_points.push_back(0);
+        qspline_start.push_back(vec2_zero);
 
         TTPOLYCURVE const* pc = reinterpret_cast<TTPOLYCURVE const*>(&ph[1]);
         TTPOLYCURVE const* cend = reinterpret_cast<TTPOLYCURVE const*>(reinterpret_cast<std::byte const*>(ph) + ph->cb);
@@ -1161,8 +1239,13 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
                 // cf. MakeLinesFromTTLine
                 for (WORD ii = 0; ii < pc->cpfx; ++ii) {
                     points.push_back(GetFixedPoint(pc->apfx[ii]));
+                    qspline_offset.push_back(0);
+                    qspline_points.push_back(0);
+                    qspline_start.push_back(vec2_zero);
                 }
             } else if (pc->wType == TT_PRIM_QSPLINE) {
+                std::size_t count = points.size();
+
                 // cf. MakeLinesFromTTQSpline
                 vec2 p2, p1, p0 = points.back();
                 // To ensure C2 continuity the spline is specified as a series of
@@ -1187,6 +1270,12 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
 
                 points.push_back(p2);
 
+                while (qspline_offset.size() < points.size()) {
+                    qspline_offset.push_back((std::byte const*)pc - g.outline.data());
+                    qspline_points.push_back(points.size() - qspline_points.size());
+                    qspline_start.push_back(points[count - 1]);
+                }
+
             } else if (pc->wType == TT_PRIM_CSPLINE) {
                 // Cubic B-splines are only returned from GetGlyphOutline with GGO_BEZIER
                 return {};
@@ -1206,6 +1295,9 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
 
         if (points[pstart] != points.back()) {
             points.push_back(points[pstart]);
+            qspline_offset.push_back(0);
+            qspline_points.push_back(0);
+            qspline_start.push_back(vec2_zero);
         }
 
         std::vector<std::size_t> corners;
@@ -1258,10 +1350,16 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
             for (std::size_t ii = 0; ii < pcount; ++ii) {
                 // rotate left by (pivot - pstart)
                 g.points.push_back(points[pstart + (pivot - pstart + ii) % pcount]);
+                g.qspline_offset.push_back(qspline_offset[pstart + (pivot - pstart + ii) % pcount]);
+                g.qspline_points.push_back(qspline_points[pstart + (pivot - pstart + ii) % pcount]);
+                g.qspline_start.push_back(qspline_start[pstart + (pivot - pstart + ii) % pcount]);
             }
             assert(g.points[pstart] == points[pivot]);
             // add rotated start point as duplicate
             g.points.push_back(points[pivot]);
+            g.qspline_offset.push_back(0);
+            g.qspline_points.push_back(0);
+            g.qspline_start.push_back(vec2_zero);
             std::size_t shift_right = pivot - pstart;
             std::size_t shift_left = pcount - shift_right;
             for (std::size_t ii = 0; ii < corners.size() - 1; ++ii) {
@@ -1286,6 +1384,9 @@ glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared)
             std::size_t pcount = points.size() - pstart;
             for (std::size_t ii = 0; ii < pcount; ++ii) {
                 g.points.push_back(points[pstart + ii]);
+                g.qspline_offset.push_back(qspline_offset[pstart + ii]);
+                g.qspline_points.push_back(qspline_points[pstart + ii]);
+                g.qspline_start.push_back(qspline_start[pstart + ii]);
             }
             // add a single edge containing all points
             g.edge_channels.push_back(masks[g.edges.size() % 3]);
