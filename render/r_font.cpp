@@ -350,6 +350,76 @@ struct edge_distance
 };
 
 //------------------------------------------------------------------------------
+// https://www.shadertoy.com/view/MlKcDD
+// Copyright © 2018 Inigo Quilez
+edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
+{
+    vec2 a = B - A;
+    vec2 b = A - 2.f * B + C;
+    vec2 c = a * 2.f;
+    vec2 d = A - pos;
+
+    float kk = 1.f / dot(b, b);
+    float kx = kk * dot(a, b);
+    float ky = kk * (2.f * dot(a, a) + dot(d, b)) / 3.f;
+    float kz = kk * dot(d, a);
+
+    float res = 0.f;
+    float sgn = 0.f;
+    float t = 0.f;
+
+    float p = ky - kx * kx;
+    float p3 = p * p * p;
+    float q = kx * (2.f * kx * kx - 3.f * ky) + kz;
+    float h = q * q + 4.f * p3;
+
+    if (h >= 0.f) {
+        h = std::sqrt(h);
+        vec2 x = (vec2(h, -h) - vec2(q)) / 2.f;
+        vec2 uv = vec2(std::cbrt(x.x), std::cbrt(x.y));
+        t = clamp(uv.x + uv.y - kx, 0.f, 1.f);
+        vec2 qx = d + (c + b * t) * t;
+        res = dot(qx, qx);
+        sgn = cross(c + 2.f * b * t, qx);
+    } else {
+        float z = std::sqrt(-p);
+        float v = std::acos(q / (p * z * 2.f)) / 3.f;
+        float m = std::cos(v);
+        float n = std::sin(v) * 1.732050808f; // sqrt(3)
+
+        float tx = clamp((m + m) * z - kx, 0.f, 1.f);
+        vec2 qx = d + (c + b * tx) * tx;
+        float dx = dot(qx, qx);
+        float sx = cross(c + 2.f * b * tx, qx);
+
+        float ty = clamp((-n - m) * z - kx, 0.f, 1.f);
+        vec2 qy = d + (c + b * ty) * ty;
+        float dy = dot(qy, qy);
+        float sy = cross(c + 2.f * b * ty, qy);
+
+        // the third root cannot be the closest
+        //float tz = clamp((n - m) * z - kx, 0.f, 1.f);
+        //  ...
+
+        res = (dx < dy) ? dx : dy;
+        sgn = (dx < dy) ? sx : sy;
+        t = (dx < dy) ? tx : ty;
+    }
+
+    if (t == 0.f) {
+        float den = dot(B - A, B - A);
+        float det = determinant(B - A, pos - A);
+        return {std::copysign(res, -sgn), det * det / den};
+    } else if (t == 1.f) {
+        float den = dot(C - B, C - B);
+        float det = determinant(C - B, pos - C);
+        return {std::copysign(res, -sgn), det * det / den};
+    } else {
+        return {std::copysign(res, -sgn), res};
+    }
+}
+
+//------------------------------------------------------------------------------
 edge_distance signed_segment_distance_squared(vec2 a, vec2 b, vec2 c)
 {
     vec2 v = b - a;
@@ -1069,6 +1139,32 @@ void test_font_sdf(font_sdf const& sdf, char const* str, int image_width, int im
 }
 
 //------------------------------------------------------------------------------
+void test_signed_qspline_distance_squared()
+{
+    int image_width = 256;
+    int image_height = 256;
+    std::vector<uint8_t> image_data(image_width * image_height * 3);
+
+    vec2 a = vec2(128.f, 32.f);
+    vec2 b = vec2(192.f, 192.f);
+    vec2 c = vec2(32.f, 128.f);
+
+    for (int jj = 0; jj < image_height; ++jj) {
+        for (int ii = 0; ii < image_width; ++ii) {
+            vec2 p = vec2(float(ii) + .5f, float(jj) + .5f);
+            float d = signed_qspline_distance_squared(a, b, c, p).signed_distance_sqr;
+
+            uint8_t m = uint8_t(clamp<int>(int(std::sqrt(std::abs(d)) + .5f), 0, 255));
+            image_data[(jj * image_width + ii) * 3 + 0] = d > 0.f ? 0 : m;
+            image_data[(jj * image_width + ii) * 3 + 1] = m;
+            image_data[(jj * image_width + ii) * 3 + 2] = d > 0.f ? m : 0;
+        }
+    }
+
+    write_bitmap("sdf/qspline.bmp", image_width, image_height, image_data);
+}
+
+//------------------------------------------------------------------------------
 void test_pack_glyphs(HDC hdc, unicode_block_layout const* blocks, std::size_t num_blocks, int width, font_sdf* sdf)
 {
     constexpr int scale = 1;
@@ -1465,6 +1561,8 @@ font::font(string::view name, int size)
         FF_DONTCARE|DEFAULT_PITCH,  // iPitchAndFamily
         _name.c_str()               // pszFaceName
     );
+
+    test_signed_qspline_distance_squared();
 
     // set our new font to the system
     HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
