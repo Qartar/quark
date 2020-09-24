@@ -873,6 +873,102 @@ void write_bitmap(string::view filename, std::size_t image_width, std::size_t im
     f.close();
 }
 
+void write_dds(string::view filename, std::size_t image_width, std::size_t image_height, std::vector<uint32_t> const& image_data, bool legacy)
+{
+    struct dds_pixelformat {
+        uint32_t dwSize;
+        uint32_t dwFlags;
+        uint32_t dwFourCC;
+        uint32_t dwRGBBitCount;
+        uint32_t dwRBitMask;
+        uint32_t dwGBitMask;
+        uint32_t dwBBitMask;
+        uint32_t dwABitMask;
+    };
+    struct dds_header {
+        uint32_t dwSize;
+        uint32_t dwFlags;
+        uint32_t dwHeight;
+        uint32_t dwWidth;
+        uint32_t dwPitchOrLinearSize;
+        uint32_t dwDepth;
+        uint32_t dwMipMapCount;
+        uint32_t dwReserved1[11];
+        dds_pixelformat ddspf;
+        uint32_t dwCaps;
+        uint32_t dwCaps2;
+        uint32_t dwCaps3;
+        uint32_t dwCaps4;
+        uint32_t dwReserved2;
+    };
+    struct dds_header_dx10 {
+        uint32_t dxgiFormat;
+        uint32_t resourceDimension;
+        uint32_t miscFlag;
+        uint32_t arraySize;
+        uint32_t miscFlag2;
+    };
+
+    static_assert(sizeof(dds_header) == 124);
+    static_assert(sizeof(dds_pixelformat) == 32);
+
+    constexpr uint32_t DDS_MAGIC = ('D' << 0 | 'D' << 8 | 'S' << 16 | ' ' << 24);
+    constexpr int DDSD_CAPS = 0x1;
+    constexpr int DDSD_HEIGHT = 0x2;
+    constexpr int DDSD_WIDTH = 0x4;
+    constexpr int DDSD_PITCH = 0x8;
+    constexpr int DDSD_PIXELFORMAT = 0x1000;
+    constexpr int DDPF_ALPHAPIXELS = 0x1;
+    constexpr int DDPF_FOURCC = 0x4;
+    constexpr int DDPF_RGB = 0x40;
+    constexpr uint32_t FOURCC_DX10 = ('D' << 0 | 'X' << 8 | '1' << 16 | '0' << 24);
+    constexpr int DDSCAPS_TEXTURE = 0x1000;
+    constexpr int DXGI_FORMAT_R10G10B10A2_UNORM = 24;
+    constexpr int DXGI_FORMAT_R8G8B8A8_UNORM = 28;
+    constexpr int DDS_DIMENSION_TEXTURE2D  = 3;
+
+    dds_header header{};
+    header.dwSize = sizeof(dds_header);
+    header.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PITCH | DDSD_PIXELFORMAT;
+    header.dwHeight = narrow_cast<uint32_t>(image_height);
+    header.dwWidth = narrow_cast<uint32_t>(image_width);
+    header.dwDepth = 1; // not required
+    header.dwMipMapCount = 1; // not required
+    header.dwPitchOrLinearSize = narrow_cast<uint32_t>(image_width * sizeof(uint32_t));
+    header.ddspf.dwSize = sizeof(dds_pixelformat);
+    header.dwCaps = DDSCAPS_TEXTURE;
+
+    // Legacy encoding for tools that don't support DDS_HEADER_DX10
+    if (legacy) {
+        header.ddspf.dwFlags = DDPF_ALPHAPIXELS | DDPF_RGB;
+        header.ddspf.dwRGBBitCount = 32;
+        header.ddspf.dwRBitMask = 0x000003ff;
+        header.ddspf.dwGBitMask = 0x000ffc00;
+        header.ddspf.dwBBitMask = 0x3ff00000;
+        header.ddspf.dwABitMask = 0xc0000000;
+
+        auto f = file::open(filename, file::mode::write);
+        f.write((file::byte const*)&DDS_MAGIC, sizeof(DDS_MAGIC));
+        f.write((file::byte const*)&header, sizeof(header));
+        f.write((file::byte const*)image_data.data(), image_data.size() * sizeof(uint32_t));
+        f.close();
+    } else {
+        header.ddspf.dwFlags = DDPF_FOURCC;
+        header.ddspf.dwFourCC = FOURCC_DX10;
+
+        dds_header_dx10 header10{};
+        header10.dxgiFormat = DXGI_FORMAT_R10G10B10A2_UNORM;
+        header10.resourceDimension = DDS_DIMENSION_TEXTURE2D;
+
+        auto f = file::open(filename, file::mode::write);
+        f.write((file::byte const*)&DDS_MAGIC, sizeof(DDS_MAGIC));
+        f.write((file::byte const*)&header, sizeof(header));
+        f.write((file::byte const*)&header10, sizeof(header10));
+        f.write((file::byte const*)image_data.data(), image_data.size() * sizeof(uint32_t));
+        f.close();
+    }
+}
+
 //------------------------------------------------------------------------------
 void subdivide_qspline(std::vector<vec2>& points, vec2 p0, vec2 p1, vec2 p2, float chordalDeviationSquared)
 {
@@ -1541,6 +1637,7 @@ font::font(string::view name, int size)
 
     _sdf = std::make_unique<font_sdf>();
     test_pack_glyphs(application::singleton()->window()->hdc(), unicode_data.data(), unicode_data.size(), 512, _sdf.get());
+    write_dds(va("pack/atlas_%.*s.dds", name.length(), name.begin()), _sdf->image.width, _sdf->image.height, _sdf->image.data, true);
 
     // restore previous font
     SelectObject(application::singleton()->window()->hdc(), prev_font);
