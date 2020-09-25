@@ -195,9 +195,6 @@ STATIC_ASSERT_ROUNDTRIP(0xfffd); // replacement character   [Specials]
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
-HFONT font::_system_font = NULL;
-HFONT font::_active_font = NULL;
-
 //------------------------------------------------------------------------------
 struct glyph
 {
@@ -1658,9 +1655,6 @@ render::font const* system::load_font(string::view name, int size)
 font::font(string::view name, int size)
     : _name(name)
     , _size(size)
-    , _handle(NULL)
-    , _list_base(0)
-    , _char_width{0}
 {
 #if 0
     GLYPHMETRICS gm;
@@ -1708,7 +1702,7 @@ font::font(string::view name, int size)
         _sdf->texture.upload(0, 0, 0, narrow_cast<GLsizei>(_sdf->image.width), narrow_cast<GLsizei>(_sdf->image.height), GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, _sdf->image.data.data());
     } else {
         // create font
-        _handle = CreateFontA(
+        HFONT font = CreateFontA(
             _size,                      // cHeight
             0,                          // cWidth
             0,                          // cEscapement
@@ -1726,7 +1720,7 @@ font::font(string::view name, int size)
         );
 
         // set our new font to the system
-        HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
+        HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), font);
 
         test_pack_glyphs(application::singleton()->window()->hdc(), unicode_data.data(), unicode_data.size(), 512, _sdf.get());
         write_sdf(va("pack/atlas_%.*s.dat", name.length(), name.begin()), _sdf.get());
@@ -1870,24 +1864,6 @@ void main() {
 //------------------------------------------------------------------------------
 font::~font()
 {
-    // restore system font if this is the active font
-    if (_active_font == _handle) {
-        glListBase(0);
-        SelectObject(application::singleton()->window()->hdc(), _system_font);
-
-        _active_font = _system_font;
-        _system_font = NULL;
-    }
-
-    // delete from opengl
-    if (_list_base) {
-        glDeleteLists(_list_base, unicode_data.max_index() + 1);
-    }
-
-    // delete font from gdi
-    if (_handle) {
-        DeleteObject(_handle);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -1900,111 +1876,20 @@ bool font::compare(string::view name, int size) const
 //------------------------------------------------------------------------------
 void font::draw(string::view string, vec2 position, color4 color, vec2 scale) const
 {
-    bool use_sdf = _sdf.get() != nullptr;
-
-    if (use_sdf) {
-        _program.use();
-        _vao.bind();
-        glEnable(GL_TEXTURE_2D);
-        _sdf->texture.bind();
-        _ssbo.bind_base(0);
-
-        std::vector<instance> instances;
-
-        using PFNGLDRAWELEMENTSINSTANCED = void (APIENTRY*)(GLenum mode, GLsizei count, GLenum type, void const* indices, GLsizei instancecount);
-        auto glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)wglGetProcAddress("glDrawElementsInstanced");
-
-        int xoffs = 0;
-
-        int r = static_cast<int>(color.r * 255.f + .5f);
-        int g = static_cast<int>(color.g * 255.f + .5f);
-        int b = static_cast<int>(color.b * 255.f + .5f);
-        int a = static_cast<int>(color.a * 255.f + .5f);
-
-        char const* cursor = string.begin();
-        char const* end = string.end();
-
-        constexpr int buffer_size = 1024;
-        char32_t buffer[buffer_size];
-
-        while (cursor < end) {
-            char const* next = find_color(cursor, end);
-            if (!next) {
-                next = end;
-            }
-
-            uint32_t packed_color = (a << 24) | (b << 16) | (g << 8) | r;
-
-            while (cursor < next) {
-                int n = 0;
-
-                // Decode UTF-8 into codepoints
-                while (cursor < next && n < buffer_size) {
-                    int c = unicode_data.decode(cursor);
-                    buffer[n++] = c;
-                }
-
-                // Rewrite text based on directionality/joining
-                char32_t* p = unicode::rewrite(buffer, buffer + n);
-                // Contextual conversion may result in fewer codepoints
-                n = narrow_cast<GLsizei>(p - buffer);
-
-                // Convert codepoints to character indices
-                for (int ii = 0; ii < n; ++ii) {
-                    int glyph_index = _sdf->codepoint_to_glyph_index(buffer[ii]);
-                    instances.push_back({
-                            vec2(float(xoffs), 0),
-                            glyph_index,
-                            packed_color,
-                        });
-                    xoffs += int(_sdf->glyphs[glyph_index].advance.x);
-                }
-
-                glMatrixMode(GL_MODELVIEW);
-                glPushMatrix();
-                glScalef(scale.x, scale.y, 1);
-                glTranslatef(position.x / scale.x, position.y / scale.y, 0);
-
-                _vbo.upload(0, instances.size(), instances.data());
-                glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr, narrow_cast<GLsizei>(instances.size()));
-                instances.resize(0);
-
-                glPopMatrix();
-            }
-
-            if (cursor < end && is_color(cursor)) {
-                if (!get_color(cursor, r, g, b)) {
-                    r = static_cast<int>(color.r * 255.f + .5f);
-                    g = static_cast<int>(color.g * 255.f + .5f);
-                    b = static_cast<int>(color.b * 255.f + .5f);
-                }
-                cursor += 4;
-            }
-        }
-
-        gl::program().use();
-        gl::vertex_array().bind();
-        glDisable(GL_TEXTURE_2D);
-        gl::texture2d().bind();
-
-        gl::index_buffer<int>().bind();
-        gl::vertex_buffer<int>().bind();
+    if (!_sdf) {
         return;
     }
 
+    _program.use();
+    _vao.bind();
+    glEnable(GL_TEXTURE_2D);
+    _sdf->texture.bind();
+    _ssbo.bind_base(0);
 
-    // activate font if it isn't already
-    if (_active_font != _handle) {
-        HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
+    std::vector<instance> instances;
 
-        // keep track of the system font so it can be restored later
-        if (_system_font == NULL) {
-            _system_font = prev_font;
-        }
-
-        glListBase(_list_base);
-        _active_font = _handle;
-    }
+    using PFNGLDRAWELEMENTSINSTANCED = void (APIENTRY*)(GLenum mode, GLsizei count, GLenum type, void const* indices, GLsizei instancecount);
+    auto glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)wglGetProcAddress("glDrawElementsInstanced");
 
     int xoffs = 0;
 
@@ -2025,11 +1910,7 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
             next = end;
         }
 
-        glColor4ub(narrow_cast<uint8_t>(r),
-                   narrow_cast<uint8_t>(g),
-                   narrow_cast<uint8_t>(b),
-                   narrow_cast<uint8_t>(a));
-        glRasterPos2f(position.x + xoffs * scale.x, position.y);
+        uint32_t packed_color = (a << 24) | (b << 16) | (g << 8) | r;
 
         while (cursor < next) {
             int n = 0;
@@ -2047,11 +1928,25 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
             // Convert codepoints to character indices
             for (int ii = 0; ii < n; ++ii) {
-                buffer[ii] = unicode_data.codepoint_to_index(buffer[ii]);
-                xoffs += _char_width[buffer[ii]];
+                int glyph_index = _sdf->codepoint_to_glyph_index(buffer[ii]);
+                instances.push_back({
+                        vec2(float(xoffs), 0),
+                        glyph_index,
+                        packed_color,
+                    });
+                xoffs += int(_sdf->glyphs[glyph_index].advance.x);
             }
 
-            glCallLists(n, GL_INT, buffer);
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            glScalef(scale.x, scale.y, 1);
+            glTranslatef(position.x / scale.x, position.y / scale.y, 0);
+
+            _vbo.upload(0, instances.size(), instances.data());
+            glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr, narrow_cast<GLsizei>(instances.size()));
+            instances.resize(0);
+
+            glPopMatrix();
         }
 
         if (cursor < end && is_color(cursor)) {
@@ -2063,46 +1958,40 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
             cursor += 4;
         }
     }
+
+    gl::program().use();
+    gl::vertex_array().bind();
+    glDisable(GL_TEXTURE_2D);
+    gl::texture2d().bind();
+
+    gl::index_buffer<int>().bind();
+    gl::vertex_buffer<int>().bind();
 }
 
 //------------------------------------------------------------------------------
 vec2 font::size(string::view string, vec2 scale) const
 {
+    if (!_sdf) {
+        return vec2_zero;
+    }
+
     vec2i size(0, _size);
     char const* cursor = string.begin();
     char const* end = string.end();
 
-    if (_sdf) {
-        while (cursor < end) {
-            char const* next = find_color(cursor, end);
-            if (!next) {
-                next = end;
-            }
-
-            while (cursor < next) {
-                int glyph_index = _sdf->codepoint_to_glyph_index(unicode_data.decode(cursor));
-                size.x += int(_sdf->glyphs[glyph_index].advance.x);
-            }
-
-            if (cursor < end) {
-                cursor += 4;
-            }
+    while (cursor < end) {
+        char const* next = find_color(cursor, end);
+        if (!next) {
+            next = end;
         }
-    } else {
-        while (cursor < end) {
-            char const* next = find_color(cursor, end);
-            if (!next) {
-                next = end;
-            }
 
-            while (cursor < next) {
-                int ch = unicode_data.decode_index(cursor);
-                size.x += _char_width[ch];
-            }
+        while (cursor < next) {
+            int glyph_index = _sdf->codepoint_to_glyph_index(unicode_data.decode(cursor));
+            size.x += int(_sdf->glyphs[glyph_index].advance.x);
+        }
 
-            if (cursor < end) {
-                cursor += 4;
-            }
+        if (cursor < end) {
+            cursor += 4;
         }
     }
 

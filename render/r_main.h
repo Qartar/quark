@@ -39,10 +39,6 @@ private:
     string::buffer _name;
     int _size;
 
-    HFONT _handle;
-    unsigned int _list_base;
-
-    std::vector<short> _char_width;
     std::unique_ptr<font_sdf> _sdf;
 
     struct instance {
@@ -65,9 +61,6 @@ private:
     gl::index_buffer<uint16_t> _ibo;
     gl::shader_storage_buffer<glyph_info> _ssbo;
     gl::program _program;
-
-    static HFONT _system_font;
-    static HFONT _active_font;
 };
 
 //------------------------------------------------------------------------------
