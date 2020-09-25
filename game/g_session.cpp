@@ -100,6 +100,11 @@ result session::init (string::view cmdline)
         0xd9, 0x88, /* arabic letter waw */
         0xd9, 0x8a, /* arabic letter yeh */
         0xd9, 0x86, /* arabic letter noon */
+        ' ',
+        0xd7, 0x99, /* hebrew letter yod */
+        0xd7, 0x94, /* hebrew letter he */
+        0xd7, 0x95, /* hebrew letter waw */
+        0xd7, 0x94, /* hebrew letter he */
         '\r', '\n', '\0'
     };
     _console.printf("%s", utf8);
