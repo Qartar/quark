@@ -866,67 +866,69 @@ void write_bitmap(string::view filename, std::size_t image_width, std::size_t im
     hdr.bfSize = (DWORD)(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + image_width * image_height * 3);
     hdr.bfOffBits = (DWORD)(sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
 
-    auto f = file::open(filename, file::mode::write); 
+    auto f = file::open(filename, file::mode::write);
     f.write((file::byte const*)&hdr, sizeof(hdr));
     f.write((file::byte const*)&bmi, sizeof(bmi));
     f.write(image_data.data(), image_data.size());
     f.close();
 }
 
+//------------------------------------------------------------------------------
+struct dds_pixelformat {
+    uint32_t dwSize;
+    uint32_t dwFlags;
+    uint32_t dwFourCC;
+    uint32_t dwRGBBitCount;
+    uint32_t dwRBitMask;
+    uint32_t dwGBitMask;
+    uint32_t dwBBitMask;
+    uint32_t dwABitMask;
+};
+struct dds_header {
+    uint32_t dwSize;
+    uint32_t dwFlags;
+    uint32_t dwHeight;
+    uint32_t dwWidth;
+    uint32_t dwPitchOrLinearSize;
+    uint32_t dwDepth;
+    uint32_t dwMipMapCount;
+    uint32_t dwReserved1[11];
+    dds_pixelformat ddspf;
+    uint32_t dwCaps;
+    uint32_t dwCaps2;
+    uint32_t dwCaps3;
+    uint32_t dwCaps4;
+    uint32_t dwReserved2;
+};
+struct dds_header_dx10 {
+    uint32_t dxgiFormat;
+    uint32_t resourceDimension;
+    uint32_t miscFlag;
+    uint32_t arraySize;
+    uint32_t miscFlag2;
+};
+
+static_assert(sizeof(dds_header) == 124);
+static_assert(sizeof(dds_pixelformat) == 32);
+
+constexpr uint32_t DDS_MAGIC = ('D' << 0 | 'D' << 8 | 'S' << 16 | ' ' << 24);
+constexpr int DDSD_CAPS = 0x1;
+constexpr int DDSD_HEIGHT = 0x2;
+constexpr int DDSD_WIDTH = 0x4;
+constexpr int DDSD_PITCH = 0x8;
+constexpr int DDSD_PIXELFORMAT = 0x1000;
+constexpr int DDPF_ALPHAPIXELS = 0x1;
+constexpr int DDPF_FOURCC = 0x4;
+constexpr int DDPF_RGB = 0x40;
+constexpr uint32_t FOURCC_DX10 = ('D' << 0 | 'X' << 8 | '1' << 16 | '0' << 24);
+constexpr int DDSCAPS_TEXTURE = 0x1000;
+constexpr int DXGI_FORMAT_R10G10B10A2_UNORM = 24;
+constexpr int DXGI_FORMAT_R8G8B8A8_UNORM = 28;
+constexpr int DDS_DIMENSION_TEXTURE2D  = 3;
+
+//------------------------------------------------------------------------------
 void write_dds(string::view filename, std::size_t image_width, std::size_t image_height, std::vector<uint32_t> const& image_data, bool legacy)
 {
-    struct dds_pixelformat {
-        uint32_t dwSize;
-        uint32_t dwFlags;
-        uint32_t dwFourCC;
-        uint32_t dwRGBBitCount;
-        uint32_t dwRBitMask;
-        uint32_t dwGBitMask;
-        uint32_t dwBBitMask;
-        uint32_t dwABitMask;
-    };
-    struct dds_header {
-        uint32_t dwSize;
-        uint32_t dwFlags;
-        uint32_t dwHeight;
-        uint32_t dwWidth;
-        uint32_t dwPitchOrLinearSize;
-        uint32_t dwDepth;
-        uint32_t dwMipMapCount;
-        uint32_t dwReserved1[11];
-        dds_pixelformat ddspf;
-        uint32_t dwCaps;
-        uint32_t dwCaps2;
-        uint32_t dwCaps3;
-        uint32_t dwCaps4;
-        uint32_t dwReserved2;
-    };
-    struct dds_header_dx10 {
-        uint32_t dxgiFormat;
-        uint32_t resourceDimension;
-        uint32_t miscFlag;
-        uint32_t arraySize;
-        uint32_t miscFlag2;
-    };
-
-    static_assert(sizeof(dds_header) == 124);
-    static_assert(sizeof(dds_pixelformat) == 32);
-
-    constexpr uint32_t DDS_MAGIC = ('D' << 0 | 'D' << 8 | 'S' << 16 | ' ' << 24);
-    constexpr int DDSD_CAPS = 0x1;
-    constexpr int DDSD_HEIGHT = 0x2;
-    constexpr int DDSD_WIDTH = 0x4;
-    constexpr int DDSD_PITCH = 0x8;
-    constexpr int DDSD_PIXELFORMAT = 0x1000;
-    constexpr int DDPF_ALPHAPIXELS = 0x1;
-    constexpr int DDPF_FOURCC = 0x4;
-    constexpr int DDPF_RGB = 0x40;
-    constexpr uint32_t FOURCC_DX10 = ('D' << 0 | 'X' << 8 | '1' << 16 | '0' << 24);
-    constexpr int DDSCAPS_TEXTURE = 0x1000;
-    constexpr int DXGI_FORMAT_R10G10B10A2_UNORM = 24;
-    constexpr int DXGI_FORMAT_R8G8B8A8_UNORM = 28;
-    constexpr int DDS_DIMENSION_TEXTURE2D  = 3;
-
     dds_header header{};
     header.dwSize = sizeof(dds_header);
     header.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PITCH | DDSD_PIXELFORMAT;
@@ -967,6 +969,79 @@ void write_dds(string::view filename, std::size_t image_width, std::size_t image
         f.write((file::byte const*)image_data.data(), image_data.size() * sizeof(uint32_t));
         f.close();
     }
+}
+
+//------------------------------------------------------------------------------
+bool read_dds(string::view filename, std::size_t& image_width, std::size_t& image_height, std::vector<uint32_t>& image_data)
+{
+    auto f = file::read(filename);
+    if (f.size() < sizeof(uint32_t) + sizeof(dds_header)
+        || *reinterpret_cast<uint32_t const*>(f.data()) != DDS_MAGIC) {
+        return false;
+    }
+
+    dds_header const* header = reinterpret_cast<dds_header const*>(f.data() + 4);
+    if (header->ddspf.dwFlags & DDPF_FOURCC && header->ddspf.dwFourCC == FOURCC_DX10) {
+        if (f.size() < sizeof(uint32_t) + sizeof(dds_header) + sizeof(dds_header_dx10)) {
+            return false;
+        }
+        dds_header_dx10 const* header10 = reinterpret_cast<dds_header_dx10 const*>(&header[1]);
+        if (header10->dxgiFormat != DXGI_FORMAT_R10G10B10A2_UNORM
+            || header10->resourceDimension != DDS_DIMENSION_TEXTURE2D) {
+            return false;
+        }
+        image_width = header->dwWidth;
+        image_height = header->dwHeight;
+        image_data.resize(image_width * image_height);
+        memcpy(image_data.data(), reinterpret_cast<std::byte const*>(&header10[1]), image_data.size() * sizeof(uint32_t));
+        return true;
+    } else {
+        if (header->ddspf.dwFlags != (DDPF_ALPHAPIXELS | DDPF_RGB)
+            || header->ddspf.dwRGBBitCount != 32
+            || header->ddspf.dwRBitMask != 0x000003ff
+            || header->ddspf.dwGBitMask != 0x000ffc00
+            || header->ddspf.dwBBitMask != 0x3ff00000
+            || header->ddspf.dwABitMask != 0xc0000000) {
+            return false;
+        }
+        image_width = header->dwWidth;
+        image_height = header->dwHeight;
+        image_data.resize(image_width * image_height);
+        memcpy(image_data.data(), reinterpret_cast<std::byte const*>(&header[1]), image_data.size() * sizeof(uint32_t));
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+void write_sdf(string::view filename, font_sdf const* sdf)
+{
+    auto f = file::open(filename, file::mode::write);
+    int size = narrow_cast<int>(sdf->blocks.size());
+    f.write((file::byte const*)&size, sizeof(size));
+    for (int ii = 0; ii < size; ++ii) {
+        f.write((file::byte const*)&sdf->blocks[ii].from, sizeof(sdf->blocks[ii].from));
+        f.write((file::byte const*)&sdf->blocks[ii].to, sizeof(sdf->blocks[ii].to));
+        f.write((file::byte const*)sdf->blocks[ii].glyphs.data(), sdf->blocks[ii].glyphs.size() * sizeof(font_sdf::glyph));
+    }
+}
+
+//------------------------------------------------------------------------------
+bool read_sdf(string::view filename, font_sdf* sdf)
+{
+    auto f = file::open(filename, file::mode::read);
+    if (!f) {
+        return false;
+    }
+    int size = 0; f.read((file::byte*)&size, sizeof(size));
+    sdf->blocks.resize(size);
+    for (int ii = 0; ii < size; ++ii) {
+        f.read((file::byte*)&sdf->blocks[ii].from, sizeof(sdf->blocks[ii].from));
+        f.read((file::byte*)&sdf->blocks[ii].to, sizeof(sdf->blocks[ii].to));
+        sdf->blocks[ii].glyphs.resize(sdf->blocks[ii].to + 1 - sdf->blocks[ii].from);
+        f.read((file::byte*)sdf->blocks[ii].glyphs.data(), sdf->blocks[ii].glyphs.size() * sizeof(font_sdf::glyph));
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -1270,8 +1345,8 @@ void test_pack_glyphs(HDC hdc, unicode_block_layout const* blocks, std::size_t n
     sdf->image.width = width * scale;
     sdf->image.height = height * scale;
     sdf->image.data = image_data;
-    sdf->texture = gl::texture2d(1, GL_RGB10_A2, width, height);
-    sdf->texture.upload(0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, sdf->image.data.data());
+    sdf->texture = gl::texture2d(1, GL_RGB10_A2, narrow_cast<GLsizei>(sdf->image.width), narrow_cast<GLsizei>(sdf->image.height));
+    sdf->texture.upload(0, 0, 0, narrow_cast<GLsizei>(sdf->image.width), narrow_cast<GLsizei>(sdf->image.height), GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, sdf->image.data.data());
 }
 
 //------------------------------------------------------------------------------
@@ -1579,6 +1654,7 @@ font::font(string::view name, int size)
     , _list_base(0)
     , _char_width{0}
 {
+#if 0
     GLYPHMETRICS gm;
     MAT2 m;
 
@@ -1586,28 +1662,7 @@ font::font(string::view name, int size)
     _list_base = glGenLists(unicode_data.max_index() + 1);
     _char_width.resize(unicode_data.max_index() + 1);
 
-    // create font
-    _handle = CreateFontA(
-        _size,                      // cHeight
-        0,                          // cWidth
-        0,                          // cEscapement
-        0,                          // cOrientation
-        FW_NORMAL,                  // cWeight
-        FALSE,                      // bItalic
-        FALSE,                      // bUnderline
-        FALSE,                      // bStrikeOut
-        ANSI_CHARSET,               // iCharSet
-        OUT_TT_PRECIS,              // iOutPrecision
-        CLIP_DEFAULT_PRECIS,        // iClipPrecision
-        ANTIALIASED_QUALITY,        // iQuality
-        FF_DONTCARE|DEFAULT_PITCH,  // iPitchAndFamily
-        _name.c_str()               // pszFaceName
-    );
-
     test_signed_qspline_distance_squared();
-
-    // set our new font to the system
-    HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
 
     static bool once = true;
     if (!once) {
@@ -1634,13 +1689,44 @@ font::font(string::view name, int size)
             _char_width[block.offset + ii] = gm.gmCellIncX;
         }
     }
+#endif
 
     _sdf = std::make_unique<font_sdf>();
-    test_pack_glyphs(application::singleton()->window()->hdc(), unicode_data.data(), unicode_data.size(), 512, _sdf.get());
-    write_dds(va("pack/atlas_%.*s.dds", name.length(), name.begin()), _sdf->image.width, _sdf->image.height, _sdf->image.data, true);
+    // try to load sdf data from file system
+    if (read_sdf(va("pack/atlas_%.*s.dat", name.length(), name.begin()), _sdf.get()) &&
+        read_dds(va("pack/atlas_%.*s.dds", name.length(), name.begin()), _sdf->image.width, _sdf->image.height, _sdf->image.data)) {
 
-    // restore previous font
-    SelectObject(application::singleton()->window()->hdc(), prev_font);
+        _sdf->texture = gl::texture2d(1, GL_RGB10_A2, narrow_cast<GLsizei>(_sdf->image.width), narrow_cast<GLsizei>(_sdf->image.height));
+        _sdf->texture.upload(0, 0, 0, narrow_cast<GLsizei>(_sdf->image.width), narrow_cast<GLsizei>(_sdf->image.height), GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, _sdf->image.data.data());
+    } else {
+        // create font
+        _handle = CreateFontA(
+            _size,                      // cHeight
+            0,                          // cWidth
+            0,                          // cEscapement
+            0,                          // cOrientation
+            FW_NORMAL,                  // cWeight
+            FALSE,                      // bItalic
+            FALSE,                      // bUnderline
+            FALSE,                      // bStrikeOut
+            ANSI_CHARSET,               // iCharSet
+            OUT_TT_PRECIS,              // iOutPrecision
+            CLIP_DEFAULT_PRECIS,        // iClipPrecision
+            ANTIALIASED_QUALITY,        // iQuality
+            FF_DONTCARE|DEFAULT_PITCH,  // iPitchAndFamily
+            _name.c_str()               // pszFaceName
+        );
+
+        // set our new font to the system
+        HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), _handle);
+
+        test_pack_glyphs(application::singleton()->window()->hdc(), unicode_data.data(), unicode_data.size(), 512, _sdf.get());
+        write_sdf(va("pack/atlas_%.*s.dat", name.length(), name.begin()), _sdf.get());
+        write_dds(va("pack/atlas_%.*s.dds", name.length(), name.begin()), _sdf->image.width, _sdf->image.height, _sdf->image.data, true);
+
+        // restore previous font
+        SelectObject(application::singleton()->window()->hdc(), prev_font);
+    }
 
     if (_sdf.get()) {
         _vao = gl::vertex_array({
@@ -1966,19 +2052,42 @@ vec2 font::size(string::view string, vec2 scale) const
     char const* cursor = string.begin();
     char const* end = string.end();
 
-    while (cursor < end) {
-        char const* next = find_color(cursor, end);
-        if (!next) {
-            next = end;
-        }
+    if (_sdf) {
+        while (cursor < end) {
+            char const* next = find_color(cursor, end);
+            if (!next) {
+                next = end;
+            }
 
-        while (cursor < next) {
-            int ch = unicode_data.decode_index(cursor);
-            size.x += _char_width[ch];
-        }
+            while (cursor < next) {
+                char32_t ch = unicode_data.decode(cursor);
+                int block_index = 0;
+                while (block_index < _sdf->blocks.size() && ch >= _sdf->blocks[block_index].to) {
+                    ++block_index;
+                }
+                int glyph_index = ch - _sdf->blocks[block_index].from;
+                size.x += int(_sdf->blocks[block_index].glyphs[glyph_index].advance);
+            }
 
-        if (cursor < end) {
-            cursor += 4;
+            if (cursor < end) {
+                cursor += 4;
+            }
+        }
+    } else {
+        while (cursor < end) {
+            char const* next = find_color(cursor, end);
+            if (!next) {
+                next = end;
+            }
+
+            while (cursor < next) {
+                int ch = unicode_data.decode_index(cursor);
+                size.x += _char_width[ch];
+            }
+
+            if (cursor < end) {
+                cursor += 4;
+            }
         }
     }
 
