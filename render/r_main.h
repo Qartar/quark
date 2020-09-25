@@ -47,14 +47,23 @@ private:
 
     struct instance {
         vec2 position;
-        vec2 size;
-        vec2 offset;
+        int index;
         uint32_t color;
+    };
+
+    friend struct font_sdf;
+
+    struct glyph_info {
+        vec2 size; // size of full glyph rect
+        vec2 cell; // top-left coordinate of glyph rect
+        vec2 offset; // offset of glyph origin relative to cell origin
+        vec2 advance; // offset to next character in text
     };
 
     gl::vertex_array _vao;
     gl::vertex_buffer<instance> _vbo;
     gl::index_buffer<uint16_t> _ibo;
+    gl::shader_storage_buffer<glyph_info> _ssbo;
     gl::program _program;
 
     static HFONT _system_font;

@@ -248,13 +248,7 @@ struct font_sdf
         uv0 = glyph.cell
         uv1 = glyph.cell + glyph.size
     */
-    struct glyph
-    {
-        vec2 size; // size of full glyph rect
-        vec2 cell; // top-left coordinate of glyph rect
-        vec2 offset; // offset of glyph origin relative to cell origin
-        float advance; // horizontal offset to next character in text
-    };
+    using glyph_info = font::glyph_info;
 
     struct block
     {
@@ -272,7 +266,7 @@ struct font_sdf
 
     float line_gap;
     std::vector<block> blocks;
-    std::vector<glyph> glyphs;
+    std::vector<glyph_info> glyphs;
     image image;
     gl::texture2d texture;
 
@@ -1033,7 +1027,7 @@ void write_sdf(string::view filename, font_sdf const* sdf)
         f.write((file::byte const*)&sdf->blocks[ii].from, sizeof(sdf->blocks[ii].from));
         f.write((file::byte const*)&sdf->blocks[ii].to, sizeof(sdf->blocks[ii].to));
     }
-    f.write((file::byte const*)sdf->glyphs.data(), sdf->glyphs.size() * sizeof(font_sdf::glyph));
+    f.write((file::byte const*)sdf->glyphs.data(), sdf->glyphs.size() * sizeof(font_sdf::glyph_info));
 }
 
 //------------------------------------------------------------------------------
@@ -1053,7 +1047,7 @@ bool read_sdf(string::view filename, font_sdf* sdf)
         num_glyphs += sdf->blocks[ii].to + 1 - sdf->blocks[ii].from;
     }
     sdf->glyphs.resize(num_glyphs);
-    f.read((file::byte*)sdf->glyphs.data(), sdf->glyphs.size() * sizeof(font_sdf::glyph));
+    f.read((file::byte*)sdf->glyphs.data(), sdf->glyphs.size() * sizeof(font_sdf::glyph_info));
     return true;
 }
 
@@ -1339,12 +1333,12 @@ void test_pack_glyphs(HDC hdc, unicode_block_layout const* blocks, std::size_t n
         }
 
         {
-            font_sdf::glyph g;
+            font_sdf::glyph_info g;
             g.size = vec2((sizes[jj] - vec2i(2)) * scale);
             g.cell = vec2((offsets[jj] + vec2i(1)) * scale);
             g.offset = vec2(float(glyphs[ii].metrics.gmptGlyphOrigin.x) * scale,
                             float(glyphs[ii].metrics.gmptGlyphOrigin.y - (sizes[jj].y - margin)) * scale);
-            g.advance = float(glyphs[ii].metrics.gmCellIncX * scale);
+            g.advance = vec2(float(glyphs[ii].metrics.gmCellIncX * scale), 0);
             sdf->glyphs.push_back(g);
         }
     }
@@ -1742,19 +1736,22 @@ font::font(string::view name, int size)
         SelectObject(application::singleton()->window()->hdc(), prev_font);
     }
 
+    glGetError();
+
     if (_sdf.get()) {
         _vao = gl::vertex_array({
             gl::vertex_array_binding{1, {
-                gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, offsetof(instance, position)}, // position
-                gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, offsetof(instance, size)}, // size
-                gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, offsetof(instance, offset)}, // offset
-                gl::vertex_array_attrib{4, GL_UNSIGNED_BYTE, gl::vertex_attrib_type::normalized, offsetof(instance, color)}, // color
+                gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, offsetof(instance, position)},
+                gl::vertex_array_attrib{1, GL_INT, gl::vertex_attrib_type::integer, offsetof(instance, index)},
+                gl::vertex_array_attrib{4, GL_UNSIGNED_BYTE, gl::vertex_attrib_type::normalized, offsetof(instance, color)},
             }}
         });
 
-        uint16_t const indices[] = {0, 1, 2, 1, 3, 2};
-        _ibo = gl::index_buffer<uint16_t>(gl::buffer_usage::static_, gl::buffer_access::draw, 6, indices);
+        _ibo = gl::index_buffer<uint16_t>(gl::buffer_usage::static_, gl::buffer_access::draw, {0, 1, 2, 1, 3, 2});
         _vbo = gl::vertex_buffer<instance>(gl::buffer_usage::stream, gl::buffer_access::draw, 1024);
+        _ssbo = gl::shader_storage_buffer<glyph_info>(
+            gl::buffer_usage::static_, gl::buffer_access::draw,
+            narrow_cast<GLsizei>(_sdf->glyphs.size()), _sdf->glyphs.data());
 
         _vao.bind_buffer(_ibo);
         _vao.bind_buffer(_vbo, 0);
@@ -1765,25 +1762,39 @@ font::font(string::view name, int size)
         string::buffer info_log;
         auto vsh = gl::shader(gl::shader_stage::vertex,
 R"(
-#version 330 compatibility
+#version 430 compatibility
+
+struct glyph_info {
+    vec2 size;
+    vec2 cell;
+    vec2 offset;
+    vec2 advance;
+};
+
+layout(std430, binding = 0) buffer ssbo_glyphs {
+    readonly glyph_info glyphs[];
+};
 
 layout(location = 0) in vec2 in_position;
-layout(location = 1) in vec2 in_size;
-layout(location = 2) in vec2 in_offset;
-layout(location = 3) in vec4 in_color;
+layout(location = 1) in int in_index;
+layout(location = 2) in vec4 in_color;
 
 out vec2 vtx_texcoord;
 out vec4 vtx_color;
 
 void main() {
-    vec4 v0 = vec4(in_position,           0.0, 1.0);
-    vec4 v1 = vec4(in_position + in_size * vec2(1,-1), 0.0, 1.0);
+    vec2 size = glyphs[in_index].size;
+    vec2 cell = glyphs[in_index].cell;
+    vec2 offset = glyphs[in_index].offset;
+
+    vec4 v0 = vec4(in_position + (offset       ) * vec2(1,-1), 0.0, 1.0);
+    vec4 v1 = vec4(in_position + (offset + size) * vec2(1,-1), 0.0, 1.0);
     gl_Position = gl_ModelViewProjectionMatrix * 
                   vec4((gl_VertexID & 1) == 1 ? v1.x : v0.x,
                        (gl_VertexID & 2) == 2 ? v1.y : v0.y, 0.0, 1.0);
 
-    vec2 u0 = in_offset;
-    vec2 u1 = in_offset + in_size;
+    vec2 u0 = cell;
+    vec2 u1 = cell + size;
     vtx_texcoord = vec2((gl_VertexID & 1) == 1 ? u1.x : u0.x,
                         (gl_VertexID & 2) == 2 ? u1.y : u0.y);
 
@@ -1896,6 +1907,7 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         _vao.bind();
         glEnable(GL_TEXTURE_2D);
         _sdf->texture.bind();
+        _ssbo.bind_base(0);
 
         std::vector<instance> instances;
 
@@ -1941,14 +1953,12 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
                 for (int ii = 0; ii < n; ++ii) {
                     int glyph_index = _sdf->codepoint_to_glyph_index(buffer[ii]);
                     instances.push_back({
-                            (_sdf->glyphs[glyph_index].offset * vec2(1,-1) + vec2(float(xoffs), 0)),
-                            _sdf->glyphs[glyph_index].size,
-                            _sdf->glyphs[glyph_index].cell,
+                            vec2(float(xoffs), 0),
+                            glyph_index,
                             packed_color,
                         });
-                    xoffs += int(_sdf->glyphs[glyph_index].advance);
+                    xoffs += int(_sdf->glyphs[glyph_index].advance.x);
                 }
-
 
                 glMatrixMode(GL_MODELVIEW);
                 glPushMatrix();
@@ -2071,7 +2081,7 @@ vec2 font::size(string::view string, vec2 scale) const
 
             while (cursor < next) {
                 int glyph_index = _sdf->codepoint_to_glyph_index(unicode_data.decode(cursor));
-                size.x += int(_sdf->glyphs[glyph_index].advance);
+                size.x += int(_sdf->glyphs[glyph_index].advance.x);
             }
 
             if (cursor < end) {
