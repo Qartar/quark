@@ -260,7 +260,7 @@ struct font_sdf
     {
         char32_t from;
         char32_t to;
-        std::vector<glyph> glyphs;
+        int offset;
     };
 
     struct image
@@ -272,8 +272,18 @@ struct font_sdf
 
     float line_gap;
     std::vector<block> blocks;
+    std::vector<glyph> glyphs;
     image image;
     gl::texture2d texture;
+
+    int codepoint_to_glyph_index(char32_t cp) const {
+        for (std::size_t block_index = 0; block_index < blocks.size(); ++block_index) {
+            if (cp >= blocks[block_index].from && cp <= blocks[block_index].to) {
+                return blocks[block_index].offset + (cp - blocks[block_index].from);
+            }
+        }
+        return 0; // FIXME: return glyph index for unicode replacement character
+    }
 };
 
 glyph rasterize_glyph(HDC hdc, UINT ch, float chordalDeviationSquared = 0.f);
@@ -1017,13 +1027,13 @@ bool read_dds(string::view filename, std::size_t& image_width, std::size_t& imag
 void write_sdf(string::view filename, font_sdf const* sdf)
 {
     auto f = file::open(filename, file::mode::write);
-    int size = narrow_cast<int>(sdf->blocks.size());
-    f.write((file::byte const*)&size, sizeof(size));
-    for (int ii = 0; ii < size; ++ii) {
+    int num_blocks = narrow_cast<int>(sdf->blocks.size());
+    f.write((file::byte const*)&num_blocks, sizeof(num_blocks));
+    for (int ii = 0; ii < num_blocks; ++ii) {
         f.write((file::byte const*)&sdf->blocks[ii].from, sizeof(sdf->blocks[ii].from));
         f.write((file::byte const*)&sdf->blocks[ii].to, sizeof(sdf->blocks[ii].to));
-        f.write((file::byte const*)sdf->blocks[ii].glyphs.data(), sdf->blocks[ii].glyphs.size() * sizeof(font_sdf::glyph));
     }
+    f.write((file::byte const*)sdf->glyphs.data(), sdf->glyphs.size() * sizeof(font_sdf::glyph));
 }
 
 //------------------------------------------------------------------------------
@@ -1033,14 +1043,17 @@ bool read_sdf(string::view filename, font_sdf* sdf)
     if (!f) {
         return false;
     }
-    int size = 0; f.read((file::byte*)&size, sizeof(size));
-    sdf->blocks.resize(size);
-    for (int ii = 0; ii < size; ++ii) {
+    int num_blocks = 0; f.read((file::byte*)&num_blocks, sizeof(num_blocks));
+    sdf->blocks.resize(num_blocks);
+    int num_glyphs = 0;
+    for (int ii = 0; ii < num_blocks; ++ii) {
         f.read((file::byte*)&sdf->blocks[ii].from, sizeof(sdf->blocks[ii].from));
         f.read((file::byte*)&sdf->blocks[ii].to, sizeof(sdf->blocks[ii].to));
-        sdf->blocks[ii].glyphs.resize(sdf->blocks[ii].to + 1 - sdf->blocks[ii].from);
-        f.read((file::byte*)sdf->blocks[ii].glyphs.data(), sdf->blocks[ii].glyphs.size() * sizeof(font_sdf::glyph));
+        sdf->blocks[ii].offset = num_glyphs;
+        num_glyphs += sdf->blocks[ii].to + 1 - sdf->blocks[ii].from;
     }
+    sdf->glyphs.resize(num_glyphs);
+    f.read((file::byte*)sdf->glyphs.data(), sdf->glyphs.size() * sizeof(font_sdf::glyph));
     return true;
 }
 
@@ -1303,6 +1316,7 @@ void test_pack_glyphs(HDC hdc, unicode_block_layout const* blocks, std::size_t n
     font_sdf::block block;
     block.from = blocks[block_index].from;
     block.to = blocks[block_index].to;
+    block.offset = narrow_cast<int>(sdf->glyphs.size());
 
     for (int ii = 0; ii < offsets.size(); ++ii) {
         offsets[ii].y += total_height;
@@ -1331,7 +1345,7 @@ void test_pack_glyphs(HDC hdc, unicode_block_layout const* blocks, std::size_t n
             g.offset = vec2(float(glyphs[ii].metrics.gmptGlyphOrigin.x) * scale,
                             float(glyphs[ii].metrics.gmptGlyphOrigin.y - (sizes[jj].y - margin)) * scale);
             g.advance = float(glyphs[ii].metrics.gmCellIncX * scale);
-            block.glyphs.push_back(g);
+            sdf->glyphs.push_back(g);
         }
     }
 
@@ -1925,18 +1939,14 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
                 // Convert codepoints to character indices
                 for (int ii = 0; ii < n; ++ii) {
-                    int block_index = 0;
-                    while (block_index < _sdf->blocks.size() && buffer[ii] >= _sdf->blocks[block_index].to) {
-                        ++block_index;
-                    }
-                    int glyph_index = buffer[ii] - _sdf->blocks[block_index].from;
+                    int glyph_index = _sdf->codepoint_to_glyph_index(buffer[ii]);
                     instances.push_back({
-                            (_sdf->blocks[block_index].glyphs[glyph_index].offset * vec2(1,-1) + vec2(float(xoffs), 0)),
-                            _sdf->blocks[block_index].glyphs[glyph_index].size,
-                            _sdf->blocks[block_index].glyphs[glyph_index].cell,
+                            (_sdf->glyphs[glyph_index].offset * vec2(1,-1) + vec2(float(xoffs), 0)),
+                            _sdf->glyphs[glyph_index].size,
+                            _sdf->glyphs[glyph_index].cell,
                             packed_color,
                         });
-                    xoffs += int(_sdf->blocks[block_index].glyphs[glyph_index].advance);
+                    xoffs += int(_sdf->glyphs[glyph_index].advance);
                 }
 
 
@@ -2060,13 +2070,8 @@ vec2 font::size(string::view string, vec2 scale) const
             }
 
             while (cursor < next) {
-                char32_t ch = unicode_data.decode(cursor);
-                int block_index = 0;
-                while (block_index < _sdf->blocks.size() && ch >= _sdf->blocks[block_index].to) {
-                    ++block_index;
-                }
-                int glyph_index = ch - _sdf->blocks[block_index].from;
-                size.x += int(_sdf->blocks[block_index].glyphs[glyph_index].advance);
+                int glyph_index = _sdf->codepoint_to_glyph_index(unicode_data.decode(cursor));
+                size.x += int(_sdf->glyphs[glyph_index].advance);
             }
 
             if (cursor < end) {
