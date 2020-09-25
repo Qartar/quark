@@ -79,6 +79,10 @@ vertex_array::vertex_array(vertex_array_binding const* bindings, GLuint num_bind
         glCreateVertexArrays(1, &_name);
     }
 
+    // Workaround for Intel driver bug. Integer attributes are setup incorrectly
+    // when using direct state access methods unless the vertex array is bound.
+    glBindVertexArray(_name);
+
     for (GLuint attrib_index = 0, binding_index = 0; binding_index < num_bindings; ++binding_index) {
         vertex_array_binding const& binding = bindings[binding_index];
 
@@ -120,6 +124,9 @@ vertex_array::vertex_array(vertex_array_binding const* bindings, GLuint num_bind
             glVertexArrayBindingDivisor(_name, binding_index, binding.divisor());
         }
     }
+
+    // Workaround for Intel driver bug, see comment above.
+    glBindVertexArray(0);
 }
 
 //------------------------------------------------------------------------------
