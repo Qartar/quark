@@ -1781,8 +1781,10 @@ void main() {
     vec2 cell = glyphs[in_index].cell;
     vec2 offset = glyphs[in_index].offset;
 
-    vec4 v0 = vec4(in_position + (offset       ) * vec2(1,-1), 0.0, 1.0);
-    vec4 v1 = vec4(in_position + (offset + size) * vec2(1,-1), 0.0, 1.0);
+    vec2 flip = vec2(1, gl_ProjectionMatrix[1][1] < 0 ? -1 : 1);
+
+    vec4 v0 = vec4(in_position + (offset       ) * flip, 0.0, 1.0);
+    vec4 v1 = vec4(in_position + (offset + size) * flip, 0.0, 1.0);
     gl_Position = gl_ModelViewProjectionMatrix * 
                   vec4((gl_VertexID & 1) == 1 ? v1.x : v0.x,
                        (gl_VertexID & 2) == 2 ? v1.y : v0.y, 0.0, 1.0);
