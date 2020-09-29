@@ -163,7 +163,7 @@ void system::resize(vec2i size)
 //------------------------------------------------------------------------------
 void system::create_default_font()
 {
-    int size = 24;//static_cast<int>((12.f / 480.f) * float(_framebuffer.height()));
+    int size = static_cast<int>((12.f / 480.f) * float(_framebuffer.height()));
 
     if (!_default_font || !_default_font->compare("Tahoma", size)) {
         _default_font = std::make_unique<render::font>("Tahoma", size);

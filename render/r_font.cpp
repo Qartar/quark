@@ -1695,8 +1695,8 @@ font::font(string::view name, int size)
 
     _sdf = std::make_unique<font_sdf>();
     // try to load sdf data from file system
-    if (read_sdf(va("pack/atlas_%.*s.dat", name.length(), name.begin()), _sdf.get()) &&
-        read_dds(va("pack/atlas_%.*s.dds", name.length(), name.begin()), _sdf->image.width, _sdf->image.height, _sdf->image.data)) {
+    if (read_sdf(va("pack/atlas_%.*s-%d.dat", name.length(), name.begin(), _size), _sdf.get()) &&
+        read_dds(va("pack/atlas_%.*s-%d.dds", name.length(), name.begin(), _size), _sdf->image.width, _sdf->image.height, _sdf->image.data)) {
 
         _sdf->texture = gl::texture2d(1, GL_RGB10_A2, narrow_cast<GLsizei>(_sdf->image.width), narrow_cast<GLsizei>(_sdf->image.height));
         _sdf->texture.upload(0, 0, 0, narrow_cast<GLsizei>(_sdf->image.width), narrow_cast<GLsizei>(_sdf->image.height), GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, _sdf->image.data.data());
@@ -1723,8 +1723,8 @@ font::font(string::view name, int size)
         HFONT prev_font = (HFONT )SelectObject(application::singleton()->window()->hdc(), font);
 
         test_pack_glyphs(application::singleton()->window()->hdc(), unicode_data.data(), unicode_data.size(), 512, _sdf.get());
-        write_sdf(va("pack/atlas_%.*s.dat", name.length(), name.begin()), _sdf.get());
-        write_dds(va("pack/atlas_%.*s.dds", name.length(), name.begin()), _sdf->image.width, _sdf->image.height, _sdf->image.data, true);
+        write_sdf(va("pack/atlas_%.*s-%d.dat", name.length(), name.begin(), _size), _sdf.get());
+        write_dds(va("pack/atlas_%.*s-%d.dds", name.length(), name.begin(), _size), _sdf->image.width, _sdf->image.height, _sdf->image.data, true);
 
         // restore previous font
         SelectObject(application::singleton()->window()->hdc(), prev_font);
