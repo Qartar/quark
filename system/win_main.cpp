@@ -105,6 +105,11 @@ result application::init(HINSTANCE hInstance, LPSTR szCmdLine)
 
     srand(static_cast<unsigned int>(get_ticks()));
 
+    // initialize COM, required by XInput
+    if (FAILED(CoInitializeEx(NULL, COINIT_MULTITHREADED))) {
+        return result::failure;
+    }
+
     _config.init();
 
     // initialize networking
@@ -149,7 +154,10 @@ int application::shutdown()
 
     _config.shutdown();
 
-#ifdef DEBUG_MEM    
+    // uninitialize COM
+    CoUninitialize();
+
+#ifdef DEBUG_MEM
     _CrtDumpMemoryLeaks();
 #endif // DEBUG_MEM
 
