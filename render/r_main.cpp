@@ -11,6 +11,7 @@
 #include "gl/gl_texture.h"
 #include "gl/gl_vertex_array.h"
 
+#include "r_image.h"
 #include "r_shader.h"
 
 ////////////////////////////////////////////////////////////////////////////////
