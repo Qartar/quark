@@ -455,7 +455,7 @@ public:
         vec2 inverse_dir = {1.f / (end.x - start.x),
                             1.f / (end.y - start.y)};
         // If completely vertical use a point trace instead
-        if (isinf(inverse_dir.x) && isinf(inverse_dir.x)) {
+        if (isinf(inverse_dir.x) && isinf(inverse_dir.y)) {
             if (end.z - start.z == 0.f || !_aabb.contains(start.to_vec2())) {
                 return 1.f;
             }
