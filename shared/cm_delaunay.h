@@ -33,6 +33,14 @@ public:
     //! return the next boundary edge or -1 if the given edge is not a boundary edge
     int next_boundary_edge(int edge_index) const;
 
+    //! split the face containing the given edge by inserting the given point into the triangulation
+    bool split_face(vec2 point, int edge_index);
+
+    //! return the first edge of the triangle containing the given point or -1 if no such triangle exists
+    int intersect_point(vec2 point) const;
+    //! return the nearest edge to the given point or -1 if no such edge exists
+    int nearest_edge(vec2 point) const;
+
 protected:
     friend render::system;
 

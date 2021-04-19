@@ -36,83 +36,9 @@ bool delaunay::insert_vertex(vec2 v)
 
     // find the face that contains v
     for (int e0 = 0, num_edges = narrow_cast<int>(_edge_verts.size()); e0 < num_edges; e0 += 3) {
-        int v0 = _edge_verts[e0 + 0];
-        int v1 = _edge_verts[e0 + 1];
-        int v2 = _edge_verts[e0 + 2];
-        vec2 p0 = _verts[v0];
-        vec2 p1 = _verts[v1];
-        vec2 p2 = _verts[v2];
-
-        // calculate barycentric coordinates of v within [p0,p1,p2]
-        float det = (p0 - p2).cross(p2 - p1);
-        float x = (v - p2).cross(p2 - p1);
-        float y = (v - p2).cross(p0 - p2);
-
-        assert(det >= 0.f);
-        if (x < 0.f || y < 0.f || x + y > det) {
-            continue;
+        if (split_face(v, e0)) {
+            return true;
         }
-
-        /*
-            split face
-
-                  v0
-                 /| \
-             e2 / |  \ e0
-               /  v3  \
-              /  /  \  \
-             v2--------v1
-                  e1
-                                 v0 > v1 > v3
-             v0 > v1 > v2   =>   v1 > v2 > v3
-                                 v2 > v0 > v3
-        */
-        int v3 = narrow_cast<int>(_verts.size());
-        _verts.push_back(v);
-
-        /*int o0 = _edge_pairs[e0 + 0];*/
-        int o1 = _edge_pairs[e0 + 1];
-        int o2 = _edge_pairs[e0 + 2];
-
-        _edge_verts.resize(_edge_verts.size() + 6);
-        _edge_pairs.resize(_edge_pairs.size() + 6);
-
-        int e3 = narrow_cast<int>(_edge_verts.size() - 6);
-
-        /*_edge_verts[e0 + 0] = v0;*/
-        /*_edge_verts[e0 + 1] = v1;*/
-        _edge_verts[e0 + 2] = v3;
-
-        _edge_verts[e3 + 0] = v1;
-        _edge_verts[e3 + 1] = v2;
-        _edge_verts[e3 + 2] = v3;
-
-        _edge_verts[e3 + 3] = v2;
-        _edge_verts[e3 + 4] = v0;
-        _edge_verts[e3 + 5] = v3;
-
-        /*_edge_pairs[e0 + 0] = o0;*/   // v0 -> v1
-        _edge_pairs[e0 + 1] = e3 + 2;   // v1 -> v3
-        _edge_pairs[e0 + 2] = e3 + 4;   // v3 -> v0
-
-        _edge_pairs[e3 + 0] = o1;       // v1 -> v2
-        _edge_pairs[e3 + 1] = e3 + 5;   // v2 -> v3
-        _edge_pairs[e3 + 2] = e0 + 1;   // v3 -> v1
-
-        _edge_pairs[e3 + 3] = o2;       // v2 -> v0
-        _edge_pairs[e3 + 4] = e0 + 2;   // v0 -> v3
-        _edge_pairs[e3 + 5] = e3 + 1;   // v3 -> v2
-
-        if (o1 != -1) {
-            _edge_pairs[o1] = e3 + 0;
-        }
-        if (o2 != -1) {
-            _edge_pairs[o2] = e3 + 3;
-        }
-
-        // check new and original edges of split triangle
-        update_edges({e0, e0 + 1, e3 + 0, e3 + 1, e3 + 3, e3 + 4});
-        return true;
     }
 
     // find the nearest edge to v
@@ -163,6 +89,138 @@ bool delaunay::insert_vertex(vec2 v)
         update_edges({min_edge});
         return true;
     }
+}
+
+//------------------------------------------------------------------------------
+bool delaunay::split_face(vec2 v, int e0)
+{
+    int v0 = _edge_verts[e0 + 0];
+    int v1 = _edge_verts[e0 + 1];
+    int v2 = _edge_verts[e0 + 2];
+    vec2 p0 = _verts[v0];
+    vec2 p1 = _verts[v1];
+    vec2 p2 = _verts[v2];
+
+    // calculate barycentric coordinates of v within [p0,p1,p2]
+    float det = (p0 - p2).cross(p2 - p1);
+    float x = (v - p2).cross(p2 - p1);
+    float y = (v - p2).cross(p0 - p2);
+
+    assert(det >= 0.f);
+    if (x < 0.f || y < 0.f || x + y > det) {
+        return false;
+    }
+
+    /*
+        split face
+
+                v0
+                /| \
+            e2 / |  \ e0
+              /  v3  \
+             /  /  \  \
+            v2--------v1
+                e1
+                                v0 > v1 > v3
+            v0 > v1 > v2   =>   v1 > v2 > v3
+                                v2 > v0 > v3
+    */
+    int v3 = narrow_cast<int>(_verts.size());
+    _verts.push_back(v);
+
+    /*int o0 = _edge_pairs[e0 + 0];*/
+    int o1 = _edge_pairs[e0 + 1];
+    int o2 = _edge_pairs[e0 + 2];
+
+    _edge_verts.resize(_edge_verts.size() + 6);
+    _edge_pairs.resize(_edge_pairs.size() + 6);
+
+    int e3 = narrow_cast<int>(_edge_verts.size() - 6);
+
+    /*_edge_verts[e0 + 0] = v0;*/
+    /*_edge_verts[e0 + 1] = v1;*/
+    _edge_verts[e0 + 2] = v3;
+
+    _edge_verts[e3 + 0] = v1;
+    _edge_verts[e3 + 1] = v2;
+    _edge_verts[e3 + 2] = v3;
+
+    _edge_verts[e3 + 3] = v2;
+    _edge_verts[e3 + 4] = v0;
+    _edge_verts[e3 + 5] = v3;
+
+    /*_edge_pairs[e0 + 0] = o0;*/   // v0 -> v1
+    _edge_pairs[e0 + 1] = e3 + 2;   // v1 -> v3
+    _edge_pairs[e0 + 2] = e3 + 4;   // v3 -> v0
+
+    _edge_pairs[e3 + 0] = o1;       // v1 -> v2
+    _edge_pairs[e3 + 1] = e3 + 5;   // v2 -> v3
+    _edge_pairs[e3 + 2] = e0 + 1;   // v3 -> v1
+
+    _edge_pairs[e3 + 3] = o2;       // v2 -> v0
+    _edge_pairs[e3 + 4] = e0 + 2;   // v0 -> v3
+    _edge_pairs[e3 + 5] = e3 + 1;   // v3 -> v2
+
+    if (o1 != -1) {
+        _edge_pairs[o1] = e3 + 0;
+    }
+    if (o2 != -1) {
+        _edge_pairs[o2] = e3 + 3;
+    }
+
+    // check new and original edges of split triangle
+    update_edges({e0, e0 + 1, e3 + 0, e3 + 1, e3 + 3, e3 + 4});
+    return true;
+}
+
+//------------------------------------------------------------------------------
+int delaunay::intersect_point(vec2 point) const
+{
+    for (int e0 = 0, num_edges = narrow_cast<int>(_edge_verts.size()); e0 < num_edges; e0 += 3) {
+        int v0 = _edge_verts[e0 + 0];
+        int v1 = _edge_verts[e0 + 1];
+        int v2 = _edge_verts[e0 + 2];
+        vec2 p0 = _verts[v0];
+        vec2 p1 = _verts[v1];
+        vec2 p2 = _verts[v2];
+
+        // calculate barycentric coordinates of v within [p0,p1,p2]
+        float det = (p0 - p2).cross(p2 - p1);
+        float x = (point - p2).cross(p2 - p1);
+        float y = (point - p2).cross(p0 - p2);
+
+        assert(det >= 0.f);
+        if (x >= 0.f && y >= 0.f && x + y <= det) {
+            return e0;
+        }
+    }
+
+    return -1;
+}
+
+//------------------------------------------------------------------------------
+int delaunay::nearest_edge(vec2 point) const
+{
+    float best_dsqr = INFINITY;
+    int best_edge = -1;
+
+    for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; ++edge_index) {
+        vec2 v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
+        vec2 v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
+
+        // ignore back-facing edges
+        if ((point - v0).cross(v1 - v0) >= 0.f) {
+            // distance to point on line [v0,v1] nearest to v
+            vec2 p = nearest_point_on_line(v0, v1, point);
+            float dsqr = (point - p).length_sqr();
+            if (dsqr < best_dsqr) {
+                best_dsqr = dsqr;
+                best_edge = edge_index;
+            }
+        }
+    }
+
+    return best_edge;
 }
 
 //------------------------------------------------------------------------------
@@ -269,80 +327,18 @@ void delaunay::update_edges(int const* edges, int num_edges)
 //------------------------------------------------------------------------------
 int delaunay::find_path(vec2* points, int max_points, vec2 start, vec2 end) const
 {
-    int best_start_edge = -1, best_end_edge = -1;
-    int best_start_face = -1, best_end_face = -1;
-    float best_start_dist = INFINITY, best_end_dist = INFINITY;
-    float best_heuristic = INFINITY;
-    vec2 best_position = vec2_zero;
-
     // find the faces containing start and end points
-    for (int edge_index = 0, num_edges  = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; edge_index += 3) {
-        vec2 v0 = _verts[_edge_verts[edge_index + 0]];
-        vec2 v1 = _verts[_edge_verts[edge_index + 1]];
-        vec2 v2 = _verts[_edge_verts[edge_index + 2]];
-
-        // calculate barycentric coordinates of start and end within [p0,p1,p2]
-        float det = (v0 - v2).cross(v2 - v1);
-
-        if (best_start_face == -1) {
-            float x = (start - v2).cross(v2 - v1);
-            float y = (start - v2).cross(v0 - v2);
-
-            if (!(x < 0.f || y < 0.f || x + y > det)) {
-                best_start_face = edge_index;
-                if (best_end_face != -1) {
-                    break;
-                }
-            }
-        }
-
-        if (best_end_face == -1) {
-            float x = (end - v2).cross(v2 - v1);
-            float y = (end - v2).cross(v0 - v2);
-
-            if (!(x < 0.f || y < 0.f || x + y > det)) {
-                best_end_face = edge_index;
-                if (best_start_face != -1) {
-                    break;
-                }
-            }
-        }
-    }
+    int best_start_face = intersect_point(start);
+    int best_end_face = intersect_point(end);
 
     // if start or end are not contained in the triangulation
     // then find the edge nearest to both start and end points
-    if (best_start_face == -1 || best_end_face == -1) {
-        for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; ++edge_index) {
-            vec2 v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
-            vec2 v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
+    int best_start_edge = (best_start_face == -1) ? nearest_edge(start) : -1;
+    int best_end_edge = (best_end_face == -1) ? nearest_edge(end) : -1;
 
-            // ignore back-facing edges
-            if ((end - v0).cross(v1 - v0) >= 0.f) {
-                // distance to point on line [v0,v1] nearest to v
-                vec2 p = nearest_point_on_line(v0, v1, end);
-                float dsqr = (end - p).length_sqr();
-                if (dsqr < best_end_dist) {
-                    best_end_dist = dsqr;
-                    best_end_edge = edge_index;
-                }
-            }
-
-            // ignore back-facing edges
-            if ((start - v0).cross(v1 - v0) >= 0.f) {
-                // distance to point on line [v0,v1] nearest to v
-                vec2 p = nearest_point_on_line(v0, v1, start);
-                float dsqr = (start - p).length_sqr();
-                if (dsqr < best_start_dist) {
-                    best_start_dist = dsqr;
-                    best_heuristic = (start - nearest_point_on_line(v0, v1, end)).length_sqr();
-                    best_position = p;
-                    best_start_edge = edge_index;
-                }
-            }
-        }
-    }
-
+    // shouldn't be possible but not possible to continue in this state
     if ((best_start_face == -1 && best_start_edge == -1) || (best_end_face == -1 && best_end_edge == -1)) {
+        assert(false);
         return -1;
     }
 
@@ -375,7 +371,13 @@ int delaunay::find_path(vec2* points, int max_points, vec2 start, vec2 end) cons
     std::unordered_set<int> closed_set;
 
     if (best_start_face == -1) {
-        search.push_back({best_position, std::sqrt(best_start_dist), std::sqrt(best_heuristic), SIZE_MAX, best_start_edge, 1});
+        vec2 v0 = _verts[_edge_verts[edge_offset<1>(best_start_edge)]];
+        vec2 v1 = _verts[_edge_verts[edge_offset<0>(best_start_edge)]];
+        vec2 best_position = nearest_point_on_line(v0, v1, start);
+        float best_start_dist = (best_position - start).length();
+        float best_heuristic = (start - nearest_point_on_line(v0, v1, end)).length();
+
+        search.push_back({best_position, best_start_dist, best_heuristic, SIZE_MAX, best_start_edge, 1});
         queue.push(search.size() - 1);
     } else {
         int e[3] = {
