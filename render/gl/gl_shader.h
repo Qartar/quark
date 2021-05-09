@@ -40,12 +40,12 @@ protected:
     GLuint _shader;
 
 protected:
-    typedef GLuint (APIENTRY* PFNGLCREATESHADER)(GLenum shaderType);
-    typedef void (APIENTRY* PFNGLGETSHADERIV)(GLuint shader, GLenum pname, GLint* params);
-    typedef void (APIENTRY* PFNGLGETSHADERINFOLOG)(GLuint shader, GLsizei maxLength, GLsizei* length, GLchar* infoLog);
-    typedef void (APIENTRY* PFNGLSHADERSOURCE)(GLuint shader, GLsizei count, GLchar const** strings, GLint const* length);
-    typedef void (APIENTRY* PFNGLCOMPILESHADER)(GLuint shader);
-    typedef void (APIENTRY* PFNGLDELETESHADER)(GLuint shader);
+    using PFNGLCREATESHADER = GLuint (APIENTRY*)(GLenum shaderType);
+    using PFNGLGETSHADERIV = void (APIENTRY*)(GLuint shader, GLenum pname, GLint* params);
+    using PFNGLGETSHADERINFOLOG = void (APIENTRY*)(GLuint shader, GLsizei maxLength, GLsizei* length, GLchar* infoLog);
+    using PFNGLSHADERSOURCE = void (APIENTRY*)(GLuint shader, GLsizei count, GLchar const** strings, GLint const* length);
+    using PFNGLCOMPILESHADER = void (APIENTRY*)(GLuint shader);
+    using PFNGLDELETESHADER = void (APIENTRY*)(GLuint shader);
 
     static PFNGLCREATESHADER glCreateShader;
     static PFNGLGETSHADERIV glGetShaderiv;
@@ -78,14 +78,14 @@ protected:
     GLuint _program;
 
 protected:
-    typedef GLuint (APIENTRY* PFNGLCREATEPROGRAM)();
-    typedef void (APIENTRY* PFNGLUSEPROGRAM)(GLuint program);
-    typedef void (APIENTRY* PFNGLGETPROGRAMIV)(GLuint program, GLenum pname, GLint* params);
-    typedef void (APIENTRY* PFNGLGETPROGRAMINFOLOG)(GLuint program, GLsizei maxLength, GLsizei* length, GLchar* infoLog);
-    typedef void (APIENTRY* PFNGLDELETEPROGRAM)(GLuint program);
-    typedef void (APIENTRY* PFNGLATTACHSHADER)(GLuint program, GLuint shader);
-    typedef void (APIENTRY* PFNGLDETACHSHADER)(GLuint program, GLuint shader);
-    typedef void (APIENTRY* PFNGLLINKPROGRAM)(GLuint program);
+    using PFNGLCREATEPROGRAM = GLuint (APIENTRY*)();
+    using PFNGLUSEPROGRAM = void (APIENTRY*)(GLuint program);
+    using PFNGLGETPROGRAMIV = void (APIENTRY*)(GLuint program, GLenum pname, GLint* params);
+    using PFNGLGETPROGRAMINFOLOG = void (APIENTRY*)(GLuint program, GLsizei maxLength, GLsizei* length, GLchar* infoLog);
+    using PFNGLDELETEPROGRAM = void (APIENTRY*)(GLuint program);
+    using PFNGLATTACHSHADER = void (APIENTRY*)(GLuint program, GLuint shader);
+    using PFNGLDETACHSHADER = void (APIENTRY*)(GLuint program, GLuint shader);
+    using PFNGLLINKPROGRAM = void (APIENTRY*)(GLuint program);
 
     static PFNGLCREATEPROGRAM glCreateProgram;
     static PFNGLUSEPROGRAM glUseProgram;

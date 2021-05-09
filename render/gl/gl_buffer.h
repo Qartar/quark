@@ -69,13 +69,13 @@ protected:
 
 protected:
     // OpenGL 1.5
-    typedef void (APIENTRY* PFNGLBINDBUFFER)(GLenum target, GLuint buffer);
-    typedef void (APIENTRY* PFNGLDELETEBUFFERS)(GLsizei n, GLuint const* buffers);
-    typedef void (APIENTRY* PFNGLGENBUFFERS)(GLsizei n, GLuint* buffers);
-    typedef void (APIENTRY* PFNGLBUFFERDATA)(GLenum target, GLsizeiptr size, void const* data, GLenum usage);
-    typedef void (APIENTRY* PFNGLBUFFERSUBDATA)(GLenum target, GLintptr offset, GLsizeiptr size, void const* data);
-    typedef void* (APIENTRY* PFNGLMAPBUFFER)(GLenum target, GLenum access);
-    typedef GLboolean (APIENTRY* PFNGLUNMAPBUFFER)(GLenum target);
+    using PFNGLBINDBUFFER = void (APIENTRY*)(GLenum target, GLuint buffer);
+    using PFNGLDELETEBUFFERS = void (APIENTRY*)(GLsizei n, GLuint const* buffers);
+    using PFNGLGENBUFFERS = void (APIENTRY*)(GLsizei n, GLuint* buffers);
+    using PFNGLBUFFERDATA = void (APIENTRY*)(GLenum target, GLsizeiptr size, void const* data, GLenum usage);
+    using PFNGLBUFFERSUBDATA = void (APIENTRY*)(GLenum target, GLintptr offset, GLsizeiptr size, void const* data);
+    using PFNGLMAPBUFFER = void* (APIENTRY*)(GLenum target, GLenum access);
+    using PFNGLUNMAPBUFFER = GLboolean (APIENTRY*)(GLenum target);
 
     static PFNGLBINDBUFFER glBindBuffer;
     static PFNGLDELETEBUFFERS glDeleteBuffers;
@@ -86,18 +86,18 @@ protected:
     static PFNGLUNMAPBUFFER glUnmapBuffer;
 
     // OpenGL 3.0
-    typedef void (APIENTRY* PFNGLBINDBUFFERRANGE)(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
-    typedef void (APIENTRY* PFNGLBINDBUFFERBASE)(GLenum target, GLuint index, GLuint buffer);
+    using PFNGLBINDBUFFERRANGE = void (APIENTRY*)(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
+    using PFNGLBINDBUFFERBASE = void (APIENTRY*)(GLenum target, GLuint index, GLuint buffer);
 
     static PFNGLBINDBUFFERRANGE glBindBufferRange;
     static PFNGLBINDBUFFERBASE glBindBufferBase;
 
     // GL_ARB_direct_state_access
-    typedef void (APIENTRY* PFNGLCREATEBUFFERS)(GLsizei n, GLuint* buffers);
-    typedef void (APIENTRY* PFNGLNAMEDBUFFERDATA)(GLuint buffer, GLsizeiptr size, void const* data, GLenum usage);
-    typedef void (APIENTRY* PFNGLNAMEDBUFFERSUBDATA)(GLuint buffer, GLintptr offset, GLsizeiptr size, void const* data);
-    typedef void* (APIENTRY* PFNGLMAPNAMEDBUFFER)(GLuint buffer, GLenum access);
-    typedef GLboolean (APIENTRY* PFNGLUNMAPNAMEDBUFFER)(GLuint buffer);
+    using PFNGLCREATEBUFFERS = void (APIENTRY*)(GLsizei n, GLuint* buffers);
+    using PFNGLNAMEDBUFFERDATA = void (APIENTRY*)(GLuint buffer, GLsizeiptr size, void const* data, GLenum usage);
+    using PFNGLNAMEDBUFFERSUBDATA = void (APIENTRY*)(GLuint buffer, GLintptr offset, GLsizeiptr size, void const* data);
+    using PFNGLMAPNAMEDBUFFER = void* (APIENTRY*)(GLuint buffer, GLenum access);
+    using PFNGLUNMAPNAMEDBUFFER = GLboolean (APIENTRY*)(GLuint buffer);
 
     static PFNGLCREATEBUFFERS glCreateBuffers;
     static PFNGLNAMEDBUFFERDATA glNamedBufferData;

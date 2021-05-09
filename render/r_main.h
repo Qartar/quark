@@ -189,7 +189,7 @@ private:
 private:
 
     // additional opengl bindings
-    typedef void (APIENTRY* PFNGLBLENDCOLOR)(GLfloat red, GLfloat greed, GLfloat blue, GLfloat alpha);
+    using PFNGLBLENDCOLOR = void (APIENTRY*)(GLfloat red, GLfloat greed, GLfloat blue, GLfloat alpha);
 
     PFNGLBLENDCOLOR glBlendColor = NULL;
 };

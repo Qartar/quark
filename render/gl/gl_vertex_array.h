@@ -102,9 +102,9 @@ protected:
 
 protected:
     // OpenGL 3.0
-    typedef void (APIENTRY* PFNGLBINDVERTEXARRAY)(GLuint array);
-    typedef void (APIENTRY* PFNGLDELETEVERTEXARRAYS)(GLsizei n, GLuint const* arrays);
-    typedef void (APIENTRY* PFNGLGENVERTEXARRAYS)(GLsizei n, GLuint* arrays);
+    using PFNGLBINDVERTEXARRAY = void (APIENTRY*)(GLuint array);
+    using PFNGLDELETEVERTEXARRAYS = void (APIENTRY*)(GLsizei n, GLuint const* arrays);
+    using PFNGLGENVERTEXARRAYS = void (APIENTRY*)(GLsizei n, GLuint* arrays);
 
     static PFNGLBINDVERTEXARRAY glBindVertexArray;
     static PFNGLDELETEVERTEXARRAYS glDeleteVertexArrays;
@@ -114,17 +114,17 @@ protected:
     // ...
 
     // GL_ARB_direct_state_access
-    typedef void (APIENTRY* PFNGLCREATEVERTEXARRAYS)(GLsizei n, GLuint* arrays);
-    typedef void (APIENTRY* PFNGLDISABLEVERTEXARRAYATTRIB)(GLuint vaobj, GLuint index);
-    typedef void (APIENTRY* PFNGLENABLEVERTEXARRAYATTRIB)(GLuint vaobj, GLuint index);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYELEMENTBUFFER)(GLuint vaobj, GLuint buffer);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYVERTEXBUFFER)(GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYVERTEXBUFFERS)(GLuint vaobj, GLuint first, GLsizei count, GLuint const* buffers, GLintptr const* offsets, GLsizei const* strides);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYATTRIBFORMAT)(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYATTRIBIFORMAT)(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYATTRIBLFORMAT)(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYATTRIBBINDING)(GLuint vaobj, GLuint attribindex, GLuint bindingindex);
-    typedef void (APIENTRY* PFNGLVERTEXARRAYBINDINGDIVISOR)(GLuint vaobj, GLuint bindingindex, GLuint divisor);
+    using PFNGLCREATEVERTEXARRAYS = void (APIENTRY*)(GLsizei n, GLuint* arrays);
+    using PFNGLDISABLEVERTEXARRAYATTRIB = void (APIENTRY*)(GLuint vaobj, GLuint index);
+    using PFNGLENABLEVERTEXARRAYATTRIB = void (APIENTRY*)(GLuint vaobj, GLuint index);
+    using PFNGLVERTEXARRAYELEMENTBUFFER = void (APIENTRY*)(GLuint vaobj, GLuint buffer);
+    using PFNGLVERTEXARRAYVERTEXBUFFER = void (APIENTRY*)(GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
+    using PFNGLVERTEXARRAYVERTEXBUFFERS = void (APIENTRY*)(GLuint vaobj, GLuint first, GLsizei count, GLuint const* buffers, GLintptr const* offsets, GLsizei const* strides);
+    using PFNGLVERTEXARRAYATTRIBFORMAT = void (APIENTRY*)(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset);
+    using PFNGLVERTEXARRAYATTRIBIFORMAT = void (APIENTRY*)(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
+    using PFNGLVERTEXARRAYATTRIBLFORMAT = void (APIENTRY*)(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
+    using PFNGLVERTEXARRAYATTRIBBINDING = void (APIENTRY*)(GLuint vaobj, GLuint attribindex, GLuint bindingindex);
+    using PFNGLVERTEXARRAYBINDINGDIVISOR = void (APIENTRY*)(GLuint vaobj, GLuint bindingindex, GLuint divisor);
 
     static PFNGLCREATEVERTEXARRAYS glCreateVertexArrays;
     static PFNGLDISABLEVERTEXARRAYATTRIB glDisableVertexArrayAttrib;

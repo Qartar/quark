@@ -97,11 +97,11 @@ protected:
 
 protected:
     // GL_ARB_framebuffer_object
-    typedef void (APIENTRY* PFNGLBINDFRAMEBUFFER)(GLenum target, GLuint framebuffer);
-    typedef void (APIENTRY* PFNGLDELETEFRAMEBUFFERS)(GLsizei n, GLuint const* framebuffers);
-    typedef void (APIENTRY* PFNGLGENFRAMEBUFFERS)(GLsizei n, GLuint* framebuffers);
-    typedef void (APIENTRY* PFNGLFRAMEBUFFERTEXTURE2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-    typedef void (APIENTRY* PFNGLBLITFRAMEBUFFER)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+    using PFNGLBINDFRAMEBUFFER = void (APIENTRY*)(GLenum target, GLuint framebuffer);
+    using PFNGLDELETEFRAMEBUFFERS = void (APIENTRY*)(GLsizei n, GLuint const* framebuffers);
+    using PFNGLGENFRAMEBUFFERS = void (APIENTRY*)(GLsizei n, GLuint* framebuffers);
+    using PFNGLFRAMEBUFFERTEXTURE2D = void (APIENTRY*)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+    using PFNGLBLITFRAMEBUFFER = void (APIENTRY*)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 
     static PFNGLBINDFRAMEBUFFER glBindFramebuffer;
     static PFNGLDELETEFRAMEBUFFERS glDeleteFramebuffers;
@@ -110,12 +110,12 @@ protected:
     static PFNGLBLITFRAMEBUFFER glBlitFramebuffer;
 
     // GL_ARB_direct_state_access
-    typedef void (APIENTRY* PFNGLCREATEFRAMEBUFFERS)(GLsizei n, GLuint* framebuffers);
-    typedef void (APIENTRY* PFNGLNAMEDFRAMEBUFFERTEXTURE)(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level);
-    typedef void (APIENTRY* PFNGLNAMEDFRAMEBUFFERDRAWBUFFER)(GLuint framebuffer, GLenum mode);
-    typedef void (APIENTRY* PFNGLNAMEDFRAMEBUFFERDRAWBUFFERS)(GLuint framebuffer, GLsizei n, GLenum const* bufs);
-    typedef void (APIENTRY* PFNGLNAMEDFRAMEBUFFERREADBUFFER)(GLuint framebuffer, GLenum mode);
-    typedef void (APIENTRY* PFNGLBLITNAMEDFRAMEBUFFER)(GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+    using PFNGLCREATEFRAMEBUFFERS = void (APIENTRY*)(GLsizei n, GLuint* framebuffers);
+    using PFNGLNAMEDFRAMEBUFFERTEXTURE = void (APIENTRY*)(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level);
+    using PFNGLNAMEDFRAMEBUFFERDRAWBUFFER = void (APIENTRY*)(GLuint framebuffer, GLenum mode);
+    using PFNGLNAMEDFRAMEBUFFERDRAWBUFFERS = void (APIENTRY*)(GLuint framebuffer, GLsizei n, GLenum const* bufs);
+    using PFNGLNAMEDFRAMEBUFFERREADBUFFER = void (APIENTRY*)(GLuint framebuffer, GLenum mode);
+    using PFNGLBLITNAMEDFRAMEBUFFER = void (APIENTRY*)(GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 
     static PFNGLCREATEFRAMEBUFFERS glCreateFramebuffers;
     static PFNGLNAMEDFRAMEBUFFERTEXTURE glNamedFramebufferTexture;
@@ -124,7 +124,7 @@ protected:
     static PFNGLNAMEDFRAMEBUFFERREADBUFFER glNamedFramebufferReadBuffer;
     static PFNGLBLITNAMEDFRAMEBUFFER glBlitNamedFramebuffer;
 
-    typedef void (APIENTRY* PFNGLDRAWBUFFERS)(GLsizei n, GLenum const* bufs);
+    using PFNGLDRAWBUFFERS = void (APIENTRY*)(GLsizei n, GLenum const* bufs);
 
     static PFNGLDRAWBUFFERS glDrawBuffers;
 };

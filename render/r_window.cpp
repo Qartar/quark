@@ -11,8 +11,8 @@
 namespace {
 
 // additional opengl bindings
-typedef BOOL (APIENTRY* PFNWGLSWAPINTERVALEXT)(GLint interval);
-typedef int (APIENTRY* PFNWGLGETSWAPINTERVALEXT)();
+using PFNWGLSWAPINTERVALEXT = BOOL (APIENTRY*)(GLint interval);
+using PFNWGLGETSWAPINTERVALEXT = int (APIENTRY*)();
 
 static PFNWGLSWAPINTERVALEXT wglSwapIntervalEXT = NULL;
 static PFNWGLGETSWAPINTERVALEXT wglGetSwapIntervalEXT = NULL;
