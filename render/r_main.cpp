@@ -11,6 +11,7 @@
 #include "gl/gl_texture.h"
 #include "gl/gl_vertex_array.h"
 
+#include "r_font.h"
 #include "r_image.h"
 #include "r_shader.h"
 
@@ -50,6 +51,8 @@ result system::init()
     gl::program::init();
     gl::texture::init();
     gl::vertex_array::init();
+
+    font::init();
 
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;
@@ -174,13 +177,14 @@ void system::resize(vec2i size)
 void system::create_default_font()
 {
     int size = static_cast<int>((12.f / 480.f) * float(_framebuffer.height()));
+    _font_scale = static_cast<float>(size) / static_cast<float>(_font_size);
 
-    if (!_default_font || !_default_font->compare("Tahoma", size)) {
-        _default_font = std::make_unique<render::font>("Tahoma", size);
+    if (!_default_font || !_default_font->compare("Tahoma", _font_size)) {
+        _default_font = std::make_unique<render::font>(this, "Tahoma", _font_size);
     }
 
-    if (!_monospace_font || !_monospace_font->compare("Consolas", size)) {
-        _monospace_font = std::make_unique<render::font>("Consolas", size);
+    if (!_monospace_font || !_monospace_font->compare("Consolas", _font_size)) {
+        _monospace_font = std::make_unique<render::font>(this, "Consolas", _font_size);
     }
 }
 

@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "gl/gl_include.h"
+#include "r_font.h"
 #include "r_model.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +16,7 @@ void system::draw_string(string::view string, vec2 position, color4 color)
 {
     vec2 scale(_view.size.x / _framebuffer.width(),
                _view.size.y / _framebuffer.height());
-    _default_font->draw(string, position, color, scale);
+    _default_font->draw(string, position, color, scale * _font_scale);
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +24,7 @@ vec2 system::string_size(string::view string) const
 {
     vec2 scale(_view.size.x / _framebuffer.width(),
                _view.size.y / _framebuffer.height());
-    return _default_font->size(string, scale);
+    return _default_font->size(string, scale * _font_scale);
 }
 
 //------------------------------------------------------------------------------
@@ -31,7 +32,7 @@ void system::draw_monospace(string::view string, vec2 position, color4 color)
 {
     vec2 scale(_view.size.x / _framebuffer.width(),
                _view.size.y / _framebuffer.height());
-    _monospace_font->draw(string, position, color, scale);
+    _monospace_font->draw(string, position, color, scale * _font_scale);
 }
 
 //------------------------------------------------------------------------------
@@ -39,7 +40,7 @@ vec2 system::monospace_size(string::view string) const
 {
     vec2 scale(_view.size.x / _framebuffer.width(),
                _view.size.y / _framebuffer.height());
-    return _monospace_font->size(string, scale);
+    return _monospace_font->size(string, scale * _font_scale);
 }
 
 //------------------------------------------------------------------------------

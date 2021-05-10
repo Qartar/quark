@@ -135,6 +135,9 @@ public:
     }
 
     static bounds from_points(vec2 const* points, std::size_t num_points) {
+        if (!num_points) {
+            return {};
+        }
         bounds out = bounds(points[0], points[0]);
         for (std::size_t ii = 1; ii < num_points; ++ii) {
             out.add(points[ii]);

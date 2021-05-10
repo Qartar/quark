@@ -10,42 +10,13 @@
 #include "gl/gl_framebuffer.h"
 #include "gl/gl_types.h"
 
-#if defined(_WIN32)
-typedef struct HFONT__* HFONT;
-#endif // defined(_WIN32)
-
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
 
 class window;
 class shader;
 class image;
-
-//------------------------------------------------------------------------------
-class font
-{
-public:
-    font(string::view name, int size);
-    ~font();
-
-    bool compare(string::view name, int size) const;
-    void draw(string::view string, vec2 position, color4 color, vec2 scale) const;
-    vec2 size(string::view string, vec2 scale) const;
-
-private:
-    constexpr static int kNumChars = 256;
-
-    string::buffer _name;
-    int _size;
-
-    HFONT _handle;
-    unsigned int _list_base;
-
-    short _char_width[kNumChars];
-
-    static HFONT _system_font;
-    static HFONT _active_font;
-};
+class font;
 
 //------------------------------------------------------------------------------
 struct view
@@ -108,6 +79,11 @@ public:
 private:
 
     // More font stuff (r_font.cpp)
+
+    static const int _font_size = 48;
+    //! Global scaling factor applied to font rendering to give consistent
+    //! text size regardless of window size and display scaling.
+    float _font_scale;
 
     std::unique_ptr<render::font> _default_font;
     std::unique_ptr<render::font> _monospace_font;

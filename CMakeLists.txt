@@ -92,6 +92,9 @@ set(QUARK_SOURCES
     render/gl/gl_vertex_array.h
     render/r_draw.cpp
     render/r_font.cpp
+    render/r_font.h
+    render/r_glyph.cpp
+    render/r_glyph.h
     render/r_image.cpp
     render/r_image.h
     render/r_main.cpp
