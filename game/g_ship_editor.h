@@ -62,6 +62,8 @@ protected:
     vec2 snap_vertex(vec2 pos) const;
 
     std::size_t insert_vertex(vec2 pos);
+    bool remove_vertex(vec2 pos);
+    bool remove_vertex_by_index(std::size_t index);
 };
 
 } // namespace game

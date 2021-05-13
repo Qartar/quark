@@ -133,6 +133,47 @@ std::size_t ship_editor::insert_vertex(vec2 pos)
 }
 
 //------------------------------------------------------------------------------
+bool ship_editor::remove_vertex(vec2 pos)
+{
+    for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+        if (_render_vertices[ii] == pos) {
+            return remove_vertex_by_index(ii);
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool ship_editor::remove_vertex_by_index(std::size_t vtx)
+{
+    // Remove the vertex, preserve order
+    _render_vertices.erase(_render_vertices.begin() + vtx);
+
+    // Remove any triangles containing the removed vertex
+    std::size_t jj = 0;
+    for (std::size_t ii = 0; ii < _render_triangles.size(); ii += 3) {
+        if (!(_render_triangles[ii + 0] == vtx
+            || _render_triangles[ii + 1] == vtx
+            || _render_triangles[ii + 2] == vtx)) {
+            _render_triangles[jj++] = _render_triangles[ii + 0];
+            _render_triangles[jj++] = _render_triangles[ii + 1];
+            _render_triangles[jj++] = _render_triangles[ii + 2];
+        }
+    }
+    _render_triangles.resize(jj);
+
+    // Update vertex indices on remaining triangles
+    for (std::size_t ii = 0; ii < _render_triangles.size(); ++ii) {
+        if (_render_triangles[ii] > vtx) {
+            --_render_triangles[ii];
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 vec2 ship_editor::snap_vertex(vec2 pos) const
 {
     vec2 out = pos;
@@ -143,17 +184,21 @@ vec2 ship_editor::snap_vertex(vec2 pos) const
     };
 
     if (_snap_to_mirror && _render_vertices.size()) {
-        out = _render_vertices[0] * vec2(1,-1);
+        vec2 mirror_snap = _render_vertices[0] * vec2(1,-1);
 
         for (auto const& v : _render_vertices) {
             vec2 m(v.x, -v.y);
             float dsqr = (m - pos).length_sqr();
-            if (dsqr < (out - pos).length_sqr() && dsqr < square(_snap_distance)) {
-                out = m;
+            if (dsqr < (mirror_snap - pos).length_sqr()) {
+                mirror_snap = m;
             }
         }
 
-        if (_snap_to_grid && (grid_snap - pos).length_sqr() < (out - pos).length_sqr()) {
+        if ((mirror_snap - pos).length_sqr() < _snap_distance) {
+            out = mirror_snap;
+        }
+
+        if (_snap_to_grid && (grid_snap - pos).length_sqr() < (mirror_snap - pos).length_sqr()) {
             out = grid_snap;
         }
     } else if (_snap_to_grid) {
@@ -339,7 +384,15 @@ bool ship_editor::key_event(int key, bool down)
             break;
 
         case K_MOUSE2:
-            if (_mode == editor_mode::triangles && _triangle_size) {
+            if (_mode == editor_mode::vertices) {
+                vec2 v = snap_vertex(cursor_to_world());
+                if (remove_vertex(v)) {
+                    if (_mirror) {
+                        remove_vertex(vec2(v.x, -v.y));
+                    }
+                    return true;
+                }
+            } else if (_mode == editor_mode::triangles && _triangle_size) {
                 --_triangle_size;
                 return true;
             }
