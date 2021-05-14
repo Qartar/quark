@@ -55,6 +55,7 @@ protected:
     vec2 _image_offset;
     vec2 _image_scale;
     float _image_rotation;
+    std::size_t _image_index;
 
     std::size_t _triangle[2];
     std::size_t _triangle_mirror[2];

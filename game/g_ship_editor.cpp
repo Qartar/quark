@@ -41,6 +41,28 @@ std::vector<std::size_t> sorted_difference(std::vector<std::size_t> const& a, st
 
 } // anonymous namespace
 
+const string::literal images[] = {
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\BattleShip.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\CargoTran.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Colonial_Transport.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Constellation.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Corporate_FlagShip.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Ferrengi_Assault_Trader.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Ferrengi_BattleCruiser.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Ferrengi_Dreadnaught.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Havoc_Gunstar.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Imperial_StarShip.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Interdictor_Cruiser.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Merchant_Cruiser.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Merchant_Freighter.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Missile_Frigate.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Scout_Marauder.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\StarMaster.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Taurean_Mule.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Tholian_Sentinel.bmp",
+    "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\T'Khasi_Orion.bmp",
+};
+
 //------------------------------------------------------------------------------
 ship_editor::ship_editor()
     : _view{}
@@ -55,6 +77,7 @@ ship_editor::ship_editor()
     , _image_offset(vec2_zero)
     , _image_scale(1.f,1.f)
     , _image_rotation(0.f)
+    , _image_index(0)
     , _triangle_size(0)
     , _in_selection(false)
     , _ctrl_down(false)
@@ -132,8 +155,7 @@ ship_editor::ship_editor()
     };
 
     _image = application::singleton()->window()->renderer()->load_image(
-        //"C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Constellation.bmp"
-        "C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\T'Khasi_Orion.bmp"
+        images[_image_index]
     );
     _image_scale = vec2(1.5f / 9.f);
     _image_rotation = math::pi<float> / 2.f;
@@ -615,6 +637,20 @@ bool ship_editor::key_event(int key, bool down)
             } else if (_in_selection) {
                 _in_selection = false;
             }
+            break;
+
+        case ',':
+            _image_index = (_image_index + countof(images) - 1) % countof(images);
+            _image = application::singleton()->window()->renderer()->load_image(
+                images[_image_index]
+            );
+            break;
+
+        case '.':
+            _image_index = (_image_index + 1) % countof(images);
+            _image = application::singleton()->window()->renderer()->load_image(
+                images[_image_index]
+            );
             break;
 
         case K_CTRL:
