@@ -9,8 +9,37 @@
 #include "r_image.h"
 #include "r_window.h"
 
+#include <algorithm>
+#include <iterator>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
+
+namespace {
+
+std::vector<std::size_t> sorted_union(std::vector<std::size_t> const& a, std::vector<std::size_t> const& b)
+{
+    std::vector<std::size_t> out;
+    out.reserve(a.size() + b.size());
+    std::set_union(a.begin(), a.end(),
+                   b.begin(), b.end(),
+                   std::back_inserter(out));
+
+    return out;
+}
+
+std::vector<std::size_t> sorted_difference(std::vector<std::size_t> const& a, std::vector<std::size_t> const& b)
+{
+    std::vector<std::size_t> out;
+    out.reserve(a.size() + b.size());
+    std::set_difference(a.begin(), a.end(),
+                        b.begin(), b.end(),
+                        std::back_inserter(out));
+
+    return out;
+}
+
+} // anonymous namespace
 
 //------------------------------------------------------------------------------
 ship_editor::ship_editor()
@@ -27,6 +56,9 @@ ship_editor::ship_editor()
     , _image_scale(1.f,1.f)
     , _image_rotation(0.f)
     , _triangle_size(0)
+    , _in_selection(false)
+    , _ctrl_down(false)
+    , _shift_down(false)
 {
     _view.viewport.maxs() = application::singleton()->window()->size();
     _view.size = {64.f, 64.f * float(_view.viewport.maxs().y) / float(_view.viewport.maxs().x)};
@@ -170,7 +202,103 @@ bool ship_editor::remove_vertex_by_index(std::size_t vtx)
         }
     }
 
+    // Remove vertex from selection, update remaining vertex indices
+    for (std::size_t ii = 0; ii < _selection_vertices.size(); ++ii) {
+        if (_selection_vertices[ii] == vtx) {
+            _selection_vertices.erase(_selection_vertices.begin() + ii);
+            --ii;
+            continue;
+        } else if (_selection_vertices[ii] > vtx) {
+            --_selection_vertices[ii];
+        }
+    }
+
+    for (std::size_t ii = 0; ii < _selection_mirror_vertices.size(); ++ii) {
+        if (_selection_mirror_vertices[ii] == vtx) {
+            _selection_mirror_vertices.erase(_selection_mirror_vertices.begin() + ii);
+            --ii;
+            continue;
+        } else if (_selection_mirror_vertices[ii] > vtx) {
+            --_selection_mirror_vertices[ii];
+        }
+    }
+
     return true;
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::set_selection(bounds b)
+{
+    _selection_vertices.clear();
+    _selection_mirror_vertices.clear();
+
+    for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+        if (b.contains(_render_vertices[ii])) {
+            _selection_vertices.push_back(ii);
+        }
+    }
+
+    if (_mirror && (b.mins().y > 0.f || b.maxs().y < 0.f)) {
+        b = b.transform(mat3(1,0,0,0,-1,0,0,0,1));
+
+        for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+            if (b.contains(_render_vertices[ii])) {
+                _selection_mirror_vertices.push_back(ii);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::add_selection(bounds b)
+{
+    std::vector<std::size_t> bounds_selection;
+    for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+        if (b.contains(_render_vertices[ii])) {
+            bounds_selection.push_back(ii);
+        }
+    }
+    _selection_vertices = sorted_union(_selection_vertices, bounds_selection);
+
+    if (_mirror && (b.mins().y > 0.f || b.maxs().y < 0.f)) {
+        b = b.transform(mat3(1,0,0,0,-1,0,0,0,1));
+        bounds_selection.clear();
+        for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+            if (b.contains(_render_vertices[ii])) {
+                bounds_selection.push_back(ii);
+            }
+        }
+        _selection_mirror_vertices = sorted_union(_selection_mirror_vertices, bounds_selection);
+    }
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::remove_selection(bounds b)
+{
+    std::vector<std::size_t> bounds_selection;
+    for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+        if (b.contains(_render_vertices[ii])) {
+            bounds_selection.push_back(ii);
+        }
+    }
+    _selection_vertices = sorted_difference(_selection_vertices, bounds_selection);
+
+    if (_mirror && (b.mins().y > 0.f || b.maxs().y < 0.f)) {
+        b = b.transform(mat3(1,0,0,0,-1,0,0,0,1));
+        bounds_selection.clear();
+        for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+            if (b.contains(_render_vertices[ii])) {
+                bounds_selection.push_back(ii);
+            }
+        }
+        _selection_mirror_vertices = sorted_difference(_selection_mirror_vertices, bounds_selection);
+    }
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::clear_selection()
+{
+    _selection_vertices.clear();
 }
 
 //------------------------------------------------------------------------------
@@ -291,6 +419,64 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
                 renderer->draw_line(_render_vertices[_triangle_mirror[0]], _render_vertices[_triangle_mirror[1]], color4(0,1,1,.5f), color4(0,1,1,.5f));
             }
         }
+    } else {
+        if (_in_selection) {
+            bounds b = bounds::from_points({_selection_start, cursor_to_world()});
+            renderer->draw_line(vec2(b[0].x, b[0].y), vec2(b[1].x, b[0].y), color4(1,1,0,1), color4(1,1,0,1));
+            renderer->draw_line(vec2(b[1].x, b[0].y), vec2(b[1].x, b[1].y), color4(1,1,0,1), color4(1,1,0,1));
+            renderer->draw_line(vec2(b[1].x, b[1].y), vec2(b[0].x, b[1].y), color4(1,1,0,1), color4(1,1,0,1));
+            renderer->draw_line(vec2(b[0].x, b[1].y), vec2(b[0].x, b[0].y), color4(1,1,0,1), color4(1,1,0,1));
+
+            std::vector<std::size_t> bounds_selection;
+            for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+                if (b.contains(_render_vertices[ii])) {
+                    bounds_selection.push_back(ii);
+                }
+            }
+
+            if (_shift_down && _ctrl_down) {
+                bounds_selection = sorted_difference(_selection_vertices, bounds_selection);
+            } else if (_shift_down) {
+                bounds_selection = sorted_union(_selection_vertices, bounds_selection);
+            }
+            for (std::size_t ii : bounds_selection) {
+                renderer->draw_box(vertex_size, _render_vertices[ii], color4(1,1,0,1));
+            }
+
+            if (_mirror && (b.mins().y > 0.f || b.maxs().y < 0.f)) {
+                b = b.transform(mat3(1,0,0,0,-1,0,0,0,1));
+                renderer->draw_line(vec2(b[0].x, b[0].y), vec2(b[1].x, b[0].y), color4(0,1,1,1), color4(0,1,1,1));
+                renderer->draw_line(vec2(b[1].x, b[0].y), vec2(b[1].x, b[1].y), color4(0,1,1,1), color4(0,1,1,1));
+                renderer->draw_line(vec2(b[1].x, b[1].y), vec2(b[0].x, b[1].y), color4(0,1,1,1), color4(0,1,1,1));
+                renderer->draw_line(vec2(b[0].x, b[1].y), vec2(b[0].x, b[0].y), color4(0,1,1,1), color4(0,1,1,1));
+
+                bounds_selection.clear();
+                for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+                    if (b.contains(_render_vertices[ii])) {
+                        bounds_selection.push_back(ii);
+                    }
+                }
+
+                if (_shift_down && _ctrl_down) {
+                    bounds_selection = sorted_difference(_selection_mirror_vertices, bounds_selection);
+                } else if (_shift_down) {
+                    bounds_selection = sorted_union(_selection_mirror_vertices, bounds_selection);
+                }
+                for (std::size_t ii : bounds_selection) {
+                    renderer->draw_box(vertex_size, _render_vertices[ii], color4(0,1,1,1));
+                }
+            }
+        } else {
+            for (std::size_t ii : _selection_vertices) {
+                renderer->draw_box(vertex_size, _render_vertices[ii], color4(1,1,0,1));
+            }
+
+            if (_mirror) {
+                for (std::size_t ii : _selection_mirror_vertices) {
+                    renderer->draw_box(vertex_size, _render_vertices[ii], color4(0,1,1,1));
+                }
+            }
+        }
     }
 
     {
@@ -314,6 +500,34 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
 bool ship_editor::key_event(int key, bool down)
 {
     if (!down) {
+        switch (key) {
+            case K_MOUSE1:
+                if (_in_selection) {
+                    bounds b = bounds::from_points({_selection_start, cursor_to_world()});
+                    if (_shift_down && _ctrl_down) {
+                        remove_selection(b);
+                    } else if (_shift_down) {
+                        add_selection(b);
+                    } else {
+                        set_selection(b);
+                    }
+                    _in_selection = false;
+                    return true;
+                }
+                break;
+
+            case K_CTRL:
+                _ctrl_down = false;
+                break;
+
+            case K_SHIFT:
+                _shift_down = false;
+                break;
+
+            default:
+                break;
+        }
+
         return false;
     }
 
@@ -380,6 +594,9 @@ bool ship_editor::key_event(int key, bool down)
                     }
                 }
                 _triangle_size = (_triangle_size + 1) % 3;
+            } else if (!_in_selection) {
+                _in_selection = true;
+                _selection_start = cursor_to_world();
             }
             break;
 
@@ -395,7 +612,17 @@ bool ship_editor::key_event(int key, bool down)
             } else if (_mode == editor_mode::triangles && _triangle_size) {
                 --_triangle_size;
                 return true;
+            } else if (_in_selection) {
+                _in_selection = false;
             }
+            break;
+
+        case K_CTRL:
+            _ctrl_down = true;
+            break;
+
+        case K_SHIFT:
+            _shift_down = true;
             break;
     }
 
