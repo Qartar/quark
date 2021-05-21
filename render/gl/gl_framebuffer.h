@@ -40,7 +40,7 @@ class framebuffer
 {
 public:
     //! Initialize function pointers
-    static void init();
+    static void init(get_proc_address_t get_proc_address);
 
     framebuffer();
     framebuffer(framebuffer&& f) noexcept;

@@ -39,7 +39,7 @@ enum class buffer_access
 class buffer
 {
 public:
-    static void init();
+    static void init(get_proc_address_t get_proc_address);
 
     buffer();
     buffer(buffer&& b) noexcept;

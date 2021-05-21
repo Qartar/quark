@@ -29,26 +29,24 @@ framebuffer::PFNGLBLITNAMEDFRAMEBUFFER framebuffer::glBlitNamedFramebuffer = nul
 framebuffer::PFNGLDRAWBUFFERS framebuffer::glDrawBuffers = nullptr;
 
 //------------------------------------------------------------------------------
-void framebuffer::init()
+void framebuffer::init(get_proc_address_t get_proc_address)
 {
-#if defined(_WIN32)
     // GL_ARB_framebuffer_object
-    glBindFramebuffer = (PFNGLBINDFRAMEBUFFER )wglGetProcAddress("glBindFramebuffer");
-    glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERS )wglGetProcAddress("glDeleteFramebuffers");
-    glGenFramebuffers = (PFNGLGENFRAMEBUFFERS )wglGetProcAddress("glGenFramebuffers");
-    glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2D )wglGetProcAddress("glFramebufferTexture2D");
-    glBlitFramebuffer = (PFNGLBLITFRAMEBUFFER )wglGetProcAddress("glBlitFramebuffer");
+    glBindFramebuffer = (PFNGLBINDFRAMEBUFFER )get_proc_address("glBindFramebuffer");
+    glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERS )get_proc_address("glDeleteFramebuffers");
+    glGenFramebuffers = (PFNGLGENFRAMEBUFFERS )get_proc_address("glGenFramebuffers");
+    glFramebufferTexture2D = (PFNGLFRAMEBUFFERTEXTURE2D )get_proc_address("glFramebufferTexture2D");
+    glBlitFramebuffer = (PFNGLBLITFRAMEBUFFER )get_proc_address("glBlitFramebuffer");
 
     // GL_ARB_direct_state_access
-    glCreateFramebuffers = (PFNGLCREATEFRAMEBUFFERS )wglGetProcAddress("glCreateFramebuffers");
-    glNamedFramebufferTexture = (PFNGLNAMEDFRAMEBUFFERTEXTURE )wglGetProcAddress("glNamedFramebufferTexture");
-    glNamedFramebufferDrawBuffer = (PFNGLNAMEDFRAMEBUFFERDRAWBUFFER )wglGetProcAddress("glNamedFramebufferDrawBuffer");
-    glNamedFramebufferDrawBuffers = (PFNGLNAMEDFRAMEBUFFERDRAWBUFFERS )wglGetProcAddress("glNamedFramebufferDrawBuffers");
-    glNamedFramebufferReadBuffer = (PFNGLNAMEDFRAMEBUFFERREADBUFFER )wglGetProcAddress("glNamedFramebufferReadBuffer");
-    glBlitNamedFramebuffer = (PFNGLBLITNAMEDFRAMEBUFFER )wglGetProcAddress("glBlitNamedFramebuffer");
+    glCreateFramebuffers = (PFNGLCREATEFRAMEBUFFERS )get_proc_address("glCreateFramebuffers");
+    glNamedFramebufferTexture = (PFNGLNAMEDFRAMEBUFFERTEXTURE )get_proc_address("glNamedFramebufferTexture");
+    glNamedFramebufferDrawBuffer = (PFNGLNAMEDFRAMEBUFFERDRAWBUFFER )get_proc_address("glNamedFramebufferDrawBuffer");
+    glNamedFramebufferDrawBuffers = (PFNGLNAMEDFRAMEBUFFERDRAWBUFFERS )get_proc_address("glNamedFramebufferDrawBuffers");
+    glNamedFramebufferReadBuffer = (PFNGLNAMEDFRAMEBUFFERREADBUFFER )get_proc_address("glNamedFramebufferReadBuffer");
+    glBlitNamedFramebuffer = (PFNGLBLITNAMEDFRAMEBUFFER )get_proc_address("glBlitNamedFramebuffer");
 
-    glDrawBuffers = (PFNGLDRAWBUFFERS )wglGetProcAddress("glDrawBuffers");
-#endif // defined(_WIN32)
+    glDrawBuffers = (PFNGLDRAWBUFFERS )get_proc_address("glDrawBuffers");
 }
 
 //------------------------------------------------------------------------------

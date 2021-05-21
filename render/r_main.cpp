@@ -47,18 +47,22 @@ result system::init()
 {
     random r;
 
-#if defined(_WIN32)
-    glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
-#endif // defined(_WIN32)
+#if defined(USE_SDL)
+    get_proc_address_t get_proc_address = SDL_GL_GetProcAddress;
+#elif defined(_WIN32)
+    get_proc_address_t get_proc_address = wglGetProcAddress;
+#endif // !defined(_WIN32)
 
-    gl::buffer::init();
-    gl::framebuffer::init();
-    gl::shader::init();
-    gl::program::init();
-    gl::texture::init();
-    gl::vertex_array::init();
+    glBlendColor = (PFNGLBLENDCOLOR )get_proc_address("glBlendColor");
 
-    font::init();
+    gl::buffer::init(get_proc_address);
+    gl::framebuffer::init(get_proc_address);
+    gl::shader::init(get_proc_address);
+    gl::program::init(get_proc_address);
+    gl::texture::init(get_proc_address);
+    gl::vertex_array::init(get_proc_address);
+
+    font::init(get_proc_address);
 
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;

@@ -93,27 +93,25 @@ buffer::PFNGLMAPNAMEDBUFFER buffer::glMapNamedBuffer = nullptr;
 buffer::PFNGLUNMAPNAMEDBUFFER buffer::glUnmapNamedBuffer = nullptr;
 
 //------------------------------------------------------------------------------
-void buffer::init()
+void buffer::init(get_proc_address_t get_proc_address)
 {
-#if defined(_WIN32)
     // OpenGL 1.5
-    glBindBuffer = (PFNGLBINDBUFFER)wglGetProcAddress("glBindBuffer");
-    glDeleteBuffers = (PFNGLDELETEBUFFERS)wglGetProcAddress("glDeleteBuffers");
-    glGenBuffers = (PFNGLGENBUFFERS)wglGetProcAddress("glGenBuffers");
-    glBufferData = (PFNGLBUFFERDATA)wglGetProcAddress("glBufferData");
-    glBufferSubData = (PFNGLBUFFERSUBDATA)wglGetProcAddress("glBufferSubData");
-    glMapBuffer = (PFNGLMAPBUFFER)wglGetProcAddress("glMapBuffer");
-    glUnmapBuffer = (PFNGLUNMAPBUFFER)wglGetProcAddress("glUnmapBuffer");
+    glBindBuffer = (PFNGLBINDBUFFER)get_proc_address("glBindBuffer");
+    glDeleteBuffers = (PFNGLDELETEBUFFERS)get_proc_address("glDeleteBuffers");
+    glGenBuffers = (PFNGLGENBUFFERS)get_proc_address("glGenBuffers");
+    glBufferData = (PFNGLBUFFERDATA)get_proc_address("glBufferData");
+    glBufferSubData = (PFNGLBUFFERSUBDATA)get_proc_address("glBufferSubData");
+    glMapBuffer = (PFNGLMAPBUFFER)get_proc_address("glMapBuffer");
+    glUnmapBuffer = (PFNGLUNMAPBUFFER)get_proc_address("glUnmapBuffer");
     // OpenGL 3.0
-    glBindBufferRange = (PFNGLBINDBUFFERRANGE)wglGetProcAddress("glBindBufferRange");
-    glBindBufferBase = (PFNGLBINDBUFFERBASE)wglGetProcAddress("glBindBufferBase");
+    glBindBufferRange = (PFNGLBINDBUFFERRANGE)get_proc_address("glBindBufferRange");
+    glBindBufferBase = (PFNGLBINDBUFFERBASE)get_proc_address("glBindBufferBase");
     // GL_ARB_direct_state_access
-    glCreateBuffers = (PFNGLCREATEBUFFERS)wglGetProcAddress("glCreateBuffers");
-    glNamedBufferData = (PFNGLNAMEDBUFFERDATA)wglGetProcAddress("glNamedBufferData");
-    glNamedBufferSubData = (PFNGLNAMEDBUFFERSUBDATA)wglGetProcAddress("glNamedBufferSubData");
-    glMapNamedBuffer = (PFNGLMAPNAMEDBUFFER)wglGetProcAddress("glMapNamedBuffer");
-    glUnmapNamedBuffer = (PFNGLUNMAPNAMEDBUFFER)wglGetProcAddress("glUnmapNamedBuffer");
-#endif // defined(_WIN32)
+    glCreateBuffers = (PFNGLCREATEBUFFERS)get_proc_address("glCreateBuffers");
+    glNamedBufferData = (PFNGLNAMEDBUFFERDATA)get_proc_address("glNamedBufferData");
+    glNamedBufferSubData = (PFNGLNAMEDBUFFERSUBDATA)get_proc_address("glNamedBufferSubData");
+    glMapNamedBuffer = (PFNGLMAPNAMEDBUFFER)get_proc_address("glMapNamedBuffer");
+    glUnmapNamedBuffer = (PFNGLUNMAPNAMEDBUFFER)get_proc_address("glUnmapNamedBuffer");
 }
 
 //------------------------------------------------------------------------------

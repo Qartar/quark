@@ -21,7 +21,7 @@ class shader
 {
 public:
     //! Initialize function pointers
-    static void init();
+    static void init(get_proc_address_t get_proc_address);
 
     shader();
     shader(shader&& s) noexcept;
@@ -60,7 +60,7 @@ class program
 {
 public:
     //! Initialize function pointers
-    static void init();
+    static void init(get_proc_address_t get_proc_address);
 
     program();
     program(program&& p) noexcept;

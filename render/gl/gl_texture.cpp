@@ -21,21 +21,19 @@ texture::PFNGLTEXTURESTORAGE2D texture::glTextureStorage2D = nullptr;
 texture::PFNGLTEXTURESTORAGE2DMULTISAMPLE texture::glTextureStorage2DMultisample = nullptr;
 
 ////////////////////////////////////////////////////////////////////////////////
-void texture::init()
+void texture::init(get_proc_address_t get_proc_address)
 {
-#if defined(_WIN32)
     // OpenGL 1.3
-    glActiveTexture = (PFNGLACTIVETEXTURE)wglGetProcAddress("glActiveTexture");
+    glActiveTexture = (PFNGLACTIVETEXTURE)get_proc_address("glActiveTexture");
     // ARB_texture_storage
-    glTexStorage2D = (PFNGLTEXSTORAGE2D)wglGetProcAddress("glTexStorage2D");
-    glTexStorage2DMultisample = (PFNGLTEXSTORAGE2DMULTISAMPLE)wglGetProcAddress("glTexStorage2DMultisample");
+    glTexStorage2D = (PFNGLTEXSTORAGE2D)get_proc_address("glTexStorage2D");
+    glTexStorage2DMultisample = (PFNGLTEXSTORAGE2DMULTISAMPLE)get_proc_address("glTexStorage2DMultisample");
     // ARB_direct_state_access
-    glCreateTextures = (PFNGLCREATETEXTURES)wglGetProcAddress("glCreateTextures");
-    glTextureSubImage2D = (PFNGLTEXTURESUBIMAGE2D)wglGetProcAddress("glTextureSubImage2D");
-    glBindTextureUnit = (PFNGLBINDTEXTUREUNIT)wglGetProcAddress("glBindTextureUnit");
-    glTextureStorage2D = (PFNGLTEXTURESTORAGE2D)wglGetProcAddress("glTextureStorage2D");
-    glTextureStorage2DMultisample = (PFNGLTEXTURESTORAGE2DMULTISAMPLE)wglGetProcAddress("glTextureStorage2DMultisample");
-#endif // defined(_WIN32)
+    glCreateTextures = (PFNGLCREATETEXTURES)get_proc_address("glCreateTextures");
+    glTextureSubImage2D = (PFNGLTEXTURESUBIMAGE2D)get_proc_address("glTextureSubImage2D");
+    glBindTextureUnit = (PFNGLBINDTEXTUREUNIT)get_proc_address("glBindTextureUnit");
+    glTextureStorage2D = (PFNGLTEXTURESTORAGE2D)get_proc_address("glTextureStorage2D");
+    glTextureStorage2DMultisample = (PFNGLTEXTURESTORAGE2DMULTISAMPLE)get_proc_address("glTextureStorage2DMultisample");
 }
 
 //------------------------------------------------------------------------------

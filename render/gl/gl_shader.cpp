@@ -37,16 +37,14 @@ shader::PFNGLCOMPILESHADER shader::glCompileShader = nullptr;
 shader::PFNGLDELETESHADER shader::glDeleteShader = nullptr;
 
 //------------------------------------------------------------------------------
-void shader::init()
+void shader::init(get_proc_address_t get_proc_address)
 {
-#if defined(_WIN32)
-    glCreateShader = (PFNGLCREATESHADER)wglGetProcAddress("glCreateShader");
-    glGetShaderiv = (PFNGLGETSHADERIV)wglGetProcAddress("glGetShaderiv");
-    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOG)wglGetProcAddress("glGetShaderInfoLog");
-    glShaderSource = (PFNGLSHADERSOURCE)wglGetProcAddress("glShaderSource");
-    glCompileShader = (PFNGLCOMPILESHADER)wglGetProcAddress("glCompileShader");
-    glDeleteShader = (PFNGLDELETESHADER)wglGetProcAddress("glDeleteShader");
-#endif // defined(_WIN32)
+    glCreateShader = (PFNGLCREATESHADER)get_proc_address("glCreateShader");
+    glGetShaderiv = (PFNGLGETSHADERIV)get_proc_address("glGetShaderiv");
+    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOG)get_proc_address("glGetShaderInfoLog");
+    glShaderSource = (PFNGLSHADERSOURCE)get_proc_address("glShaderSource");
+    glCompileShader = (PFNGLCOMPILESHADER)get_proc_address("glCompileShader");
+    glDeleteShader = (PFNGLDELETESHADER)get_proc_address("glDeleteShader");
 }
 
 //------------------------------------------------------------------------------
@@ -119,18 +117,16 @@ program::PFNGLDETACHSHADER program::glDetachShader = nullptr;
 program::PFNGLLINKPROGRAM program::glLinkProgram = nullptr;
 
 //------------------------------------------------------------------------------
-void program::init()
+void program::init(get_proc_address_t get_proc_address)
 {
-#if defined(_WIN32)
-    glCreateProgram = (PFNGLCREATEPROGRAM)wglGetProcAddress("glCreateProgram");
-    glUseProgram = (PFNGLUSEPROGRAM)wglGetProcAddress("glUseProgram");
-    glGetProgramiv = (PFNGLGETPROGRAMIV)wglGetProcAddress("glGetProgramiv");
-    glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOG)wglGetProcAddress("glGetProgramInfoLog");
-    glDeleteProgram = (PFNGLDELETEPROGRAM)wglGetProcAddress("glDeleteProgram");
-    glAttachShader = (PFNGLATTACHSHADER)wglGetProcAddress("glAttachShader");
-    glDetachShader = (PFNGLDETACHSHADER)wglGetProcAddress("glDetachShader");
-    glLinkProgram = (PFNGLLINKPROGRAM)wglGetProcAddress("glLinkProgram");
-#endif // defined(_WIN32)
+    glCreateProgram = (PFNGLCREATEPROGRAM)get_proc_address("glCreateProgram");
+    glUseProgram = (PFNGLUSEPROGRAM)get_proc_address("glUseProgram");
+    glGetProgramiv = (PFNGLGETPROGRAMIV)get_proc_address("glGetProgramiv");
+    glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOG)get_proc_address("glGetProgramInfoLog");
+    glDeleteProgram = (PFNGLDELETEPROGRAM)get_proc_address("glDeleteProgram");
+    glAttachShader = (PFNGLATTACHSHADER)get_proc_address("glAttachShader");
+    glDetachShader = (PFNGLDETACHSHADER)get_proc_address("glDetachShader");
+    glLinkProgram = (PFNGLLINKPROGRAM)get_proc_address("glLinkProgram");
 }
 
 //------------------------------------------------------------------------------

@@ -23,7 +23,7 @@ class system;
 class font
 {
 public:
-    static void init();
+    static void init(get_proc_address_t get_proc_address);
 
     font(render::system* renderer, string::view name, int size);
     ~font();

@@ -376,12 +376,10 @@ render::font const* system::load_font(string::view name, int size)
 font::PFNGLDRAWELEMENTSINSTANCED font::glDrawElementsInstanced = nullptr;
 
 //------------------------------------------------------------------------------
-void font::init()
+void font::init(get_proc_address_t get_proc_address)
 {
-#if defined(_WIN32)
     // additional opengl bindings
-    glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)wglGetProcAddress("glDrawElementsInstanced");
-#endif // defined(_WIN32)
+    glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)get_proc_address("glDrawElementsInstanced");
 }
 
 //------------------------------------------------------------------------------

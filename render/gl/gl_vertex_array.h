@@ -62,7 +62,7 @@ protected:
 class vertex_array
 {
 public:
-    static void init();
+    static void init(get_proc_address_t get_proc_address);
 
     vertex_array();
     vertex_array(vertex_array&& a) noexcept;

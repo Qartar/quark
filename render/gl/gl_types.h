@@ -35,3 +35,16 @@ typedef signed long long int GLintptr;
 typedef signed long int GLsizeiptr;
 typedef signed long int GLintptr;
 #endif
+
+//------------------------------------------------------------------------------
+#if defined(USE_SDL)
+using get_proc_address_t = void* (*)(char const* proc);
+#elif defined(_WIN32)
+#   if defined(_WIN64)
+typedef long long INT_PTR;
+#   else // !defined(_WIN64)
+typedef int INT_PTR;
+#   endif // defined(_WIN64)
+typedef INT_PTR (WINAPI *PROC)();
+using get_proc_address_t = PROC (WINAPI *)(char const* proc);
+#endif // defined(_WIN32)

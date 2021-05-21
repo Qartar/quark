@@ -30,26 +30,24 @@ vertex_array::PFNGLVERTEXARRAYATTRIBBINDING vertex_array::glVertexArrayAttribBin
 vertex_array::PFNGLVERTEXARRAYBINDINGDIVISOR vertex_array::glVertexArrayBindingDivisor = nullptr;
 
 //------------------------------------------------------------------------------
-void vertex_array::init()
+void vertex_array::init(get_proc_address_t get_proc_address)
 {
-#if defined(_WIN32)
     // OpenGL 3.0
-    glBindVertexArray = (PFNGLBINDVERTEXARRAY)wglGetProcAddress("glBindVertexArray");
-    glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYS)wglGetProcAddress("glDeleteVertexArrays");
-    glGenVertexArrays = (PFNGLGENVERTEXARRAYS)wglGetProcAddress("glGenVertexArrays");
+    glBindVertexArray = (PFNGLBINDVERTEXARRAY)get_proc_address("glBindVertexArray");
+    glDeleteVertexArrays = (PFNGLDELETEVERTEXARRAYS)get_proc_address("glDeleteVertexArrays");
+    glGenVertexArrays = (PFNGLGENVERTEXARRAYS)get_proc_address("glGenVertexArrays");
     // GL_ARB_direct_state_access
-    glCreateVertexArrays = (PFNGLCREATEVERTEXARRAYS)wglGetProcAddress("glCreateVertexArrays");
-    glDisableVertexArrayAttrib = (PFNGLDISABLEVERTEXARRAYATTRIB)wglGetProcAddress("glDisableVertexArrayAttrib");
-    glEnableVertexArrayAttrib = (PFNGLENABLEVERTEXARRAYATTRIB)wglGetProcAddress("glEnableVertexArrayAttrib");
-    glVertexArrayElementBuffer = (PFNGLVERTEXARRAYELEMENTBUFFER)wglGetProcAddress("glVertexArrayElementBuffer");
-    glVertexArrayVertexBuffer = (PFNGLVERTEXARRAYVERTEXBUFFER)wglGetProcAddress("glVertexArrayVertexBuffer");
-    glVertexArrayVertexBuffers = (PFNGLVERTEXARRAYVERTEXBUFFERS)wglGetProcAddress("glVertexArrayVertexBuffers");
-    glVertexArrayAttribFormat = (PFNGLVERTEXARRAYATTRIBFORMAT)wglGetProcAddress("glVertexArrayAttribFormat");
-    glVertexArrayAttribIFormat = (PFNGLVERTEXARRAYATTRIBIFORMAT)wglGetProcAddress("glVertexArrayAttribIFormat");
-    glVertexArrayAttribLFormat = (PFNGLVERTEXARRAYATTRIBLFORMAT)wglGetProcAddress("glVertexArrayAttribLFormat");
-    glVertexArrayAttribBinding = (PFNGLVERTEXARRAYATTRIBBINDING)wglGetProcAddress("glVertexArrayAttribBinding");
-    glVertexArrayBindingDivisor = (PFNGLVERTEXARRAYBINDINGDIVISOR)wglGetProcAddress("glVertexArrayBindingDivisor");
-#endif // defined(_WIN32)
+    glCreateVertexArrays = (PFNGLCREATEVERTEXARRAYS)get_proc_address("glCreateVertexArrays");
+    glDisableVertexArrayAttrib = (PFNGLDISABLEVERTEXARRAYATTRIB)get_proc_address("glDisableVertexArrayAttrib");
+    glEnableVertexArrayAttrib = (PFNGLENABLEVERTEXARRAYATTRIB)get_proc_address("glEnableVertexArrayAttrib");
+    glVertexArrayElementBuffer = (PFNGLVERTEXARRAYELEMENTBUFFER)get_proc_address("glVertexArrayElementBuffer");
+    glVertexArrayVertexBuffer = (PFNGLVERTEXARRAYVERTEXBUFFER)get_proc_address("glVertexArrayVertexBuffer");
+    glVertexArrayVertexBuffers = (PFNGLVERTEXARRAYVERTEXBUFFERS)get_proc_address("glVertexArrayVertexBuffers");
+    glVertexArrayAttribFormat = (PFNGLVERTEXARRAYATTRIBFORMAT)get_proc_address("glVertexArrayAttribFormat");
+    glVertexArrayAttribIFormat = (PFNGLVERTEXARRAYATTRIBIFORMAT)get_proc_address("glVertexArrayAttribIFormat");
+    glVertexArrayAttribLFormat = (PFNGLVERTEXARRAYATTRIBLFORMAT)get_proc_address("glVertexArrayAttribLFormat");
+    glVertexArrayAttribBinding = (PFNGLVERTEXARRAYATTRIBBINDING)get_proc_address("glVertexArrayAttribBinding");
+    glVertexArrayBindingDivisor = (PFNGLVERTEXARRAYBINDINGDIVISOR)get_proc_address("glVertexArrayBindingDivisor");
 }
 
 //------------------------------------------------------------------------------
