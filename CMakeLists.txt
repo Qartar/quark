@@ -7,7 +7,12 @@ find_package(Git)
 
 set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/cmake")
 set(VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/version.h")
-set(USE_SDL ON)
+
+if(MSVC)
+    set(USE_SDL OFF)
+else()
+    set(USE_SDL ON)
+endif()
 
 if(GIT_FOUND)
     add_custom_target(quark-version ALL
