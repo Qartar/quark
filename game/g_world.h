@@ -129,6 +129,38 @@ protected:
 };
 
 //------------------------------------------------------------------------------
+struct hextile
+{
+    using index = std::size_t;
+    static constexpr index invalid_index = 0;
+
+    vec2i position;
+
+    //       2 1
+    //      3 6 0
+    //       4 5
+
+    std::array<int, 7> contents;
+
+    //       2 1
+    //      3 - 0
+    //       4 5
+
+    std::array<index, 6> neighbors;
+
+    //       (-1, 1 )   ( 0, 1 )
+    //
+    // (-1, 0 )   ( 0, 0 )   ( 1, 0 )
+    //
+    //       (-1, 0 )   ( 1,-1 )
+
+    static constexpr vec2i neighbor_offsets[6] = {
+        vec2i( 1, 0), vec2i( 0, 1), vec2i(-1, 1),
+        vec2i(-1, 0), vec2i(-1, 0), vec2i( 1,-1),
+    };
+};
+
+//------------------------------------------------------------------------------
 class world
 {
 public:
@@ -213,6 +245,15 @@ private:
 
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
+
+    //
+    // tile system
+    //
+
+    std::vector<hextile> _tiles;
+
+    void draw_tiles(render::system* renderer) const;
+    hextile::index insert_tile(vec2i position, hextile const& tile);
 
     //
     // particle system

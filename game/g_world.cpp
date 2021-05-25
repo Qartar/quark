@@ -78,6 +78,21 @@ void world::reset()
             spawn<aicontroller>(sh);
         }
     }
+
+    insert_tile(vec2i(-1, 1), {vec2i(-1, 1), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 1,-1), {vec2i( 1,-1), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i(-1,-1), {vec2i(-1,-1), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 0,-1), {vec2i( 0,-1), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i(-1, 0), {vec2i(-1, 0), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 0, 0), {vec2i( 0, 0), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 0, 1), {vec2i( 0, 1), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 1, 0), {vec2i( 1, 0), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 1, 1), {vec2i( 1, 1), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 1, 2), {vec2i( 1, 2), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 2, 0), {vec2i( 2, 0), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 2, 1), {vec2i( 2, 1), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 3, 0), {vec2i( 3, 0), {0,1,2,3,4,5,6}});
+    insert_tile(vec2i( 3,-1), {vec2i( 3,-1), {0,1,2,3,4,5,6}});
 }
 
 //------------------------------------------------------------------------------
@@ -116,19 +131,99 @@ void world::remove(handle<object> object)
 }
 
 //------------------------------------------------------------------------------
-void world::draw(render::system* renderer, time_value time) const
+hextile::index world::insert_tile(vec2i position, hextile const& tile)
 {
-    renderer->draw_starfield();
+    hextile t = tile;
 
-    for (auto& obj : _objects) {
-        // objects array is sparse
-        if (!obj.get()) {
-            continue;
-        }
-        obj->draw(renderer, time);
+    t.position = position;
+    for (std::size_t jj = 0; jj < t.neighbors.size(); ++jj) {
+        t.neighbors[jj] = hextile::invalid_index;
     }
 
-    draw_particles(renderer, time);
+    for (hextile::index ii = 1, sz = _tiles.size(); ii < sz; ++ii) {
+        // tile already exists at this position
+        if (_tiles[ii].position == position) {
+            return hextile::invalid_index;
+        }
+
+        for (std::size_t jj = 0; jj < t.neighbors.size(); ++jj) {
+            if (_tiles[ii].position == position + hextile::neighbor_offsets[jj]) {
+                assert(t.neighbors[jj] == hextile::invalid_index);
+                t.neighbors[jj] = ii;
+            }
+        }
+    }
+
+    hextile::index ii = _tiles.size();
+    _tiles.push_back(t);
+
+    for (std::size_t jj = 0; jj < t.neighbors.size(); ++jj) {
+        if (_tiles[ii].neighbors[jj] != hextile::invalid_index) {
+            _tiles[_tiles[ii].neighbors[jj]].neighbors[(jj + 3) % 6] = ii;
+        }
+    }
+
+    return ii;
+}
+
+//------------------------------------------------------------------------------
+void draw_tile(render::system* renderer, hextile const& tile)
+{
+    const vec2 vertices[6] = {
+        {cos(math::deg2rad(330.f)), sin(math::deg2rad(330.f))},
+        {cos(math::deg2rad( 30.f)), sin(math::deg2rad( 30.f))},
+        {cos(math::deg2rad( 90.f)), sin(math::deg2rad( 90.f))},
+        {cos(math::deg2rad(150.f)), sin(math::deg2rad(150.f))},
+        {cos(math::deg2rad(210.f)), sin(math::deg2rad(210.f))},
+        {cos(math::deg2rad(270.f)), sin(math::deg2rad(270.f))},
+    };
+
+    vec2 origin = (vertices[1] - vertices[3]) * float(tile.position.x)
+                + (vertices[2] - vertices[4]) * float(tile.position.y);
+
+    renderer->draw_line(origin + vertices[0], origin + vertices[1], color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_line(origin + vertices[1], origin + vertices[2], color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_line(origin + vertices[2], origin + vertices[3], color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_line(origin + vertices[3], origin + vertices[4], color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_line(origin + vertices[4], origin + vertices[5], color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_line(origin + vertices[5], origin + vertices[0], color4(1,1,1,1), color4(1,1,1,1));
+
+    const vec2 edges[6] = {
+        (vertices[0] + vertices[1]) * .5f,
+        (vertices[1] + vertices[2]) * .5f,
+        (vertices[2] + vertices[3]) * .5f,
+        (vertices[3] + vertices[4]) * .5f,
+        (vertices[4] + vertices[5]) * .5f,
+        (vertices[5] + vertices[0]) * .5f,
+    };
+
+    for (int ii = 0; ii < 6; ++ii) {
+        if (tile.contents[ii]) {
+            string::view s = va("%d", tile.contents[ii]);
+            vec2 size = renderer->monospace_size(s);
+            renderer->draw_string(s, origin + edges[ii] * (2.f / 3.f) - size * .5f, color4(1,1,1,1));
+        }
+    }
+
+    if (tile.contents[6]) {
+        string::view s = va("%d", tile.contents[6]);
+        vec2 size = renderer->monospace_size(s);
+        renderer->draw_string(s, origin - size * .5f, color4(1,1,1,1));
+    }
+}
+
+//------------------------------------------------------------------------------
+void world::draw_tiles(render::system* renderer) const
+{
+    for (auto const& tile : _tiles) {
+        draw_tile(renderer, tile);
+    }
+}
+
+//------------------------------------------------------------------------------
+void world::draw(render::system* renderer, time_value /*time*/) const
+{
+    draw_tiles(renderer);
 }
 
 //------------------------------------------------------------------------------
