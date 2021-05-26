@@ -79,20 +79,9 @@ void world::reset()
         }
     }
 
-    insert_tile(vec2i(-1, 1), {vec2i(-1, 1), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 1,-1), {vec2i( 1,-1), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i(-1,-1), {vec2i(-1,-1), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 0,-1), {vec2i( 0,-1), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i(-1, 0), {vec2i(-1, 0), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 0, 0), {vec2i( 0, 0), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 0, 1), {vec2i( 0, 1), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 1, 0), {vec2i( 1, 0), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 1, 1), {vec2i( 1, 1), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 1, 2), {vec2i( 1, 2), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 2, 0), {vec2i( 2, 0), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 2, 1), {vec2i( 2, 1), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 3, 0), {vec2i( 3, 0), {0,1,2,3,4,5,6}});
-    insert_tile(vec2i( 3,-1), {vec2i( 3,-1), {0,1,2,3,4,5,6}});
+    _tiles.clear();
+    _boundary_tiles.clear();
+    insert_boundary_tile(vec2i(0,0));
 }
 
 //------------------------------------------------------------------------------
@@ -133,37 +122,74 @@ void world::remove(handle<object> object)
 //------------------------------------------------------------------------------
 hextile::index world::insert_tile(vec2i position, hextile const& tile)
 {
-    hextile t = tile;
+    hextile::index index = hextile::invalid_index;
 
-    t.position = position;
-    for (std::size_t jj = 0; jj < t.neighbors.size(); ++jj) {
-        t.neighbors[jj] = hextile::invalid_index;
-    }
-
-    for (hextile::index ii = 1, sz = _tiles.size(); ii < sz; ++ii) {
+    for (hextile::index ii = 0, sz = _tiles.size(); ii < sz; ++ii) {
         // tile already exists at this position
         if (_tiles[ii].position == position) {
-            return hextile::invalid_index;
+            if (!_tiles[ii].is_boundary) {
+                return hextile::invalid_index;
+            }
+            index = ii;
+            break;
         }
+    }
 
-        for (std::size_t jj = 0; jj < t.neighbors.size(); ++jj) {
-            if (_tiles[ii].position == position + hextile::neighbor_offsets[jj]) {
-                assert(t.neighbors[jj] == hextile::invalid_index);
-                t.neighbors[jj] = ii;
+    if (index == hextile::invalid_index) {
+        return hextile::invalid_index;
+    } else {
+        _tiles[index].position = position;
+        _tiles[index].contents = tile.contents;
+        _tiles[index].is_boundary = false;
+
+        for (std::size_t ii = 0, sz = _boundary_tiles.size(); ii < sz; ++ii) {
+            if (_boundary_tiles[ii] == index) {
+                _boundary_tiles[ii] = _boundary_tiles.back();
+                _boundary_tiles.pop_back();
+                break;
             }
         }
     }
 
-    hextile::index ii = _tiles.size();
-    _tiles.push_back(t);
-
-    for (std::size_t jj = 0; jj < t.neighbors.size(); ++jj) {
-        if (_tiles[ii].neighbors[jj] != hextile::invalid_index) {
-            _tiles[_tiles[ii].neighbors[jj]].neighbors[(jj + 3) % 6] = ii;
+    for (std::size_t jj = 0; jj < 6; ++jj) {
+        hextile::index other = _tiles[index].neighbors[jj];
+        if (other != hextile::invalid_index) {
+            _tiles[other].neighbors[(jj + 3) % 6] = index;
+        } else {
+            insert_boundary_tile(_tiles[index].position + hextile::neighbor_offsets[jj]);
         }
     }
 
-    return ii;
+    return index;
+}
+
+//------------------------------------------------------------------------------
+hextile::index world::insert_boundary_tile(vec2i position)
+{
+    for (hextile::index ii = 0, sz = _tiles.size(); ii < sz; ++ii) {
+        // tile already exists at this position
+        if (_tiles[ii].position == position) {
+            return hextile::invalid_index;
+        }
+    }
+
+    hextile::index index = _tiles.size();
+    _tiles.push_back({position, {}, true, {
+        hextile::invalid_index, hextile::invalid_index, hextile::invalid_index,
+        hextile::invalid_index, hextile::invalid_index, hextile::invalid_index,
+    }});
+
+    for (std::size_t ii = 0, sz = _tiles.size(); ii < sz; ++ii) {
+        for (std::size_t jj = 0; jj < 6; ++jj) {
+            if (_tiles[ii].position == position + hextile::neighbor_offsets[jj]) {
+                _tiles[index].neighbors[jj] = ii;
+                _tiles[ii].neighbors[(jj + 3) % 6] = index;
+            }
+        }
+    }
+
+    _boundary_tiles.push_back(index);
+    return index;
 }
 
 //------------------------------------------------------------------------------
@@ -181,12 +207,18 @@ void draw_tile(render::system* renderer, hextile const& tile)
     vec2 origin = (vertices[1] - vertices[3]) * float(tile.position.x)
                 + (vertices[2] - vertices[4]) * float(tile.position.y);
 
-    renderer->draw_line(origin + vertices[0], origin + vertices[1], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(origin + vertices[1], origin + vertices[2], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(origin + vertices[2], origin + vertices[3], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(origin + vertices[3], origin + vertices[4], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(origin + vertices[4], origin + vertices[5], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(origin + vertices[5], origin + vertices[0], color4(1,1,1,1), color4(1,1,1,1));
+    float alpha = tile.is_boundary ? .25f : 1.f;
+
+    renderer->draw_line(origin + vertices[0], origin + vertices[1], color4(1,1,1,alpha), color4(1,1,1,alpha));
+    renderer->draw_line(origin + vertices[1], origin + vertices[2], color4(1,1,1,alpha), color4(1,1,1,alpha));
+    renderer->draw_line(origin + vertices[2], origin + vertices[3], color4(1,1,1,alpha), color4(1,1,1,alpha));
+    renderer->draw_line(origin + vertices[3], origin + vertices[4], color4(1,1,1,alpha), color4(1,1,1,alpha));
+    renderer->draw_line(origin + vertices[4], origin + vertices[5], color4(1,1,1,alpha), color4(1,1,1,alpha));
+    renderer->draw_line(origin + vertices[5], origin + vertices[0], color4(1,1,1,alpha), color4(1,1,1,alpha));
+
+    if (tile.is_boundary) {
+        return;
+    }
 
     const vec2 edges[6] = {
         (vertices[0] + vertices[1]) * .5f,
@@ -258,6 +290,18 @@ void world::run_frame()
     }
 
     _physics.step(FRAMETIME.to_seconds());
+
+    if (_framenum % 30 == 0) {
+        std::size_t jj = _random.uniform_int(_boundary_tiles.size());
+        vec2i position = _tiles[_boundary_tiles[jj]].position;
+
+        hextile tile{};
+        for (std::size_t kk = 0; kk < tile.contents.size(); ++kk) {
+            tile.contents[kk] = _random.uniform_int(3);
+        }
+
+        insert_tile(position, tile);
+    }
 }
 
 //------------------------------------------------------------------------------

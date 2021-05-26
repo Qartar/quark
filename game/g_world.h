@@ -132,7 +132,7 @@ protected:
 struct hextile
 {
     using index = std::size_t;
-    static constexpr index invalid_index = 0;
+    static constexpr index invalid_index = SIZE_MAX;
 
     vec2i position;
 
@@ -141,6 +141,7 @@ struct hextile
     //       4 5
 
     std::array<int, 7> contents;
+    bool is_boundary;
 
     //       2 1
     //      3 - 0
@@ -152,11 +153,11 @@ struct hextile
     //
     // (-1, 0 )   ( 0, 0 )   ( 1, 0 )
     //
-    //       (-1, 0 )   ( 1,-1 )
+    //       ( 0,-1 )   ( 1,-1 )
 
     static constexpr vec2i neighbor_offsets[6] = {
         vec2i( 1, 0), vec2i( 0, 1), vec2i(-1, 1),
-        vec2i(-1, 0), vec2i(-1, 0), vec2i( 1,-1),
+        vec2i(-1, 0), vec2i( 0,-1), vec2i( 1,-1),
     };
 };
 
@@ -251,9 +252,11 @@ private:
     //
 
     std::vector<hextile> _tiles;
+    std::vector<hextile::index> _boundary_tiles;
 
     void draw_tiles(render::system* renderer) const;
     hextile::index insert_tile(vec2i position, hextile const& tile);
+    hextile::index insert_boundary_tile(vec2i position);
 
     //
     // particle system
