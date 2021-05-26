@@ -262,7 +262,7 @@ private:
     bool match_tile(hextile::index index, hextile const& tile, int rotation) const;
 
     hextile _next;
-    std::vector<std::pair<vec2i, int>> _candidates;
+    std::vector<std::pair<hextile::index, int>> _candidates;
 
     //
     // particle system

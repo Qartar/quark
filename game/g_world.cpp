@@ -226,12 +226,16 @@ void draw_tile(render::system* renderer, hextile const& tile)
 
     float alpha = (tile.is_boundary || tile.is_candidate) ? .25f : 1.f;
 
-    renderer->draw_line(origin + vertices[0], origin + vertices[1], color4(1,1,1,alpha), color4(1,1,1,alpha));
-    renderer->draw_line(origin + vertices[1], origin + vertices[2], color4(1,1,1,alpha), color4(1,1,1,alpha));
-    renderer->draw_line(origin + vertices[2], origin + vertices[3], color4(1,1,1,alpha), color4(1,1,1,alpha));
-    renderer->draw_line(origin + vertices[3], origin + vertices[4], color4(1,1,1,alpha), color4(1,1,1,alpha));
-    renderer->draw_line(origin + vertices[4], origin + vertices[5], color4(1,1,1,alpha), color4(1,1,1,alpha));
-    renderer->draw_line(origin + vertices[5], origin + vertices[0], color4(1,1,1,alpha), color4(1,1,1,alpha));
+    config::boolean draw_grid("draw_grid", true, 0, "");
+
+    if (draw_grid) {
+        renderer->draw_line(origin + vertices[0], origin + vertices[1], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + vertices[1], origin + vertices[2], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + vertices[2], origin + vertices[3], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + vertices[3], origin + vertices[4], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + vertices[4], origin + vertices[5], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + vertices[5], origin + vertices[0], color4(1,1,1,alpha), color4(1,1,1,alpha));
+    }
 
     if (tile.is_boundary) {
         return;
@@ -326,7 +330,7 @@ void world::draw_tiles(render::system* renderer) const
         if (ii > 0 && _candidates[ii].first == _candidates[ii - 1].first) {
             continue;
         }
-        hextile tile{_candidates[ii].first, {}, false, true};
+        hextile tile{_tiles[_candidates[ii].first].position, {}, false, true};
         draw_tile(renderer, tile);
     }
 }
@@ -371,11 +375,30 @@ void world::run_frame()
     _physics.step(FRAMETIME.to_seconds());
 
     if (_framenum % 30 == 0 && _candidates.size()) {
-        std::size_t ii = _random.uniform_int(_candidates.size());
-        vec2i position = _candidates[ii].first;
-        int rotation = _candidates[ii].second;
-        std::rotate(_next.contents.begin(), _next.contents.begin() + rotation, _next.contents.begin() + 6);
-        insert_tile(position, _next);
+        std::vector<std::pair<hextile::index, int>> candidates[7];
+
+        for (std::size_t ii = 0, sz = _candidates.size(); ii < sz; ++ii) {
+            hextile::index jj = _candidates[ii].first;
+            int n = 0;
+            for (auto other : _tiles[jj].neighbors) {
+                if (other != hextile::invalid_index) {
+                    ++n;
+                }
+            }
+            candidates[n].push_back(_candidates[ii]);
+        }
+
+        for (int jj = 0; jj < 7; ++jj) {
+            if (candidates[6 - jj].size()) {
+                std::size_t ii = _random.uniform_int(candidates[6 - jj].size());
+                vec2i position = _tiles[candidates[6 - jj][ii].first].position;
+                int rotation = candidates[6 - jj][ii].second;
+                std::rotate(_next.contents.begin(), _next.contents.begin() + rotation, _next.contents.begin() + 6);
+                insert_tile(position, _next);
+                break;
+            }
+        }
+
         _candidates.resize(0);
     }
 
@@ -390,7 +413,7 @@ void world::run_frame()
         for (std::size_t ii = 0, sz = _boundary_tiles.size(); ii < sz; ++ii) {
             for (int rotation = 0; rotation < 6; ++rotation) {
                 if (match_tile(_boundary_tiles[ii], _next, rotation)) {
-                    _candidates.emplace_back(_tiles[_boundary_tiles[ii]].position, rotation);
+                    _candidates.emplace_back(_boundary_tiles[ii], rotation);
                 }
             }
         }
