@@ -193,6 +193,23 @@ hextile::index world::insert_boundary_tile(vec2i position)
 }
 
 //------------------------------------------------------------------------------
+bool world::match_tile(hextile::index index, hextile const& tile, int rotation) const
+{
+    for (std::size_t ii = 0; ii < 6; ++ii) {
+        hextile::index neighbor = _tiles[index].neighbors[ii];
+        if (neighbor == hextile::invalid_index || _tiles[neighbor].is_boundary) {
+            continue;
+        }
+
+        if (_tiles[neighbor].contents[(ii + 3) % 6] != tile.contents[(ii + rotation) % 6]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 void draw_tile(render::system* renderer, hextile const& tile)
 {
     const vec2 vertices[6] = {
@@ -220,27 +237,55 @@ void draw_tile(render::system* renderer, hextile const& tile)
         return;
     }
 
-    const vec2 edges[6] = {
-        (vertices[0] + vertices[1]) * .5f,
-        (vertices[1] + vertices[2]) * .5f,
-        (vertices[2] + vertices[3]) * .5f,
-        (vertices[3] + vertices[4]) * .5f,
-        (vertices[4] + vertices[5]) * .5f,
-        (vertices[5] + vertices[0]) * .5f,
+    vec2 const verts[12] = {
+        origin + vertices[0],
+        origin + vertices[1],
+        origin + vertices[2],
+        origin + vertices[3],
+        origin + vertices[4],
+        origin + vertices[5],
+        origin + vertices[0] * .5f,
+        origin + vertices[1] * .5f,
+        origin + vertices[2] * .5f,
+        origin + vertices[3] * .5f,
+        origin + vertices[4] * .5f,
+        origin + vertices[5] * .5f,
     };
 
-    for (int ii = 0; ii < 6; ++ii) {
-        if (tile.contents[ii]) {
-            string::view s = va("%d", tile.contents[ii]);
-            vec2 size = renderer->monospace_size(s);
-            renderer->draw_string(s, origin + edges[ii] * (2.f / 3.f) - size * .5f, color4(1,1,1,1));
-        }
-    }
+    int const indices[] = {
+        0, 6, 7, 0, 7, 1,
+        1, 7, 8, 1, 8, 2,
+        2, 8, 9, 2, 9, 3,
+        3, 9, 10, 3, 10, 4,
+        4, 10, 11, 4, 11, 5,
+        5, 11, 6, 5, 6, 0,
+        6, 7, 8, 6, 8, 9, 6, 9, 10, 6, 10, 11,
+    };
 
-    if (tile.contents[6]) {
-        string::view s = va("%d", tile.contents[6]);
-        vec2 size = renderer->monospace_size(s);
-        renderer->draw_string(s, origin - size * .5f, color4(1,1,1,1));
+    color4 colors[12] = {};
+
+    for (int ii = 0; ii < 6; ++ii) {
+        color4 c = tile.contents[ii] == 1 ? color4(1.f, 0.f, 0.f, .3f) :
+                   tile.contents[ii] == 2 ? color4(.4f, 1.f, 0.f, .3f) :
+                   tile.contents[ii] == 3 ? color4(.2f, .4f, 1.f, .3f) : color4(1,1,1,.1f);
+
+        int const* iptr = indices + ii * 6;
+        for (int jj = 0; jj < 6; ++jj) {
+            colors[iptr[jj]] = c;
+        }
+
+        renderer->draw_triangles(verts, colors, iptr, 6);
+    }
+    {
+        color4 c = tile.contents[6] == 1 ? color4(1.f, 0.f, 0.f, .3f) :
+                   tile.contents[6] == 2 ? color4(.4f, 1.f, 0.f, .3f) :
+                   tile.contents[6] == 3 ? color4(.2f, .4f, 1.f, .3f) : color4(1,1,1,.1f);
+
+        int const* iptr = indices + 36;
+        for (int jj = 0; jj < 12; ++jj) {
+            colors[iptr[jj]] = c;
+        }
+        renderer->draw_triangles(verts, colors, iptr, 12);
     }
 }
 
@@ -291,16 +336,32 @@ void world::run_frame()
 
     _physics.step(FRAMETIME.to_seconds());
 
-    if (_framenum % 30 == 0) {
-        std::size_t jj = _random.uniform_int(_boundary_tiles.size());
-        vec2i position = _tiles[_boundary_tiles[jj]].position;
 
+    if (_framenum % 30 == 0) {
         hextile tile{};
-        for (std::size_t kk = 0; kk < tile.contents.size(); ++kk) {
-            tile.contents[kk] = _random.uniform_int(3);
+        for (std::size_t kk = 0; kk < 6; ++kk) {
+            tile.contents[kk] = _random.uniform_int(4);
+        }
+        // randomly select center contents from edge contents
+        tile.contents[6] = tile.contents[_random.uniform_int(6)];
+
+        // find all boundary tiles where this tile could fit
+        std::vector<std::pair<vec2i, int>> candidates;
+        for (std::size_t ii = 0, sz = _boundary_tiles.size(); ii < sz; ++ii) {
+            for (int rotation = 0; rotation < 6; ++rotation) {
+                if (match_tile(_boundary_tiles[ii], tile, rotation)) {
+                    candidates.emplace_back(_tiles[_boundary_tiles[ii]].position, rotation);
+                }
+            }
         }
 
-        insert_tile(position, tile);
+        if (candidates.size()) {
+            std::size_t ii = _random.uniform_int(candidates.size());
+            vec2i position = candidates[ii].first;
+            int rotation = candidates[ii].second;
+            std::rotate(tile.contents.begin(), tile.contents.begin() + rotation, tile.contents.begin() + 6);
+            insert_tile(position, tile);
+        }
     }
 }
 

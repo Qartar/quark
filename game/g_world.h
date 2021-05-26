@@ -258,6 +258,8 @@ private:
     hextile::index insert_tile(vec2i position, hextile const& tile);
     hextile::index insert_boundary_tile(vec2i position);
 
+    bool match_tile(hextile::index index, hextile const& tile, int rotation) const;
+
     //
     // particle system
     //
