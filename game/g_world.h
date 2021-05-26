@@ -141,7 +141,8 @@ struct hextile
     //       4 5
 
     std::array<int, 7> contents;
-    bool is_boundary;
+    bool is_boundary : 1,
+         is_candidate : 1;
 
     //       2 1
     //      3 - 0
@@ -259,6 +260,9 @@ private:
     hextile::index insert_boundary_tile(vec2i position);
 
     bool match_tile(hextile::index index, hextile const& tile, int rotation) const;
+
+    hextile _next;
+    std::vector<std::pair<vec2i, int>> _candidates;
 
     //
     // particle system
