@@ -212,41 +212,31 @@ bool world::match_tile(hextile::index index, hextile const& tile, int rotation) 
 //------------------------------------------------------------------------------
 void draw_tile(render::system* renderer, hextile const& tile)
 {
-    const vec2 vertices[6] = {
-        {cos(math::deg2rad(330.f)), sin(math::deg2rad(330.f))},
-        {cos(math::deg2rad( 30.f)), sin(math::deg2rad( 30.f))},
-        {cos(math::deg2rad( 90.f)), sin(math::deg2rad( 90.f))},
-        {cos(math::deg2rad(150.f)), sin(math::deg2rad(150.f))},
-        {cos(math::deg2rad(210.f)), sin(math::deg2rad(210.f))},
-        {cos(math::deg2rad(270.f)), sin(math::deg2rad(270.f))},
-    };
-
-    vec2 origin = (vertices[1] - vertices[3]) * float(tile.position.x)
-                + (vertices[2] - vertices[4]) * float(tile.position.y);
+    vec2 origin = hextile::grid_to_world(tile.position);
 
     float alpha = (tile.is_boundary || tile.is_candidate) ? .25f : 1.f;
 
     config::boolean draw_grid("draw_grid", true, 0, "");
 
     if (draw_grid) {
-        renderer->draw_line(origin + vertices[0], origin + vertices[1], color4(1,1,1,alpha), color4(1,1,1,alpha));
-        renderer->draw_line(origin + vertices[1], origin + vertices[2], color4(1,1,1,alpha), color4(1,1,1,alpha));
-        renderer->draw_line(origin + vertices[2], origin + vertices[3], color4(1,1,1,alpha), color4(1,1,1,alpha));
-        renderer->draw_line(origin + vertices[3], origin + vertices[4], color4(1,1,1,alpha), color4(1,1,1,alpha));
-        renderer->draw_line(origin + vertices[4], origin + vertices[5], color4(1,1,1,alpha), color4(1,1,1,alpha));
-        renderer->draw_line(origin + vertices[5], origin + vertices[0], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + hextile::vertices[0], origin + hextile::vertices[1], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + hextile::vertices[1], origin + hextile::vertices[2], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + hextile::vertices[2], origin + hextile::vertices[3], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + hextile::vertices[3], origin + hextile::vertices[4], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + hextile::vertices[4], origin + hextile::vertices[5], color4(1,1,1,alpha), color4(1,1,1,alpha));
+        renderer->draw_line(origin + hextile::vertices[5], origin + hextile::vertices[0], color4(1,1,1,alpha), color4(1,1,1,alpha));
     }
 
     if (tile.is_boundary) {
         return;
     } else if (tile.is_candidate) {
         vec2 const verts[6] = {
-            origin + vertices[0],
-            origin + vertices[1],
-            origin + vertices[2],
-            origin + vertices[3],
-            origin + vertices[4],
-            origin + vertices[5],
+            origin + hextile::vertices[0],
+            origin + hextile::vertices[1],
+            origin + hextile::vertices[2],
+            origin + hextile::vertices[3],
+            origin + hextile::vertices[4],
+            origin + hextile::vertices[5],
         };
         color4 const colors[6] = {
             color4(1.f, 1.f, 1.f, .05f),
@@ -262,18 +252,18 @@ void draw_tile(render::system* renderer, hextile const& tile)
         renderer->draw_triangles(verts, colors, indices, 12);
     } else {
         vec2 const verts[12] = {
-            origin + vertices[0],
-            origin + vertices[1],
-            origin + vertices[2],
-            origin + vertices[3],
-            origin + vertices[4],
-            origin + vertices[5],
-            origin + vertices[0] * .5f,
-            origin + vertices[1] * .5f,
-            origin + vertices[2] * .5f,
-            origin + vertices[3] * .5f,
-            origin + vertices[4] * .5f,
-            origin + vertices[5] * .5f,
+            origin + hextile::vertices[0],
+            origin + hextile::vertices[1],
+            origin + hextile::vertices[2],
+            origin + hextile::vertices[3],
+            origin + hextile::vertices[4],
+            origin + hextile::vertices[5],
+            origin + hextile::vertices[0] * .5f,
+            origin + hextile::vertices[1] * .5f,
+            origin + hextile::vertices[2] * .5f,
+            origin + hextile::vertices[3] * .5f,
+            origin + hextile::vertices[4] * .5f,
+            origin + hextile::vertices[5] * .5f,
         };
 
         int const indices[] = {
@@ -286,28 +276,30 @@ void draw_tile(render::system* renderer, hextile const& tile)
             6, 7, 8, 6, 8, 9, 6, 9, 10, 6, 10, 11,
         };
 
+        constexpr color4 contents_color[7] = {
+            color4(1.f, 1.f, 1.f, .2f),
+            color4(1.f, 0.f, 0.f, .3f),
+            color4(.2f, .4f, 1.f, .3f),
+            color4(.4f, 1.f, 0.f, .3f),
+            color4(1.f, 1.f, 0.f, .3f),
+            color4(.2f, 1.f, 1.f, .3f),
+            color4(1.f, .2f, 1.f, .3f),
+        };
+
         color4 colors[12] = {};
 
         for (int ii = 0; ii < 6; ++ii) {
-            color4 c = tile.contents[ii] == 1 ? color4(1.f, 0.f, 0.f, .3f) :
-                       tile.contents[ii] == 2 ? color4(.4f, 1.f, 0.f, .3f) :
-                       tile.contents[ii] == 3 ? color4(.2f, .4f, 1.f, .3f) : color4(1,1,1,.2f);
-
             int const* iptr = indices + ii * 6;
             for (int jj = 0; jj < 6; ++jj) {
-                colors[iptr[jj]] = c;
+                colors[iptr[jj]] = contents_color[tile.contents[ii]];
             }
 
             renderer->draw_triangles(verts, colors, iptr, 6);
         }
         {
-            color4 c = tile.contents[6] == 1 ? color4(1.f, 0.f, 0.f, .3f) :
-                       tile.contents[6] == 2 ? color4(.4f, 1.f, 0.f, .3f) :
-                       tile.contents[6] == 3 ? color4(.2f, .4f, 1.f, .3f) : color4(1,1,1,.2f);
-
             int const* iptr = indices + 36;
             for (int jj = 0; jj < 12; ++jj) {
-                colors[iptr[jj]] = c;
+                colors[iptr[jj]] = contents_color[tile.contents[6]];
             }
             renderer->draw_triangles(verts, colors, iptr, 12);
         }

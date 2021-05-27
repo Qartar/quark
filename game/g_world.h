@@ -160,6 +160,49 @@ struct hextile
         vec2i( 1, 0), vec2i( 0, 1), vec2i(-1, 1),
         vec2i(-1, 0), vec2i( 0,-1), vec2i( 1,-1),
     };
+
+    static constexpr vec2 vertices[6] = {
+        vec2( math::sqrt3<float> / 2.f, -0.5f),
+        vec2( math::sqrt3<float> / 2.f,  0.5f),
+        vec2(                      0.f,  1.0f),
+        vec2(-math::sqrt3<float> / 2.f,  0.5f),
+        vec2(-math::sqrt3<float> / 2.f, -0.5f),
+        vec2(                      0.f, -1.0f),
+    };
+
+    //! Return grid coordinates for the tile containing the given world coordinates
+    static vec2i world_to_grid(vec2 v) {
+        // [ sqrt(3)/3 0   ]
+        // [ -1/3      2/3 ]
+        float gx = v.x * (math::sqrt3<float> / 3.f) - v.y * (1.f / 3.f);
+        float gy = v.y * (2.f / 3.f);
+        float gz = -gx - gy;
+
+        float rx = std::round(gx);
+        float ry = std::round(gy);
+        float rz = std::round(gz);
+
+        float dx = std::abs(gx - rx);
+        float dy = std::abs(gy - ry);
+        float dz = std::abs(gz - rz);
+
+        // Find the closest integer grid coordinate to the planar coordinates
+        if (dx > dy && dx > dz) {
+            return vec2i(int(-ry - rz), int(ry));
+        } else if (dy > dz) {
+            return vec2i(int(rx), int(-rx - rz));
+        } else {
+            return vec2i(int(rx), int(ry));
+        }
+    }
+
+    //! Return world coordinates for the origin of the tile at the given grid coordinates
+    static constexpr vec2 grid_to_world(vec2i v) {
+        // [ sqrt(3)   0   ]
+        // [ sqrt(3)/2 3/2 ]
+        return vec2(v.x * math::sqrt3<float> + v.y * (math::sqrt3<float> / 2.f),
+                                               v.y * (3.f / 2.f));
+    }
 };
 
 //------------------------------------------------------------------------------
