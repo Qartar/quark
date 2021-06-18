@@ -12,22 +12,16 @@
 //------------------------------------------------------------------------------
 bool delaunay::insert_vertex(vec2 v)
 {
-    if (_verts.size() < 3) {
-        _verts.push_back(v);
-         if (_verts.size() == 3) {
+    if (num_verts() < 3) {
+        alloc_vert(v);
+         if (num_verts() == 3) {
+             shrink_to_fit();
              // clockwise winding
              if ((_verts[2] - _verts[0]).cross(_verts[1] - _verts[0]) > 0.f) {
-                _edge_verts.push_back(0);
-                _edge_verts.push_back(1);
-                _edge_verts.push_back(2);
+                 alloc_face(0, 1, 2);
              } else {
-                _edge_verts.push_back(0);
-                _edge_verts.push_back(2);
-                _edge_verts.push_back(1);
+                 alloc_face(0, 2, 1);
              }
-            _edge_pairs.push_back(-1);
-            _edge_pairs.push_back(-1);
-            _edge_pairs.push_back(-1);
          }
         return true;
     }
@@ -35,16 +29,26 @@ bool delaunay::insert_vertex(vec2 v)
     // general case
 
     // find the face that contains v
+#if 0
     for (int e0 = 0, num_edges = narrow_cast<int>(_edge_verts.size()); e0 < num_edges; e0 += 3) {
         if (split_face(v, e0)) {
             return true;
         }
     }
+#else
+    // only expand boundary edges
+    if (intersect_point(v) != -1) {
+        return false;
+    }
+#endif
 
     // find the nearest edge to v
     float min_dist = INFINITY;
     int min_edge = -1;
     for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; ++edge_index) {
+        if (_edge_verts[edge_index] == -1) {
+            continue;
+        }
         // skip interior edges
         if (_edge_pairs[edge_index] != -1) {
             continue;
@@ -73,27 +77,121 @@ bool delaunay::insert_vertex(vec2 v)
     {
         int v0 = _edge_verts[edge_offset<1>(min_edge)];
         int v1 = _edge_verts[edge_offset<0>(min_edge)];
-        int v2 = narrow_cast<int>(_verts.size());
+        int v2 = alloc_vert(v);
 
-        _verts.push_back(v);
-        _edge_verts.push_back(v0);
-        _edge_verts.push_back(v1);
-        _edge_verts.push_back(v2);
-
-        _edge_pairs.push_back(min_edge);
-        _edge_pairs.push_back(-1);
-        _edge_pairs.push_back(-1);
-
-        _edge_pairs[min_edge] = narrow_cast<int>(_edge_pairs.size() - 3);
+        int edge_index = alloc_face(v0, v1, v2);
+        _edge_pairs[edge_index] = min_edge;
+        _edge_pairs[min_edge] = edge_index;
 
         update_edges({min_edge});
+        refine();
         return true;
     }
 }
 
 //------------------------------------------------------------------------------
+bool delaunay::remove_vertex(int vert_index)
+{
+    if (vert_index < 0 || vert_index >= _verts.size()) {
+        return false;
+    }
+
+    // find the first edge containing the given vertex
+    int edge_index = -1;
+    for (int ei = 0, sz = narrow_cast<int>(_edge_verts.size()); ei < sz; ++ei) {
+        if (_edge_verts[ei] == vert_index) {
+            edge_index = ei;
+            break;
+        }
+    }
+
+    if (edge_index == -1) {
+        return false;
+    }
+
+    // Collect list of vertices and edges around the
+    // region surrounding the vertex to be removed.
+    std::vector<int> verts;
+    std::vector<int> edges;
+
+    for (int e0 = edge_index; e0 != -1;) {
+        int e1 = edge_offset<1>(e0);
+        verts.push_back(_edge_verts[e1]);
+        edges.push_back(_edge_pairs[e1]);
+        // Disconnect the boundary edge from the removed face
+        if (edges.back() != -1) {
+            _edge_pairs[edges.back()] = -1;
+        }
+
+        free_face(e0 - e0 % 3);
+
+        e0 = next_vertex_edge(e0);
+        if (e0 == edge_index) {
+            break;
+        }
+    }
+
+    free_vert(vert_index);
+
+    std::vector<int> faces;
+
+    // Iteratively fill the removed region with new triangles
+    while (verts.size() >= 3) {
+        int v0 = verts[verts.size() - 3];
+        int v1 = verts[verts.size() - 1];
+        int v2 = verts[verts.size() - 2];
+
+        // TODO: Prove that this check is sufficient to prevent invalid tessellations.
+        // THIS IS NOT SUFFICIENT TO PREVENT INVALID TESSELLATIONS
+        if (verts.size() >= 4) {
+            vec2 p0 = _verts[v0];
+            vec2 p1 = _verts[v1];
+            vec2 p2 = _verts[v2];
+            vec2 p3 = _verts[verts[verts.size() - 4]];
+
+            // Check if either the current or subsequent set of vertices would
+            // result in an inverted triangle. Checking both prevents situations
+            // where an assignment forces the remaining faces to be inverted.
+            float det012 = (p0 - p2).cross(p2 - p1);
+            float det310 = (p3 - p0).cross(p3 - p1);
+            if (det012 <= 0.f || det310 <= 0.f) {
+                std::rotate(verts.begin(), verts.begin() + 1, verts.end());
+                std::rotate(edges.begin(), edges.begin() + 1, edges.end());
+                continue;
+            }
+        }
+
+        faces.push_back(alloc_face(v0, v1, v2));
+
+        // Update edges on the new triangle to correspond with boundary edges
+        _edge_pairs[faces.back() + 0LL] = verts.size() == 3 ? edges[0] : -1;
+        _edge_pairs[faces.back() + 1LL] = edges[edges.size() - 1];
+        _edge_pairs[faces.back() + 2LL] = edges[edges.size() - 2];
+
+        // Update edges on the boundary to correspond with the triangle edges
+        for (int jj = 0; jj < 3; ++jj) {
+            int e0 = _edge_pairs[faces.back() + jj];
+            if (e0 != -1) {
+                _edge_pairs[e0] = faces.back() + jj;
+            }
+        }
+
+        // Update boundary region to include new triangle
+        verts.pop_back();
+        verts.back() = v1;
+        edges.pop_back();
+        edges.back() = faces.back();
+    }
+
+    update_edges(faces.data(), narrow_cast<int>(faces.size()));
+    shrink_to_fit();
+    return true;
+}
+
+//------------------------------------------------------------------------------
 bool delaunay::split_face(vec2 v, int e0)
 {
+    e0 -= e0 % 3;
     int v0 = _edge_verts[e0 + 0];
     int v1 = _edge_verts[e0 + 1];
     int v2 = _edge_verts[e0 + 2];
@@ -107,7 +205,7 @@ bool delaunay::split_face(vec2 v, int e0)
     float y = (v - p2).cross(p0 - p2);
 
     assert(det >= 0.f);
-    if (x < 0.f || y < 0.f || x + y > det) {
+    if (x <= 0.f || y <= 0.f || x + y >= det) {
         return false;
     }
 
@@ -125,51 +223,40 @@ bool delaunay::split_face(vec2 v, int e0)
             v0 > v1 > v2   =>   v1 > v2 > v3
                                 v2 > v0 > v3
     */
-    int v3 = narrow_cast<int>(_verts.size());
-    _verts.push_back(v);
+    int v3 = alloc_vert(v);
 
     /*int o0 = _edge_pairs[e0 + 0];*/
     int o1 = _edge_pairs[e0 + 1];
     int o2 = _edge_pairs[e0 + 2];
 
-    _edge_verts.resize(_edge_verts.size() + 6);
-    _edge_pairs.resize(_edge_pairs.size() + 6);
-
-    int e3 = narrow_cast<int>(_edge_verts.size() - 6);
-
     /*_edge_verts[e0 + 0] = v0;*/
     /*_edge_verts[e0 + 1] = v1;*/
     _edge_verts[e0 + 2] = v3;
 
-    _edge_verts[e3 + 0] = v1;
-    _edge_verts[e3 + 1] = v2;
-    _edge_verts[e3 + 2] = v3;
-
-    _edge_verts[e3 + 3] = v2;
-    _edge_verts[e3 + 4] = v0;
-    _edge_verts[e3 + 5] = v3;
+    int e3 = alloc_face(v1, v2, v3);
+    int e6 = alloc_face(v2, v0, v3);
 
     /*_edge_pairs[e0 + 0] = o0;*/   // v0 -> v1
     _edge_pairs[e0 + 1] = e3 + 2;   // v1 -> v3
-    _edge_pairs[e0 + 2] = e3 + 4;   // v3 -> v0
+    _edge_pairs[e0 + 2] = e6 + 1;   // v3 -> v0
 
     _edge_pairs[e3 + 0] = o1;       // v1 -> v2
-    _edge_pairs[e3 + 1] = e3 + 5;   // v2 -> v3
+    _edge_pairs[e3 + 1] = e6 + 2;   // v2 -> v3
     _edge_pairs[e3 + 2] = e0 + 1;   // v3 -> v1
 
-    _edge_pairs[e3 + 3] = o2;       // v2 -> v0
-    _edge_pairs[e3 + 4] = e0 + 2;   // v0 -> v3
-    _edge_pairs[e3 + 5] = e3 + 1;   // v3 -> v2
+    _edge_pairs[e6 + 0] = o2;       // v2 -> v0
+    _edge_pairs[e6 + 1] = e0 + 2;   // v0 -> v3
+    _edge_pairs[e6 + 2] = e3 + 1;   // v3 -> v2
 
     if (o1 != -1) {
         _edge_pairs[o1] = e3 + 0;
     }
     if (o2 != -1) {
-        _edge_pairs[o2] = e3 + 3;
+        _edge_pairs[o2] = e6 + 0;
     }
 
     // check new and original edges of split triangle
-    update_edges({e0, e0 + 1, e3 + 0, e3 + 1, e3 + 3, e3 + 4});
+    update_edges({e0, e0 + 1, e3 + 0, e3 + 1, e6 + 0, e6 + 1});
     return true;
 }
 
@@ -177,9 +264,13 @@ bool delaunay::split_face(vec2 v, int e0)
 int delaunay::intersect_point(vec2 point) const
 {
     for (int e0 = 0, num_edges = narrow_cast<int>(_edge_verts.size()); e0 < num_edges; e0 += 3) {
-        int v0 = _edge_verts[e0 + 0];
-        int v1 = _edge_verts[e0 + 1];
-        int v2 = _edge_verts[e0 + 2];
+        int v0 = _edge_verts[e0 + 0LL];
+        int v1 = _edge_verts[e0 + 1LL];
+        int v2 = _edge_verts[e0 + 2LL];
+        if (v0 == -1 || v1 == -1 || v2 == -1) {
+            assert(v0 == -1 && v1 == -1 && v2 == -1);
+            continue;
+        }
         vec2 p0 = _verts[v0];
         vec2 p1 = _verts[v1];
         vec2 p2 = _verts[v2];
@@ -199,19 +290,42 @@ int delaunay::intersect_point(vec2 point) const
 }
 
 //------------------------------------------------------------------------------
+int delaunay::nearest_vertex(vec2 point) const
+{
+    float best_dsqr = INFINITY;
+    int best_vert = -1;
+
+    for (int vert_index = 0, num_verts = narrow_cast<int>(_verts.size()); vert_index < num_verts; ++vert_index) {
+        float dsqr = (_verts[vert_index] - point).length_sqr();
+        if (dsqr < best_dsqr) {
+            best_dsqr = dsqr;
+            best_vert = vert_index;
+        }
+    }
+
+    return best_vert;
+}
+
+//------------------------------------------------------------------------------
 int delaunay::nearest_edge(vec2 point) const
 {
     float best_dsqr = INFINITY;
     int best_edge = -1;
 
     for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; ++edge_index) {
-        vec2 v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
-        vec2 v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
+        int v0 = _edge_verts[edge_offset<1>(edge_index)];
+        int v1 = _edge_verts[edge_offset<0>(edge_index)];
+        if (v0 == -1 || v1 == -1) {
+            assert(v0 == -1 && v1 == -1);
+            continue;
+        }
+        vec2 p0 = _verts[v0];
+        vec2 p1 = _verts[v1];
 
         // ignore back-facing edges
-        if ((point - v0).cross(v1 - v0) >= 0.f) {
+        if ((point - p0).cross(p1 - p0) >= 0.f) {
             // distance to point on line [v0,v1] nearest to v
-            vec2 p = nearest_point_on_line(v0, v1, point);
+            vec2 p = nearest_point_on_line(p0, p1, point);
             float dsqr = (point - p).length_sqr();
             if (dsqr < best_dsqr) {
                 best_dsqr = dsqr;
@@ -221,6 +335,57 @@ int delaunay::nearest_edge(vec2 point) const
     }
 
     return best_edge;
+}
+
+//------------------------------------------------------------------------------
+bool delaunay::get_vertex(int vert_index, vec2& v0) const
+{
+    if (vert_index >= 0 && vert_index < _verts.size()) {
+        v0 = _verts[vert_index];
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool delaunay::get_edge(int edge_index, vec2& v0, vec2& v1) const
+{
+    if (edge_index >= 0 && edge_index < _edge_verts.size()) {
+        v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
+        v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool delaunay::get_face(int edge_index, vec2& v0, vec2& v1, vec2& v2) const
+{
+    assert(edge_index == -1 || edge_index % 3 == 0);
+    if (edge_index >= 0 && edge_index < _edge_verts.size() - 2) {
+        v0 = _verts[_edge_verts[edge_index + 0LL]];
+        v1 = _verts[_edge_verts[edge_index + 1LL]];
+        v2 = _verts[_edge_verts[edge_index + 2LL]];
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool delaunay::is_boundary_vertex(int /*vert_index*/) const
+{
+    assert(false);
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool delaunay::is_boundary_face(int edge_index) const
+{
+    int e0 = edge_index - edge_index % 3;
+    return (_edge_pairs[e0] == -1 || _edge_pairs[e0 + 1LL] == -1 || _edge_pairs[e0 + 2LL] == -1);
 }
 
 //------------------------------------------------------------------------------
@@ -321,6 +486,122 @@ void delaunay::update_edges(int const* edges, int num_edges)
         queue.push(_edge_pairs[e2]);
         queue.push(_edge_pairs[e3]);
         queue.push(_edge_pairs[e5]);
+    }
+}
+
+//------------------------------------------------------------------------------
+void delaunay::refine()
+{
+    for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; edge_index += 3) {
+        int e0 = edge_offset<0>(edge_index);
+        int e1 = edge_offset<1>(edge_index);
+        int e2 = edge_offset<2>(edge_index);
+
+        if (_edge_verts[e0] == -1 || _edge_verts[e1] == -1 || _edge_verts[e2] == -1) {
+            assert(_edge_verts[e0] == -1 && _edge_verts[e1] == -1 && _edge_verts[e2] == -1);
+            continue;
+        }
+#if 0
+        vec2 v0 = _verts[_edge_verts[e1]];
+        vec2 v1 = _verts[_edge_verts[e2]];
+        vec2 v2 = _verts[_edge_verts[e0]];
+
+        float asqr = (v1 - v0).length_sqr();
+        float bsqr = (v2 - v1).length_sqr();
+        float csqr = (v0 - v2).length_sqr();
+
+        float den = 0.5f / mat2(v1 - v0, v2 - v0).determinant();
+        float rsqr = asqr * bsqr * csqr * den * den;
+
+        // check triangle quality
+        if (rsqr < std::min({asqr, bsqr, csqr})) {
+            continue;
+        }
+
+        mat2 xy = mat2(v1 - v0, v2 - v0).transpose();
+        vec2 z = vec2((v1 - v0).length_sqr(), (v2 - v0).length_sqr());
+            // = (v1 - v0) * (v1 - v0), (v2 - v0) * (v2 - v0)
+
+        float mx = v0.x + mat2(xy[1], z).determinant() * den;
+        float my = v0.y + mat2(xy[0], z).determinant() * den;
+#else
+        vec2 a = _verts[_edge_verts[e1]];
+        vec2 b = _verts[_edge_verts[e2]];
+        vec2 c = _verts[_edge_verts[e0]];
+
+        float xba = b.x - a.x;
+        float yba = b.y - a.y;
+        float xca = c.x - a.x;
+        float yca = c.y - a.y;
+
+        float balength = xba * xba + yba * yba;
+        float calength = xca * xca + yca * yca;
+        float cblength = (c - b).length_sqr();
+
+        float denominator = 0.5f / (xba * yca - yba * xca);
+
+        float radius = balength * calength * cblength * square(denominator);
+
+        // check triangle quality
+        if (radius < std::min({balength, calength, cblength})) {
+            continue;
+        }
+
+        float mx = a.x + (yca * balength - yba * calength) * denominator;
+        float my = a.y + (xba * calength - xca * balength) * denominator;
+#endif
+
+        int idx = intersect_point(vec2(mx, my));
+        if (idx != -1) {
+            split_face(vec2(mx, my), idx);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void delaunay::refine(int const* edges, int num_edges)
+{
+    std::queue<int> queue;
+    for (int ii = 0; ii < num_edges; ++ii) {
+        queue.push(edges[ii]);
+    }
+
+    while (queue.size()) {
+        int edge_index = queue.front();
+        queue.pop();
+
+        int e0 = edge_offset<0>(edge_index);
+        int e1 = edge_offset<1>(edge_index);
+        int e2 = edge_offset<2>(edge_index);
+        vec2 v0 = _verts[_edge_verts[e1]];
+        vec2 v1 = _verts[_edge_verts[e2]];
+        vec2 v2 = _verts[_edge_verts[e0]];
+
+        float asqr = (v1 - v0).length_sqr();
+        float bsqr = (v2 - v1).length_sqr();
+        float csqr = (v0 - v2).length_sqr();
+
+        float den = 0.5f / mat2(v1 - v0, v2 - v0).determinant();
+        float rsqr = asqr * bsqr * csqr * den * den;
+
+        // check triangle quality
+        if (rsqr < std::min({asqr, bsqr, csqr})) {
+            continue;
+        }
+
+        mat2 xy = mat2(v1 - v0, v2 - v0).transpose();
+        vec2 z = vec2((v1 - v0).length_sqr(), (v2 - v0).length_sqr());
+            // = (v1 - v0) * (v1 - v0), (v2 - v0) * (v2 - v0)
+
+        float mx = v0.x + mat2(xy[1], z).determinant() * den;
+        float my = v0.y + mat2(xy[0], z).determinant() * den;
+
+        int adj[3] = { _edge_pairs[e0], _edge_pairs[e1], _edge_pairs[e2] };
+        for (int ii = 0; ii < countof(adj); ++ii) {
+            if (adj[ii] != -1 && split_face(vec2(mx, my), adj[ii])) {
+                queue.push(adj[ii]);
+            }
+        }
     }
 }
 
@@ -463,6 +744,9 @@ int delaunay::line_of_sight(vec2* points, int max_points, vec2 start, vec2 end) 
     int min_edge = -1;
     vec2 min_point = vec2_zero;
     for (int edge_index = 0, num_edges = narrow_cast<int>(_edge_verts.size()); edge_index < num_edges; ++edge_index) {
+        if (_edge_verts[edge_index] == -1) {
+            continue;
+        }
         vec2 v0 = _verts[_edge_verts[edge_offset<1>(edge_index)]];
         vec2 v1 = _verts[_edge_verts[edge_offset<0>(edge_index)]];
 
@@ -499,6 +783,9 @@ int delaunay::line_of_sight(vec2* points, int max_points, vec2 start, vec2 end) 
             float best_d = INFINITY;
             int best_edge = -1;
             for (int ii = 0, num_edges = narrow_cast<int>(_edge_verts.size()); ii < num_edges; ++ii) {
+                if (_edge_verts[ii] == -1) {
+                    continue;
+                }
                 // skip interior edges
                 if (_edge_pairs[ii] != -1) {
                     continue;
@@ -585,4 +872,119 @@ int delaunay::next_boundary_edge(int edge_index) const
             pivot_index = edge_offset<1>(next_index);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+int delaunay::alloc_vert(vec2 v)
+{
+    if (!_free_verts.size()) {
+        _verts.push_back(v);
+        return narrow_cast<int>(_verts.size() - 1);
+    } else {
+        int vert_index = _free_verts.back();
+        _free_verts.pop_back();
+        _verts[vert_index] = v;
+        return vert_index;
+    }
+}
+
+//------------------------------------------------------------------------------
+int delaunay::alloc_face(int v0, int v1, int v2)
+{
+    int edge_index;
+    if (!_free_faces.size()) {
+        assert(_edge_verts.size() == _edge_pairs.size());
+        edge_index = narrow_cast<int>(_edge_verts.size());
+        _edge_verts.resize(_edge_verts.size() + 3);
+        _edge_pairs.resize(_edge_pairs.size() + 3);
+    } else {
+        edge_index = _free_faces.back();
+        _free_faces.pop_back();
+    }
+
+    _edge_verts[edge_index + 0LL] = v0;
+    _edge_verts[edge_index + 1LL] = v1;
+    _edge_verts[edge_index + 2LL] = v2;
+
+    _edge_pairs[edge_index + 0LL] = -1;
+    _edge_pairs[edge_index + 1LL] = -1;
+    _edge_pairs[edge_index + 2LL] = -1;
+
+    return edge_index;
+}
+
+//------------------------------------------------------------------------------
+void delaunay::free_vert(int vert_index)
+{
+    assert(vert_index < _verts.size());
+    _free_verts.push_back(vert_index);
+}
+
+//------------------------------------------------------------------------------
+void delaunay::free_face(int edge_index)
+{
+    assert(edge_index % 3 == 0);
+    assert(edge_index < _edge_pairs.size() - 2);
+    _free_faces.push_back(edge_index);
+    _edge_verts[edge_index + 0LL] = -1;
+    _edge_verts[edge_index + 1LL] = -1;
+    _edge_verts[edge_index + 2LL] = -1;
+}
+
+//------------------------------------------------------------------------------
+void delaunay::shrink_to_fit()
+{
+    // map from old index to new index
+    std::vector<int> vert_map, edge_map;
+    vert_map.resize(_verts.size());
+    edge_map.resize(_edge_verts.size());
+
+    // Build mapping for vertices.
+    std::sort(_free_verts.begin(), _free_verts.end());
+    for (int ii = 0, jj = 0, kk = 0, sz = narrow_cast<int>(_verts.size()); ii < sz; ++ii) {
+        if (jj >= _free_verts.size() || ii < _free_verts[jj]) {
+            vert_map[ii] = kk++;
+            if (kk < ii) {
+                _verts[kk] = _verts[ii];
+            }
+        } else {
+            jj++;
+        }
+    }
+
+    // Build mapping for edges. This needs to be done in two passes since edges
+    // can refer to higher-indexed edges which won't yet be mapped on the first pass.
+    std::sort(_free_faces.begin(), _free_faces.end());
+    for (int ii = 0, jj = 0, kk = 0, sz = narrow_cast<int>(_edge_verts.size()); ii < sz; ii += 3) {
+        if (jj >= _free_faces.size() || ii < _free_faces[jj]) {
+            edge_map[ii + 0LL] = kk++;
+            edge_map[ii + 1LL] = kk++;
+            edge_map[ii + 2LL] = kk++;
+        } else {
+            jj++;
+        }
+    }
+
+    // re-index verts and edges
+    for (int ii = 0, jj = 0, kk = 0, sz = narrow_cast<int>(_edge_verts.size()); ii < sz; ii += 3) {
+        if (jj >= _free_faces.size() || ii < _free_faces[jj]) {
+            for (std::size_t ll = 0; ll < 3; ++kk, ++ll) {
+                _edge_verts[kk] = vert_map[_edge_verts[ii + ll]];
+                if (_edge_pairs[ii + ll] != -1) {
+                    _edge_pairs[kk] = edge_map[_edge_pairs[ii + ll]];
+                } else {
+                    _edge_pairs[kk] = -1;
+                }
+            }
+        } else {
+            jj++;
+        }
+    }
+
+    // Shrink arrays to fit
+    _verts.resize(_verts.size() - _free_verts.size());
+    _edge_verts.resize(_edge_verts.size() - _free_faces.size() * 3);
+    _edge_pairs.resize(_edge_pairs.size() - _free_faces.size() * 3);
+    _free_verts.clear();
+    _free_faces.clear();
 }

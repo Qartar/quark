@@ -755,6 +755,10 @@ void system::draw_starfield(vec2 streak_vector)
             glBegin(GL_LINES);
             glColor4fv(color4(1,1,1,1));
             for (int ei = 0, en = narrow_cast<int>(my_delaunay._edge_verts.size()); ei < en; ei += 3) {
+                if (my_delaunay._edge_verts[ei + 0] == -1 || my_delaunay._edge_verts[ei + 1] == -1 || my_delaunay._edge_verts[ei + 2] == -1) {
+                    assert(my_delaunay._edge_verts[ei + 0] == -1 && my_delaunay._edge_verts[ei + 1] == -1 && my_delaunay._edge_verts[ei + 2] == -1);
+                    continue;
+                }
                 glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 0]]);
                 glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 1]]);
                 glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 1]]);
@@ -786,6 +790,9 @@ void system::draw_starfield(vec2 streak_vector)
             {
                 glColor4fv(color4(1,0,0,1));
                 for (int ei = 0, en = narrow_cast<int>(my_delaunay._edge_verts.size()); ei < en; ++ei) {
+                    if (my_delaunay._edge_verts[ei] == -1) {
+                        continue;
+                    }
                     if (my_delaunay._edge_pairs[ei] == -1) {
                         vec2 v0 = my_delaunay._verts[my_delaunay._edge_verts[ei]];
                         int next = my_delaunay.next_boundary_edge(ei);
@@ -807,6 +814,9 @@ void system::draw_starfield(vec2 streak_vector)
             {
                 glColor4fv(color4(0,1,0,1));
                 for (int ei = 0, en = narrow_cast<int>(my_delaunay._edge_verts.size()); ei < en; ++ei) {
+                    if (my_delaunay._edge_verts[ei + 0] == -1) {
+                        continue;
+                    }
                     if (my_delaunay._edge_pairs[ei] == -1) {
                         vec2 v0 = my_delaunay._verts[my_delaunay._edge_verts[ei]];
                         int prev = my_delaunay.prev_boundary_edge(ei);
@@ -867,8 +877,91 @@ void system::draw_starfield(vec2 streak_vector)
                     glVertex2fv(sight[ii] - vx + vy);
                 }
             }
-
             glEnd();
+
+            glEnable(GL_CULL_FACE);
+            glBegin(GL_TRIANGLES);
+            glColor4f(1, 1, 1, .1f);
+            for (int ei = 0, en = narrow_cast<int>(my_delaunay._edge_verts.size()); ei < en; ei += 3) {
+                if (my_delaunay._edge_verts[ei + 0] == -1 || my_delaunay._edge_verts[ei + 1] == -1 || my_delaunay._edge_verts[ei + 2] == -1) {
+                    assert(my_delaunay._edge_verts[ei + 0] == -1 && my_delaunay._edge_verts[ei + 1] == -1 && my_delaunay._edge_verts[ei + 2] == -1);
+                    continue;
+                }
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 0]]);
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 2]]);
+                glVertex2fv(my_delaunay._verts[my_delaunay._edge_verts[ei + 1]]);
+            }
+            glEnd();
+            glDisable(GL_CULL_FACE);
+
+            {
+                vec2 cursor_pos;
+                {
+                    POINT pt;
+                    GetCursorPos(&pt);
+                    ScreenToClient(_window->hwnd(), &pt);
+                    cursor_pos.x = _view.origin.x - .5f * _view.size.x + float(pt.x) / float(_window->size().x) * _view.size.x;
+                    cursor_pos.y = _view.origin.y + .5f * _view.size.y - float(pt.y) / float(_window->size().y) * _view.size.y;
+                }
+
+                glBegin(GL_LINES);
+                    glColor4f(1, 1, 1, 1);
+                    glVertex2fv(cursor_pos - vec2(1.f / 512.f, 0) * _view.size.x);
+                    glVertex2fv(cursor_pos + vec2(1.f / 512.f, 0) * _view.size.x);
+                    glVertex2fv(cursor_pos - vec2(0, 1.f / 512.f) * _view.size.x);
+                    glVertex2fv(cursor_pos + vec2(0, 1.f / 512.f) * _view.size.x);
+                glEnd();
+
+                int v0 = my_delaunay.nearest_vertex(cursor_pos);
+                int e0 = my_delaunay.nearest_edge(cursor_pos);
+                int f0 = my_delaunay.intersect_point(cursor_pos);
+
+                vec2 a, b, c;
+
+                if (my_delaunay.get_face(f0, a, b, c)) {
+                    glBegin(GL_LINES);
+                        glColor4f(0, 1, 0, 1);
+                        glVertex2fv(a);
+                        glVertex2fv(b);
+                        glVertex2fv(b);
+                        glVertex2fv(c);
+                        glVertex2fv(c);
+                        glVertex2fv(a);
+                    glEnd();
+
+                    glBegin(GL_TRIANGLES);
+                        glColor4f(0, 1, 0, .2f);
+                        glVertex2fv(a);
+                        glVertex2fv(b);
+                        glVertex2fv(c);
+                    glEnd();
+                }
+
+                if (my_delaunay.get_edge(e0, a, b)) {
+                    glBegin(GL_LINES);
+                        glColor4f(1, 0, 0, 1);
+                        glVertex2fv(a);
+                        glVertex2fv(b);
+                    glEnd();
+                }
+
+                if (my_delaunay.get_vertex(v0, a)) {
+                    if ((a - cursor_pos).length_sqr() < square(_view.size.x / 64.f)) {
+                        glBegin(GL_LINES);
+                            glColor4f(1, 0, 0, 1);
+                            glVertex2fv(a - vec2(1.f / 256.f, 0) * _view.size.x);
+                            glVertex2fv(a + vec2(1.f / 256.f, 0) * _view.size.x);
+                            glVertex2fv(a - vec2(0, 1.f / 256.f) * _view.size.x);
+                            glVertex2fv(a + vec2(0, 1.f / 256.f) * _view.size.x);
+                        glEnd();
+                        if (GetAsyncKeyState(VK_RBUTTON)) {
+                            my_delaunay.remove_vertex(v0);
+                        }
+                    } else if (GetAsyncKeyState(VK_LBUTTON)) {
+                        my_delaunay.insert_vertex(cursor_pos);
+                    }
+                }
+            }
         }
     }
 #endif

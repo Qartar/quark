@@ -288,6 +288,17 @@ void system::draw_timers() const
     glTranslatef(1.f, -1.f, 0);
     glScalef(-2.f / dx, (1.f / 6.f) / dy, 1);
 
+    /*
+       prev swap buffer   end frame
+          /   begin frame   /   swap buffer
+         /        /        /       /
+        x--------x--------x-------x
+        |  game  | render | vsync |
+        +--------+--------+-------+
+        |         frame           |
+        +-------------------------+
+    */
+
     // red - render time (begin_frame -> end_frame)
     glBegin(GL_LINE_STRIP);
         glColor4f(1,0,0,.8f);

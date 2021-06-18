@@ -78,6 +78,19 @@ public:
                     lhs[1] * rhs);
     }
 
+// transformations
+
+    constexpr mat2 transpose() const {
+        return mat2(_rows[0][0], _rows[1][0],
+                    _rows[0][1], _rows[1][1]);
+    }
+
+// properties
+
+    constexpr float determinant() const {
+        return _rows[0][0] * _rows[1][1] - _rows[0][1] * _rows[1][0];
+    }
+
 protected:
     vec2 _rows[2];
 };
