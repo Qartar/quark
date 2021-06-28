@@ -169,6 +169,7 @@ result session::run_frame(time_delta time)
             if (_player && _player->is_type<player>()) {
                 static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate(), _worldtime);
             }
+            _world.update_usercmd(_clients[0].input.generate(), _worldtime);
         }
 
         if (_worldtime > time_value((1 + _world.framenum()) * FRAMETIME) && svs.active) {
@@ -366,10 +367,8 @@ void session::key_event(int key, bool down)
     // user commands here
 
     if (!_dedicated) {
-        if (_player && _player->is_type<player>()) {
-            if (_clients[0].input.key_event(key, down)) {
-                return;
-            }
+        if (_clients[0].input.key_event(key, down)) {
+            return;
         }
         for (int ii = 0; ii < MAX_PLAYERS; ++ii) {
             //game::tank* player = _world.player(ii);
@@ -427,9 +426,7 @@ void session::cursor_event(vec2 position)
     _cursor.y = static_cast<int>(position.y * 480 / size.y);
 
     _clients[0].input.cursor_event(position / vec2(size) * vec2(1,-1) + vec2(0,1));
-    if (_player && _player->is_type<player>()) {
-        static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate_direct(), _worldtime);
-    }
+    _world.update_usercmd(_clients[0].input.generate_direct(), _worldtime);
 
     if (_menu_active) {
         _menu.cursor_event(_cursor);

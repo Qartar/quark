@@ -372,6 +372,7 @@ protected:
 constexpr vec2 vec2_zero = vec2(0,0);
 constexpr vec3 vec3_zero = vec3(0,0,0);
 constexpr vec4 vec4_zero = vec4(0,0,0,0);
+constexpr vec2i vec2i_zero = vec2i(0,0);
 
 //------------------------------------------------------------------------------
 template<> inline bool isnan<vec2>(vec2 v)

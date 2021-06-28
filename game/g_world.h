@@ -225,6 +225,8 @@ public:
     void run_frame ();
     void draw(render::system* renderer, time_value time) const;
 
+    void update_usercmd(usercmd cmd, time_value time);
+
     void read_snapshot(network::message& message);
     void write_snapshot(network::message& message) const;
 
@@ -295,6 +297,14 @@ private:
     // tile system
     //
 
+    float _tile_scale;
+    vec2 _tile_offset;
+
+    // FIXME: This is mutable because we need the window dimensions to calculate
+    // the cursor-to-world transform which is only available in the draw function.
+    mutable vec2i _tile_cursor;
+    int _tile_rotation;
+
     std::vector<hextile> _tiles;
     std::vector<hextile::index> _boundary_tiles;
 
@@ -306,6 +316,8 @@ private:
 
     hextile _next;
     std::vector<std::pair<hextile::index, int>> _candidates;
+
+    usercmd _usercmd;
 
     //
     // particle system

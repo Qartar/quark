@@ -82,6 +82,12 @@ void world::reset()
     _tiles.clear();
     _boundary_tiles.clear();
     insert_boundary_tile(vec2i(0,0));
+
+    _tile_scale = .05f;
+    _tile_offset = vec2_zero;
+
+    _tile_cursor = vec2i_zero;
+    _tile_rotation = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -304,12 +310,20 @@ void draw_tile(render::system* renderer, hextile const& tile)
             renderer->draw_triangles(verts, colors, iptr, 12);
         }
     }
-
 }
 
 //------------------------------------------------------------------------------
 void world::draw_tiles(render::system* renderer) const
 {
+    render::view view{};
+
+    view.origin = _tile_offset;
+    view.angle = 0.f;
+    view.raster = false;
+    view.size = vec2(renderer->window()->size()) * _tile_scale;
+
+    renderer->set_view(view);
+
     for (auto const& tile : _tiles) {
         draw_tile(renderer, tile);
     }
@@ -324,6 +338,37 @@ void world::draw_tiles(render::system* renderer) const
         }
         hextile tile{_tiles[_candidates[ii].first].position, {}, false, true};
         draw_tile(renderer, tile);
+    }
+
+    {
+        vec2 world_cursor = _usercmd.cursor * view.size - view.size * .5f + _tile_offset;
+        _tile_cursor = hextile::world_to_grid(world_cursor);
+
+        std::size_t first_candidate, last_candidate;
+        for (first_candidate = 0; first_candidate < _candidates.size(); ++first_candidate) {
+            if (_tiles[_candidates[first_candidate].first].position == _tile_cursor) {
+                break;
+            }
+        }
+        for (last_candidate = first_candidate; last_candidate < _candidates.size(); ++last_candidate) {
+            if (_tiles[_candidates[last_candidate].first].position != _tile_cursor) {
+                break;
+            }
+        }
+
+        if (first_candidate < last_candidate) {
+            int n = _tile_rotation % (last_candidate - first_candidate);
+            std::size_t c = n < 0 ? last_candidate - n : first_candidate + n;
+            int r = _candidates[c].second;
+
+            hextile tile{_tile_cursor, _next.contents, false, false};
+
+            std::rotate(tile.contents.begin(), tile.contents.begin() + r, tile.contents.begin() + 6);
+            draw_tile(renderer, tile);
+        } else {
+            hextile tile{_tile_cursor, {}, false, true};
+            draw_tile(renderer, tile);
+        }
     }
 }
 
@@ -366,7 +411,8 @@ void world::run_frame()
 
     _physics.step(FRAMETIME.to_seconds());
 
-    if (_framenum % 30 == 0 && _candidates.size()) {
+#if 0
+    if (_framenum % 120 == 0 && _candidates.size()) {
         std::vector<std::pair<hextile::index, int>> candidates[7];
 
         for (std::size_t ii = 0, sz = _candidates.size(); ii < sz; ++ii) {
@@ -393,13 +439,35 @@ void world::run_frame()
 
         _candidates.resize(0);
     }
+#endif
 
     if (!_candidates.size()) {
         for (std::size_t kk = 0; kk < 6; ++kk) {
-            _next.contents[kk] = _random.uniform_int(4);
+            if (_random.uniform_real() < .5f) {
+                _next.contents[kk] = 0;
+            } else {
+                _next.contents[kk] = 3 + _random.uniform_int(4);
+            }
         }
         // randomly select center contents from edge contents
         _next.contents[6] = _next.contents[_random.uniform_int(6)];
+
+        int r = _random.uniform_int(12);
+        if (r < 2) {
+            _next.contents[0] = r + 1;
+            _next.contents[6] = r + 1;
+            int r1 = _random.uniform_int(10);
+            if (r1 < 5) {
+                _next.contents[3] = r + 1;
+            } else if (r1 < 7) {
+                _next.contents[2] = r + 1;
+            } else if (r1 < 9) {
+                _next.contents[4] = r + 1;
+            } else {
+                _next.contents[2] = r + 1;
+                _next.contents[4] = r + 1;
+            }
+        }
 
         // find all boundary tiles where this tile could fit
         for (std::size_t ii = 0, sz = _boundary_tiles.size(); ii < sz; ++ii) {
@@ -408,6 +476,68 @@ void world::run_frame()
                     _candidates.emplace_back(_boundary_tiles[ii], rotation);
                 }
             }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void world::update_usercmd(usercmd cmd, time_value /*time*/)
+{
+    _usercmd = cmd;
+
+    bool is_cursor_active = false;
+    for (auto const& candidate : _candidates) {
+        if (_tiles[candidate.first].position == _tile_cursor) {
+            is_cursor_active = true;
+            break;
+        }
+    }
+
+    switch (_usercmd.action) {
+        case usercmd::action::zoom_in:
+            if (is_cursor_active) {
+                ++_tile_rotation;
+            } else {
+                _tile_scale /= 1.1f;
+            }
+            break;
+
+        case usercmd::action::zoom_out:
+            if (is_cursor_active) {
+                --_tile_rotation;
+            } else {
+                _tile_scale *= 1.1f;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    if ((_usercmd.buttons & usercmd::button::select) == usercmd::button::select) {
+        std::size_t first_candidate, last_candidate;
+        for (first_candidate = 0; first_candidate < _candidates.size(); ++first_candidate) {
+            if (_tiles[_candidates[first_candidate].first].position == _tile_cursor) {
+                break;
+            }
+        }
+        for (last_candidate = first_candidate; last_candidate < _candidates.size(); ++last_candidate) {
+            if (_tiles[_candidates[last_candidate].first].position != _tile_cursor) {
+                break;
+            }
+        }
+
+        if (first_candidate < last_candidate) {
+            int n = _tile_rotation % (last_candidate - first_candidate);
+            std::size_t c = n < 0 ? last_candidate - n : first_candidate + n;
+            int r = _candidates[c].second;
+
+            hextile tile{_tile_cursor, _next.contents, false, false};
+
+            std::rotate(tile.contents.begin(), tile.contents.begin() + r, tile.contents.begin() + 6);
+            insert_tile(_tile_cursor, tile);
+
+            _candidates.clear();
         }
     }
 }
