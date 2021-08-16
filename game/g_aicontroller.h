@@ -17,7 +17,7 @@ public:
     static const object_type _type;
 
 public:
-    aicontroller(ship* target);
+    aicontroller(ship* target, int team);
     virtual ~aicontroller();
 
     void spawn();
@@ -29,8 +29,12 @@ public:
     virtual rot2 get_rotation(time_value time) const override;
     virtual mat3 get_transform(time_value time) const override;
 
+    handle<game::ship> ship() const { return _ship; }
+    int team() const { return _team; }
+
 protected:
-    handle<ship> _ship;
+    handle<game::ship> _ship;
+    int _team;
 
     time_value _destroyed_time;
 

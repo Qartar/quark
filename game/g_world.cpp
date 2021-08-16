@@ -63,20 +63,21 @@ void world::reset()
     _sequence = 0;
     _framenum = 0;
 
-    for (int ii = 0; ii < 3; ++ii) {
-        float angle = float(ii) * (math::pi<float> * 2.f / 3.f);
-        vec2 dir = vec2(std::cos(angle), std::sin(angle));
-
+    for (int ii = 0; ii < 16; ++ii) {
         ship* sh = spawn<ship>();
-        sh->set_position(-dir * 192.f, true);
-        sh->set_rotation(rot2(dir.x, dir.y), true);
+        sh->set_position(vec2((ii - 8) * 192.f, 192.f), true);
 
         // spawn ai controller to control the ship
-        if (ii == 0) {
-            spawn<player>(sh);
-        } else {
-            spawn<aicontroller>(sh);
-        }
+        spawn<aicontroller>(sh, 0);
+    }
+
+    for (int ii = 0; ii < 16; ++ii) {
+        ship* sh = spawn<ship>();
+        sh->set_position(vec2((ii - 8) * 192.f, -192.f), true);
+        sh->set_rotation(rot2(-1, 0), true);
+
+        // spawn ai controller to control the ship
+        spawn<aicontroller>(sh, 1);
     }
 }
 

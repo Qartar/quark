@@ -120,6 +120,8 @@ void ship::draw(render::system* renderer, time_value time) const
     if (!_is_destroyed) {
         renderer->draw_model(_model, get_transform(time), _color);
 
+#if 0
+
         constexpr color4 subsystem_colors[2][2] = {
             { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f) },
             { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f) },
@@ -205,6 +207,7 @@ void ship::draw(render::system* renderer, time_value time) const
 
             position += vec2(8,0);
         }
+#endif
     }
 }
 

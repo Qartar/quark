@@ -15,8 +15,9 @@ namespace game {
 const object_type aicontroller::_type(object::_type);
 
 //------------------------------------------------------------------------------
-aicontroller::aicontroller(ship* target)
+aicontroller::aicontroller(game::ship* target, int team)
     : _ship(target)
+    , _team(team)
     , _destroyed_time(time_value::max)
 {}
 
@@ -27,6 +28,7 @@ aicontroller::~aicontroller()
 //------------------------------------------------------------------------------
 void aicontroller::spawn()
 {
+    object::spawn();
 }
 
 //------------------------------------------------------------------------------
@@ -92,36 +94,74 @@ void aicontroller::think()
     // update weapons
     //
 
-    for (auto& weapon : _ship->weapons()) {
-        if (!_ship->is_destroyed() && _random.uniform_real() < .01f) {
-            // get a list of all ships in the world
-            std::vector<game::ship*> ships;
-            for (auto* object : get_world()->objects()) {
-                if (object != _ship && object->is_type<ship>()) {
-                    if (!static_cast<ship*>(object)->is_destroyed()) {
-                        ships.push_back(static_cast<ship*>(object));
-                    }
+    bool need_target = false;
+    if (!_ship->is_destroyed()) {
+        for (auto& weapon : _ship->weapons()) {
+            // cancel pending attacks on targets that have been destroyed
+            if (weapon->target() && weapon->target()->is_type<game::ship>()) {
+                if (static_cast<game::ship const*>(weapon->target())->is_destroyed()) {
+                    weapon->cancel();
                 }
             }
+            if (!weapon->is_attacking()) {
+                need_target = true;
+            }
+        }
+    }
 
-            // select a random target
-            if (ships.size()) {
-                game::ship* target = ships[_random.uniform_int(ships.size())];
-                if (std::holds_alternative<projectile_weapon_info>(weapon->info())
-                    || std::holds_alternative<pulse_weapon_info>(weapon->info())) {
-                    weapon->attack_point(target, vec2_zero);
-                } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
-                    vec2 v = _random.uniform_nsphere<vec2>();
-                    weapon->attack_sweep(target, v * -4.f, v * 4.f);
+    if (need_target && _random.uniform_real() < .01f) {
+        handle<game::ship> best_target = nullptr;
+        std::vector<handle<game::ship>> ships;
+
+        for (auto* object : get_world()->objects()) {
+            if (object != this && object->is_type<aicontroller>()) {
+                if (static_cast<aicontroller*>(object)->team() == _team) {
+                    continue;
+                }
+                handle<game::ship> ship = static_cast<aicontroller*>(object)->ship();
+                if (!ship->is_destroyed()) {
+                    ships.push_back(ship);
                 }
             }
         }
 
-        if (!_ship->is_destroyed()) {
-            // cancel pending attacks on targets that have been destroyed
-            if (weapon->target() && weapon->target()->is_type<ship>()) {
-                if (static_cast<ship const*>(weapon->target())->is_destroyed()) {
-                    weapon->cancel();
+        // sort by distance
+        std::sort(ships.begin(), ships.end(), [this](auto const& lhs, auto const& rhs) {
+            return length_sqr(lhs->get_position() - _ship->get_position())
+                 < length_sqr(rhs->get_position() - _ship->get_position());
+        });
+
+        float total_inverse_distance = 0.f;
+        for (auto const& ship : ships) {
+            total_inverse_distance += 1.f / length_sqr(ship->get_position() - _ship->get_position());
+        }
+
+        if (ships.size()) {
+#if 0
+            float r = _random.uniform_real(total_inverse_distance);
+            total_inverse_distance = 0.f;
+            for (auto& ship : ships) {
+                total_inverse_distance += 1.f / length_sqr(ship->get_position() - _ship->get_position());
+                if (r < total_inverse_distance) {
+                    best_target = ship;
+                    break;
+                }
+            }
+#else
+            best_target = ships.front();
+#endif
+
+            for (auto& weapon : _ship->weapons()) {
+                if (weapon->is_attacking()) {
+                    continue;
+                }
+
+                if (std::holds_alternative<projectile_weapon_info>(weapon->info())
+                    || std::holds_alternative<pulse_weapon_info>(weapon->info())) {
+                    weapon->attack_point(best_target.get(), vec2_zero);
+                } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
+                    vec2 v = _random.uniform_nsphere<vec2>();
+                    weapon->attack_sweep(best_target.get(), v * -4.f, v * 4.f);
                 }
             }
         }
@@ -139,7 +179,7 @@ void aicontroller::think()
             get_world()->remove(_ship.get());
 
             // spawn a new ship to replace the destroyed ship's place
-            _ship = get_world()->spawn<ship>();
+            _ship = get_world()->spawn<game::ship>();
             _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
             _ship->set_rotation(rot2(_random.uniform_real(2.f * math::pi<float>)), true);
 
