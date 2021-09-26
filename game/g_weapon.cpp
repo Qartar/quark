@@ -150,15 +150,27 @@ void weapon::draw(render::system* renderer, time_value time) const
             color4 core_color = beam_info.color * color4(1.f, 1.f, 1.f, .5f);
             color4 edge_color = beam_info.color * color4(1.f, 1.f, 1.f, .1f);
 
+            constexpr time_delta lerp_duration = time_delta::from_milliseconds(75);
+
+            float t0 = 1.f - (beam_info.duration - (time - _last_attack_time)) / lerp_duration;
+            float t1 = (time - _last_attack_time) / lerp_duration;
+
             if (_beam_shield) {
                 // Trace rigid body using the interpolated position/rotation
                 physics::rigid_body shield_proxy = _beam_shield->rigid_body();
                 shield_proxy.set_position(_beam_shield->get_position(time));
                 shield_proxy.set_rotation(_beam_shield->get_rotation(time));
                 auto tr = physics::trace(&shield_proxy, beam_start, beam_end);
-                renderer->draw_line(2.f, beam_start, tr.get_contact().point, core_color, edge_color);
+
+                vec2 v0 = beam_start + (tr.get_contact().point - beam_start) * clamp(t0, 0.f, 1.f);
+                vec2 v1 = beam_start + (tr.get_contact().point - beam_start) * clamp(t1, 0.f, 1.f);
+
+                renderer->draw_line(2.f, v0, v1, core_color, edge_color);
             } else {
-                renderer->draw_line(2.f, beam_start, beam_end, core_color, edge_color);
+                vec2 v0 = beam_start + (beam_end - beam_start) * clamp(t0, 0.f, 1.f);
+                vec2 v1 = beam_start + (beam_end - beam_start) * clamp(t1, 0.f, 1.f);
+
+                renderer->draw_line(2.f, v0, v1, core_color, edge_color);
             }
         }
     }
