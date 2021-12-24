@@ -129,7 +129,9 @@ void session::client_packet(network::message& message)
 //------------------------------------------------------------------------------
 void session::read_snapshot(network::message& message)
 {
-    _world.read_snapshot(message);
+    // FIXME: store server messages to use as source for delta messages
+    network::delta_message delta = network::delta_message::read(nullptr, &message, nullptr);
+    _world.read_snapshot(delta);
     // gradually adjust client world time to match server
     // to compensate for variability in packet delivery
     _worldtime += (_world.frametime() - _worldtime) * 0.1f;

@@ -148,8 +148,8 @@ public:
     void run_frame ();
     void draw(render::system* renderer, time_value time) const;
 
-    void read_snapshot(network::message& message);
-    void write_snapshot(network::message& message) const;
+    void read_snapshot(network::delta_message& message);
+    void write_snapshot(network::delta_message& message) const;
 
     template<typename T, typename... Args>
     T* spawn(Args&& ...args);
@@ -238,9 +238,9 @@ protected:
         effect,
     };
 
-    void read_frame(network::message const& message);
-    void read_sound(network::message const& message);
-    void read_effect(network::message const& message);
+    void read_frame(network::delta_message const& message);
+    void read_sound(network::delta_message const& message);
+    void read_effect(network::delta_message const& message);
 
     void write_sound(sound::asset sound_asset, vec2 position, float volume);
     void write_effect(time_value time, effect_type type, vec2 position, vec2 direction, float strength);

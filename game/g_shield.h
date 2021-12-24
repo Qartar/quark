@@ -25,8 +25,8 @@ public:
     virtual bool touch(object *other, physics::collision const* collision) override;
     virtual void think() override;
 
-    virtual void read_snapshot(network::message const& message) override;
-    virtual void write_snapshot(network::message& message) const override;
+    virtual void read_snapshot(network::delta_message const& message) override;
+    virtual void write_snapshot(network::delta_message& message) const override;
 
     void recharge(float strength_per_second);
     bool damage(vec2 position, float damage);

@@ -68,8 +68,8 @@ public:
     virtual void draw(render::system* renderer, time_value time) const override;
     virtual void think() override;
 
-    virtual void read_snapshot(network::message const& message) override;
-    virtual void write_snapshot(network::message& message) const override;
+    virtual void read_snapshot(network::delta_message const& message) override;
+    virtual void write_snapshot(network::delta_message& message) const override;
 
     weapon_info const& info() const { return _info; }
 

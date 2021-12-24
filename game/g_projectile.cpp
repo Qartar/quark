@@ -190,7 +190,7 @@ void projectile::draw(render::system* renderer, time_value time) const
 }
 
 //------------------------------------------------------------------------------
-void projectile::read_snapshot(network::message const& message)
+void projectile::read_snapshot(network::delta_message const& message)
 {
     _old_position = get_position();
 
@@ -203,7 +203,7 @@ void projectile::read_snapshot(network::message const& message)
 }
 
 //------------------------------------------------------------------------------
-void projectile::write_snapshot(network::message& message) const
+void projectile::write_snapshot(network::delta_message& message) const
 {
     message.write_long(narrow_cast<int>(_owner->get_sequence() & 0xffffffff));
     message.write_vector(get_position());

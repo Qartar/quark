@@ -191,6 +191,11 @@ public:
     //!     e.g. origin = read_delta_vector(velocity)
     vec2 read_delta_vector(vec2 delta) const;
 
+    //! number of bytes that can be read
+    std::size_t bytes_remaining() const { return _reader ? _reader->bytes_remaining() : 0; }
+    //! number of bytes that can be written or reserved
+    std::size_t bytes_available() const { return _writer ? _writer->bytes_available() : 0; }
+
 protected:
     network::message const* _source;
     network::message const* _reader;

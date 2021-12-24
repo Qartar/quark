@@ -14,6 +14,7 @@
 
 namespace network {
 class message;
+class delta_message;
 } // namespace network
 
 namespace physics {
@@ -91,8 +92,8 @@ public:
     virtual bool touch(object *other, physics::collision const* collision);
     virtual void think();
 
-    virtual void read_snapshot(network::message const& message);
-    virtual void write_snapshot(network::message& message) const;
+    virtual void read_snapshot(network::delta_message const& message);
+    virtual void write_snapshot(network::delta_message& message) const;
 
     //! Get frame-interpolated position
     virtual vec2 get_position(time_value time) const;

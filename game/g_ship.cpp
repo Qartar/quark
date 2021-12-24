@@ -276,12 +276,12 @@ void ship::think()
 }
 
 //------------------------------------------------------------------------------
-void ship::read_snapshot(network::message const& /*message*/)
+void ship::read_snapshot(network::delta_message const& /*message*/)
 {
 }
 
 //------------------------------------------------------------------------------
-void ship::write_snapshot(network::message& /*message*/) const
+void ship::write_snapshot(network::delta_message& /*message*/) const
 {
 }
 

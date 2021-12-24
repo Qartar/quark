@@ -358,12 +358,12 @@ void weapon::think()
 }
 
 //------------------------------------------------------------------------------
-void weapon::read_snapshot(network::message const& /*message*/)
+void weapon::read_snapshot(network::delta_message const& /*message*/)
 {
 }
 
 //------------------------------------------------------------------------------
-void weapon::write_snapshot(network::message& /*message*/) const
+void weapon::write_snapshot(network::delta_message& /*message*/) const
 {
 }
 

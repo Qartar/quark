@@ -167,7 +167,7 @@ void world::run_frame()
 }
 
 //------------------------------------------------------------------------------
-void world::read_snapshot(network::message& message)
+void world::read_snapshot(network::delta_message& message)
 {
     while (_removed.size()) {
         if (_removed.front()) {
@@ -202,12 +202,12 @@ void world::read_snapshot(network::message& message)
 }
 
 //------------------------------------------------------------------------------
-void world::read_frame(network::message const& /*message*/)
+void world::read_frame(network::delta_message const& /*message*/)
 {
 }
 
 //------------------------------------------------------------------------------
-void world::read_sound(network::message const& message)
+void world::read_sound(network::delta_message const& message)
 {
     int asset = message.read_long();
     vec2 position = message.read_vector();
@@ -217,7 +217,7 @@ void world::read_sound(network::message const& message)
 }
 
 //------------------------------------------------------------------------------
-void world::read_effect(network::message const& message)
+void world::read_effect(network::delta_message const& message)
 {
     float time = message.read_float();
     int type = message.read_byte();
@@ -229,7 +229,7 @@ void world::read_effect(network::message const& message)
 }
 
 //------------------------------------------------------------------------------
-void world::write_snapshot(network::message& message) const
+void world::write_snapshot(network::delta_message& message) const
 {
     message.write_byte(svc_snapshot);
 
@@ -241,7 +241,8 @@ void world::write_snapshot(network::message& message) const
     // ...
 
     // write sounds and effects
-    message.write(_message);
+    // FIXME: these should be part of a reliable payload
+    //message.write(_message);
     message.write_byte(narrow_cast<uint8_t>(message_type::none));
 
     _message.rewind();

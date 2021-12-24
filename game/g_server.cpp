@@ -159,8 +159,9 @@ void session::write_frame()
         }
     }
 
-
-    _world.write_snapshot(message);
+    // FIXME: store client messages to use as source for delta messages
+    network::delta_message delta = network::delta_message::write(nullptr, &message, nullptr);
+    _world.write_snapshot(delta);
 
     broadcast(message);
 }

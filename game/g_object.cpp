@@ -144,12 +144,12 @@ void object::think()
 }
 
 //------------------------------------------------------------------------------
-void object::read_snapshot(network::message const& /*message*/)
+void object::read_snapshot(network::delta_message const& /*message*/)
 {
 }
 
 //------------------------------------------------------------------------------
-void object::write_snapshot(network::message& /*message*/) const
+void object::write_snapshot(network::delta_message& /*message*/) const
 {
 }
 

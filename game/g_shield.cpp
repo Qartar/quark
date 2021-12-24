@@ -302,12 +302,12 @@ void shield::think()
 }
 
 //------------------------------------------------------------------------------
-void shield::read_snapshot(network::message const& /*message*/)
+void shield::read_snapshot(network::delta_message const& /*message*/)
 {
 }
 
 //------------------------------------------------------------------------------
-void shield::write_snapshot(network::message& /*message*/) const
+void shield::write_snapshot(network::delta_message& /*message*/) const
 {
 }
 
