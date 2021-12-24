@@ -136,8 +136,15 @@ protected:
 class delta_message
 {
 public:
-    delta_message(network::message const* source, network::message const* reader, network::message* target);
-    delta_message(network::message const* source, network::message* writer, network::message* target);
+    //! Read a delta-compressed message from `reader` using `source` as the base, optionally write uncompressed message to `target`
+    static delta_message read(network::message const* source, network::message const* reader, network::message* target) {
+        return delta_message(source, reader, target);
+    }
+
+    //! Write a delta-compressed message to `writer` using `source` as the base, optionally write uncompressed message to `target`
+    static delta_message write(network::message const* source, network::message* writer, network::message* target) {
+        return delta_message(source, writer, target);
+    }
 
     //! true if source is different than target
     bool has_changed() const { return _has_changed; }
@@ -172,14 +179,16 @@ public:
     //! read a two-dimensional vector
     vec2 read_vector() const;
 
-    //!
+    //! write a 32-bit float with an expected change of `delta`
     void write_delta_float(float value, float delta, float epsilon = 1e-3f);
-    //!
+    //! write a two-dimensional vector with an expected change of `delta`
+    //!     e.g. write_delta_vector(origin, velocity)
     void write_delta_vector(vec2 value, vec2 delta, float epsilon = 1e-3f);
 
-    //!
+    //! read a 32-bit float with an expected change of `delta`
     float read_delta_float(float delta) const;
-    //!
+    //! read a two-dimensional vector with an expected change of `delta`
+    //!     e.g. origin = read_delta_vector(velocity)
     vec2 read_delta_vector(vec2 delta) const;
 
 protected:
@@ -188,6 +197,10 @@ protected:
     network::message* _writer;
     network::message* _target; //!< source + delta
     mutable bool _has_changed;
+
+private:
+    delta_message(network::message const* source, network::message const* reader, network::message* target);
+    delta_message(network::message const* source, network::message* writer, network::message* target);
 };
 
 } // namespace network
