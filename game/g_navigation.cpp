@@ -126,7 +126,8 @@ void navigation::update_obstacles(render::system* renderer, time_value time) con
     auto owner_ship = _owner->cast<game::ship>();
     auto engines = owner_ship ? owner_ship->engines() : nullptr;
     //float mximum_velocity = engines ? engines->maximum_linear_speed() : 0.f;
-    vec2 ideal_velocity = _ideal_velocity;
+    float maximum_acceleration = engines ? engines->maximum_linear_acceleration() : 0.f;
+    vec2 target_velocity = _ideal_velocity;
 
     for (auto const* ship : ships) {
         vec2 relative_position = ship->get_position(time) - _owner->get_position(time);
@@ -148,9 +149,10 @@ void navigation::update_obstacles(render::system* renderer, time_value time) con
         if (t12.second < 0.f) {
             //continue;
         }
-        float t = std::max(0.f, t12.first);
 
 #if 0
+        float t = std::max(0.f, t12.first);
+
         renderer->draw_arc(
             _owner->get_position(time) + _owner->get_linear_velocity() * t,
             128.f,
@@ -192,7 +194,7 @@ void navigation::update_obstacles(render::system* renderer, time_value time) con
                 const int idx[3] = {1, 0, 2};
                 renderer->draw_triangles(vtx, col, idx, 3);
             }
-
+#if 0
             //
             //  | r0 + t v |^2 = d^2
             //
@@ -222,7 +224,7 @@ void navigation::update_obstacles(render::system* renderer, time_value time) con
                 return std::minmax({q / a, c / q});
             };
 
-            for (int jj = 0; jj < 1; ++jj) {
+            for (int jj = 0; jj < 8; ++jj) {
                 vec2 pts[32];
                 int n = 0;
 
@@ -232,7 +234,7 @@ void navigation::update_obstacles(render::system* renderer, time_value time) con
                     float l0 = (1.f - epsilon) - (2.f - 2.f * epsilon) * lerp; (void) l0;
                     rot2 angle = rot2(halfangle.radians() * ((1.f - epsilon) - (2.f - 2.f * epsilon) * lerp));
                     vec2 dir = (relative_position * angle).normalize();
-                    auto s = solve_t(relative_position, ship->get_linear_velocity(), apex, dir, t - jj * 10.f, 256.f);
+                    auto s = solve_t(relative_position, ship->get_linear_velocity(), apex, dir, t * (jj + 1) / 8.f, 256.f);
                     if (s.first > 0.f) {
                         pts[n++] = apex + dir * s.first;
                     }
@@ -243,21 +245,44 @@ void navigation::update_obstacles(render::system* renderer, time_value time) con
                     vec2 v1 = pts[ii + 1];
                     renderer->draw_line(_owner->get_position(time) + v0, _owner->get_position(time) + v1, color4(1,.5f,0,1), color4(1,.5f,0,1));
                 }
+
+                if (n > 2) {
+                    float M11 = mat3(pts[0].x, pts[0].y, 1.f,
+                                    pts[1].x, pts[1].y, 1.f,
+                                    pts[2].x, pts[2].y, 1.f).determinant();
+                    float M12 = mat3(dot(pts[0], pts[0]), pts[0].y, 1.f,
+                                    dot(pts[1], pts[1]), pts[1].y, 1.f,
+                                    dot(pts[2], pts[2]), pts[2].y, 1.f).determinant();
+                    float M13 = mat3(dot(pts[0], pts[0]), pts[0].x, 1.f,
+                                    dot(pts[1], pts[1]), pts[1].x, 1.f,
+                                    dot(pts[2], pts[2]), pts[2].x, 1.f).determinant();
+
+                    vec2 xy = .5f * vec2(M12 / M11, -M13 / M11);
+                    float r0 = length(xy - pts[0]);
+                    renderer->draw_arc(_owner->get_position(time) + xy, r0, 0.f, 0.f, 2.f * math::pi<float>, color4(.5f,1,0,.5f));
+                }
             }
+#endif
         }
 
         //
         // check if ideal velocity is in velocity obstacle
         //
 
-        float d1 = (ideal_velocity - apex).dot(dir1.cross(-1.f));
-        float d2 = (ideal_velocity - apex).dot(dir2.cross( 1.f));
+        float d1 = (target_velocity - apex).dot(dir1.cross(-1.f));
+        float d2 = (target_velocity - apex).dot(dir2.cross( 1.f));
+
+        (void)maximum_acceleration;
+        //float collision_time = -min(d1, d2) / maximum_acceleration;
+        //if (collision_time > 1.f) {
+        //    continue;
+        //}
 
         if (d1 < 0.f && d2 < 0.f) {
             if (d1 < d2) {
-                ideal_velocity -= dir2.cross(1.f) * d2;
+                target_velocity -= dir2.cross(1.f) * d2;
             } else {
-                ideal_velocity += dir1.cross(1.f) * d1;
+                target_velocity += dir1.cross(1.f) * d1;
             }
         }
     }
@@ -267,15 +292,16 @@ void navigation::update_obstacles(render::system* renderer, time_value time) con
                             _owner->get_position(time) + _ideal_velocity,
                             color4(0,1,1,1), color4(0,1,1,1));
         renderer->draw_line(_owner->get_position(time),
-                            _owner->get_position(time) + ideal_velocity,
+                            _owner->get_position(time) + target_velocity,
                             color4(1,0,1,1), color4(1,0,1,1));
     }
 
-    //if (engines && ideal_velocity != _ideal_velocity) {
-    //    vec2 delta_move = ideal_velocity * _owner->get_inverse_transform();
-    //    vec2 move_target = vec2(ideal_velocity.length(),0) * _owner->get_rotation();
-    //    const_cast<game::engines*>(engines.get())->set_target_velocity(move_target, -std::atan2(delta_move.y, delta_move.x) / FRAMETIME.to_seconds());
-    //}
+    if (engines && target_velocity != _ideal_velocity) {
+        vec2 delta_move = target_velocity / _owner->get_rotation();
+        vec2 linear_target = vec2(target_velocity.length(), 0) * _owner->get_rotation();
+        float angular_target = std::atan2(delta_move.y, delta_move.x) / FRAMETIME.to_seconds();
+        const_cast<game::engines*>(engines.get())->set_target_velocity(linear_target, angular_target);
+    }
 }
 
 } // namespace game

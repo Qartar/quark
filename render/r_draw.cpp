@@ -576,7 +576,7 @@ void system::draw_starfield(vec2 streak_vector)
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
-#else
+#elif 0
     (void)streak_vector;
 
     float xmin = _view.origin.x - _view.size.x * .5f;
@@ -964,6 +964,8 @@ void system::draw_starfield(vec2 streak_vector)
             }
         }
     }
+#else
+    (void)streak_vector;
 #endif
 }
 

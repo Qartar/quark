@@ -138,6 +138,9 @@ public:
     float maximum_linear_speed() const;
     float maximum_angular_speed() const;
 
+    float maximum_linear_acceleration() const { return _engines_info.maximum_linear_accel; }
+    float maximum_angular_acceleration() const { return _engines_info.maximum_angular_accel; }
+
 protected:
     engines_info _engines_info;
     float _linear_drag_coefficient;
