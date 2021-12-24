@@ -43,6 +43,10 @@ public:
         _rows[1][0] = 0.f; _rows[1][1] = 1.f;
     }
 
+    constexpr float determinant() const {
+        return cross(_rows[0], _rows[1]);
+    }
+
 // rotation
 
     void set_rotation(rot2 r) {
@@ -76,6 +80,13 @@ public:
     constexpr friend mat2 operator*(mat2 const& lhs, mat2 const& rhs) {
         return mat2(lhs[0] * rhs,
                     lhs[1] * rhs);
+    }
+
+// transformations
+
+    constexpr mat2 transpose() const {
+        return mat2(_rows[0][0], _rows[1][0],
+                    _rows[0][1], _rows[1][1]);
     }
 
     friend bool isnan(mat2 const& m) { return isnan(m[0]) || isnan(m[1]); }
@@ -114,6 +125,10 @@ public:
         _rows[0][0] = 1.f; _rows[0][1] = 0.f; _rows[0][2] = 0.f;
         _rows[1][0] = 0.f; _rows[1][1] = 1.f; _rows[1][2] = 0.f;
         _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = 1.f;
+    }
+
+    constexpr float determinant() const {
+        return dot(_rows[0], cross(_rows[1], _rows[2]));
     }
 
 // rotation
@@ -222,6 +237,19 @@ public:
         _rows[1][0] = 0.f; _rows[1][1] = 1.f; _rows[1][2] = 0.f; _rows[1][3] = 0.f;
         _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = 1.f; _rows[2][3] = 0.f;
         _rows[3][0] = 0.f; _rows[3][1] = 0.f; _rows[3][2] = 0.f; _rows[3][3] = 1.f;
+    }
+
+    constexpr mat3 minor(int R, int C) const {
+        constexpr int idx[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 2}, {0, 1, 2}};
+        return mat3(_rows[idx[R][0]][idx[C][0]], _rows[idx[R][0]][idx[C][1]], _rows[idx[R][0]][idx[C][2]],
+                    _rows[idx[R][1]][idx[C][0]], _rows[idx[R][1]][idx[C][1]], _rows[idx[R][1]][idx[C][2]],
+                    _rows[idx[R][2]][idx[C][0]], _rows[idx[R][2]][idx[C][1]], _rows[idx[R][2]][idx[C][2]]);
+    }
+
+    constexpr float determinant() const {
+        // Laplace expansion
+        return _rows[0][0] * minor(0,0).determinant() - _rows[0][1] * minor(0,1).determinant()
+             + _rows[0][2] * minor(0,2).determinant() - _rows[0][3] * minor(0,3).determinant();
     }
 
 // rotation
