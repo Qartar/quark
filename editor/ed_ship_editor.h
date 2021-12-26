@@ -1,4 +1,4 @@
-// g_ship_editor.h
+// ed_ship_editor.h
 //
 
 #pragma once
@@ -10,7 +10,7 @@ namespace render {
 class image;
 } // namespace render
 
-namespace game {
+namespace editor {
 
 //------------------------------------------------------------------------------
 class ship_editor
@@ -81,4 +81,4 @@ protected:
     void clear_selection();
 };
 
-} // namespace game
+} // namespace editor

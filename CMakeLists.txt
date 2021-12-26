@@ -45,6 +45,8 @@ add_subdirectory(physics)
 add_subdirectory(network)
 
 set(QUARK_SOURCES
+    editor/ed_ship_editor.cpp
+    editor/ed_ship_editor.h
     game/g_aicontroller.cpp
     game/g_aicontroller.h
     game/g_button.cpp
@@ -70,8 +72,6 @@ set(QUARK_SOURCES
     game/g_shield.h
     game/g_ship.cpp
     game/g_ship.h
-    game/g_ship_editor.cpp
-    game/g_ship_editor.h
     game/g_subsystem.cpp
     game/g_subsystem.h
     game/g_usercmd.cpp
@@ -145,6 +145,7 @@ target_include_directories(quark
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
+        editor
         game
         render
         system

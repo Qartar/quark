@@ -8,7 +8,7 @@
 #include "cm_parser.h"
 #include "g_aicontroller.h"
 #include "g_player.h"
-#include "g_ship_editor.h"
+#include "ed_ship_editor.h"
 #include "resource.h"
 #include "version.h"
 
@@ -254,7 +254,7 @@ void session::draw_menu()
 //------------------------------------------------------------------------------
 void session::command_editor(parser::text const& /*args*/)
 {
-    _ship_editor = new game::ship_editor();
+    _ship_editor = new editor::ship_editor();
     _menu_active = false;
     if (_console.active()) {
         _console.char_event('`');

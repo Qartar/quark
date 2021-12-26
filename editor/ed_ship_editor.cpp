@@ -1,11 +1,11 @@
-// g_ship_editor.cpp
+// ed_ship_editor.cpp
 //
 
 #include "precompiled.h"
 #pragma hdrstop
 
 #include "cm_keys.h"
-#include "g_ship_editor.h"
+#include "ed_ship_editor.h"
 #include "r_image.h"
 #include "r_window.h"
 
@@ -13,7 +13,7 @@
 #include <iterator>
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace game {
+namespace editor {
 
 namespace {
 
@@ -671,4 +671,4 @@ void ship_editor::cursor_event(vec2 position)
     _cursor = position;
 }
 
-} // namespace game
+} // namespace editor

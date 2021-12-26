@@ -9,6 +9,10 @@
 #include "net_socket.h"
 #include "cm_console.h"
 
+namespace editor {
+class ship_editor;
+} // namespace editor
+
 namespace render {
 class image;
 class system;
@@ -161,8 +165,6 @@ typedef struct client_state_s
     network::socket socket;
 } client_state_t;
 
-class ship_editor;
-
 //------------------------------------------------------------------------------
 class session : public log
 {
@@ -250,7 +252,7 @@ private:
     config::boolean _net_graph;
     std::array<std::size_t, 256> _net_bytes;
 
-    ship_editor* _ship_editor;
+    editor::ship_editor* _ship_editor;
     console_command _command_editor;
     void command_editor(parser::text const& args);
 
