@@ -5,6 +5,7 @@
 
 #include "g_usercmd.h"
 #include "g_object.h"
+#include "g_system.h"
 
 #include "p_material.h"
 #include "p_rigidbody.h"
@@ -213,6 +214,8 @@ private:
 
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
+
+    game::system _system;
 
     //
     // particle system

@@ -74,6 +74,8 @@ set(QUARK_SOURCES
     game/g_ship_layout.h
     game/g_subsystem.cpp
     game/g_subsystem.h
+    game/g_system.cpp
+    game/g_system.h
     game/g_usercmd.cpp
     game/g_usercmd.h
     game/g_weapon.cpp

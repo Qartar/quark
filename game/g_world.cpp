@@ -22,6 +22,7 @@ std::array<world*, world::max_worlds> world::_singletons{};
 //------------------------------------------------------------------------------
 world::world()
     : _sequence(0)
+    , _system(random())
     , _physics(
         std::bind(&world::physics_filter_callback, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&world::physics_collide_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
@@ -129,6 +130,16 @@ void world::draw(render::system* renderer, time_value time) const
     }
 
     draw_particles(renderer, time);
+
+#if 1
+    std::vector<vec2> positions;
+    positions.resize(_system.num_bodies());
+    _system.calculate_all_positions(time * 10000.f, positions.data());
+
+    for (std::size_t ii = 0; ii < positions.size(); ++ii) {
+        renderer->draw_arc(positions[ii] * 10.f, max(0.001f, _system.bodies()[ii].radius) * 1000.f, 0.f, 0.f, 2.f * math::pi<float>, color4(1,0,0,1));
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
