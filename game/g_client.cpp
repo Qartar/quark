@@ -343,6 +343,7 @@ void session::draw_world()
 
     if (cls.active) {
         _world.draw(_renderer, _worldtime);
+        _world.draw_interface(_renderer, _worldtime);
     }
 
     // update sound listener

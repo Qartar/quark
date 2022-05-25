@@ -50,6 +50,8 @@ public:
     virtual void set_position(vec2 position, bool teleport = false) override;
     virtual void set_rotation(float rotation, bool teleport = false) override;
 
+    void draw_interface(render::system* renderer, time_value time) const;
+
     void damage(object* inflictor, vec2 point, float amount);
 
     std::vector<unique_handle<character>>& crew() { return _crew; }

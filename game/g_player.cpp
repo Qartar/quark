@@ -41,6 +41,19 @@ void player::spawn()
 //------------------------------------------------------------------------------
 void player::draw(render::system* renderer, time_value time) const
 {
+    (void)renderer;
+    (void)time;
+}
+
+//------------------------------------------------------------------------------
+void player::draw_interface(render::system* renderer, time_value time) const
+{
+    for (auto* object : get_world()->objects()) {
+        if (object->is_type<ship>()) {
+            static_cast<ship*>(object)->draw_interface(renderer, time);
+        }
+    }
+
     if (!_ship || _ship->is_destroyed()) {
         return;
     }

@@ -409,6 +409,120 @@ void ship::draw(render::system* renderer, time_value time) const
     }
 
     //
+    // draw layout
+    //
+
+    if (true) {
+        ship_layout const& _layout = _state.layout();
+        mat3 transform = get_transform(time);
+        std::vector<vec2> positions;
+        std::vector<color4> colors;
+        std::vector<int> indices;
+
+        for (auto const& v : _layout.vertices()) {
+            positions.push_back(v * transform);
+            colors.push_back(color4(1,1,1,1));
+        }
+
+        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+            auto const& c = _layout.compartments()[ii];
+            auto const& s = _state.compartments()[ii];
+            color4 color(1, s.atmosphere, s.atmosphere, 1);
+            colors[c.first_vertex + 0] = color;
+            colors[c.first_vertex + 1] = color;
+            for (int jj = 2; jj < c.num_vertices; ++jj) {
+                colors[c.first_vertex + jj] = color;
+                indices.push_back(c.first_vertex);
+                indices.push_back(c.first_vertex + jj - 1);
+                indices.push_back(c.first_vertex + jj - 0);
+            }
+        }
+
+        renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
+
+        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
+            auto const& c = _layout.compartments()[ii];
+            std::vector<vec2> vtx;
+            std::vector<color4> col;
+            std::vector<int> idx;
+            vtx.push_back(c.shape.vertices()[0] * transform);
+            col.push_back(color4(1,1,1,1));
+            for (int jj = 1; jj < narrow_cast<int>(c.shape.num_vertices()); ++jj) {
+                vtx.push_back(c.shape.vertices()[jj] * transform);
+                col.push_back(color4(1,1,1,1));
+                idx.push_back(0);
+                idx.push_back(jj);
+                idx.push_back(jj+1);
+            }
+            vtx.push_back(c.shape.vertices()[0] * transform);
+            col.push_back(color4(1,1,1,1));
+            //renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.shape.num_vertices() - 2) * 3);
+            vtx[0] = c.inner_shape.vertices()[0] * transform;
+            col[0] = color4(0.f,0.f,0.f,.1f);
+            for (int jj = 1; jj < narrow_cast<int>(c.inner_shape.num_vertices()); ++jj) {
+                vtx[jj] = c.inner_shape.vertices()[jj] * transform;
+                col[jj] = color4(0.f,0.f,0.f,.1f);
+            }
+            vtx[c.inner_shape.num_vertices()] = c.inner_shape.vertices()[0] * transform;
+            col[c.inner_shape.num_vertices()] = color4(0.f,0.f,0.f,.1f);
+            renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.inner_shape.num_vertices() - 2) * 3);
+        }
+
+        positions.clear();
+        colors.clear();
+        indices.clear();
+        for (std::size_t ii = 0, sz = _layout.connections().size(); ii < sz; ++ii) {
+            auto const& c = _layout.connections()[ii];
+            auto const& s = _state.connections()[ii];
+            indices.push_back(narrow_cast<int>(ii * 4 + 0));
+            indices.push_back(narrow_cast<int>(ii * 4 + 1));
+            indices.push_back(narrow_cast<int>(ii * 4 + 2));
+            indices.push_back(narrow_cast<int>(ii * 4 + 1));
+            indices.push_back(narrow_cast<int>(ii * 4 + 3));
+            indices.push_back(narrow_cast<int>(ii * 4 + 2));
+            vec2 v0 = _layout.vertices()[c.vertices[0]] * transform;
+            vec2 v1 = _layout.vertices()[c.vertices[1]] * transform;
+            vec2 n = (v1 - v0).cross(1.f).normalize();
+            vec2 t = n.cross(1.f);
+            positions.push_back(v0 - n * .1f + t * .1f);
+            positions.push_back(v0 + n * .1f + t * .1f);
+            positions.push_back(v1 - n * .1f - t * .1f);
+            positions.push_back(v1 + n * .1f - t * .1f);
+            if (s.opened) {
+                colors.push_back(color4(1,1,0,1));
+                colors.push_back(color4(1,1,0,1));
+                colors.push_back(color4(1,1,0,1));
+                colors.push_back(color4(1,1,0,1));
+            } else if (s.opened_automatic) {
+                colors.push_back(color4(0,1,0,1));
+                colors.push_back(color4(0,1,0,1));
+                colors.push_back(color4(0,1,0,1));
+                colors.push_back(color4(0,1,0,1));
+            } else {
+                colors.push_back(color4(.4f,.4f,.4f,1));
+                colors.push_back(color4(.4f,.4f,.4f,1));
+                colors.push_back(color4(.4f,.4f,.4f,1));
+                colors.push_back(color4(.4f,.4f,.4f,1));
+            }
+        }
+
+        renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
+    }
+}
+
+//------------------------------------------------------------------------------
+void ship::draw_interface(render::system* renderer, time_value time) const
+{
+    if (_is_destroyed) {
+        return;
+    }
+
+    float alpha = 1.f;
+    if (time > _dead_time && time - _dead_time < destruction_time) {
+        alpha = 1.f - (time - _dead_time) / destruction_time;
+    }
+
+    //
     // draw reactor ui
     //
 
@@ -584,122 +698,6 @@ void ship::draw(render::system* renderer, time_value time) const
         std::vector<color4> colors;
         std::vector<int> indices;
 
-        for (auto const& v : _layout.vertices()) {
-            positions.push_back(v * transform);
-            colors.push_back(color4(1,1,1,1));
-        }
-
-        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
-            auto const& c = _layout.compartments()[ii];
-            auto const& s = _state.compartments()[ii];
-            color4 color(1, s.atmosphere, s.atmosphere, 1);
-            colors[c.first_vertex + 0] = color;
-            colors[c.first_vertex + 1] = color;
-            for (int jj = 2; jj < c.num_vertices; ++jj) {
-                colors[c.first_vertex + jj] = color;
-                indices.push_back(c.first_vertex);
-                indices.push_back(c.first_vertex + jj - 1);
-                indices.push_back(c.first_vertex + jj - 0);
-            }
-        }
-
-        renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
-
-        for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
-            auto const& c = _layout.compartments()[ii];
-            std::vector<vec2> vtx;
-            std::vector<color4> col;
-            std::vector<int> idx;
-            vtx.push_back(c.shape.vertices()[0] * transform);
-            col.push_back(color4(1,1,1,1));
-            for (int jj = 1; jj < narrow_cast<int>(c.shape.num_vertices()); ++jj) {
-                vtx.push_back(c.shape.vertices()[jj] * transform);
-                col.push_back(color4(1,1,1,1));
-                idx.push_back(0);
-                idx.push_back(jj);
-                idx.push_back(jj+1);
-            }
-            vtx.push_back(c.shape.vertices()[0] * transform);
-            col.push_back(color4(1,1,1,1));
-            //renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.shape.num_vertices() - 2) * 3);
-            vtx[0] = c.inner_shape.vertices()[0] * transform;
-            col[0] = color4(0.f,0.f,0.f,.1f);
-            for (int jj = 1; jj < narrow_cast<int>(c.inner_shape.num_vertices()); ++jj) {
-                vtx[jj] = c.inner_shape.vertices()[jj] * transform;
-                col[jj] = color4(0.f,0.f,0.f,.1f);
-            }
-            vtx[c.inner_shape.num_vertices()] = c.inner_shape.vertices()[0] * transform;
-            col[c.inner_shape.num_vertices()] = color4(0.f,0.f,0.f,.1f);
-            renderer->draw_triangles(vtx.data(), col.data(), idx.data(), (c.inner_shape.num_vertices() - 2) * 3);
-        }
-
-        positions.clear();
-        colors.clear();
-        indices.clear();
-        for (std::size_t ii = 0, sz = _layout.connections().size(); ii < sz; ++ii) {
-            auto const& c = _layout.connections()[ii];
-            auto const& s = _state.connections()[ii];
-            indices.push_back(narrow_cast<int>(ii * 4 + 0));
-            indices.push_back(narrow_cast<int>(ii * 4 + 1));
-            indices.push_back(narrow_cast<int>(ii * 4 + 2));
-            indices.push_back(narrow_cast<int>(ii * 4 + 1));
-            indices.push_back(narrow_cast<int>(ii * 4 + 3));
-            indices.push_back(narrow_cast<int>(ii * 4 + 2));
-            vec2 v0 = _layout.vertices()[c.vertices[0]] * transform;
-            vec2 v1 = _layout.vertices()[c.vertices[1]] * transform;
-            vec2 n = (v1 - v0).cross(1.f).normalize();
-            vec2 t = n.cross(1.f);
-            positions.push_back(v0 - n * .1f + t * .1f);
-            positions.push_back(v0 + n * .1f + t * .1f);
-            positions.push_back(v1 - n * .1f - t * .1f);
-            positions.push_back(v1 + n * .1f - t * .1f);
-            if (s.opened) {
-                colors.push_back(color4(1,1,0,1));
-                colors.push_back(color4(1,1,0,1));
-                colors.push_back(color4(1,1,0,1));
-                colors.push_back(color4(1,1,0,1));
-            } else if (s.opened_automatic) {
-                colors.push_back(color4(0,1,0,1));
-                colors.push_back(color4(0,1,0,1));
-                colors.push_back(color4(0,1,0,1));
-                colors.push_back(color4(0,1,0,1));
-            } else {
-                colors.push_back(color4(.4f,.4f,.4f,1));
-                colors.push_back(color4(.4f,.4f,.4f,1));
-                colors.push_back(color4(.4f,.4f,.4f,1));
-                colors.push_back(color4(.4f,.4f,.4f,1));
-            }
-        }
-
-        renderer->draw_triangles(positions.data(), colors.data(), indices.data(), indices.size());
-
-        //
-        //  draw compartment state
-        //
-
-        if (false) {
-            for (std::size_t ii = 0, sz = _layout.compartments().size(); ii < sz; ++ii) {
-                auto const& c = _layout.compartments()[ii];
-                auto const& s = _state.compartments()[ii];
-                vec2 p = vec2_zero;
-                for (int jj = 0; jj < c.num_vertices; ++jj) {
-                    p += positions[c.first_vertex + jj];
-                }
-                p /= c.num_vertices;
-                renderer->draw_string(va("%.2f - %.2f", s.atmosphere, s.atmosphere * c.area), p, color4(.4f,.4f,.4f,1));
-            }
-
-            for (std::size_t ii = 0, sz = _layout.connections().size(); ii < sz; ++ii) {
-                auto const& c = _layout.connections()[ii];
-                auto const& s = _state.connections()[ii];
-                vec2 p = vec2_zero;
-                for (int jj = 0; jj < 4; ++jj) {
-                    p += positions[c.vertices[jj]] * .25f;
-                }
-                renderer->draw_string(va("%.2f - %.2f", s.flow, s.velocity), p, color4(.4f,.3f,.2f,1));
-            }
-        }
-
         //
         //  draw subsystem icons
         //
@@ -873,6 +871,7 @@ void ship::draw(render::system* renderer, time_value time) const
             uint16_t idx = _state.layout().intersect_compartment(local_cursor);
             if (idx != ship_layout::invalid_compartment) {
                 auto const& c = _layout.compartments()[idx];
+                positions.resize(c.num_vertices);
                 for (int jj = 0; jj < c.num_vertices; ++jj) {
                     positions[jj] = _state.layout().vertices()[c.first_vertex + jj] * transform;
                 }

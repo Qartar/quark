@@ -147,6 +147,7 @@ public:
 
     void run_frame ();
     void draw(render::system* renderer, time_value time) const;
+    void draw_interface(render::system* renderer, time_value time) const;
 
     void read_snapshot(network::message& message);
     void write_snapshot(network::message& message) const;

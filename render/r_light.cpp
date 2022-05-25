@@ -55,67 +55,14 @@ void main() {
 
     _light_shader = gl::shader(gl::shader_stage::fragment, R"(
 #version 420
-layout(binding = 0) uniform sampler2D lightmap;
-
-vec2 image_to_world(ivec3 i) {
-    return vec2(0.5) + vec2(i.xy * (1 << i.z));
-}
-
-vec4 illuminance(vec2 pos, ivec3 texel)
-{
-    vec2 light_pos = image_to_world(texel);
-    vec2 dir = pos - light_pos;
-    vec4 light = texelFetch(lightmap, texel.xy, texel.z);
-    return light / dot(dir, dir);
-}
-
-const int lods = 13;
-
-vec4 luminance(ivec2 pos)
-{
-    vec2 world_pos = image_to_world(ivec3(pos.xy, 0));
-
-    vec4 total = vec4(0);
-    vec4 prev = vec4(0);
-
-    ivec3 texel = ivec3(0, 0, lods - 1);
-
-    for (int ii = lods; ii > 0; --ii) {
-        total -= prev;
-
-        vec4 L00 = illuminance(world_pos, texel + ivec3(0,0,-1));
-        vec4 L10 = illuminance(world_pos, texel + ivec3(1,0,-1));
-        vec4 L01 = illuminance(world_pos, texel + ivec3(0,1,-1));
-        vec4 L11 = illuminance(world_pos, texel + ivec3(1,1,-1));
-
-        vec4 lum = vec4(0.2126, 0.7152, 0.0722, 0) * mat4(L00, L01, L10, L11);
-        //vec4 lum = mat4(L00, L01, L10, L11) * vec4(0.2126, 0.7152, 0.0722, 0);
-        float lmax = max(lum.x, max(lum.y, max(lum.z, lum.w)));
-
-        total += L00 + L10 + L01 + L11;
-
-        if (lmax == lum.x) {
-            texel += ivec3(0,0,-1);
-            prev = L00;
-        } else if (lmax == lum.y) {
-            texel += ivec3(0,1,-1);
-            prev = L01;
-        } else if (lmax == lum.z) {
-            texel += ivec3(1,0,-1);
-            prev = L10;
-        } else {
-            texel += ivec3(1,1,-1);
-            prev = L11;
-        }
-
-        texel.xy *= 2;
-    }
-
-    return total;
-}
+layout(binding = 0) uniform sampler2D in_emissive;
+layout(binding = 1) uniform sampler2D in_diffuse;
 
 void main() {
-    gl_FragColor = 0.1 * luminance(ivec2(gl_FragCoord.xy));
+    vec4 emissive = texelFetch(in_emissive, ivec2(gl_FragCoord.xy), 0);
+    vec4 diffuse = texelFetch(in_diffuse, ivec2(gl_FragCoord.xy), 0);
+
+    gl_FragColor = emissive + diffuse;
 }
 )");
 
@@ -163,46 +110,21 @@ void light::resize(vec2i size)
 }
 
 //------------------------------------------------------------------------------
-void light::render(gl::framebuffer const& f) const
+void light::render(gl::framebuffer const& src, gl::framebuffer const& dst) const
 {
+    dst.draw();
+    src.color_attachment(0).bind(0);
+    src.color_attachment(1).bind(1);
+
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
 
-    _framebuffers[0].blit(f,
-        0, 0, _size.x, _size.y,
-        0, 0, _size.x, _size.y,
-        GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
+    _light_program.use();
     _vertex_array.bind();
-
-    generate_mips();
-#if 1
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-    f.draw();
-
-    render_light();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-#else
-    //  2560    1280     640     320     160      80      40      20      10       5       (2)      1
-    //  1440     720     360     180      90      45     (22)     11      (5)     (2)       1       1
-
-    static int index = 0;
-    int level = 1 + (++index / 100) % (_framebuffers.size() - 1);
-    f.blit(_framebuffers[level],
-        0, 0, max(1, _light_size.x >> level), max(1, _light_size.y >> level),
-        0, 0, _light_size.x >> 1, _light_size.y >> 1,
-        GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-#endif
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
     gl::program().use();
     gl::vertex_array().bind();
-
-    f.draw();
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
 }
 
 //------------------------------------------------------------------------------

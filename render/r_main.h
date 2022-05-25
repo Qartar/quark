@@ -97,6 +97,9 @@ public:
     void begin_frame();
     void end_frame();
 
+    void begin_lighting();
+    void end_lighting();
+
     void resize(vec2i size);
     render::window const* window() const { return _window; }
 

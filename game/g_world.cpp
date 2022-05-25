@@ -118,6 +118,7 @@ void world::remove(handle<object> object)
 //------------------------------------------------------------------------------
 void world::draw(render::system* renderer, time_value time) const
 {
+    renderer->begin_lighting();
     renderer->draw_starfield();
 
     for (auto& obj : _objects) {
@@ -129,6 +130,19 @@ void world::draw(render::system* renderer, time_value time) const
     }
 
     draw_particles(renderer, time);
+    renderer->end_lighting();
+}
+
+//------------------------------------------------------------------------------
+void world::draw_interface(render::system* renderer, time_value time) const
+{
+    for (auto& obj : _objects) {
+        // objects array is sparse
+        if (!obj.get() || !obj->is_type<player>()) {
+            continue;
+        }
+        static_cast<player*>(obj.get())->draw_interface(renderer, time);
+    }
 }
 
 //------------------------------------------------------------------------------

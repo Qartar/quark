@@ -20,7 +20,7 @@ public:
     light();
 
     void resize(vec2i size);
-    void render(gl::framebuffer const& f) const;
+    void render(gl::framebuffer const& src, gl::framebuffer const& dst) const;
 
 protected:
     vec2i _size;

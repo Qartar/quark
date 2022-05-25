@@ -75,10 +75,13 @@ void main() {
 
     auto fsh = gl::shader(gl::shader_stage::fragment,
 R"(
-#version 110
-varying vec4 color;
+#version 330
+in vec4 color;
+layout(location = 0) out vec4 out_emissive;
+layout(location = 1) out vec4 out_diffuse;
 void main() {
-    gl_FragColor = color;
+    out_emissive = vec4(0.0,0.0,0.0,1.0);
+    out_diffuse = color;
 }
 )"
     );
@@ -108,8 +111,6 @@ void main() {
     } else if (info_log.length()) {
         log::error("%.*s", info_log.length(), info_log.begin());
     }
-
-    _program.use();
 
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;
@@ -155,8 +156,8 @@ void system::begin_frame()
 {
     _timers[_timer_index % _timers.size()].begin_frame = time_value::current();
 
-    _framebuffer.draw();
-    _framebuffer.draw_buffer(GL_COLOR_ATTACHMENT0);
+    gl::framebuffer().draw();
+    gl::framebuffer().draw_buffer(GL_BACK);
 
     glClear(GL_COLOR_BUFFER_BIT);
 }
@@ -164,17 +165,9 @@ void system::begin_frame()
 //------------------------------------------------------------------------------
 void system::end_frame()
 {
-    _light->render(_framebuffer);
-
     if (_graph) {
         draw_timers();
     }
-
-    gl::framebuffer().draw_buffer(GL_BACK);
-    gl::framebuffer().blit(_framebuffer,
-        0, 0, _framebuffer.width(), _framebuffer.height(),
-        0, 0, _window->size().x, _window->size().y,
-        GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     _timers[_timer_index % _timers.size()].end_frame = time_value::current();
 
@@ -189,6 +182,25 @@ void system::end_frame()
             || _framebuffer_scale.modified()) {
         resize(_window->size());
     }
+}
+
+//------------------------------------------------------------------------------
+void system::begin_lighting()
+{
+    _framebuffer.draw();
+    _framebuffer.draw_buffers({
+        GL_COLOR_ATTACHMENT0,
+        GL_COLOR_ATTACHMENT0 + 1});
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    _program.use();
+}
+
+//------------------------------------------------------------------------------
+void system::end_lighting()
+{
+    _light->render(_framebuffer, gl::framebuffer());
 }
 
 //------------------------------------------------------------------------------
@@ -310,11 +322,13 @@ void system::create_framebuffer(vec2i size, int samples)
 {
     if (samples) {
         _framebuffer = gl::framebuffer(samples, size.x, size.y, {
+            {gl::attachment_type::color, GL_RGBA16F},
             {gl::attachment_type::color, GL_RGBA8},
             {gl::attachment_type::depth_stencil, GL_DEPTH24_STENCIL8},
         });
     } else {
         _framebuffer = gl::framebuffer(size.x, size.y, {
+            {gl::attachment_type::color, GL_RGBA16F},
             {gl::attachment_type::color, GL_RGBA8},
             {gl::attachment_type::depth_stencil, GL_DEPTH24_STENCIL8},
         });
