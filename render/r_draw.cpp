@@ -197,6 +197,10 @@ void system::draw_particles(time_value time, render::particle const* particles, 
             if (p->flags & render::particle::invert) {
                 std::swap(color_in, color_out);
             }
+            if (p->flags & render::particle::emissive) {
+                color_in.a = -color_in.a;
+                color_out.a = -color_out.a;
+            }
 
             // Number of circle segments, approximation for pi / acos(1 - 1/2x)
             int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, radius * view_scale - 0.25f)));
@@ -221,6 +225,11 @@ void system::draw_particles(time_value time, render::particle const* particles, 
             color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
             color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
 
+            if (p->flags & render::particle::emissive) {
+                color_in.a = -color_in.a;
+                color_out.a = -color_out.a;
+            }
+
             // Number of circle segments, approximation for pi / acos(1 - 1/2x)
             int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, radius * view_scale - 0.25f)));
             int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
@@ -242,6 +251,11 @@ void system::draw_particles(time_value time, render::particle const* particles, 
         } else {
             color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
             color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
+
+            if (p->flags & render::particle::emissive) {
+                color_in.a = -color_in.a;
+                color_out.a = -color_out.a;
+            }
 
             float tail_time = std::max<float>(0.0f, (time - p->time - FRAMETIME).to_seconds());
             float tail_vtime = p->drag ? tanhf(p->drag * tail_time) / p->drag : tail_time;

@@ -80,8 +80,13 @@ in vec4 color;
 layout(location = 0) out vec4 out_emissive;
 layout(location = 1) out vec4 out_diffuse;
 void main() {
-    out_emissive = vec4(0.0,0.0,0.0,1.0);
-    out_diffuse = color;
+    if (color.a < 0.0) {
+        out_emissive = vec4(color.xyz, -color.w);
+        out_diffuse = vec4(0.0);
+    } else {
+        out_emissive = vec4(0.0,0.0,0.0,1.0);
+        out_diffuse = color;
+    }
 }
 )"
     );

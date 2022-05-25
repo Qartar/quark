@@ -101,7 +101,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->size = 0.5f;
                 p->size_velocity = 0.0f;
                 p->drag = _random.uniform_real(.5f, 1.f);
-                p->flags = render::particle::tail;
+                p->flags = render::particle::flag_bits(
+                    render::particle::tail |
+                    render::particle::emissive);
             }
             break;
         }
@@ -124,7 +126,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->color_velocity = -p->color * color4(0,1,3,3);
             p->size = 6.0f * scale;
             p->size_velocity = 192.0f * scale;
-            p->flags = render::particle::ring;
+            p->flags = render::particle::flag_bits(
+                render::particle::ring |
+                render::particle::emissive);
 
             // fire
 
@@ -149,6 +153,7 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->size_velocity = 1.0f * strength;
 
                 p->drag = _random.uniform_real(2.f, 4.f) * scale;
+                p->flags = render::particle::emissive;
             }
 
             // debris
@@ -193,6 +198,7 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->color_velocity = color4(0,-2.5f,0,-5.f);
             p->size = .1f;
             p->size_velocity = 96.0f;
+            p->flags = render::particle::emissive;
 
             // fire
 
@@ -215,7 +221,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->color_velocity = color4(0,0,0,-p->color.a/(0.25f+square(_random.uniform_real())));
                 p->size = _random.uniform_real(2.f, 6.f);
                 p->size_velocity = 0.5f;
-                p->flags = render::particle::invert;
+                p->flags = render::particle::flag_bits(
+                    render::particle::invert |
+                    render::particle::emissive);
 
                 p->drag = _random.uniform_real(3.f, 6.f);
             }
@@ -247,7 +255,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->size = 0.5f;
                 p->size_velocity = 0.0f;
                 p->drag = _random.uniform_real(2.f, 4.f);
-                p->flags = render::particle::tail;
+                p->flags = render::particle::flag_bits(
+                    render::particle::tail |
+                    render::particle::emissive);
             }
             break;
         }
@@ -267,7 +277,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->color_velocity = color4(0,1,0,2.5f);
             p->size = 19.2f;
             p->size_velocity = -96.0f;
-            p->flags = render::particle::invert;
+            p->flags = render::particle::flag_bits(
+                render::particle::invert |
+                render::particle::emissive);
 
             // fire
 
@@ -290,7 +302,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->color_velocity = color4(0,0,0,-p->color.a/(0.25f+square(_random.uniform_real())));
                 p->size = _random.uniform_real(2.f, 6.f);
                 p->size_velocity = 0.5f;
-                p->flags = render::particle::invert;
+                p->flags = render::particle::flag_bits(
+                    render::particle::invert |
+                    render::particle::emissive);
 
                 p->drag = _random.uniform_real(3.f, 6.f);
 
@@ -309,7 +323,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p2->color_velocity = color4(0,1,0,1);
                 p2->size = 4.8f;
                 p2->size_velocity = -18.0f;
-                p2->flags = render::particle::invert;
+                p2->flags = render::particle::flag_bits(
+                    render::particle::invert |
+                    render::particle::emissive);
             }
 
             // debris
@@ -339,7 +355,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->size = 0.5f;
                 p->size_velocity = 0.0f;
                 p->drag = _random.uniform_real(2.f, 4.f);
-                p->flags = render::particle::tail;
+                p->flags = render::particle::flag_bits(
+                    render::particle::tail |
+                    render::particle::emissive);
             }
             break;
         }
@@ -360,7 +378,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->color_velocity = color4(0,1,0,2.5f);
             p->size = 96.0f * scale;
             p->size_velocity = -480.0f * scale;
-            p->flags = render::particle::invert;
+            p->flags = render::particle::flag_bits(
+                render::particle::invert |
+                render::particle::emissive);
 
             // shock wave
 
@@ -374,7 +394,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->color_velocity = -p->color * color4(0,1,3,6);
             p->size = 12.0f * scale;
             p->size_velocity = 192.0f * scale;
-            p->flags = render::particle::ring;
+            p->flags = render::particle::flag_bits(
+                render::particle::ring |
+                render::particle::emissive);
 
             // fire
 
@@ -397,6 +419,8 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->color_velocity = color4(0,0,0,-p->color.a/(0.5f+square(_random.uniform_real())*1.5f));
                 p->size = _random.uniform_real(8.f, 24.f) * scale;
                 p->size_velocity = 1.0f * strength;
+
+                p->flags = render::particle::emissive;
 
                 p->drag = _random.uniform_real(2.f, 4.f) * scale;
             }
@@ -423,7 +447,9 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 p->size = 0.5f;
                 p->size_velocity = 0.0f;
                 p->drag = _random.uniform_real(.5f, 1.f);
-                p->flags = render::particle::tail;
+                p->flags = render::particle::flag_bits(
+                    render::particle::tail |
+                    render::particle::emissive);
             }
             break;
         }
@@ -464,6 +490,7 @@ void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position,
                 p->color_velocity = color4(0,0,0,-p->color.a/_random.uniform_real(.15f, .3f));
 
                 p->drag = _random.uniform_real(1.5f, 2.5f);
+                p->flags = render::particle::emissive;
             }
 
             // debris

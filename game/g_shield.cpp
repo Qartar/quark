@@ -41,19 +41,19 @@ shield::shield(physics::shape const* base, game::ship* owner, uint16_t compartme
 
     constexpr color4 schemes[12] = {
         // blue
-        color4(.3f, .7f, 1.f, 1.f),
-        color4(.0f, .5f, 1.f, .2f),
-        color4(.0f, .3f, 1.f, .1f),
+        color4(.3f, .7f, 1.f, -1.f),
+        color4(.0f, .5f, 1.f, -.2f),
+        color4(.0f, .3f, 1.f, -.1f),
         color4(.0f, .0f, 1.f, .0f),
         // green
-        color4(.7f, 1.f, .4f, 1.f),
-        color4(.4f, 1.f, .2f, .15f),
-        color4(.2f, .9f, .1f, .05f),
+        color4(.7f, 1.f, .4f, -1.f),
+        color4(.4f, 1.f, .2f, -.15f),
+        color4(.2f, .9f, .1f, -.05f),
         color4(.0f, .8f, .0f, .0f),
         // orange
-        color4(1.f, .6f, .1f, 1.f),
-        color4(1.f, .3f, .1f, .2f),
-        color4(.9f, .2f, .0f, .075f),
+        color4(1.f, .6f, .1f, -1.f),
+        color4(1.f, .3f, .1f, -.2f),
+        color4(.9f, .2f, .0f, -.075f),
         color4(.8f, .1f, .0f, .0f),
     };
 

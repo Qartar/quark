@@ -23,6 +23,9 @@ struct particle
 
         //! Draw particle as a ring, fade alpha away from leading edge
         ring = 1 << 2,
+
+        //! Draw particle as emissive
+        emissive = 1 << 3,
     };
 
     time_value time;
