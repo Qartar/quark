@@ -74,6 +74,8 @@ public:
 
     void use() const;
 
+    void uniform(int location, float x) const;
+
 protected:
     GLuint _program;
 
@@ -95,6 +97,10 @@ protected:
     static PFNGLATTACHSHADER glAttachShader;
     static PFNGLDETACHSHADER glDetachShader;
     static PFNGLLINKPROGRAM glLinkProgram;
+
+    typedef void (APIENTRY* PFNGLPROGRAMUNIFORM1F)(GLuint program, GLint location, GLfloat x);
+
+    static PFNGLPROGRAMUNIFORM1F glProgramUniform1f;
 };
 
 } // namespace gl

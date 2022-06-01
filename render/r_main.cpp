@@ -43,6 +43,7 @@ result system::init()
     random r;
 
     glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
+    glBlendFunci = (PFNGLBLENDFUNCI )wglGetProcAddress("glBlendFunci");
 
     gl::buffer::init();
     gl::framebuffer::init();
@@ -200,6 +201,8 @@ void system::begin_lighting()
     glClear(GL_COLOR_BUFFER_BIT);
 
     _program.use();
+    glBlendFunci(0, GL_ONE, GL_ONE);
+    glBlendFunci(1, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 //------------------------------------------------------------------------------

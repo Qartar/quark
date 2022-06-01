@@ -36,8 +36,17 @@ protected:
     gl::shader _light_shader;
     gl::program _light_program;
 
+    gl::shader _upsample_shader;
+    gl::program _upsample_program;
+
+    gl::shader _downsample_shader;
+    gl::program _downsample_program;
+
     gl::vertex_buffer<vec2> _vertex_buffer;
     gl::vertex_array _vertex_array;
+
+    typedef void (APIENTRY* PFNGLBLENDCOLOR)(GLfloat red, GLfloat greed, GLfloat blue, GLfloat alpha);
+    PFNGLBLENDCOLOR glBlendColor = NULL;
 
 protected:
     void generate_mips() const;

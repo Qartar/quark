@@ -199,8 +199,10 @@ private:
 
     // additional opengl bindings
     typedef void (APIENTRY* PFNGLBLENDCOLOR)(GLfloat red, GLfloat greed, GLfloat blue, GLfloat alpha);
+    typedef void (APIENTRY* PFNGLBLENDFUNCI)(GLuint buf, GLenum src, GLenum dst);
 
     PFNGLBLENDCOLOR glBlendColor = NULL;
+    PFNGLBLENDFUNCI glBlendFunci = NULL;
 };
 
 } // namespace render
