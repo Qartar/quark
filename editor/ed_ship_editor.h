@@ -25,60 +25,71 @@ public:
     void cursor_event(vec2 position);
 
 protected:
-    std::vector<vec2> _guide_vertices;
-    std::vector<std::size_t> _guide_triangles;
-
-    std::vector<vec2> _render_vertices;
-    std::vector<std::size_t> _render_triangles;
-
-    std::vector<std::size_t> _selection_vertices;
-    std::vector<std::size_t> _selection_mirror_vertices;
-
     render::view _view;
     vec2 _cursor;
+    mutable float _anim;
+    mutable time_value _last_time;
 
-    enum class editor_mode {
-        none,
-        vertices,
-        triangles,
+    struct qcurve {
+        vec2 a, b, c;
     };
 
-    editor_mode _mode;
+    struct ccurve_coeff {
+        vec2 a; //   P0
+        vec2 b; // -3P0 + 3P1
+        vec2 c; //  3P0 - 6P1 + 3P2
+        vec2 d; //  -P0 + 3P1 - 3P2 + P3
 
-    float _snap_distance;
-    bool _snap_to_grid;
-    bool _snap_to_edge;
-    bool _snap_to_mirror;
-    bool _mirror;
+        vec2 evaluate(float t) const {
+            // P(t) = a + bt + ct^2 + dt^3
+            return ((d * t + c) * t + b) * t + a;
+        }
 
-    render::image const* _image;
-    vec2 _image_offset;
-    vec2 _image_scale;
-    float _image_rotation;
-    std::size_t _image_index;
+        vec2 evaluate_tangent(float t) const {
+            // P'(t) = b + 2ct + 3dt^2
+            return (3 * d * t + 2 * c) * t + b;
+        }
 
-    std::size_t _triangle[2];
-    std::size_t _triangle_mirror[2];
-    std::size_t _triangle_size;
+        float evaluate_curvature(float t) const {
+            // P"(t) = 2c + 6dt
+            vec2 uu = 6 * d * t + 2 * c;
+            vec2 u = evaluate_tangent(t);
+            return cross(u, uu) / (length(u) * length_sqr(u));
+        }
+    };
 
-    bool _in_selection;
-    vec2 _selection_start;
+    struct ccurve {
+        vec2 a, b, c, d;
+        ccurve_coeff to_coeff() const {
+            return {
+                a,
+                -3 * a + 3 * b,
+                3 * a - 6 * b + 3 * c,
+                -a + 3 * b - 3 * c + d,
+            };
+        }
+    };
 
-    bool _ctrl_down;
-    bool _shift_down;
+    enum class state {
+        ready,
+        started,
+    } _state;
+
+    vec2 _start;
+
+    std::vector<qcurve> _qspline;
+    std::vector<ccurve> _cspline;
 
 protected:
     vec2 cursor_to_world() const;
-    vec2 snap_vertex(vec2 pos) const;
 
-    std::size_t insert_vertex(vec2 pos);
-    bool remove_vertex(vec2 pos);
-    bool remove_vertex_by_index(std::size_t index);
+    void draw_qspline(render::system* renderer, qcurve const& q) const;
+    void draw_cspline(render::system* renderer, ccurve const& c) const;
 
-    void set_selection(bounds b);
-    void add_selection(bounds b);
-    void remove_selection(bounds b);
-    void clear_selection();
+    void on_click();
+
+    void calculate_qspline_points(qcurve& q) const;
+    void calculate_cspline_points(ccurve& c) const;
 };
 
 } // namespace editor
