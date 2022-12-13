@@ -40,6 +40,15 @@ protected:
         vec2 c; //  3P0 - 6P1 + 3P2
         vec2 d; //  -P0 + 3P1 - 3P2 + P3
 
+        static ccurve_coeff from_bezier(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
+            return {
+                p0,
+                -3 * p0 + 3 * p1,
+                3 * p0 - 6 * p1 + 3 * p2,
+                -p0 + 3 * p1 - 3 * p2 + p3,
+            };
+        }
+
         vec2 evaluate(float t) const {
             // P(t) = a + bt + ct^2 + dt^3
             return ((d * t + c) * t + b) * t + a;
@@ -61,12 +70,7 @@ protected:
     struct ccurve {
         vec2 a, b, c, d;
         ccurve_coeff to_coeff() const {
-            return {
-                a,
-                -3 * a + 3 * b,
-                3 * a - 6 * b + 3 * c,
-                -a + 3 * b - 3 * c + d,
-            };
+            return ccurve_coeff::from_bezier(a, b, c, d);
         }
     };
 
