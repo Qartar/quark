@@ -99,6 +99,13 @@ public:
 
     void clear() { r=0.0f; g=0.0f; b=0.0f; a=0.0f; }
     color3 to_color3() const { return color3(r, g, b); }
+
+    color4 normalize() const {
+        float x = r > g
+            ? (r > b ? r : b)
+            : (g > b ? g : b);
+        return color4(r / x, g / x, b / x, a);
+    }
 };
 
 //------------------------------------------------------------------------------

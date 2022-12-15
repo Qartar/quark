@@ -63,25 +63,90 @@ void world::reset()
     _sequence = 0;
     _framenum = 0;
 
-    for (int ii = 0; ii < 3; ++ii) {
-        float angle = float(ii) * (math::pi<float> * 2.f / 3.f);
-        vec2 dir = vec2(std::cos(angle), std::sin(angle));
+    _tiles.clear();
+    _boundary_tiles.clear();
 
-        ship* sh = spawn<ship>();
-        sh->set_position(-dir * 192.f, true);
-        sh->set_rotation(angle, true);
-
-        // spawn ai controller to control the ship
-        if (ii == 0) {
-            spawn<player>(sh);
-        } else {
-            spawn<aicontroller>(sh);
+    insert_boundary_tile(vec2i(0,0));
+    for (int jj = 0; jj < 64; ++jj) {
+        for (int ii = 0; ii < 64; ++ii) {
+            vec2i n[4] = {{-ii, -jj}, {ii, -jj}, {-ii, jj}, {ii, jj}};
+            for (int kk = 0; kk < 4; ++kk) {
+                vec2 r = hextile::grid_to_world(n[kk]);
+                if (length_sqr(r) < 48.f * 48.f) {
+                    insert_tile(n[kk], {});
+                    //insert_boundary_tile({ii, jj});
+                }
+            }
         }
     }
 
-    _tiles.clear();
-    _boundary_tiles.clear();
-    insert_boundary_tile(vec2i(0,0));
+    std::vector<hextile::index> river_tiles = _boundary_tiles;
+    while (river_tiles.size()) {
+        float f = _random.uniform_real();
+
+        std::size_t r = std::size_t(powf(f, .9f) * float(river_tiles.size()));
+        hextile::index idx = river_tiles[r];
+        int dir[36];
+        hextile::index adj[36];
+        int n = 0;
+
+        for (int ii = 0; ii < 6; ++ii) {
+            adj[n] = _tiles[idx].neighbors[ii];
+            dir[n] = ii;
+            if (adj[n] == hextile::invalid_index) {
+                continue;
+            }
+            if (_tiles[adj[n]].is_boundary) {
+                continue;
+            }
+            if (_tiles[adj[n]].contents[6] != 0) {
+                continue;
+            }
+            ++n;
+            if (_tiles[idx].contents[(ii + 3) % 6] != 0) {
+                adj[n] = adj[n - 1];
+                dir[n] = dir[n - 1];
+                ++n;
+                adj[n] = adj[n - 1];
+                dir[n] = dir[n - 1];
+                ++n;
+                adj[n] = adj[n - 1];
+                dir[n] = dir[n - 1];
+                ++n;
+            }
+            if (_tiles[idx].contents[(ii + 2) % 6] != 0) {
+                adj[n] = adj[n - 1];
+                dir[n] = dir[n - 1];
+                ++n;
+            }
+            if (_tiles[idx].contents[(ii + 4) % 6] != 0) {
+                adj[n] = adj[n - 1];
+                dir[n] = dir[n - 1];
+                ++n;
+            }
+        }
+
+        int d = -1;
+        if (n > 1) {
+            d = dir[_random.uniform_int(n)];
+        } else {
+            if (n > 0) {
+                d = dir[0];
+            }
+            river_tiles.erase(river_tiles.begin() + r);
+        }
+        if (d != -1) {
+            int c = _tiles[idx].contents[6];
+            if (c == 0) {
+                c = int(idx + 1);
+            }
+            hextile::index opp = _tiles[idx].neighbors[d];
+            _tiles[opp].contents[6] = c;
+            _tiles[idx].contents[d] = c;
+            _tiles[opp].contents[(d + 3) % 6] = c;
+            river_tiles.push_back(opp);
+        }
+    }
 
     _tile_scale = .05f;
     _tile_offset = vec2_zero;
@@ -222,7 +287,7 @@ void draw_tile(render::system* renderer, hextile const& tile)
 
     float alpha = (tile.is_boundary || tile.is_candidate) ? .25f : 1.f;
 
-    config::boolean draw_grid("draw_grid", true, 0, "");
+    config::boolean draw_grid("draw_grid", false, 0, "");
 
     if (draw_grid) {
         renderer->draw_line(origin + hextile::vertices[0], origin + hextile::vertices[1], color4(1,1,1,alpha), color4(1,1,1,alpha));
@@ -281,7 +346,7 @@ void draw_tile(render::system* renderer, hextile const& tile)
             5, 11, 6, 5, 6, 0,
             6, 7, 8, 6, 8, 9, 6, 9, 10, 6, 10, 11,
         };
-
+#if 0
         constexpr color4 contents_color[7] = {
             color4(1.f, 1.f, 1.f, .2f),
             color4(1.f, 0.f, 0.f, .3f),
@@ -291,13 +356,24 @@ void draw_tile(render::system* renderer, hextile const& tile)
             color4(.2f, 1.f, 1.f, .3f),
             color4(1.f, .2f, 1.f, .3f),
         };
-
+#else
+        auto contents_color = [](int i) -> color4 {
+            if (i == 0) {
+                return color4(1.f, 1.f, 1.f, .2f);
+            }
+            return color4(
+                sin(float(i)/3.f) * .5f + .5f,
+                sin(float(i)/5.f) * .5f + .5f,
+                sin(float(i)/7.f) * .5f + .5f,
+                .3f).normalize();
+        };
+#endif
         color4 colors[12] = {};
 
         for (int ii = 0; ii < 6; ++ii) {
             int const* iptr = indices + ii * 6;
             for (int jj = 0; jj < 6; ++jj) {
-                colors[iptr[jj]] = contents_color[tile.contents[ii]];
+                colors[iptr[jj]] = contents_color(tile.contents[ii]);
             }
 
             renderer->draw_triangles(verts, colors, iptr, 6);
@@ -305,7 +381,7 @@ void draw_tile(render::system* renderer, hextile const& tile)
         {
             int const* iptr = indices + 36;
             for (int jj = 0; jj < 12; ++jj) {
-                colors[iptr[jj]] = contents_color[tile.contents[6]];
+                colors[iptr[jj]] = contents_color(tile.contents[6]);
             }
             renderer->draw_triangles(verts, colors, iptr, 12);
         }
