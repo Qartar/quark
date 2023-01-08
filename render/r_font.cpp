@@ -1941,8 +1941,8 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
             glMatrixMode(GL_MODELVIEW);
             glPushMatrix();
+            glTranslatef(position.x, position.y, 0);
             glScalef(scale.x, scale.y, 1);
-            glTranslatef(position.x / scale.x, position.y / scale.y, 0);
 
             _vbo.upload(0, instances.size(), instances.data());
             glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr, narrow_cast<GLsizei>(instances.size()));
