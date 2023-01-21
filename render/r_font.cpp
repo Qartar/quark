@@ -309,7 +309,7 @@ struct edge_distance
 
 //------------------------------------------------------------------------------
 // https://www.shadertoy.com/view/MlKcDD
-// Copyright © 2018 Inigo Quilez
+// Copyright Â© 2018 Inigo Quilez
 edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
 {
     vec2 a = B - A;
