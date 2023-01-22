@@ -829,14 +829,16 @@ void session::command_eval(parser::text const& args)
         }
 
 #ifdef _DEBUG
+        random r1 = r;
+        random r2 = r;
         // assert that parsed result is the same as compiled result
         std::vector<float> parser_values(parser.num_values());
         float parser_value = parser.evaluate_one(
             std::get<expression::type_value>(v).value,
-            r,
+            r1,
             nullptr,
             parser_values.data());
-        assert(parser_value == ex.evaluate_one(idx[0], r, nullptr, values.data()));
+        assert(parser_value == ex.evaluate_one(idx[0], r2, nullptr, values.data()));
 #endif
 
         switch (value.type) {
