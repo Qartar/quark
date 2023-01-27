@@ -99,17 +99,26 @@ public:
     context() {}
     context(string::view text, string::view filename, std::size_t linenumber = 1);
 
+    //! Return true if there are any remaining tokens
     bool has_token() const {
         return _cursor < _tokens.data() + _tokens.size();
     }
 
+    //! Return the next token and advance the cursor
     result<token> next_token();
+    //! Return the next token without advancing the cursor
     result<token> peek_token() const;
+    //! Skip the next token
     bool skip_token();
+    //! Skip all tokens up to and including the matching closing brace
     bool skip_braced_section(bool parse_opening_brace = true);
 
+    //! Returns true if the next token matches the given string
     bool peek_token(string::view text) const;
+    //! Returns true and advances the cursor if the next token matches the given string
     bool check_token(string::view text);
+    //! Returns true and advances the cursor if the next token matches the given string
+    //! If the next token does not match the given string an error is generated
     bool expect_token(string::view text);
 
     bool has_error() const { return !_errors.empty(); }
@@ -124,19 +133,21 @@ public:
         std::size_t column;
     };
 
+    //! Return filename, line number, and column of first character for the given token
     token_info get_info(token token) const;
+    //! Return the full line of text at the given line number
     string::view get_line(std::size_t number) const {
         return _lines[number - _linenumber];
     }
 
 protected:
-    string::buffer _filename;
-    std::size_t _linenumber;
+    string::buffer _filename; //!< filename of the text
+    std::size_t _linenumber; //!< first line number of the text, typically 1
 
-    string::view _text;
-    std::vector<token> _tokens;
-    std::vector<string::view> _lines;
-    token* _cursor;
+    string::view _text; //!< text to be parsed
+    std::vector<token> _tokens; //!< all tokens in the text
+    std::vector<string::view> _lines; //!< all lines in the text
+    token* _cursor; //!< next unparsed token
     std::vector<error> _errors;
 };
 
