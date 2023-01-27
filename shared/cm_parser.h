@@ -112,6 +112,8 @@ public:
     bool skip_token();
     //! Skip all tokens up to and including the matching closing brace
     bool skip_braced_section(bool parse_opening_brace = true);
+    //! Skip all tokens on the same line as the previous token
+    bool skip_rest_of_line();
 
     //! Returns true if the next token matches the given string
     bool peek_token(string::view text) const;

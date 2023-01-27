@@ -313,6 +313,33 @@ bool context::skip_braced_section(bool parse_opening_brace)
 }
 
 //------------------------------------------------------------------------------
+bool context::skip_rest_of_line()
+{
+    if (_cursor == _tokens.data() || !has_token()) {
+        return false;
+    }
+
+    // get the last token's line and check if more lines exist
+    token_info info = get_info(*(_cursor - 1));
+    if (info.linenumber - _linenumber + 1 >= _lines.size()) {
+        return false;
+    }
+
+    // skip tokens until the next token begins on or after the next line
+    char const* nextline = _lines[info.linenumber - _linenumber + 1].begin();
+    while (_cursor->begin < nextline) {
+        if (!skip_token()) {
+            return false;
+        }
+        if (!has_token()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 bool context::peek_token(string::view text) const
 {
     if (has_token() && *_cursor == text) {
