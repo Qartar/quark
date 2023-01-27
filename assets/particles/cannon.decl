@@ -2,8 +2,8 @@ effect cannon {
     layer flash {
         count = 1;
 
-        position = posx, posy;
-        velocity = dirx * 9.6, diry * 9.6;
+        position = in.pos;
+        velocity = in.dir * 9.6;
 
         color = 1, 1, 0, 1;
         color_velocity = 0, -2.5, 0, -5;
@@ -21,12 +21,12 @@ effect cannon {
         let r = random * 2 * pi;
         let d = random * 4;
 
-        position = posx + cos(r) * d, posy + sin(r) * d;
+        position = in.pos.x + cos(r) * d, in.pos.y + sin(r) * d;
 
         let r = random * 2 * pi;
         let d = sqrt(random) * 32;
 
-        velocity = (dirx * .5 + cos(r)) * d, (diry * .5 + sin(r)) * d;
+        velocity = (in.dir.x * .5 + cos(r)) * d, (in.dir.y * .5 + sin(r)) * d;
 
         let alpha = 0.1;
 
@@ -46,12 +46,12 @@ effect cannon {
         let r = random * 2 * pi;
         let d = random * .5;
 
-        position = posx + cos(r) * d, posy + sin(r) * d;
+        position = in.pos.x + cos(r) * d, in.pos.y + sin(r) * d;
 
         let r = random * 2 * pi;
         let d = random * 64;
 
-        velocity = dirx * random * 96 + cos(r) * d, diry * 96 + sin(r) * d;
+        velocity = in.dir.x * random * 96 + cos(r) * d, in.dir.y * 96 + sin(r) * d;
 
         let r = random * 2 * pi;
         let d = random * 64 + 64;

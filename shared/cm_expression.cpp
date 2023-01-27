@@ -169,15 +169,30 @@ void expression_builder::add_builtin_types()
         {"z", expression::type::scalar, 2},
         {"w", expression::type::scalar, 3}}
     });
+}
+//------------------------------------------------------------------------------
+expression::type expression_builder::add_type(expression::type_definition const& t)
+{
+    _type_info.push_back(t);
+    return static_cast<expression::type>(_type_info.size() - 1);
+}
 
-    // hard-coded particles input structure
-    _type_info.push_back({"!in", 8, {
-        {"pos", expression::type::vec2, 0},
-        {"vel", expression::type::vec2, 2},
-        {"dir", expression::type::vec2, 4},
-        {"str", expression::type::scalar, 6},
-        {"idx", expression::type::scalar, 7},
-    }});
+//------------------------------------------------------------------------------
+void expression_builder::add_input(string::view name, expression::type type)
+{
+    _symbols[string::buffer(name)] = {expression::value(_expression._num_inputs), type};
+    _expression._ops.push_back({expression::op_type::none, 0, 0});
+    _used.push_back(true); // assume inputs are always used
+    _types.push_back(type);
+
+    std::size_t sz = _type_info[static_cast<std::size_t>(type)].size;
+    for (std::size_t ii = 1; ii < sz; ++ii) {
+        _expression._ops.push_back({expression::op_type::none, 0, 0});
+        _used.push_back(true); // assume inputs are always used
+        _types.push_back(expression::type::scalar);
+    }
+
+    _expression._num_inputs += sz;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -885,6 +900,12 @@ std::size_t expression_builder::type_size(expression::type type) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+expression_parser::expression_parser()
+    : expression_builder(nullptr, 0)
+{
+}
+
 //------------------------------------------------------------------------------
 expression_parser::expression_parser(string::view const* inputs, std::size_t num_inputs)
     : expression_builder(inputs, num_inputs)

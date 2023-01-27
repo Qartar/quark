@@ -1,12 +1,12 @@
 effect blaster_impact {
     layer vortex {
-        let scale = sqrt(str);
+        let scale = sqrt(in.str);
 
         count = 1;
         flags = invert;
 
-        position = posx, posy;
-        velocity = dirx * 48 * scale, diry * 48 * scale;
+        position = in.pos;
+        velocity = in.dir * 48 * scale;
 
         color = 1, 0, 0, 0;
         color_velocity = 0, 1, 0, 2.5;
@@ -18,13 +18,13 @@ effect blaster_impact {
     }
 
     layer shock_wave {
-        let scale = sqrt(str);
+        let scale = sqrt(in.str);
 
         count = 1;
         flags = invert;
 
-        position = posx, posy;
-        velocity = dirx * 48 * scale, diry * 48 * scale;
+        position = in.pos;
+        velocity = in.dir * 48 * scale;
 
         color = 1, 0.25, 0, 0.5;
         color_velocity = 0, -.25, 0, -1.5;
@@ -36,7 +36,7 @@ effect blaster_impact {
     }
 
     layer fire {
-        let scale = sqrt(str);
+        let scale = sqrt(in.str);
 
         count = 64 * scale;
 
@@ -47,9 +47,9 @@ effect blaster_impact {
         position = in.pos * d;
 
         let r = random * 2 * pi;
-        let d = sqrt(random) * 128 * str;
+        let d = sqrt(random) * 128 * in.str;
 
-        velocity = (dirx * .5 + cos(r)) * d, (diry * .5 + sin(r)) * d;
+        velocity = (in.dir.x * .5 + cos(r)) * d, (in.dir.y * .5 + sin(r)) * d;
 
         let alpha = 0.1;
 
@@ -57,13 +57,13 @@ effect blaster_impact {
         color_velocity = 0, 0, 0, -alpha / (.5 + ((random ^ 2) * 1.5));
 
         size = (random * 16 + 8) * scale;
-        size_velocity = str;
+        size_velocity = in.str;
 
         drag = (random * 2 + 2) * scale;
     }
 
     layer debris {
-        let scale = sqrt(str);
+        let scale = sqrt(in.str);
 
         count = 32 * scale;
         flags = tail;
@@ -71,12 +71,12 @@ effect blaster_impact {
         let r = random * 2 * pi;
         let d = random * 2 * scale;
 
-        position = posx + cos(r) * d, posy + sin(r) * d;
+        position = in.pos.x + cos(r) * d, in.pos.y + sin(r) * d;
 
         let r = random * 2 * pi;
         let d = random * 128 * scale;
 
-        velocity = dirx * random * 96 + cos(r) * d, diry * 96 + sin(r) * d;
+        velocity = in.dir.x * random * 96 + cos(r) * d, in.dir.y * 96 + sin(r) * d;
 
         color = 1, random * .5, 0, 1;
         color_velocity = 0, 0, 0, random - 2.5;

@@ -127,6 +127,9 @@ public:
     template<std::size_t num_inputs> explicit expression_builder(string::view (&&inputs)[num_inputs])
         : expression_builder(inputs, num_inputs) {}
 
+    expression::type add_type(expression::type_definition const& t);
+    void add_input(string::view name, expression::type type);
+
     expression compile(expression::value* map) const;
 
     expression::type_value add_constant(float value);
@@ -172,6 +175,7 @@ public:
     using token = parser::token;
     template<typename T> using result = parser::result<T>;
 
+    expression_parser();
     expression_parser(string::view const* inputs, std::size_t num_inputs);
     template<std::size_t num_inputs> explicit expression_parser(string::view (&&inputs)[num_inputs])
         : expression_parser(inputs, num_inputs) {}

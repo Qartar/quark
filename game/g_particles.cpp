@@ -234,9 +234,19 @@ bool particle_effect::parse_layer(parser::context& context, layer& layer) const
         return false;
     }
 
-    expression_parser parser({
-        "posx", "posy", "velx", "vely", "dirx", "diry", "str", "idx",
-    });
+    const expression::type_definition input_typedef{
+        "!in", 8, {
+            {"pos", expression::type::vec2, 0},
+            {"vel", expression::type::vec2, 2},
+            {"dir", expression::type::vec2, 4},
+            {"str", expression::type::scalar, 6},
+            {"idx", expression::type::scalar, 7},
+        }
+    };
+
+    expression_parser parser;
+    expression::type input_type = parser.add_type(input_typedef);
+    parser.add_input("in", input_type);
 
     const value_info values[] = {
         {"count", layer.count},
@@ -412,7 +422,7 @@ R"(
     layer one {
         flags = tail;
         count = 50;
-        size = 5 * str;
+        size = 5 * in.str;
     }
     layer two {
         // this is a test!
