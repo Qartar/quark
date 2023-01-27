@@ -58,6 +58,18 @@ public:
         binary,     //!< op has two operands
     };
 
+    struct field_definition {
+        string::buffer name;
+        expression::type type;
+        std::size_t offset;
+    };
+
+    struct type_definition {
+        string::buffer name;
+        std::size_t size;
+        std::vector<field_definition> fields;
+    };
+
     //! Returns the number of operands used by the given op_type
     static constexpr expression::op_arity arity(expression::op_type op) {
         switch (op) {
@@ -133,19 +145,6 @@ public:
     std::size_t type_size(expression::type type) const;
 
 protected:
-    struct field_info {
-        string::buffer name;
-        expression::type type;
-        std::size_t offset;
-    };
-
-    struct type_info {
-        string::buffer name;
-        std::size_t size;
-        std::vector<field_info> fields;
-    };
-
-protected:
     expression _expression;
 
     std::map<string::buffer, expression::type_value> _symbols;
@@ -153,7 +152,7 @@ protected:
     std::vector<bool> _used;
     std::vector<expression::type> _types;
 
-    std::vector<type_info> _type_info;
+    std::vector<expression::type_definition> _type_info;
 
 protected:
     expression::value alloc_type(expression::type type);
