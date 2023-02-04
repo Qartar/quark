@@ -129,6 +129,76 @@ protected:
 };
 
 //------------------------------------------------------------------------------
+enum class climate
+{
+    none,
+    grassland,
+    plains,
+    forest,
+    rocky_desert,
+    sandy_desert,
+    rainforest,
+    boreal_forest,
+    taiga,
+    tundra,
+};
+
+constexpr string::literal climate_names[] = {
+    "none",
+    "grassland",
+    "plains",
+    "forest",
+    "rocky desert",
+    "sandy desert",
+    "rainforest",
+    "boreal forest",
+    "taiga",
+    "tunda",
+};
+
+struct climate_adjacency {
+    climate a, b;
+};
+
+constexpr climate_adjacency climate_adjacencies[] = {
+#if 0
+    {climate::grassland, climate::plains},
+    {climate::grassland, climate::forest},
+    {climate::grassland, climate::rainforest},
+    {climate::grassland, climate::taiga},
+    {climate::plains, climate::rocky_desert},
+    {climate::plains, climate::sandy_desert},
+    {climate::plains, climate::forest},
+    {climate::forest, climate::rainforest},
+    {climate::forest, climate::boreal_forest},
+    {climate::rocky_desert, climate::sandy_desert},
+    {climate::boreal_forest, climate::tundra},
+    {climate::boreal_forest, climate::taiga},
+    {climate::taiga, climate::tundra},
+#elif 0
+    {climate::grassland, climate::plains},
+    {climate::grassland, climate::rainforest},
+    {climate::forest, climate::plains},
+    {climate::forest, climate::rainforest},
+#elif 0
+    {climate::grassland, climate::plains},
+    {climate::grassland, climate::forest},
+    {climate::forest, climate::plains},
+    {climate::plains, climate::rocky_desert},
+    {climate::plains, climate::sandy_desert},
+    {climate::rocky_desert, climate::sandy_desert},
+#else
+    {climate::grassland, climate::plains},
+    {climate::grassland, climate::forest},
+    {climate::grassland, climate::taiga},
+    {climate::plains, climate::sandy_desert},
+    {climate::taiga, climate::tundra},
+#endif
+};
+constexpr std::size_t num_climate_adjacencies =
+    sizeof(climate_adjacencies) / sizeof(climate_adjacencies[0]);
+
+//------------------------------------------------------------------------------
 struct hextile
 {
     using index = std::size_t;
@@ -149,6 +219,8 @@ struct hextile
     //       4 5
 
     std::array<index, 6> neighbors;
+
+    climate climate;
 
     //       (-1, 1 )   ( 0, 1 )
     //
@@ -299,6 +371,7 @@ private:
 
     float _tile_scale;
     vec2 _tile_offset;
+    std::size_t _tile_phase;
 
     // FIXME: This is mutable because we need the window dimensions to calculate
     // the cursor-to-world transform which is only available in the draw function.
@@ -309,10 +382,12 @@ private:
     std::vector<hextile::index> _boundary_tiles;
 
     void draw_tiles(render::system* renderer) const;
+    void draw_tile(render::system* renderer, hextile const& tile) const;
     hextile::index insert_tile(vec2i position, hextile const& tile);
     hextile::index insert_boundary_tile(vec2i position);
 
     bool match_tile(hextile::index index, hextile const& tile, int rotation) const;
+    climate choose_climate(hextile::index index);
 
     hextile _next;
     std::vector<std::pair<hextile::index, int>> _candidates;

@@ -66,87 +66,57 @@ void world::reset()
     _tiles.clear();
     _boundary_tiles.clear();
 
+    _tile_phase = 4;
+
     insert_boundary_tile(vec2i(0,0));
-    for (int jj = 0; jj < 64; ++jj) {
-        for (int ii = 0; ii < 64; ++ii) {
-            vec2i n[4] = {{-ii, -jj}, {ii, -jj}, {-ii, jj}, {ii, jj}};
-            for (int kk = 0; kk < 4; ++kk) {
-                vec2 r = hextile::grid_to_world(n[kk]);
-                if (length_sqr(r) < 48.f * 48.f) {
-                    insert_tile(n[kk], {});
-                    //insert_boundary_tile({ii, jj});
+    {
+        auto idx = insert_tile(vec2i(0,0), {});
+        _tiles[idx].climate = climate::grassland;
+    }
+#if 0
+#if 0
+    for (int ii = 1; ii < 6; ++ii) {
+        insert_boundary_tile(vec2i(ii,0));
+        insert_boundary_tile(vec2i(0,ii));
+    }
+#endif
+    insert_boundary_tile(vec2i(6,0));
+    {
+        auto idx = insert_tile(vec2i(6,0), {});
+        _tiles[idx].climate = climate::sandy_desert;
+    }
+
+    insert_boundary_tile(vec2i(0,6));
+    {
+        auto idx = insert_tile(vec2i(0,6), {});
+        _tiles[idx].climate = climate::rainforest;
+    }
+#endif
+    _candidates.clear();
+
+#if 0
+    for (std::size_t ii = 0; ii < 128; ++ii) {
+#if 1
+        std::vector<hextile::index> tile_select;
+        for (std::size_t jj = 0, sz = _boundary_tiles.size(); jj < sz;  ++jj) {
+            for (std::size_t kk = 0; kk < 6; ++kk) {
+                auto neighbor = _tiles[_boundary_tiles[jj]].neighbors[kk];
+                if (neighbor != hextile::invalid_index && !_tiles[neighbor].is_boundary) {
+                    tile_select.push_back(_boundary_tiles[jj]);
                 }
             }
         }
+
+        auto idx = tile_select[_random.uniform_int(tile_select.size())];
+#else
+        auto bidx = _random.uniform_int(_boundary_tiles.size());
+        auto idx = _boundary_tiles[bidx];
+#endif
+        climate c = choose_climate(idx);
+        idx = insert_tile(_tiles[idx].position, {});
+        _tiles[idx].climate = c;
     }
-
-    std::vector<hextile::index> river_tiles = _boundary_tiles;
-    while (river_tiles.size()) {
-        float f = _random.uniform_real();
-
-        std::size_t r = std::size_t(powf(f, .9f) * float(river_tiles.size()));
-        hextile::index idx = river_tiles[r];
-        int dir[36];
-        hextile::index adj[36];
-        int n = 0;
-
-        for (int ii = 0; ii < 6; ++ii) {
-            adj[n] = _tiles[idx].neighbors[ii];
-            dir[n] = ii;
-            if (adj[n] == hextile::invalid_index) {
-                continue;
-            }
-            if (_tiles[adj[n]].is_boundary) {
-                continue;
-            }
-            if (_tiles[adj[n]].contents[6] != 0) {
-                continue;
-            }
-            ++n;
-            if (_tiles[idx].contents[(ii + 3) % 6] != 0) {
-                adj[n] = adj[n - 1];
-                dir[n] = dir[n - 1];
-                ++n;
-                adj[n] = adj[n - 1];
-                dir[n] = dir[n - 1];
-                ++n;
-                adj[n] = adj[n - 1];
-                dir[n] = dir[n - 1];
-                ++n;
-            }
-            if (_tiles[idx].contents[(ii + 2) % 6] != 0) {
-                adj[n] = adj[n - 1];
-                dir[n] = dir[n - 1];
-                ++n;
-            }
-            if (_tiles[idx].contents[(ii + 4) % 6] != 0) {
-                adj[n] = adj[n - 1];
-                dir[n] = dir[n - 1];
-                ++n;
-            }
-        }
-
-        int d = -1;
-        if (n > 1) {
-            d = dir[_random.uniform_int(n)];
-        } else {
-            if (n > 0) {
-                d = dir[0];
-            }
-            river_tiles.erase(river_tiles.begin() + r);
-        }
-        if (d != -1) {
-            int c = _tiles[idx].contents[6];
-            if (c == 0) {
-                c = int(idx + 1);
-            }
-            hextile::index opp = _tiles[idx].neighbors[d];
-            _tiles[opp].contents[6] = c;
-            _tiles[idx].contents[d] = c;
-            _tiles[opp].contents[(d + 3) % 6] = c;
-            river_tiles.push_back(opp);
-        }
-    }
+#endif
 
     _tile_scale = .05f;
     _tile_offset = vec2_zero;
@@ -281,13 +251,67 @@ bool world::match_tile(hextile::index index, hextile const& tile, int rotation) 
 }
 
 //------------------------------------------------------------------------------
-void draw_tile(render::system* renderer, hextile const& tile)
+climate world::choose_climate(hextile::index idx)
+{
+    std::vector<climate> candidates;
+
+    for (std::size_t jj = 0, n = 0; jj < 6; ++jj) {
+        auto neighbor = _tiles[idx].neighbors[jj];
+        if (neighbor == hextile::invalid_index) {
+            continue;
+        }
+        if (_tiles[neighbor].is_boundary) {
+            continue;
+        }
+        if (_tiles[neighbor].climate == climate::none) {
+            continue;
+        }
+        climate c = _tiles[neighbor].climate;
+        std::set<climate> neighbor_candidates;
+        neighbor_candidates.insert(c);
+        for (std::size_t kk = 0; kk < num_climate_adjacencies; ++kk) {
+            if (c == climate_adjacencies[kk].a) {
+                neighbor_candidates.insert(climate_adjacencies[kk].b);
+            } else if (c == climate_adjacencies[kk].b) {
+                neighbor_candidates.insert(climate_adjacencies[kk].a);
+            }
+        }
+        if (n++ == 0) {
+            std::copy(
+                neighbor_candidates.begin(),
+                neighbor_candidates.end(),
+                std::back_inserter(candidates));
+        } else {
+            std::vector<climate> intersection;
+            std::set_intersection(
+                candidates.begin(),
+                candidates.end(),
+                neighbor_candidates.begin(),
+                neighbor_candidates.end(),
+                std::back_inserter(intersection));
+            candidates = std::move(intersection);
+            if (candidates.empty()) {
+                break;
+            }
+        }
+    }
+
+    if (candidates.size()) {
+        return candidates[_random.uniform_int(candidates.size())];
+    } else {
+        return climate::none;
+    }
+}
+
+//------------------------------------------------------------------------------
+void world::draw_tile(render::system* renderer, hextile const& tile) const
 {
     vec2 origin = hextile::grid_to_world(tile.position);
 
     float alpha = (tile.is_boundary || tile.is_candidate) ? .25f : 1.f;
 
     config::boolean draw_grid("draw_grid", false, 0, "");
+    config::boolean smooth_climate("smooth_climate", true, 0, "");
 
     if (draw_grid) {
         renderer->draw_line(origin + hextile::vertices[0], origin + hextile::vertices[1], color4(1,1,1,alpha), color4(1,1,1,alpha));
@@ -356,6 +380,19 @@ void draw_tile(render::system* renderer, hextile const& tile)
             color4(.2f, 1.f, 1.f, .3f),
             color4(1.f, .2f, 1.f, .3f),
         };
+#elif 1
+        constexpr color4 contents_color[] = {
+            color4(1.f, 0.f, 0.f, .2f), // none
+            color4(.5f, 1.f, .4f, .3f), // grassland
+            color4(.8f, 1.f, .5f, .3f), // plains
+            color4(.3f, .8f, .3f, .3f), // forest
+            color4(.8f, .5f, .2f, .3f), // rocky_desert
+            color4(1.f, 1.f, .5f, .3f), // sandy_desert
+            color4(0.f, .6f, 0.f, .3f), // rainforest
+            color4(.1f, .8f, .5f, .3f), // boreal_forest
+            color4(.2f, 1.f, .6f, .3f), // taiga
+            color4(1.f, 1.f, 1.f, .3f), // tundra
+        };
 #else
         auto contents_color = [](int i) -> color4 {
             if (i == 0) {
@@ -371,9 +408,43 @@ void draw_tile(render::system* renderer, hextile const& tile)
         color4 colors[12] = {};
 
         for (int ii = 0; ii < 6; ++ii) {
+            colors[ii + 6] = contents_color[static_cast<int>(tile.climate)];
+            colors[ii] = colors[ii + 6];
+            if (!smooth_climate || tile.climate == climate::none) {
+                continue;
+            }
+            float n = 1.f;
+            hextile::index jj = tile.neighbors[(ii + 5) % 6];
+            if (jj != hextile::invalid_index && _tiles[jj].climate != climate::none) {
+                if (_tiles[jj].climate == tile.climate) {
+                    colors[ii] = contents_color[static_cast<int>(tile.climate)];
+                    continue;
+                }
+                colors[ii] += contents_color[static_cast<int>(_tiles[jj].climate)];
+                n += 1.f;
+            }
+            hextile::index kk = tile.neighbors[(ii + 6) % 6];
+            if (kk != hextile::invalid_index && _tiles[kk].climate != climate::none) {
+                if (_tiles[kk].climate == tile.climate) {
+                    colors[ii] = contents_color[static_cast<int>(tile.climate)];
+                    continue;
+                }
+                if (jj != hextile::invalid_index && _tiles[jj].climate == _tiles[kk].climate) {
+                    colors[ii] = contents_color[static_cast<int>(_tiles[kk].climate)];
+                    continue;
+                }
+                colors[ii] += contents_color[static_cast<int>(_tiles[kk].climate)];
+                n += 1.f;
+            }
+            colors[ii] /= n;
+        }
+
+        for (int ii = 0; ii < 6; ++ii) {
             int const* iptr = indices + ii * 6;
             for (int jj = 0; jj < 6; ++jj) {
-                colors[iptr[jj]] = contents_color(tile.contents[ii]);
+                //colors[iptr[jj]] = contents_color(tile.contents[ii]);
+                //colors[iptr[jj]] = contents_color(static_cast<int>(tile.climate));
+                //colors[iptr[jj]] = contents_color[static_cast<int>(tile.climate)];
             }
 
             renderer->draw_triangles(verts, colors, iptr, 6);
@@ -381,7 +452,9 @@ void draw_tile(render::system* renderer, hextile const& tile)
         {
             int const* iptr = indices + 36;
             for (int jj = 0; jj < 12; ++jj) {
-                colors[iptr[jj]] = contents_color(tile.contents[6]);
+                //colors[iptr[jj]] = contents_color(tile.contents[6]);
+                //colors[iptr[jj]] = contents_color(static_cast<int>(tile.climate));
+                //colors[iptr[jj]] = contents_color[static_cast<int>(tile.climate)];
             }
             renderer->draw_triangles(verts, colors, iptr, 12);
         }
@@ -404,10 +477,20 @@ void world::draw_tiles(render::system* renderer) const
         draw_tile(renderer, tile);
     }
 
+#if 0
+    for (std::size_t ii = 0; ii < _tiles.size(); ++ii) {
+        vec2 origin = hextile::grid_to_world(_tiles[ii].position);
+        string::view s = va("%d", static_cast<int>(_tiles[ii].climate));
+        vec2 offset = renderer->string_size(s) * -.5f;
+        renderer->draw_string(s, origin + offset, color4(1,1,1,1));
+    }
+#endif
+
     //
     //  draw candidates
     //
 
+#if 0
     for (std::size_t ii = 0, sz = _candidates.size(); ii < sz; ++ii) {
         if (ii > 0 && _candidates[ii].first == _candidates[ii - 1].first) {
             continue;
@@ -415,7 +498,9 @@ void world::draw_tiles(render::system* renderer) const
         hextile tile{_tiles[_candidates[ii].first].position, {}, false, true};
         draw_tile(renderer, tile);
     }
+#endif
 
+#if 0
     {
         vec2 world_cursor = _usercmd.cursor * view.size - view.size * .5f + _tile_offset;
         _tile_cursor = hextile::world_to_grid(world_cursor);
@@ -446,6 +531,18 @@ void world::draw_tiles(render::system* renderer) const
             draw_tile(renderer, tile);
         }
     }
+#endif
+    {
+        vec2 world_cursor = _usercmd.cursor * view.size - view.size * .5f + _tile_offset;
+        _tile_cursor = hextile::world_to_grid(world_cursor);
+        for (auto const& tile : _tiles) {
+            if (tile.position != _tile_cursor || tile.is_boundary) {
+                continue;
+            }
+            string::view c = climate_names[static_cast<int>(tile.climate)];
+            renderer->draw_string(c, view.origin - view.size * .45f, color4(1,1,1,1));
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -460,6 +557,57 @@ void world::run_frame()
     _message.reset();
 
     ++_framenum;
+
+    if (_tiles.size() - _boundary_tiles.size() >= _tile_phase) {
+        std::vector<hextile> oldtiles = _tiles;
+
+        _tiles.clear();
+        _boundary_tiles.clear();
+        _candidates.clear();
+
+        for (std::size_t ii = 0; ii < oldtiles.size(); ++ii) {
+            if (oldtiles[ii].is_boundary
+                || oldtiles[ii].climate == climate::none) {
+                continue;
+            }
+            insert_boundary_tile(oldtiles[ii].position * 2);
+            auto idx = insert_tile(oldtiles[ii].position * 2, {});
+            _tiles[idx].climate = oldtiles[ii].climate;
+        }
+
+        _tile_phase *= 8;
+    } else
+    if (_tiles.size() - _boundary_tiles.size() < 255) {
+#if 1
+        std::vector<hextile::index> tile_select;
+        for (std::size_t jj = 0, sz = _boundary_tiles.size(); jj < sz;  ++jj) {
+            for (std::size_t kk = 0; kk < 6; ++kk) {
+                auto neighbor = _tiles[_boundary_tiles[jj]].neighbors[kk];
+                if (neighbor != hextile::invalid_index && !_tiles[neighbor].is_boundary) {
+                    tile_select.push_back(_boundary_tiles[jj]);
+                }
+            }
+        }
+
+        auto idx = tile_select[_random.uniform_int(tile_select.size())];
+#else
+        auto bidx = _random.uniform_int(_boundary_tiles.size());
+        auto idx = _boundary_tiles[bidx];
+#endif
+        climate c = choose_climate(idx);
+        idx = insert_tile(_tiles[idx].position, {});
+        _tiles[idx].climate = c;
+    }
+#if 0
+    else {
+        hextile::index idx = hextile::invalid_index;
+        do {
+            idx = _random.uniform_int(_tiles.size());
+        } while (_tiles[idx].is_boundary);
+        climate c = choose_climate(idx);
+        _tiles[idx].climate = c;
+    }
+#endif
 
     while (_removed.size()) {
         if (_removed.front()) {
