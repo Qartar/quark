@@ -45,8 +45,6 @@ add_subdirectory(physics)
 add_subdirectory(network)
 
 set(QUARK_SOURCES
-    game/g_aicontroller.cpp
-    game/g_aicontroller.h
     game/g_button.cpp
     game/g_character.cpp
     game/g_character.h
@@ -66,16 +64,8 @@ set(QUARK_SOURCES
     game/g_server.cpp
     game/g_session.cpp
     game/g_session.h
-    game/g_shield.cpp
-    game/g_shield.h
-    game/g_ship.cpp
-    game/g_ship.h
-    game/g_subsystem.cpp
-    game/g_subsystem.h
     game/g_usercmd.cpp
     game/g_usercmd.h
-    game/g_weapon.cpp
-    game/g_weapon.h
     game/g_world.cpp
     game/g_world.h
     render/gl/gl_buffer.cpp

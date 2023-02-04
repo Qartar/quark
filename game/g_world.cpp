@@ -4,9 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_aicontroller.h"
 #include "g_projectile.h"
-#include "g_ship.h"
 #include "g_player.h"
 #include "p_collide.h"
 #include "p_trace.h"

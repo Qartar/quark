@@ -5,7 +5,6 @@
 #pragma hdrstop
 
 #include "g_character.h"
-#include "g_subsystem.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -55,9 +54,6 @@ character::~character()
 //------------------------------------------------------------------------------
 void character::think()
 {
-    if (_health && _subsystem && _subsystem->damage()) {
-        _subsystem->repair(repair_rate);
-    }
 }
 
 //------------------------------------------------------------------------------

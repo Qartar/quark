@@ -6,7 +6,6 @@
 
 #include "cm_keys.h"
 #include "cm_parser.h"
-#include "g_aicontroller.h"
 #include "g_player.h"
 #include "resource.h"
 #include "version.h"
@@ -380,22 +379,6 @@ void session::key_event(int key, bool down)
 
     if (!down) {
         return;
-    }
-
-    if (key >= K_F1 && key <= K_F12) {
-        cls.number = key - K_F1;
-        std::vector<game::object const*> controllers;
-        for (auto const& obj : _world.objects()) {
-            if (obj->is_type<aicontroller>() || obj->is_type<player>()) {
-                controllers.push_back(obj);
-            }
-        }
-
-        if (cls.number >= 0 && cls.number < controllers.size()) {
-            _player = controllers[cls.number];
-        } else {
-            _player = nullptr;
-        }
     }
 
     // menu commands

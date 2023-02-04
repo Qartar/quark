@@ -5,8 +5,6 @@
 #pragma hdrstop
 
 #include "g_projectile.h"
-#include "g_ship.h"
-#include "g_shield.h"
 #include "p_collide.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,10 +68,6 @@ void projectile::update_homing()
     game::object* bestTarget = nullptr;
 
     for (auto* obj : get_world()->objects()) {
-        if (!obj->is_type<ship>()) {
-            continue;
-        }
-
         vec2 displacement = obj->get_position() - get_position();
         float value = displacement.normalize().dot(direction);
         if (value > bestValue) {
@@ -151,18 +145,12 @@ bool projectile::touch(object *other, physics::collision const* collision)
         _impact_time = get_world()->frametime() + time_delta::from_seconds(1) * delta_time;
     }
 
-    float factor = (other && other->is_type<shield>()) ? .5f : 1.f;
-
     if (collision) {
-        get_world()->add_sound(_info.impact_sound, collision->point, factor * _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, collision->point, -collision->normal, .5f * factor * _info.damage);
+        get_world()->add_sound(_info.impact_sound, collision->point, _info.damage);
+        get_world()->add_effect(_impact_time, _info.impact_effect, collision->point, -collision->normal, .5f * _info.damage);
     } else {
-        get_world()->add_sound(_info.impact_sound, get_position(), factor * _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, get_position(), vec2_zero, .5f * factor * _info.damage);
-    }
-
-    if (other && other->is_type<ship>()) {
-        static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _info.damage);
+        get_world()->add_sound(_info.impact_sound, get_position(), _info.damage);
+        get_world()->add_effect(_impact_time, _info.impact_effect, get_position(), vec2_zero, .5f * _info.damage);
     }
 
     get_world()->remove(this);
