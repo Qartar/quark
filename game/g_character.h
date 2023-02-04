@@ -8,8 +8,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-class subsystem;
-
 //------------------------------------------------------------------------------
 class character : public object
 {
@@ -27,16 +25,9 @@ public:
     void damage(object* inflictor, float amount);
     float health() const { return _health; }
 
-    void assign(handle<subsystem> assignment) { _subsystem = assignment; }
-    handle<subsystem> assignment() const { return _subsystem; }
-
 protected:
     string::buffer _name;
     float _health;
-
-    handle<subsystem> _subsystem;
-
-    static constexpr float repair_rate = 1.f / 5.f; //!< damage per second
 };
 
 } // namespace game

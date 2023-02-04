@@ -24,7 +24,7 @@ public:
     static const object_type _type;
 
 public:
-    player(ship* target);
+    player();
     virtual ~player();
 
     void spawn();
@@ -43,22 +43,8 @@ public:
     virtual void update_usercmd(usercmd cmd, time_value time);
 
 protected:
-    handle<ship> _ship;
     player_view _view;
     usercmd _usercmd;
-
-    std::vector<vec2> _waypoints;
-    bool _move_selection;
-    bool _move_appending;
-    int _weapon_selection;
-
-    time_value _destroyed_time;
-
-    static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
-
-protected:
-    bool attack(vec2 position, bool repeat);
-    void toggle_weapon(int weapon_index, bool toggle_power);
 };
 
 } // namespace game

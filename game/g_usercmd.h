@@ -36,10 +36,6 @@ struct usercmd
         none,
         select,
         move,
-        weapon_1,
-        weapon_2,
-        weapon_3,
-        toggle_shield,
         zoom_in,
         zoom_out,
     };

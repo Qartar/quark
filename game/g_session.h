@@ -204,11 +204,6 @@ private:
 
     render::system* _renderer;
 
-    config::scalar _upgrade_frac;
-    config::scalar _upgrade_penalty;
-    config::scalar _upgrade_min;
-    config::boolean _upgrades;
-
     config::string _net_master;
     config::string _net_server_name;
 

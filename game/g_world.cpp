@@ -4,9 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_aicontroller.h"
 #include "g_projectile.h"
-#include "g_ship.h"
 #include "g_player.h"
 #include "p_collide.h"
 #include "p_trace.h"
@@ -62,22 +60,6 @@ void world::reset()
 
     _sequence = 0;
     _framenum = 0;
-
-    for (int ii = 0; ii < 3; ++ii) {
-        float angle = float(ii) * (math::pi<float> * 2.f / 3.f);
-        vec2 dir = vec2(std::cos(angle), std::sin(angle));
-
-        ship* sh = spawn<ship>();
-        sh->set_position(-dir * 192.f, true);
-        sh->set_rotation(angle, true);
-
-        // spawn ai controller to control the ship
-        if (ii == 0) {
-            spawn<player>(sh);
-        } else {
-            spawn<aicontroller>(sh);
-        }
-    }
 }
 
 //------------------------------------------------------------------------------

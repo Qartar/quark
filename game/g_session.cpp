@@ -6,7 +6,6 @@
 
 #include "cm_keys.h"
 #include "cm_parser.h"
-#include "g_aicontroller.h"
 #include "g_player.h"
 #include "ed_ship_editor.h"
 #include "resource.h"
@@ -27,10 +26,6 @@ namespace game {
 session::session()
     : _menu_active(true)
     , _dedicated(false)
-    , _upgrade_frac("g_upgradeFrac", 0.5f, config::archive|config::server, "upgrade fraction")
-    , _upgrade_penalty("g_upgradePenalty", 0.2f, config::archive|config::server, "upgrade penalty")
-    , _upgrade_min("g_upgradeMin", 0.2f, config::archive|config::server, "minimum upgrade fraction")
-    , _upgrades("g_upgrades", true, config::archive|config::server, "enable upgrades")
     , _net_master("net_master", "oedhead.no-ip.org", config::archive, "master server hostname")
     , _net_server_name("net_serverName", "Quark Server", config::archive, "local server name")
     , _cl_name("ui_name", "", config::archive, "user info: name")
@@ -102,10 +97,6 @@ result session::init (string::view cmdline)
         {K_SHIFT, usercmd::modifier::shift},
         {K_MOUSE1, usercmd::button::select},
         {'m', usercmd::action::move},
-        {'1', usercmd::action::weapon_1},
-        {'2', usercmd::action::weapon_2},
-        {'3', usercmd::action::weapon_3},
-        {'s', usercmd::action::toggle_shield},
         {'=', usercmd::action::zoom_in},
         {'-', usercmd::action::zoom_out},
         {K_MWHEELUP, usercmd::action::zoom_in},
@@ -407,22 +398,6 @@ void session::key_event(int key, bool down)
 
     if (!down) {
         return;
-    }
-
-    if (key >= K_F1 && key <= K_F12) {
-        cls.number = key - K_F1;
-        std::vector<game::object const*> controllers;
-        for (auto const& obj : _world.objects()) {
-            if (obj->is_type<aicontroller>() || obj->is_type<player>()) {
-                controllers.push_back(obj);
-            }
-        }
-
-        if (cls.number >= 0 && cls.number < controllers.size()) {
-            _player = controllers[cls.number];
-        } else {
-            _player = nullptr;
-        }
     }
 
     // menu commands
