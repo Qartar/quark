@@ -22,12 +22,37 @@ public:
     virtual void think() override;
 
     string::view name() const { return _name; }
-    void damage(object* inflictor, float amount);
-    float health() const { return _health; }
 
 protected:
     string::buffer _name;
-    float _health;
+
+    // needs
+    float _hungry;
+    float _thirsty;
+    float _drowsy;
+    float _tired;
+    float _cold;
+    float _hot;
+    float _wet;
+
+    // non-environmental tick rates
+    float _hunger_per_tick;
+    float _thirst_per_tick;
+    float _drowsy_per_tick;
+    float _tired_per_tick;
+    float _resting_drowsy_per_tick;
+    float _resting_tired_per_tick;
+
+protected:
+    //! recalculate tick rates for non-environmental needs
+    void recalculate_rates();
+
+    void update_needs();
+    void update_health();
+    void update_tasks();
+    void update_planning();
+    void update_movement();
+    void update_action();
 };
 
 } // namespace game

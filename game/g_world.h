@@ -24,6 +24,7 @@
 #define MAX_PLAYERS 16
 
 constexpr const time_delta FRAMETIME = time_delta::from_seconds(0.05f);
+constexpr const time_delta SECONDS_PER_DAY = time_delta::from_seconds(600.f);
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
