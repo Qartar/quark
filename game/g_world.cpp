@@ -344,7 +344,7 @@ void world::draw_tile(render::system* renderer, hextile const& tile) const
         };
         renderer->draw_triangles(verts, colors, indices, 12);
     } else {
-        vec2 const verts[12] = {
+        vec2 const verts[18] = {
             origin + hextile::vertices[0],
             origin + hextile::vertices[1],
             origin + hextile::vertices[2],
@@ -357,15 +357,28 @@ void world::draw_tile(render::system* renderer, hextile const& tile) const
             origin + hextile::vertices[3] * .5f,
             origin + hextile::vertices[4] * .5f,
             origin + hextile::vertices[5] * .5f,
+
+            origin + hextile::vertices[0] * .5f
+                   + hextile::vertices[1] * .5f,
+            origin + hextile::vertices[1] * .5f
+                   + hextile::vertices[2] * .5f,
+            origin + hextile::vertices[2] * .5f
+                   + hextile::vertices[3] * .5f,
+            origin + hextile::vertices[3] * .5f
+                   + hextile::vertices[4] * .5f,
+            origin + hextile::vertices[4] * .5f
+                   + hextile::vertices[5] * .5f,
+            origin + hextile::vertices[5] * .5f
+                   + hextile::vertices[0] * .5f,
         };
 
         int const indices[] = {
-            0, 6, 7, 0, 7, 1,
-            1, 7, 8, 1, 8, 2,
-            2, 8, 9, 2, 9, 3,
-            3, 9, 10, 3, 10, 4,
-            4, 10, 11, 4, 11, 5,
-            5, 11, 6, 5, 6, 0,
+            0, 6, 12, 6, 7, 12, 1, 12, 7,
+            1, 7, 13, 7, 8, 13, 2, 13, 8,
+            2, 8, 14, 8, 9, 14, 3, 14, 9,
+            3, 9, 15, 9, 10, 15, 4, 15, 10,
+            4, 10, 16, 10, 11, 16, 5, 16, 11,
+            5, 11, 17, 11, 6, 17, 0, 17, 6,
             6, 7, 8, 6, 8, 9, 6, 9, 10, 6, 10, 11,
         };
 #if 0
@@ -403,11 +416,11 @@ void world::draw_tile(render::system* renderer, hextile const& tile) const
                 .3f).normalize();
         };
 #endif
-        color4 colors[12] = {};
+        color4 colors[18] = {};
 
         for (int ii = 0; ii < 6; ++ii) {
-            colors[ii + 6] = contents_color[static_cast<int>(tile.climate)];
-            colors[ii] = colors[ii + 6];
+            colors[ii] = contents_color[static_cast<int>(tile.climate)];
+            colors[ii + 6] = colors[ii];
             if (!smooth_climate || tile.climate == climate::none) {
                 continue;
             }
@@ -436,19 +449,22 @@ void world::draw_tile(render::system* renderer, hextile const& tile) const
             }
             colors[ii] /= n;
         }
+        for (int ii = 0; ii < 6; ++ii) {
+            colors[ii + 12] = (colors[ii] + colors[(ii + 1) % 6]) * .5f;
+        }
 
         for (int ii = 0; ii < 6; ++ii) {
-            int const* iptr = indices + ii * 6;
+            int const* iptr = indices + ii * 9;
             for (int jj = 0; jj < 6; ++jj) {
                 //colors[iptr[jj]] = contents_color(tile.contents[ii]);
                 //colors[iptr[jj]] = contents_color(static_cast<int>(tile.climate));
                 //colors[iptr[jj]] = contents_color[static_cast<int>(tile.climate)];
             }
 
-            renderer->draw_triangles(verts, colors, iptr, 6);
+            renderer->draw_triangles(verts, colors, iptr, 9);
         }
         {
-            int const* iptr = indices + 36;
+            int const* iptr = indices + 54;
             for (int jj = 0; jj < 12; ++jj) {
                 //colors[iptr[jj]] = contents_color(tile.contents[6]);
                 //colors[iptr[jj]] = contents_color(static_cast<int>(tile.climate));
