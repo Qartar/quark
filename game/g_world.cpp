@@ -9,6 +9,9 @@
 #include "p_collide.h"
 #include "p_trace.h"
 
+#include "g_resource.h"
+#include "g_item.h"
+
 #include <algorithm>
 #include <set>
 
@@ -16,6 +19,65 @@
 namespace game {
 
 std::array<world*, world::max_worlds> world::_singletons{};
+
+const resource::definition tree_resource =
+{
+    string::buffer("tree"),
+    traits(trait::burnable, trait::harvestable),
+    3.f,
+    color4(0, 1, 0, 1),
+};
+
+const resource::definition berry_resource =
+{
+    string::buffer("berry bush"),
+    traits(trait::burnable, trait::harvestable),
+    1.f,
+    color4(1, 0, 0, 1),
+};
+
+const item::definition stone_item =
+{
+    string::buffer("stone"),
+    traits(trait::collectable),
+    .5f,
+    color4(.3f, .3f, .3f, 1),
+};
+
+const item::definition stick_item =
+{
+    string::buffer("stick"),
+    traits(trait::collectable),
+    .5f,
+    color4(.4f, .2f, .1f, 1),
+};
+
+//------------------------------------------------------------------------------
+template<typename object_type, typename definition_type = typename object_type::definition>
+void spawn_grid(world* w, random& r, definition_type const* definition, int N, bounds b)
+{
+#if 0
+    for (int ii = 0; ii < N; ++ii) {
+        object_type* obj = w->spawn<object_type>(definition);
+        obj->set_position(vec2(r.uniform_real(b[0][0], b[1][0]),
+                               r.uniform_real(b[0][1], b[1][1])));
+    }
+#else
+    vec2 ext = b.maxs() - b.mins();
+    int X = int(sqrt(N) * ext[0] / ext[1]);
+    int Y = N / X;
+    vec2 dxy = ext / vec2(vec2i(X, Y));
+    vec2 xy0 = b[0] + dxy * .5f;
+    for (int jj = 0; jj < Y; ++jj) {
+        for (int ii = 0; ii < X; ++ii) {
+            vec2 v = xy0 + dxy * vec2(vec2i(ii, jj));
+            object_type* obj = w->spawn<object_type>(definition);
+            obj->set_position(v + dxy * vec2(r.uniform_real(-.4f, .4f),
+                                             r.uniform_real(-.4f, .4f)));
+        }
+    }
+#endif
+}
 
 //------------------------------------------------------------------------------
 world::world()
@@ -121,6 +183,11 @@ void world::reset()
 
     _tile_cursor = vec2i_zero;
     _tile_rotation = 0;
+
+    spawn_grid<resource>(this, _random, &tree_resource, 64, bounds{}.expand(64.f));
+    spawn_grid<resource>(this, _random, &berry_resource, 16, bounds{}.expand(64.f));
+    spawn_grid<item>(this, _random, &stone_item, 64, bounds{}.expand(64.f));
+    spawn_grid<item>(this, _random, &stick_item, 64, bounds{}.expand(64.f));
 }
 
 //------------------------------------------------------------------------------
@@ -560,9 +627,18 @@ void world::draw_tiles(render::system* renderer) const
 }
 
 //------------------------------------------------------------------------------
-void world::draw(render::system* renderer, time_value /*time*/) const
+void world::draw(render::system* renderer, time_value time) const
 {
     draw_tiles(renderer);
+
+    for (std::size_t ii = 0; ii < _objects.size(); ++ii) {
+        // objects array is sparse
+        if (!_objects[ii].get()) {
+            continue;
+        }
+
+        _objects[ii]->draw(renderer, time);
+    }
 }
 
 //------------------------------------------------------------------------------

@@ -51,6 +51,8 @@ set(QUARK_SOURCES
     game/g_client.cpp
     game/g_handle.h
     game/g_handle.natvis
+    game/g_item.cpp
+    game/g_item.h
     game/g_menu.cpp
     game/g_menu.h
     game/g_network.cpp
@@ -61,9 +63,12 @@ set(QUARK_SOURCES
     game/g_particles.cpp
     game/g_projectile.cpp
     game/g_projectile.h
+    game/g_resource.cpp
+    game/g_resource.h
     game/g_server.cpp
     game/g_session.cpp
     game/g_session.h
+    game/g_traits.h
     game/g_usercmd.cpp
     game/g_usercmd.h
     game/g_world.cpp
