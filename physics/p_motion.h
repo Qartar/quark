@@ -28,6 +28,10 @@ public:
         , _angular_velocity(angular_velocity)
     {}
 
+    void set_shape(shape const* shape) {
+        _shape = shape;
+    }
+
     shape const* get_shape() const {
         return _shape;
     }

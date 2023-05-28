@@ -17,24 +17,84 @@
 namespace physics {
 
 //------------------------------------------------------------------------------
+std::array<world*, world::max_worlds> world::_singletons;
+
+//------------------------------------------------------------------------------
 world::world(filter_callback_type filter_callback, collision_callback_type collision_callback)
-    : _filter_callback(filter_callback)
+    : _index(0)
+    , _sequence(0)
+    , _filter_callback(filter_callback)
     , _collision_callback(collision_callback)
 {
+    for (; _index < max_worlds; ++_index) {
+        if (!_singletons[_index]) {
+            _singletons[_index] = this;
+            break;
+        }
+    }
+
+    assert(_index < max_worlds);
 }
 
 //------------------------------------------------------------------------------
-void world::add_body(physics::rigid_body* body)
+world::~world()
 {
-    assert(std::find(_bodies.begin(), _bodies.end(), body) == _bodies.end());
-    _bodies.push_back(body);
+    assert(_singletons[_index] == this);
+    _singletons[_index] = nullptr;
 }
 
 //------------------------------------------------------------------------------
-void world::remove_body(physics::rigid_body* body)
+//void world::add_body(physics::rigid_body* body)
+//{
+//    assert(std::find(_bodies.begin(), _bodies.end(), body) == _bodies.end());
+//    _bodies.push_back(*body);
+//}
+
+//------------------------------------------------------------------------------
+//void world::remove_body(physics::rigid_body* body)
+//{
+//    assert(std::find(_bodies.begin(), _bodies.end(), body) != _bodies.end());
+//    _bodies.erase(std::find(_bodies.begin(), _bodies.end(), body));
+//}
+
+//------------------------------------------------------------------------------
+physics::handle world::add_body()
 {
-    assert(std::find(_bodies.begin(), _bodies.end(), body) != _bodies.end());
-    _bodies.erase(std::find(_bodies.begin(), _bodies.end(), body));
+    // check free list
+    if (_free_bodies.size()) {
+        auto body_index = _free_bodies.back();
+        _free_bodies.pop_back();
+
+        assert(body_index < _bodies_sequence.size());
+        assert(_bodies_sequence[body_index] == 0);
+        _bodies[body_index] = {nullptr, nullptr, 0.f};
+        _bodies_sequence[body_index] = ++_sequence;
+
+        assert(_sequence < (1LLU << physics::handle::sequence_bits));
+        return physics::handle{body_index, _index, _sequence};
+
+    // allocate
+    } else {
+        assert(_bodies.size() == _bodies_sequence.size());
+        _bodies.push_back(rigid_body{nullptr, nullptr, 0.f});
+        _bodies_sequence.push_back(++_sequence);
+
+        assert(_bodies.size() < max_bodies);
+        assert(_sequence < (1LLU << physics::handle::sequence_bits));
+        return physics::handle{ _bodies.size() - 1, _index, _sequence };
+    }
+}
+
+//------------------------------------------------------------------------------
+void world::remove_body(physics::handle const& h)
+{
+    assert(h.get_world_index() == _index);
+    assert(h.get_index() < max_bodies);
+    if (h.get_index() < _bodies_sequence.size()
+        && h.get_sequence() == _bodies_sequence[h.get_index()]) {
+        _bodies_sequence[h.get_index()] = 0;
+        _free_bodies.push_back(h.get_index());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -62,7 +122,7 @@ void world::step(float delta_time)
             std::size_t jj = overlaps[idx].second;
 
             // check collision
-            physics::trace tr(_bodies[ii], _bodies[jj], delta_time);
+            physics::trace tr(&_bodies[ii], &_bodies[jj], delta_time);
             if (tr.get_fraction() == 1.f) {
                 continue;
             }
@@ -81,16 +141,19 @@ void world::step(float delta_time)
             }
 
             physics::collision c = physics::collision(candidate.contact);
-            c.impulse = collision_impulse(_bodies[ii], _bodies[jj], c);
+            c.impulse = collision_impulse(&_bodies[ii], &_bodies[jj], c);
+
+            physics::handle handle_ii(ii, _index, _bodies_sequence[ii]);
+            physics::handle handle_jj(jj, _index, _bodies_sequence[jj]);
 
             // check collision callback
-            if (_collision_callback && !_collision_callback(_bodies[ii], _bodies[jj], c)) {
+            if (_collision_callback && !_collision_callback(handle_ii, handle_jj, c)) {
                 continue;
             }
 
             // collision response
-            _bodies[ii]->apply_impulse(-c.impulse, c.point);
-            _bodies[jj]->apply_impulse( c.impulse, c.point);
+            _bodies[ii].apply_impulse(-c.impulse, c.point);
+            _bodies[jj].apply_impulse( c.impulse, c.point);
 
             break;
         }
@@ -99,8 +162,8 @@ void world::step(float delta_time)
     // move
 
     for (std::size_t ii = 0; ii < _bodies.size(); ++ii) {
-        _bodies[ii]->set_position(_bodies[ii]->get_position() + _bodies[ii]->get_linear_velocity() * delta_time);
-        _bodies[ii]->set_rotation(_bodies[ii]->get_rotation() + _bodies[ii]->get_angular_velocity() * delta_time);
+        _bodies[ii].set_position(_bodies[ii].get_position() + _bodies[ii].get_linear_velocity() * delta_time);
+        _bodies[ii].set_rotation(_bodies[ii].get_rotation() + _bodies[ii].get_angular_velocity() * delta_time);
     }
 }
 
@@ -197,8 +260,8 @@ std::vector<world::overlap> world::generate_overlaps(float delta_time) const
     std::vector<bounds> swept_bounds(_bodies.size());
     for (std::size_t ii = 0, sz = _bodies.size(); ii < sz; ++ii) {
         // todo: include rotation
-        swept_bounds[ii] = bounds::from_translation(_bodies[ii]->get_bounds(),
-                                                    _bodies[ii]->get_linear_velocity() * delta_time);
+        swept_bounds[ii] = bounds::from_translation(_bodies[ii].get_bounds(),
+                                                    _bodies[ii].get_linear_velocity() * delta_time);
     }
 
     std::vector<overlap> axis_overlaps[2];
@@ -220,11 +283,14 @@ std::vector<world::overlap> world::generate_overlaps(float delta_time) const
                     break;
                 }
 
+                physics::handle handle_ii(sorted[ii], _index, _bodies_sequence[sorted[ii]]);
+                physics::handle handle_jj(sorted[jj], _index, _bodies_sequence[sorted[jj]]);
+
                 // check collision filter, note: filter is not necessarily symmetric
-                if (!_filter_callback || _filter_callback(_bodies[sorted[ii]], _bodies[sorted[jj]])) {
+                if (!_filter_callback || _filter_callback(handle_ii, handle_jj)) {
                     axis_overlaps[axis].push_back({sorted[ii], sorted[jj]});
                 }
-                if (!_filter_callback || _filter_callback(_bodies[sorted[jj]], _bodies[sorted[ii]])) {
+                if (!_filter_callback || _filter_callback(handle_jj, handle_ii)) {
                     axis_overlaps[axis].push_back({sorted[jj], sorted[ii]});
                 }
             }

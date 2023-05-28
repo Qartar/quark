@@ -323,8 +323,8 @@ public:
     void add_effect(time_value time, effect_type type, vec2 position, vec2 direction = vec2(0,0), float strength = 1);
     void add_trail_effect(effect_type type, vec2 position, vec2 old_position, vec2 direction = vec2(0,0), float strength = 1);
 
-    void add_body(game::object* owner, physics::rigid_body* body);
-    void remove_body(physics::rigid_body* body);
+    physics::handle add_body(game::object* owner, physics::rigid_body* body);
+    void remove_body(physics::handle body);
 
     game::object* trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore = nullptr) const;
 
@@ -361,10 +361,10 @@ private:
     template<typename T> T* get(handle<T> handle) const;
 
     physics::world _physics;
-    std::map<physics::rigid_body const*, game::object*> _physics_objects;
+    std::map<physics::handle, game::object*> _physics_objects;
 
-    bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
-    bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
+    bool physics_filter_callback(physics::handle body_a, physics::handle body_b);
+    bool physics_collide_callback(physics::handle body_a, physics::handle body_b, physics::collision const& collision);
 
     //
     // tile system

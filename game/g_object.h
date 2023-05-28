@@ -9,6 +9,7 @@
 #include "p_material.h"
 #include "p_rigidbody.h"
 #include "p_shape.h"
+#include "p_world.h"
 
 #include <array>
 
@@ -106,22 +107,22 @@ public:
     //! Get frame-interpolated inverse transform matrix
     virtual mat3 get_inverse_transform(time_value time) const;
 
-    physics::rigid_body const& rigid_body() const { return _rigid_body; }
+    //physics::rigid_body const& rigid_body() const { return *_rigid_body.get(); }
 
     void set_position(vec2 position, bool teleport = false);
     void set_rotation(float rotation, bool teleport = false);
-    void set_linear_velocity(vec2 linear_velocity) { _rigid_body.set_linear_velocity(linear_velocity); }
-    void set_angular_velocity(float angular_velocity) { _rigid_body.set_angular_velocity(angular_velocity); }
+    void set_linear_velocity(vec2 linear_velocity) { _rigid_body->set_linear_velocity(linear_velocity); }
+    void set_angular_velocity(float angular_velocity) { _rigid_body->set_angular_velocity(angular_velocity); }
 
-    vec2 get_position() const { return _rigid_body.get_position(); }
-    float get_rotation() const { return _rigid_body.get_rotation(); }
-    mat3 get_transform() const { return _rigid_body.get_transform(); }
-    mat3 get_inverse_transform() const { return _rigid_body.get_inverse_transform(); }
-    vec2 get_linear_velocity() const { return _rigid_body.get_linear_velocity(); }
-    float get_angular_velocity() const { return _rigid_body.get_angular_velocity(); }
+    vec2 get_position() const { return _rigid_body->get_position(); }
+    float get_rotation() const { return _rigid_body->get_rotation(); }
+    mat3 get_transform() const { return _rigid_body->get_transform(); }
+    mat3 get_inverse_transform() const { return _rigid_body->get_inverse_transform(); }
+    vec2 get_linear_velocity() const { return _rigid_body->get_linear_velocity(); }
+    float get_angular_velocity() const { return _rigid_body->get_angular_velocity(); }
 
-    void apply_impulse(vec2 impulse) { _rigid_body.apply_impulse(impulse); }
-    void apply_impulse(vec2 impulse, vec2 position) { _rigid_body.apply_impulse(impulse, position); }
+    void apply_impulse(vec2 impulse) { _rigid_body->apply_impulse(impulse); }
+    void apply_impulse(vec2 impulse, vec2 position) { _rigid_body->apply_impulse(impulse, position); }
 
     render::model const* _model;
     color4 _color;
@@ -139,7 +140,7 @@ protected:
 
     random _random;
 
-    physics::rigid_body _rigid_body;
+    physics::handle _rigid_body;
 
     static physics::material _default_material;
     static physics::circle_shape _default_shape;

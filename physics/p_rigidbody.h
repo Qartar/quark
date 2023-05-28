@@ -113,8 +113,16 @@ public:
         return _inverse_inertia;
     }
 
+    void set_shape(shape const* shape) {
+        _motion.set_shape(shape);
+    }
+
     shape const* get_shape() const {
         return _motion.get_shape();
+    }
+
+    void set_material(material const* material) {
+        _material = material;
     }
 
     material const* get_material() const {

@@ -976,7 +976,7 @@ game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game
             continue;
         }
 
-        auto tr = physics::trace(other.first, start, end);
+        auto tr = physics::trace(other.first.get(), start, end);
         if (tr.get_fraction() < 1.0f) {
             candidates.insert(candidate{
                 tr.get_fraction(),
@@ -1002,21 +1002,23 @@ void world::add_sound(sound::asset sound_asset, vec2 position, float volume)
 }
 
 //------------------------------------------------------------------------------
-void world::add_body(game::object* owner, physics::rigid_body* body)
+physics::handle world::add_body(game::object* owner, physics::rigid_body* body)
 {
-    _physics.add_body(body);
-    _physics_objects[body] = owner;
+    auto handle = _physics.add_body();
+    *handle.get() = *body;
+    _physics_objects[handle] = owner;
+    return handle;
 }
 
 //------------------------------------------------------------------------------
-void world::remove_body(physics::rigid_body* body)
+void world::remove_body(physics::handle body)
 {
     _physics.remove_body(body);
     _physics_objects.erase(body);
 }
 
 //------------------------------------------------------------------------------
-bool world::physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b)
+bool world::physics_filter_callback(physics::handle body_a, physics::handle body_b)
 {
     game::object* obj_a = _physics_objects[body_a];
     game::object* obj_b = _physics_objects[body_b];
@@ -1036,7 +1038,7 @@ bool world::physics_filter_callback(physics::rigid_body const* body_a, physics::
 }
 
 //------------------------------------------------------------------------------
-bool world::physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision)
+bool world::physics_collide_callback(physics::handle body_a, physics::handle body_b, physics::collision const& collision)
 {
     game::object* obj_a = _physics_objects[body_a];
     game::object* obj_b = _physics_objects[body_b];
