@@ -411,6 +411,29 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
         renderer->draw_line(v2, v0, color4(1,0,0,.5f), color4(1,0,0,.5f));
     }
 
+    {
+        std::vector<int> triangles;
+        std::vector<color4> colors;
+
+        triangles.resize(_render_triangles.size());
+        colors.resize(_render_vertices.size());
+
+        for (std::size_t ii = 0; ii < _render_triangles.size(); ++ii) {
+            triangles[ii] = narrow_cast<int>(_render_triangles[ii]);
+        }
+
+        for (std::size_t ii = 0; ii < _render_vertices.size(); ++ii) {
+            colors[ii] = color4(.5f, .5f, .5f, .5f);
+        }
+
+        renderer->draw_triangles(
+            _render_vertices.data(),
+            colors.data(),
+            triangles.data(),
+            triangles.size());
+    }
+
+
     vec2 world_pos = snap_vertex(cursor_to_world());
 
     if (_mode == editor_mode::vertices) {
