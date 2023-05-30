@@ -50,8 +50,9 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
         return;
     }
 
-    bounds arc_bounds;
-    {
+    bounds arc_bounds = bounds::from_center(center, vec2(radius + width * .5f));
+    // perform conservative bounds check before checking arc extents
+    if (!_view_bounds.contains(arc_bounds)) {
         // minimum angle normalized to (-pi, pi]
         float amin = std::remainder(min_angle, 2.f * math::pi<float>);
         // maximum angle, normalized to (-pi, ...]
@@ -77,10 +78,9 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
         }
 
         arc_bounds = arc_bounds.expand(width * .5f);
-    }
-
-    if (!_view_bounds.intersects(arc_bounds)) {
-        return;
+        if (!_view_bounds.intersects(arc_bounds)) {
+            return;
+        }
     }
 
     // Scaling factor for circle tessellation
