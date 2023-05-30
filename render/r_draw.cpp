@@ -450,6 +450,11 @@ void system::draw_starfield(vec2 streak_vector)
         float a = ii == 0 ? square(std::ceil(s) - s)
                 : ii == 4 ? square(s - std::floor(s)) : 1.f;
 
+        // convert linear intensity to srgb
+        a = a <= 0.0031308f
+            ? 12.92f * a
+            : 1.055f * powf(a, 1.f / 2.4f) - 0.055f;
+
         glBlendColor(a, a, a, 1.f);
 
         glMatrixMode(GL_MODELVIEW);
