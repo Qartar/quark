@@ -116,7 +116,7 @@ void aicontroller::think()
 
             float distance = path_len ? length(ch->get_position() - path[0]) : INFINITY;
             // ignore last segment which is to a random point within the destination compartment
-            for (std::size_t ii = 1; ii < path_len - 1; ++ii) {
+            for (std::size_t ii = 1; ii + 1 < path_len; ++ii) {
                 distance += length(path[ii] - path[ii - 1]);
             }
             return distance;
