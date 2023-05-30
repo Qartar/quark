@@ -66,6 +66,14 @@ ship_layout::ship_layout(std::initializer_list<vec2> const* compartments, int nu
                 }
             }
         }
+        if (c.width > 1.6f) {
+            vec2 v0 = .5f * (_vertices[c.vertices[0]] + _vertices[c.vertices[1]]);
+            vec2 dv = normalize(_vertices[c.vertices[1]] - _vertices[c.vertices[0]]);
+            _vertices.push_back(v0 + dv * .8f);
+            _vertices.push_back(v0 - dv * .8f);
+            c.vertices[0] = narrow_cast<uint16_t>(_vertices.size() - 2);
+            c.vertices[1] = narrow_cast<uint16_t>(_vertices.size() - 1);
+        }
         assert(c.width);
     }
 }
