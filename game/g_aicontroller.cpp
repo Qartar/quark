@@ -110,7 +110,7 @@ void aicontroller::think()
                 // compartments with multiple entrypoints even if ignoring the
                 // last segment of the path.
                 _ship->layout().random_point(_random, task_compartment),
-                .3f, // FIXME: hard-coded constant in character::move
+                ch->radius(),
                 path,
                 countof(path));
 

@@ -343,7 +343,7 @@ bool character::move(vec2 goal)
     }
     _action = action_type::move;
     _path_start = 0;
-    _path_end = _ship->layout().find_path(get_position(), goal, .3f, _path, path_size);
+    _path_end = _ship->layout().find_path(get_position(), goal, _radius, _path, path_size);
     return true;
 }
 

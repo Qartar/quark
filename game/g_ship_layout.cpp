@@ -39,7 +39,7 @@ ship_layout::ship_layout(std::initializer_list<vec2> const* compartments, int nu
             c.area += 0.5f * (v2 - v1).cross(v1 - v0);
         }
         c.shape = physics::convex_shape(_vertices.data() + c.first_vertex, c.num_vertices);
-        c.inner_shape = c.shape.shrink_by_radius(0.3f);
+        c.inner_shape = c.shape.shrink_by_radius(0.3f); // FIXME: hard-coded character radius
     }
 
     for (auto& c : _connections) {

@@ -38,6 +38,7 @@ public:
     string::view name() const { return _name; }
     void damage(object* inflictor, float amount);
     float health() const { return _health; }
+    float radius() const { return _radius; }
 
     using object::set_position;
     void set_position(handle<ship> ship, vec2 position, bool teleport = false);
@@ -98,6 +99,8 @@ protected:
     std::size_t _path_end;
 
     handle<ship> _ship;
+
+    static constexpr float _radius = .3f;
 
     static constexpr float repair_rate = 1.f / 15.f; //!< damage per second
 };
