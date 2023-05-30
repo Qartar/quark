@@ -873,6 +873,7 @@ void ship::draw(render::system* renderer, time_value time) const
             uint16_t idx = _state.layout().intersect_compartment(local_cursor);
             if (idx != ship_layout::invalid_compartment) {
                 auto const& c = _layout.compartments()[idx];
+                positions.resize(c.num_vertices);
                 for (int jj = 0; jj < c.num_vertices; ++jj) {
                     positions[jj] = _state.layout().vertices()[c.first_vertex + jj] * transform;
                 }
