@@ -156,7 +156,7 @@ void aicontroller::think()
             if (medical_bay && ch->health() < 1.f) {
                 float d = task_distance(medical_bay->compartment(), ch);
                 // priority is inversely proportional to remaining health
-                tasks.push_back({ch, medical_bay, medical_bay->compartment(), character::action_type::move, 1.f / ch->health(), d});
+                tasks.push_back({ch, medical_bay, medical_bay->compartment(), character::action_type::move, .5f / ch->health() + (d == 0.f ? .5f : 0.f), d});
             }
 
             for (uint16_t ii = 0, num = narrow_cast<uint16_t>(_ship->state().compartments().size()); ii < num; ++ii) {
