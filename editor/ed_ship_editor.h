@@ -30,6 +30,13 @@ protected:
     mutable float _anim;
     mutable time_value _last_time;
 
+    mutable std::vector<float> _forward_acceleration;
+    mutable std::vector<float> _lateral_acceleration;
+    mutable std::vector<float> _speed;
+    mutable std::vector<float> _max_speed;
+    mutable std::vector<float> _length;
+    mutable std::size_t _graph_index;
+
     struct qcurve {
         vec2 a, b, c;
     };
@@ -89,6 +96,8 @@ protected:
 
     void draw_qspline(render::system* renderer, qcurve const& q) const;
     void draw_cspline(render::system* renderer, ccurve const& c) const;
+
+    void draw_graph(render::system* renderer, std::vector<float> const& data, color4 color) const;
 
     void on_click();
 

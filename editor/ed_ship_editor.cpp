@@ -47,6 +47,7 @@ ship_editor::ship_editor()
     , _cursor{}
     , _anim{}
     , _last_time{}
+    , _graph_index(0)
     , _state{state::ready}
     , _start{vec2_zero}
 {
@@ -81,6 +82,7 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         while (n >= _cspline.size()) {
             n -= _cspline.size();
             _anim -= _cspline.size();
+            _graph_index = 0;
         }
         ccurve_coeff cc = _cspline[n].to_coeff();
         float t = _anim - n;
@@ -88,7 +90,37 @@ void ship_editor::draw(render::system* renderer, time_value time) const
 
         renderer->draw_box(vec2(0.25f), p, color4(1,1,1,1));
 
-        _anim += 10.f * dt / cc.evaluate_tangent(t).length();
+
+        if (_graph_index >= _forward_acceleration.size()) {
+            _forward_acceleration.push_back({});
+            _lateral_acceleration.push_back({});
+            _speed.push_back({});
+            _max_speed.push_back({});
+            _length.push_back({});
+        }
+
+        float k = cc.evaluate_curvature(t);
+
+        // a = v*v/r
+        // v = sqrt(a*r)
+        _max_speed[_graph_index] = min(10.f, sqrt(10.f / abs(k)));
+        float s = _max_speed[_graph_index];
+        if (_graph_index > 0) {
+            if ((s - _speed[_graph_index - 1]) / dt > 1.f) {
+                s = _speed[_graph_index - 1] + 1.f * dt;
+            }
+            _forward_acceleration[_graph_index] = (s - _speed[_graph_index - 1]) / dt;
+            _length[_graph_index] = s * dt + _length[_graph_index - 1];
+        } else {
+            s = 0.f;
+            _forward_acceleration[_graph_index] = 0.f;
+            _length[_graph_index] = s * dt;
+        }
+        _lateral_acceleration[_graph_index] = square(s) * k;
+        _speed[_graph_index] = s;
+        ++_graph_index;
+
+        _anim += s * dt / cc.evaluate_tangent(t).length();
     }
 
 #if 0
@@ -120,6 +152,17 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         draw_cspline(renderer, c);
     }
 #endif
+
+    //
+    //  draw graphs
+    //
+
+    if (_graph_index) {
+        draw_graph(renderer, _forward_acceleration, color4(1, 1, 1, 1));
+        draw_graph(renderer, _lateral_acceleration, color4(0, 1, 1, 1));
+        draw_graph(renderer, _speed, color4(1, 1, 0, 1));
+        draw_graph(renderer, _max_speed, color4(1, 0, 0, 1));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -249,6 +292,28 @@ void ship_editor::draw_cspline(render::system* renderer, ccurve const& c) const
         k0 = k;
         n0 = n;
     }
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::draw_graph(render::system* renderer, std::vector<float> const& data, color4 color) const
+{
+    render::view const& v = renderer->view();
+    mat3 tx = mat3(v.size.x / _length.back(), 0.f, 0.f,
+                   0.f, v.size.y / 100.f, 0.f,
+                   v.origin.x - .5f * v.size.x, v.origin.y - .35f * v.size.y, 1.f);
+
+    for (std::size_t ii = 1, sz = data.size(); ii < sz; ++ii) {
+        renderer->draw_line(
+            vec2(_length[ii - 1], data[ii - 1]) * tx,
+            vec2(_length[ii], data[ii]) * tx,
+            color,
+            color);
+    }
+
+    renderer->draw_box(
+        vec2(0.25f),
+        vec2(_length[_graph_index - 1], data[_graph_index - 1]) * tx,
+        color);
 }
 
 //------------------------------------------------------------------------------
