@@ -86,10 +86,8 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         }
         ccurve_coeff cc = _cspline[n].to_coeff();
         float t = _anim - n;
-        vec2 p = cc.evaluate(t);
 
-        renderer->draw_box(vec2(0.25f), p, color4(1,1,1,1));
-
+        draw_box(renderer, _cspline[n], t, vec2(0.25f), color4(1,1,1,1));
 
         if (_graph_index >= _forward_acceleration.size()) {
             _forward_acceleration.push_back({});
@@ -292,6 +290,28 @@ void ship_editor::draw_cspline(render::system* renderer, ccurve const& c) const
         k0 = k;
         n0 = n;
     }
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::draw_box(render::system* renderer, ccurve const& c, float t, vec2 size, color4 color) const
+{
+    ccurve_coeff cc = c.to_coeff();
+
+    vec2 v0 = cc.evaluate(t);
+    vec2 vx = .5f * cc.evaluate_tangent(t).normalize();
+    vec2 vy = vx.cross(1.f);
+
+    vec2 points[4] {
+        v0 - vx * size.x - vy * size.y,
+        v0 + vx * size.x - vy * size.y,
+        v0 - vx * size.x + vy * size.y,
+        v0 + vx * size.x + vy * size.y,
+    };
+
+    color4 const colors[4] = { color, color, color, color };
+    int const indices[6] = { 0, 1, 2, 1, 3, 2 };
+
+    renderer->draw_triangles(points, colors, indices, 6);
 }
 
 //------------------------------------------------------------------------------

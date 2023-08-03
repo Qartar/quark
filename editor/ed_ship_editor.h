@@ -97,6 +97,7 @@ protected:
     void draw_qspline(render::system* renderer, qcurve const& q) const;
     void draw_cspline(render::system* renderer, ccurve const& c) const;
 
+    void draw_box(render::system* renderer, ccurve const& c, float t, vec2 size, color4 color) const;
     void draw_graph(render::system* renderer, std::vector<float> const& data, color4 color) const;
 
     void on_click();
