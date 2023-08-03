@@ -113,6 +113,9 @@ protected:
 
     std::vector<qcurve> _qspline;
     std::vector<ccurve> _cspline;
+    std::vector<float> _cspline_length;
+
+    std::vector<vec2> _cspline_max_speed;
 
 protected:
     vec2 cursor_to_world() const;
@@ -122,12 +125,24 @@ protected:
 
     void draw_box(render::system* renderer, ccurve const& c, float t, vec2 size, color4 color) const;
     void draw_graph(render::system* renderer, std::vector<float> const& data, color4 color) const;
+    void draw_graph(render::system* renderer, std::vector<vec2> const& data, color4 color) const;
 
     void on_click();
     void on_rclick();
 
     void calculate_qspline_points(qcurve& q) const;
     void calculate_cspline_points(ccurve& c) const;
+
+    void linearize_max_speed(ccurve const& c, std::vector<vec2>& max_speed) const;
+    void linearize_max_speed_r(ccurve_coeff const& cc, std::vector<vec2>& max_speed, float t0, float t1, float s0, float s1, float k0, float k1) const;
+
+    float calculate_max_speed(float s) const;
+
+protected:
+    static constexpr float kMaxSpeed = 10.f;
+    static constexpr float kMaxLateral = 10.f;
+    static constexpr float kMaxAccel = 1.f;
+    static constexpr float kMaxDecel = 1.f;
 };
 
 } // namespace editor

@@ -98,21 +98,24 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         }
 
         float k = cc.evaluate_curvature(t);
+        float s0 = n > 0 ? _cspline_length[n - 1] : 0.f;
 
         // a = v*v/r
         // v = sqrt(a*r)
-        _max_speed[_graph_index] = min(10.f, sqrt(10.f / abs(k)));
-        float s = _max_speed[_graph_index];
+        _max_speed[_graph_index] = min(kMaxSpeed, sqrt(kMaxLateral / abs(k)));
+        _length[_graph_index] = s0 + cc.evaluate_arclength(t);
+        float s = calculate_max_speed(_length[_graph_index]);
         if (_graph_index > 0) {
-            if ((s - _speed[_graph_index - 1]) / dt > 1.f) {
-                s = _speed[_graph_index - 1] + 1.f * dt;
+            // clamp acceleration
+            if ((s - _speed[_graph_index - 1]) > kMaxAccel * dt) {
+                s = _speed[_graph_index - 1] + kMaxAccel * dt;
+            }
+            if ((_speed[_graph_index - 1] - s) > kMaxDecel * dt) {
+                s = _speed[_graph_index - 1] - kMaxDecel * dt;
             }
             _forward_acceleration[_graph_index] = (s - _speed[_graph_index - 1]) / dt;
-            _length[_graph_index] = s * dt + _length[_graph_index - 1];
         } else {
-            s = 0.f;
             _forward_acceleration[_graph_index] = 0.f;
-            _length[_graph_index] = s * dt;
         }
         _lateral_acceleration[_graph_index] = square(s) * k;
         _speed[_graph_index] = s;
@@ -162,6 +165,9 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         draw_graph(renderer, _lateral_acceleration, color4(0, 1, 1, 1));
         draw_graph(renderer, _speed, color4(1, 1, 0, 1));
         draw_graph(renderer, _max_speed, color4(1, 0, 0, 1));
+    }
+    if (_cspline_max_speed.size()) {
+        draw_graph(renderer, _cspline_max_speed, color4(1, .5f, 0, 1));
     }
 }
 
@@ -329,7 +335,7 @@ void ship_editor::draw_box(render::system* renderer, ccurve const& c, float t, v
 void ship_editor::draw_graph(render::system* renderer, std::vector<float> const& data, color4 color) const
 {
     render::view const& v = renderer->view();
-    mat3 tx = mat3(v.size.x / _length.back(), 0.f, 0.f,
+    mat3 tx = mat3(v.size.x / _cspline_length.back(), 0.f, 0.f,
                    0.f, v.size.y / 100.f, 0.f,
                    v.origin.x - .5f * v.size.x, v.origin.y - .35f * v.size.y, 1.f);
 
@@ -345,6 +351,28 @@ void ship_editor::draw_graph(render::system* renderer, std::vector<float> const&
         vec2(0.25f),
         vec2(_length[_graph_index - 1], data[_graph_index - 1]) * tx,
         color);
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::draw_graph(render::system* renderer, std::vector<vec2> const& data, color4 color) const
+{
+    render::view const& v = renderer->view();
+    mat3 tx = mat3(v.size.x / _cspline_length.back(), 0.f, 0.f,
+        0.f, v.size.y / 100.f, 0.f,
+        v.origin.x - .5f * v.size.x, v.origin.y - .35f * v.size.y, 1.f);
+
+    for (std::size_t ii = 1, sz = data.size(); ii < sz; ++ii) {
+        renderer->draw_line(
+            data[ii - 1] * tx,
+            data[ii] * tx,
+            color,
+            color);
+
+        renderer->draw_box(
+            vec2(0.175f),
+            data[ii - 1] * tx,
+            color);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -380,6 +408,15 @@ void ship_editor::on_click()
         };
         calculate_cspline_points(c);
         _cspline.push_back(c);
+        float s0 = _cspline_length.size() ? _cspline_length.back() : 0.f;
+        _cspline_length.push_back(s0 + c.to_coeff().evaluate_arclength(1.f));
+        {
+            std::vector<vec2> max_speed;
+            linearize_max_speed(c, max_speed);
+            for (std::size_t ii = 0, sz = max_speed.size(); ii < sz; ++ii) {
+                _cspline_max_speed.push_back(vec2(s0, 0) + max_speed[ii]);
+            }
+        }
         _start = _stop;
         _state = state::started;
         _beta1 = .5f;
@@ -451,6 +488,62 @@ void ship_editor::calculate_cspline_points(ccurve& c) const
 
     c.b = (2.f / 3.f) * c.a + (1.f / 3.f) * c.d;
     c.c = (1.f / 3.f) * c.a + (2.f / 3.f) * c.d;
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::linearize_max_speed(ccurve const& c, std::vector<vec2>& max_speed) const
+{
+    ccurve_coeff cc = c.to_coeff();
+    float s1 = cc.evaluate_arclength(1.f);
+    float k0 = cc.evaluate_curvature(0.f);
+    float k1 = cc.evaluate_curvature(1.f);
+
+    max_speed.push_back(vec2(0.f, min(kMaxSpeed, sqrt(kMaxLateral / abs(k0)))));
+    linearize_max_speed_r(cc, max_speed, 0.f, 1.f, 0.f, s1, k0, k1);
+    max_speed.push_back(vec2(s1, min(kMaxSpeed, sqrt(kMaxLateral / abs(k1)))));
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::linearize_max_speed_r(ccurve_coeff const& cc, std::vector<vec2>& max_speed, float t0, float t1, float s0, float s1, float k0, float k1) const
+{
+    float t2 = .5f * (t0 + t1);
+    float s2 = cc.evaluate_arclength(t2);
+    float k2 = cc.evaluate_curvature(t2);
+
+    vec2 a = vec2(s0, min(kMaxSpeed, sqrt(kMaxLateral / abs(k0))));
+    vec2 b = vec2(s1, min(kMaxSpeed, sqrt(kMaxLateral / abs(k1))));
+    vec2 c = vec2(s2, min(kMaxSpeed, sqrt(kMaxLateral / abs(k2))));
+
+    float d = abs(cross(c - a, b - a)) / length(b - a);
+
+    if (d > 1.f) {
+        linearize_max_speed_r(cc, max_speed, t0, t2, s0, s2, k0, k2);
+        max_speed.push_back(c);
+        linearize_max_speed_r(cc, max_speed, t2, t1, s2, s1, k2, k1);
+    } else {
+        max_speed.push_back(c);
+    }
+}
+
+//------------------------------------------------------------------------------
+float ship_editor::calculate_max_speed(float s) const
+{
+    float smax = s + .5f * kMaxSpeed * kMaxSpeed / kMaxDecel;
+    float vmax = kMaxSpeed;
+    for (std::size_t ii = 0, sz = _cspline_max_speed.size(); ii < sz; ++ii) {
+        if (_cspline_max_speed[ii][0] < s) {
+            continue;
+        } else if (_cspline_max_speed[ii][0] > smax) {
+            break;
+        }
+
+        float ds = _cspline_max_speed[ii][0] - s;
+        float v = _cspline_max_speed[ii][1];
+        float v0 = sqrt(v * v + 2.f * ds * kMaxDecel);
+        vmax = min(v0, vmax);
+    }
+
+    return vmax;
 }
 
 } // namespace editor
