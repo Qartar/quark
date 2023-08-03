@@ -139,12 +139,14 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         draw_cspline(renderer, c);
     }
 
-    if (_state == state::started) {
+    if (_state == state::started || _state == state::beta) {
         ccurve c = {
             _start,
             vec2_zero,
             vec2_zero,
-            cursor_to_world()
+            (_state == state::started)
+                ? cursor_to_world()
+                : _stop
         };
         calculate_cspline_points(c);
         draw_cspline(renderer, c);
@@ -170,6 +172,10 @@ bool ship_editor::key_event(int key, bool down)
         switch (key) {
             case K_MOUSE1:
                 on_click();
+                break;
+
+            case K_MOUSE2:
+                on_rclick();
                 break;
 
             case K_CTRL:
@@ -200,6 +206,11 @@ bool ship_editor::key_event(int key, bool down)
 void ship_editor::cursor_event(vec2 position)
 {
     _cursor = position;
+    if (_state == state::beta) {
+        vec2 p = cursor_to_world();
+        _beta1 = .5f + (p.x - _stop.x) * .1f;
+        _beta2 = .5f + (p.y - _stop.y) * .1f;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -357,18 +368,32 @@ void ship_editor::on_click()
         _start = cursor_to_world();
         _state = state::started;
     } else if (_state == state::started) {
+        _stop = cursor_to_world();
+        _state = state::beta;
+    } else if (_state == state::beta) {
         // finish a new cspline at the cursor
         ccurve c = {
             _start,
             vec2_zero,
             vec2_zero,
-            cursor_to_world()
+            _stop
         };
         calculate_cspline_points(c);
         _cspline.push_back(c);
-        _start = c.d;
+        _start = _stop;
+        _state = state::started;
+        _beta1 = .5f;
+        _beta2 = .5f;
     }
 #endif
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::on_rclick()
+{
+    if (_state == state::beta) {
+        _state = state::started;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -396,8 +421,8 @@ void ship_editor::calculate_cspline_points(ccurve& c) const
     // G1 : P4 = P3 + (P3 - P2) * b1
     // G2 : P5 = P3 + (P3 - P2) * (2b1 + b1^2 + b2/2) + (P1 - P2)b1^2
 
-    const float beta1 = .5f;
-    const float beta2 = .5f;
+    const float beta1 = _beta1;
+    const float beta2 = _beta2;
 
     const float c1 = 2.f * beta1 + beta1 * beta1 + .5f * beta2;
     const float c2 = beta1 * beta1;

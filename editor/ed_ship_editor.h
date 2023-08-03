@@ -102,9 +102,14 @@ protected:
     enum class state {
         ready,
         started,
+        beta,
     } _state;
 
     vec2 _start;
+    vec2 _stop;
+
+    float _beta1;
+    float _beta2;
 
     std::vector<qcurve> _qspline;
     std::vector<ccurve> _cspline;
@@ -119,6 +124,7 @@ protected:
     void draw_graph(render::system* renderer, std::vector<float> const& data, color4 color) const;
 
     void on_click();
+    void on_rclick();
 
     void calculate_qspline_points(qcurve& q) const;
     void calculate_cspline_points(ccurve& c) const;
