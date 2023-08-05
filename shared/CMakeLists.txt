@@ -5,6 +5,7 @@ set(SHARED_SOURCES
     cm_config.h
     cm_console.cpp
     cm_console.h
+    cm_curve.h
     cm_enumflag.h
     cm_error.h
     cm_filesystem.cpp
