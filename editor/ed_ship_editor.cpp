@@ -50,6 +50,8 @@ ship_editor::ship_editor()
     , _graph_index(0)
     , _state{state::ready}
     , _start{vec2_zero}
+    , _stop{vec2_zero}
+    , _curvature(0)
 {
     _view.viewport.maxs() = application::singleton()->window()->size();
     _view.size = {64.f, 64.f * float(_view.viewport.maxs().y) / float(_view.viewport.maxs().x)};
@@ -153,6 +155,61 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         };
         calculate_cspline_points(c);
         draw_cspline(renderer, c);
+    } else if (_state == state::arc_start) {
+#if 0
+        vec2 stop = cursor_to_world();
+        if (_curvature == 0.f) {
+            section s{section_type::line};
+            s.p0 = _start;
+            s.t0 = stop - _start;
+            s.L = s.t0.normalize_length();
+
+            draw_section(renderer, s);
+        } else {
+            vec2 dir = (stop - _start);
+            float len = dir.normalize_length();
+            float theta = asin(.5f * len * abs(_curvature));
+            if (len > 2.f / abs(_curvature)) {
+                len = 2.f / abs(_curvature);
+                stop = _start + dir * len;
+                theta = .5f * math::pi<float>;
+            }
+            vec2 mid = .5f * (stop + _start);
+            vec2 center = mid + dir.cross(1.f) * cos(theta) / _curvature;
+
+            section s{section_type::arc};
+            s.p0 = _start;
+            s.t0 = (_start - center).normalize().cross(copysign(1.f, _curvature));
+            s.L = 2.f * theta / abs(_curvature);
+            s.k0 = _curvature;
+
+            draw_section(renderer, s);
+        }
+#else
+        section s{section_type::clothoid};
+        s.p0 = _start;
+        s.t0 = cursor_to_world() - _start;
+        s.L = s.t0.normalize_length();
+        s.k0 = 0.f;
+        s.k1 = _curvature;
+
+        draw_section(renderer, s);
+
+        s.p0 = _start + vec2(0, 5);
+        s.k0 = _curvature / 4.f;
+        draw_section(renderer, s);
+
+        s.p0 = _start - vec2(0, 5);
+        s.k0 = _curvature;
+        s.k1 = 0.f;
+        draw_section(renderer, s);
+
+        s.p0 = _start - vec2(0, 10);
+        s.k1 = _curvature / 4.f;
+        draw_section(renderer, s);
+
+        renderer->draw_string(va("k=%0f", _curvature), _start - vec2(0,2), color4(1,1,1,1));
+#endif
     }
 #endif
 
@@ -182,6 +239,14 @@ bool ship_editor::key_event(int key, bool down)
 
             case K_MOUSE2:
                 on_rclick();
+                break;
+
+            case K_MWHEELUP:
+                _curvature += (1.f / 256.f);
+                break;
+
+            case K_MWHEELDOWN:
+                _curvature -= (1.f / 256.f);
                 break;
 
             case K_CTRL:
@@ -376,6 +441,76 @@ void ship_editor::draw_graph(render::system* renderer, std::vector<vec2> const& 
 }
 
 //------------------------------------------------------------------------------
+void ship_editor::draw_section(render::system* renderer, section const& s) const
+{
+    switch (s.type) {
+        case section_type::line: {
+            renderer->draw_line(s.p0, s.p0 + s.t0 * s.L, color4(1, 1, 1, 1), color4(1, 1, 1, 1));
+            renderer->draw_box(vec2(.25f), s.p0, color4(0, 1, 0, 1));
+            renderer->draw_box(vec2(.25f), s.p0 + s.t0 * s.L, color4(0, 1, 0, 1));
+            break;
+        }
+
+        case section_type::arc: {
+            vec2 n0 = s.t0.cross(1);
+            float theta = s.L * s.k0;
+            float r = 1.f / s.k0;
+            vec2 p1 = s.p0 + r * (n0 * (1.f - cos(theta)) + s.t0 * sin(theta));
+            vec2 c = s.p0 + r * s.t0.cross(1);
+
+            for (int ii = 0; ii < 24; ++ii) {
+                float a0 = float(ii) / 24.f * theta;
+                float a1 = float(ii + 1) / 24.f * theta;
+                vec2 x0 = s.p0 + r * (n0 * (1.f - cos(a0)) + s.t0 * sin(a0));
+                vec2 x1 = s.p0 + r * (n0 * (1.f - cos(a1)) + s.t0 * sin(a1));
+                renderer->draw_line(x0, x1, color4(1, 1, 1, 1), color4(1, 1, 1, 1));
+            }
+
+            renderer->draw_arc(c, abs(r), 0.f, 0.f, 2.f * math::pi<float>, color4(1, 1, 1, .4f));
+            renderer->draw_line(s.p0, c, color4(1, 1, 1, .3f), color4(1, 1, 1, .3f));
+            renderer->draw_line(p1, c, color4(1, 1, 1, .3f), color4(1, 1, 1, .3f));
+
+            renderer->draw_box(vec2(.25f), s.p0, color4(0, 1, 0, 1));
+            renderer->draw_box(vec2(.25f), p1, color4(0, 1, 0, 1));
+            renderer->draw_box(vec2(.25f), c, color4(1, 0, 0, 1));
+            break;
+        }
+
+        case section_type::clothoid: {
+            vec2 p0 = s.evaluate(0);
+            vec2 t0 = s.evaluate_tangent(0);
+            vec2 n0 = t0.cross(copysign(1.f, -min(s.k0, s.k1)));
+            if (s.k0) {
+                renderer->draw_arc(p0 + n0 / abs(s.k0), 1.f / abs(s.k0), 0.f, 0.f, 2.f * math::pi<float>, color4(1, 1, 1, .3f));
+            } else {
+                renderer->draw_line(p0, p0 - t0 * 40.f, color4(1, 1, 1, .3f), color4(1, 1, 1, 0));
+            }
+            vec2 t1, n1;
+            float L = 0.f;
+            for (int ii = 0; ii < 24; ++ii) {
+                vec2 p1 = s.evaluate(s.L * float(ii + 1) / 24.f);
+                renderer->draw_line(p0, p1, color4(1,1,1,1), color4(1,1,1,1));
+                t1 = s.evaluate_tangent(s.L * float(ii + 1) / 24.f);
+                n1 = t1.cross(copysign(1.f, -min(s.k0, s.k1)));
+                //renderer->draw_line(p1, p1 + n1, color4(1, .5f, 0, 1), color4(1, .5f, 0, 1));
+                L += (p1 - p0).length();
+                p0 = p1;
+            }
+            if (s.k1) {
+                renderer->draw_arc(p0 + n1 / abs(s.k1), 1.f / abs(s.k1), 0.f, 0.f, 2.f * math::pi<float>, color4(1,1,1,.3f));
+            } else {
+                renderer->draw_line(p0, p0 + t1 * 40.f, color4(1, 1, 1, .3f), color4(1, 1, 1, 0));
+            }
+            renderer->draw_box(vec2(.25f), s.p0, color4(1, 0, 0, 1));
+            renderer->draw_box(vec2(.25f), s.evaluate(0), color4(0, 1, 0, 1));
+            renderer->draw_box(vec2(.25f), p0, color4(0, 1, 0, 1));
+            renderer->draw_string(va("%.0f", L), s.p0, color4(1, 1, 1, 1));
+            break;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 void ship_editor::on_click()
 {
 #if 0
@@ -394,7 +529,8 @@ void ship_editor::on_click()
 #else
     if (_state == state::ready) {
         _start = cursor_to_world();
-        _state = state::started;
+        _state = state::arc_start;
+        _curvature = 0.f;
     } else if (_state == state::started) {
         _stop = cursor_to_world();
         _state = state::beta;
@@ -421,6 +557,8 @@ void ship_editor::on_click()
         _state = state::started;
         _beta1 = .5f;
         _beta2 = .5f;
+    } else if (_state == state::beta) {
+        _state = state::started;
     }
 #endif
 }
@@ -429,6 +567,8 @@ void ship_editor::on_click()
 void ship_editor::on_rclick()
 {
     if (_state == state::beta) {
+        _state = state::started;
+    } else if (_state == state::beta) {
         _state = state::started;
     }
 }
