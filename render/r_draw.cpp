@@ -63,7 +63,8 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
         };
         arc_bounds = bounds::from_points(points);
 
-        if (amin <= -.5f * math::pi<float> && amax >= -.5f * math::pi<float>) {
+        if ((amin <= -.5f * math::pi<float> && amax >= -.5f * math::pi<float>)
+            || (amin <= 1.5f * math::pi<float> && amax >= 1.5f * math::pi<float>)) {
             arc_bounds[0][1] = center.y - radius;
         }
         if (amin <= 0.f && amax >= 0.f) {
