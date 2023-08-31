@@ -50,12 +50,6 @@ Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
 *************************************************************************/
 void segment::fresnel_integral(double x, double* c, double* s) const
 {
-#define ae_fabs(a, b) fabs(a)
-#define ae_fp_less(a, b) (a < b)
-#define ae_fp_greater(a, b) (a > b)
-#define ae_sin(a, b) sin(a)
-#define ae_cos(a, b) cos(a)
-#define ae_sign(a, b) (a < 0. ? -1. : 1.)
     double xxa;
     double f;
     double g;
@@ -79,9 +73,9 @@ void segment::fresnel_integral(double x, double* c, double* s) const
     mpi = 3.14159265358979323846;
     mpio2 = 1.57079632679489661923;
     xxa = x;
-    x = ae_fabs(xxa, _state);
+    x = fabs(xxa);
     x2 = x * x;
-    if (ae_fp_less(x2, 2.5625))
+    if (x2 < 2.5625)
     {
         t = x2 * x2;
         sn = -2.99181919401019853726E3;
@@ -110,14 +104,14 @@ void segment::fresnel_integral(double x, double* c, double* s) const
         cd = cd * t + 8.68029542941784300606E-4;
         cd = cd * t + 4.12142090722199792936E-2;
         cd = cd * t + 1.00000000000000000118E0;
-        *s = (double)ae_sign(xxa, _state) * x * x2 * sn / sd;
-        *c = (double)ae_sign(xxa, _state) * x * cn / cd;
+        *s = copysign(x * x2 * sn / sd, xxa);
+        *c = copysign(x * cn / cd, xxa);
         return;
     }
-    if (ae_fp_greater(x, 36974.0))
+    if (x > 36974.0)
     {
-        *c = (double)ae_sign(xxa, _state) * 0.5;
-        *s = (double)ae_sign(xxa, _state) * 0.5;
+        *c = copysign(0.5, xxa);
+        *s = copysign(0.5, xxa);
         return;
     }
     x2 = x * x;
@@ -171,13 +165,11 @@ void segment::fresnel_integral(double x, double* c, double* s) const
     f = (double)1 - u * fn / fd;
     g = t * gn / gd;
     t = mpio2 * x2;
-    cc = ae_cos(t, _state);
-    ss = ae_sin(t, _state);
+    cc = cos(t);
+    ss = sin(t);
     t = mpi * x;
-    *c = 0.5 + (f * ss - g * cc) / t;
-    *s = 0.5 - (f * cc + g * ss) / t;
-    *c = *c * (double)ae_sign(xxa, _state);
-    *s = *s * (double)ae_sign(xxa, _state);
+    *c = copysign(0.5 + (f * ss - g * cc) / t, xxa);
+    *s = copysign(0.5 - (f * cc + g * ss) / t, xxa);
 }
 
 } // namespace clothoid
