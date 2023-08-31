@@ -19,6 +19,7 @@ enum segment_type {
 class segment
 {
 public:
+    segment() = default;
 
     static segment from_line(vec2 position, vec2 direction, float length) {
         return segment(position, direction, length, 0, 0);
@@ -102,6 +103,9 @@ inline vec2 segment::final_position() const
         case segment_type::arc:
         case segment_type::transition:
             return evaluate(1 / _inverse_length);
+
+        default:
+            __assume(false);
     }
 }
 
@@ -115,6 +119,9 @@ inline vec2 segment::final_tangent() const
         case segment_type::arc:
         case segment_type::transition:
             return evaluate_tangent(1 / _inverse_length);
+
+        default:
+            __assume(false);
     }
 }
 
@@ -129,7 +136,7 @@ inline vec2 segment::evaluate(float s) const
         case segment_type::arc: {
             vec2 p0 = _initial_position;
             vec2 x0 = _initial_tangent / _initial_curvature;
-            vec2 y0 = _initial_tangent.cross(-1);
+            vec2 y0 = x0.cross(-1);
             float k0 = _initial_curvature;
             // Note that x0,y0 are pre-multiplied by the radius (1/k)
             return p0 + x0 * sin(s * k0)
@@ -141,10 +148,10 @@ inline vec2 segment::evaluate(float s) const
             float ts = B * evaluate_curvature(s);
             float t1 = B * evaluate_curvature(0);
             vec2 p1 = _initial_position;
-            vec2 x1 = _initial_tangent;
             // If the direction of the clothoid is reversed (k_a > k_b) then the
-            // normal also needs to be reversed.
-            vec2 y1 = _initial_tangent.cross(copysign(1.f, _initial_curvature - _final_curvature));
+            // tangent also needs to be reversed.
+            vec2 x1 = _initial_tangent * copysign(1.f, _final_curvature - _initial_curvature);
+            vec2 y1 = _initial_tangent.cross(-1);
             // If initial curvature is non-zero we need to find the basis vectors
             // of the clothoid segment at the initial point and untransform the
             // given initial tangent by that basis to get the initial tangent of
@@ -170,6 +177,9 @@ inline vec2 segment::evaluate(float s) const
                 return p1 + _pi * B * (x1 * cs + y1 * ss);
             }
         }
+
+        default:
+            __assume(false);
     }
 }
 
@@ -194,7 +204,10 @@ inline vec2 segment::evaluate_tangent(float s) const
             float t1 = B * evaluate_curvature(0);
             vec2 x1 = _initial_tangent;
             // If the direction of the clothoid is reversed (k_a > k_b) then the
-            // normal also needs to be reversed.
+            // normal also needs to be reversed. Note that unlike the corresponding
+            // code in `evaluate` where the tangent is used to calculate the
+            // position, the tangent here needs to be consistent with the initial
+            // tangent of the segment so only the normal is reversed.
             vec2 y1 = _initial_tangent.cross(copysign(1.f, _initial_curvature - _final_curvature));
             // If initial curvature is non-zero we need to find the basis vectors
             // of the clothoid segment at the initial point and untransform the
@@ -216,6 +229,9 @@ inline vec2 segment::evaluate_tangent(float s) const
                      + y1 * sin(_half_pi * ts * ts);
             }
         }
+
+        default:
+            __assume(false);
     }
 }
 
@@ -234,6 +250,9 @@ inline float segment::evaluate_curvature(float s) const
         case segment_type::transition: {
             return _initial_curvature + (_final_curvature - _initial_curvature) * s * _inverse_length;
         }
+
+        default:
+            __assume(false);
     }
 }
 
