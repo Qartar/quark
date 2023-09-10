@@ -52,10 +52,33 @@ ship_editor::ship_editor()
     , _start{vec2_zero}
     , _stop{vec2_zero}
     , _curvature(0)
+    , _start_section(SIZE_MAX)
+    , _has_section(false)
 {
     _view.viewport.maxs() = application::singleton()->window()->size();
     _view.size = {64.f, 64.f * float(_view.viewport.maxs().y) / float(_view.viewport.maxs().x)};
 
+    //_network.insert_edge(
+    //    clothoid::segment::from_line(vec2(-24,-4), vec2(1,0), 8)
+    //);
+    //_network.insert_edge(
+    //    clothoid::segment::from_line(vec2(16,4), vec2(1,0), 8)
+    //);
+    //_network.insert_edge(clothoid::segment::from_arc(vec2(-24, 12), vec2(1, 0), 8, .1f));
+    //_network.insert_edge(clothoid::segment::from_arc(vec2(24, 12), vec2(1, 0), 8, -.1f));
+
+    _network.insert_edge(clothoid::segment::from_transition(vec2(-20, 12), vec2(1, 0), 8, .0f, .2f));
+    _network.insert_edge(clothoid::segment::from_transition(vec2(-8, 12), vec2(1, 0), 8, .1f, .2f));
+    /**/_network.insert_edge(clothoid::segment::from_transition(vec2(4, 12), vec2(1, 0), 8, .2f, .1f));
+    /**/_network.insert_edge(clothoid::segment::from_transition(vec2(16, 12), vec2(1, 0), 8, .2f, .0f));
+
+    /**/_network.insert_edge(clothoid::segment::from_transition(vec2(-20, -12), vec2(1, 0), 8, .0f, -.2f));
+    /**/_network.insert_edge(clothoid::segment::from_transition(vec2(-8, -12), vec2(1, 0), 8, -.1f, -.2f));
+    _network.insert_edge(clothoid::segment::from_transition(vec2(4, -12), vec2(1, 0), 8, -.2f, -.1f));
+    _network.insert_edge(clothoid::segment::from_transition(vec2(16, -12), vec2(1, 0), 8, -.2f, .0f));
+
+    /**/_network.insert_edge(clothoid::segment::from_transition(vec2(-8, 0), vec2(1, 0), 8, .2f, -.2f));
+    _network.insert_edge(clothoid::segment::from_transition(vec2(4, 0), vec2(1, 0), 8, -.2f, .2f));
 }
 
 //------------------------------------------------------------------------------
@@ -144,6 +167,14 @@ void ship_editor::draw(render::system* renderer, time_value time) const
         draw_cspline(renderer, c);
     }
 
+    for (clothoid::network::edge_index edge : _network.edges()) {
+        draw_section(renderer, _network.get_segment(edge));
+    }
+
+    for (clothoid::network::node_index node : _network.nodes()) {
+        renderer->draw_box(vec2(.3f), _network.get_node(node).position, color4(1,1,1,.5f));
+    }
+
     if (_state == state::started || _state == state::beta) {
         ccurve c = {
             _start,
@@ -186,30 +217,25 @@ void ship_editor::draw(render::system* renderer, time_value time) const
             draw_section(renderer, s);
         }
 #else
-        section s{section_type::clothoid};
-        s.p0 = _start;
-        s.t0 = cursor_to_world() - _start;
-        s.L = s.t0.normalize_length();
-        s.k0 = 0.f;
-        s.k1 = _curvature;
+        clothoid::segment s{};
+        calculate_section(s);
 
         draw_section(renderer, s);
 
-        s.p0 = _start + vec2(0, 5);
-        s.k0 = _curvature / 4.f;
-        draw_section(renderer, s);
+        clothoid::segment o{};
+        calculate_section_offset(s, o, 1.f);
+        draw_section(renderer, o);
 
-        s.p0 = _start - vec2(0, 5);
-        s.k0 = _curvature;
-        s.k1 = 0.f;
-        draw_section(renderer, s);
-
-        s.p0 = _start - vec2(0, 10);
-        s.k1 = _curvature / 4.f;
-        draw_section(renderer, s);
-
-        renderer->draw_string(va("k=%0f", _curvature), _start - vec2(0,2), color4(1,1,1,1));
 #endif
+    }
+#endif
+
+#if 0
+    {
+        auto cs = connect_sections(_sections[0], _sections[1]);
+        for (std::size_t ii = 0; ii < cs.size(); ++ii) {
+            draw_section(renderer, cs[ii]);
+        }
     }
 #endif
 
@@ -277,6 +303,7 @@ bool ship_editor::key_event(int key, bool down)
 void ship_editor::cursor_event(vec2 position)
 {
     _cursor = position;
+    //_has_section = false;
     if (_state == state::beta) {
         vec2 p = cursor_to_world();
         _beta1 = .5f + (p.x - _stop.x) * .1f;
@@ -441,70 +468,75 @@ void ship_editor::draw_graph(render::system* renderer, std::vector<vec2> const& 
 }
 
 //------------------------------------------------------------------------------
-void ship_editor::draw_section(render::system* renderer, section const& s) const
+void ship_editor::draw_section(render::system* renderer, clothoid::segment const& s) const
 {
-    switch (s.type) {
-        case section_type::line: {
-            renderer->draw_line(s.p0, s.p0 + s.t0 * s.L, color4(1, 1, 1, 1), color4(1, 1, 1, 1));
-            renderer->draw_box(vec2(.25f), s.p0, color4(0, 1, 0, 1));
-            renderer->draw_box(vec2(.25f), s.p0 + s.t0 * s.L, color4(0, 1, 0, 1));
+    constexpr color4 guide_color(.3f, .3f, .3f, .9f);
+
+    switch (s.type()) {
+        case clothoid::segment_type::line: {
+            vec2 p0 = s.initial_position();
+            vec2 p1 = s.final_position();
+            renderer->draw_line(p0, p1, color4(1, 1, 1, 1), color4(1, 1, 1, 1));
+            renderer->draw_box(vec2(.25f), p0, color4(0, 1, 0, 1));
+            renderer->draw_box(vec2(.25f), p1, color4(0, 1, 0, 1));
             break;
         }
 
-        case section_type::arc: {
-            vec2 n0 = s.t0.cross(1);
-            float theta = s.L * s.k0;
-            float r = 1.f / s.k0;
-            vec2 p1 = s.p0 + r * (n0 * (1.f - cos(theta)) + s.t0 * sin(theta));
-            vec2 c = s.p0 + r * s.t0.cross(1);
+        case clothoid::segment_type::arc: {
+            vec2 p0 = s.initial_position();
+            vec2 t0 = s.initial_tangent();
+            vec2 n0 = t0.cross(-1);
+            float k0 = s.initial_curvature();
+            float r = 1.f / k0;
+            vec2 p1 = s.final_position();
+            vec2 c = p0 + r * t0.cross(-1);
 
             for (int ii = 0; ii < 24; ++ii) {
-                float a0 = float(ii) / 24.f * theta;
-                float a1 = float(ii + 1) / 24.f * theta;
-                vec2 x0 = s.p0 + r * (n0 * (1.f - cos(a0)) + s.t0 * sin(a0));
-                vec2 x1 = s.p0 + r * (n0 * (1.f - cos(a1)) + s.t0 * sin(a1));
+                vec2 x0 = s.evaluate(s.length() * float(ii) / 24.f);
+                vec2 x1 = s.evaluate(s.length() * float(ii + 1) / 24.f);
                 renderer->draw_line(x0, x1, color4(1, 1, 1, 1), color4(1, 1, 1, 1));
             }
 
-            renderer->draw_arc(c, abs(r), 0.f, 0.f, 2.f * math::pi<float>, color4(1, 1, 1, .4f));
-            renderer->draw_line(s.p0, c, color4(1, 1, 1, .3f), color4(1, 1, 1, .3f));
-            renderer->draw_line(p1, c, color4(1, 1, 1, .3f), color4(1, 1, 1, .3f));
+            renderer->draw_arc(c, abs(r), 0.f, 0.f, 2.f * math::pi<float>, guide_color);
+            renderer->draw_line(p0, c, guide_color, guide_color);
+            renderer->draw_line(p1, c, guide_color, guide_color);
 
-            renderer->draw_box(vec2(.25f), s.p0, color4(0, 1, 0, 1));
+            renderer->draw_box(vec2(.25f), p0, color4(0, 1, 0, 1));
             renderer->draw_box(vec2(.25f), p1, color4(0, 1, 0, 1));
             renderer->draw_box(vec2(.25f), c, color4(1, 0, 0, 1));
             break;
         }
 
-        case section_type::clothoid: {
+        case clothoid::segment_type::transition: {
+            float k0 = s.initial_curvature();
             vec2 p0 = s.evaluate(0);
             vec2 t0 = s.evaluate_tangent(0);
-            vec2 n0 = t0.cross(copysign(1.f, -min(s.k0, s.k1)));
-            if (s.k0) {
-                renderer->draw_arc(p0 + n0 / abs(s.k0), 1.f / abs(s.k0), 0.f, 0.f, 2.f * math::pi<float>, color4(1, 1, 1, .3f));
+            vec2 n0 = t0.cross(-copysign(1.f, k0));
+            float L = s.length();
+            if (k0) {
+                renderer->draw_arc(p0 + n0 / abs(k0), 1.f / abs(k0), 0.f, 0.f, 2.f * math::pi<float>, guide_color);
             } else {
-                renderer->draw_line(p0, p0 - t0 * 40.f, color4(1, 1, 1, .3f), color4(1, 1, 1, 0));
+                renderer->draw_line(p0, p0 - t0 * 40.f, guide_color, guide_color);
             }
             vec2 t1, n1;
-            float L = 0.f;
             for (int ii = 0; ii < 24; ++ii) {
-                vec2 p1 = s.evaluate(s.L * float(ii + 1) / 24.f);
+                vec2 p1 = s.evaluate(L * float(ii + 1) / 24.f);
                 renderer->draw_line(p0, p1, color4(1,1,1,1), color4(1,1,1,1));
-                t1 = s.evaluate_tangent(s.L * float(ii + 1) / 24.f);
-                n1 = t1.cross(copysign(1.f, -min(s.k0, s.k1)));
-                //renderer->draw_line(p1, p1 + n1, color4(1, .5f, 0, 1), color4(1, .5f, 0, 1));
-                L += (p1 - p0).length();
+                t1 = s.evaluate_tangent(L * float(ii + 1) / 24.f);
+                n1 = t1.cross(-copysign(1.f, s.evaluate_curvature(L * float(ii + 1) / 24.f)));
+                //renderer->draw_line(p1, p1 + n1, color4(.5f, 1, 0, 1), color4(.5f, 1, 0, 1));
+                //renderer->draw_line(p1, p1 + t1, color4(0, .5f, 1, 1), color4(0, .5f, 1, 1));
                 p0 = p1;
             }
-            if (s.k1) {
-                renderer->draw_arc(p0 + n1 / abs(s.k1), 1.f / abs(s.k1), 0.f, 0.f, 2.f * math::pi<float>, color4(1,1,1,.3f));
+            float k1 = s.final_curvature();
+            if (k1) {
+                renderer->draw_arc(p0 + n1 / abs(k1), 1.f / abs(k1), 0.f, 0.f, 2.f * math::pi<float>, guide_color);
             } else {
-                renderer->draw_line(p0, p0 + t1 * 40.f, color4(1, 1, 1, .3f), color4(1, 1, 1, 0));
+                renderer->draw_line(p0, p0 + t1 * 40.f, guide_color, guide_color);
             }
-            renderer->draw_box(vec2(.25f), s.p0, color4(1, 0, 0, 1));
-            renderer->draw_box(vec2(.25f), s.evaluate(0), color4(0, 1, 0, 1));
-            renderer->draw_box(vec2(.25f), p0, color4(0, 1, 0, 1));
-            renderer->draw_string(va("%.0f", L), s.p0, color4(1, 1, 1, 1));
+            renderer->draw_box(vec2(.25f), s.final_position(), color4(0, 1, 0, 1));
+            renderer->draw_box(vec2(.25f), s.initial_position(), color4(0, 1, 0, 1));
+            renderer->draw_string(va("%.0f", L), s.initial_position(), color4(1, 1, 1, 1));
             break;
         }
     }
@@ -531,6 +563,7 @@ void ship_editor::on_click()
         _start = cursor_to_world();
         _state = state::arc_start;
         _curvature = 0.f;
+        _start_section = SIZE_MAX;
     } else if (_state == state::started) {
         _stop = cursor_to_world();
         _state = state::beta;
@@ -559,6 +592,17 @@ void ship_editor::on_click()
         _beta2 = .5f;
     } else if (_state == state::beta) {
         _state = state::started;
+    } else if (_state == state::arc_start) {
+        clothoid::segment s;
+        calculate_section(s);
+        auto edge = _network.insert_edge(s);
+
+        _state = state::arc_start;
+        _start = s.final_position();
+        _start_tangent = s.final_tangent();
+        _start_curvature = s.final_curvature();
+        _start_section = edge;
+        _has_section = false;
     }
 #endif
 }
@@ -628,6 +672,237 @@ void ship_editor::calculate_cspline_points(ccurve& c) const
 
     c.b = (2.f / 3.f) * c.a + (1.f / 3.f) * c.d;
     c.c = (1.f / 3.f) * c.a + (2.f / 3.f) * c.d;
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::calculate_section(clothoid::segment& s) const
+{
+    if (_start_section != clothoid::network::invalid_edge) {
+#if 0
+        if (!_curvature && !_start_curvature) {
+            vec2 p1 = _start + _start_tangent * dot(_start_tangent, cursor_to_world() - _start);
+            s.type = section_type::line;
+            s.p0 = _start;
+            s.t0 = _start_tangent;
+            s.L = (p1 - _start).length();
+        } else if (_curvature == _start_curvature) {
+            s.type = section_type::arc;
+            s.p0 = _start;
+            s.t0 = _start_tangent;
+            s.L = (cursor_to_world() - _start).length();
+            s.k0 = _start_curvature;
+        } else {
+            s.type = section_type::clothoid;
+            s.p0 = _start;
+            s.t0 = _start_tangent;
+            s.L = (cursor_to_world() - _start).length();
+            s.k0 = _start_curvature;
+            s.k1 = _curvature;
+    }
+#else
+        if (!_has_section) {
+            s = clothoid::segment::from_arc(
+                _start,
+                _start_tangent,
+                (cursor_to_world() - _start).length(),
+                _start_curvature);
+            _section = s;
+            _has_section = true;
+        } else {
+            vec2 end = _section.final_position();
+            vec2 target = cursor_to_world();
+            vec2 dir = target - _start;
+            float L = _section.length() - dot(dir, (end - target)) / dir.length();
+            float k1 = _section.final_curvature() - .1f * cross(dir, (end - target)) / dir.length_sqr();
+            _section = clothoid::segment::from_transition(
+                _start,
+                _start_tangent,
+                L,
+                _start_curvature,
+                k1);
+#if 0
+            {
+                float kmin, kmax;
+                float A = .5f * _section.L / (math::pi<float> / 2.f);
+                float B = -1.f;
+                float C = _section.k0;
+                float det = B * B - 4.f * A * C;
+                if (det > 0.f) {
+                    float Q = -.5f * (B + copysign(sqrt(det), B));
+                    kmin = min(Q / A, C / Q);
+                    kmax = max(Q / A, C / Q);
+                    if (_section.k1 < kmin) {
+                        _section.k1 = kmin;
+                    }
+                    if (_section.k1 > kmax) {
+                        _section.k1 = kmax;
+                    }
+                }
+            }
+#endif
+            if (isnan(_section.length()) || isnan(_section.final_curvature())) {
+                _has_section = false;
+            }
+            s = _section;
+        }
+        if (!_start_curvature) {
+            vec2 p2 = cursor_to_world();
+            vec2 p1 = _start + _start_tangent * dot(_start_tangent, p2 - _start);
+            if ((p2 - p1).length_sqr() < 1.f) {
+                s = clothoid::segment::from_line(
+                    _start,
+                    _start_tangent,
+                    (p1 - _start).length());
+                _section = s;
+                _has_section = true;
+            }
+        } else {
+            vec2 center = _start + _start_tangent.cross(-1.f) / _start_curvature;
+            vec2 p2 = cursor_to_world();
+            vec2 p1 = (p2 - center).normalize() / abs(_start_curvature) + center;
+            if ((p2 - p1).length_sqr() < 1.f) {
+                s = clothoid::segment::from_arc(
+                    _start,
+                    _start_tangent,
+                    atan2f(cross(_start - center, p1 - center), dot(_start - center, p1 - center)) / _start_curvature,
+                    _start_curvature);
+                _section = s;
+                _has_section = true;
+            }
+        }
+#endif
+    } else if (!_curvature) {
+        vec2 t0 = cursor_to_world() - _start;
+        float L = t0.normalize_length();
+        s = clothoid::segment::from_line(
+            _start, t0, L);
+    } else {
+        vec2 stop = cursor_to_world();
+        vec2 dir = (stop - _start);
+        float len = dir.normalize_length();
+        float theta = asin(.5f * len * abs(_curvature));
+        if (len > 2.f / abs(_curvature)) {
+            len = 2.f / abs(_curvature);
+            stop = _start + dir * len;
+            theta = .5f * math::pi<float>;
+        }
+        vec2 mid = .5f * (stop + _start);
+        vec2 center = mid + dir.cross(-1) * cos(theta) / _curvature;
+
+        s = clothoid::segment::from_arc(
+            _start,
+            (_start - center).normalize().cross(-copysign(1.f, _curvature)),
+            2.f * theta / abs(_curvature),
+            _curvature);
+    }
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::calculate_section_offset(clothoid::segment const& s, clothoid::segment& o, float offset) const
+{
+    switch (s.type()) {
+        case clothoid::segment_type::line: {
+            vec2 n0 = s.initial_tangent().cross(1);
+            o = clothoid::segment::from_line(
+                s.initial_position() + n0 * offset,
+                s.initial_tangent(),
+                s.length());
+            break;
+        }
+
+        case clothoid::segment_type::arc: {
+            vec2 n0 = s.initial_tangent().cross(1);
+            float r0 = 1.f / s.initial_curvature();
+            o = clothoid::segment::from_arc(
+                s.initial_position() + n0 * offset,
+                s.initial_tangent(),
+                s.length() * (r0 + offset) / r0,
+                1.f / (r0 + offset));
+            break;
+        }
+
+        case clothoid::segment_type::transition: {
+            vec2 n0 = s.initial_tangent().cross(1);
+            vec2 n1 = s.final_tangent().cross(1);
+            vec2 p1 = s.final_position() + n1 * offset;
+            float k0, k1;
+            if (s.initial_curvature()) {
+                float r0 = 1.f / s.initial_curvature();
+                k0 = 1.f / (r0 + offset);
+            } else {
+                k0 = 0;
+            }
+            if (s.final_curvature()) {
+                float r1 = 1.f / s.final_curvature();
+                k1 = 1.f / (r1 + offset);
+            } else {
+                k1 = 0;
+            }
+            o = clothoid::segment::from_transition(
+                s.initial_position() + n0 * offset,
+                s.initial_tangent(),
+                s.length(), // fixme
+                k0,
+                k1);
+            break;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+std::vector<clothoid::segment> ship_editor::connect_sections(clothoid::segment const& /*s1*/, clothoid::segment const& /*s2*/) const
+{
+#if 0
+    vec2 p0 = s1.evaluate(s1.L);
+    vec2 p1 = s2.evaluate(0);
+    vec2 t0 = s1.evaluate_tangent(s1.L);
+    vec2 t1 = s2.evaluate_tangent(0);
+
+    // connect parallel tracks
+    if (dot(t0, t1) > 0.999f) {
+        vec2 p2 = .5f * (p0 + p1);
+
+        clothoid::segment o1;
+        o1.type = section_type::clothoid;
+        o1.p0 = p0;
+        o1.t0 = t0;
+        o1.k0 = 0;
+        o1.L = .25f * (p1 - p0).length();
+        o1.k1 = 0;
+
+        clothoid::segment o2;
+        o2.type = section_type::clothoid;
+        o2.k1 = 0;
+
+        vec2 dir = (p2 - p0);
+
+        for (int ii = 0; ii < 32; ++ii) {
+            o2.p0 = o1.evaluate(o1.L);
+            o2.t0 = o1.evaluate_tangent(o1.L);
+            o2.L = o1.L;
+            o2.k0 = o1.k1;
+
+            vec2 mid = o2.evaluate(o2.L);
+
+            o1.L -= dot(dir, (mid - p2)) / dir.length();
+            o1.k1 -= .1f * cross(dir, (mid - p2)) / dir.length_sqr();
+        }
+
+        std::vector<clothoid::segment> sections;
+        sections.push_back(o1);
+        sections.push_back(o2);
+        sections.push_back(o1);
+        sections.push_back(o2);
+        sections[2].p0 = sections[1].evaluate(sections[1].L);
+        sections[2].t0 = sections[1].evaluate_tangent(sections[1].L);
+        sections[2].k1 = -sections[1].k0;
+        sections[3].p0 = sections[2].evaluate(sections[2].L);
+        sections[3].t0 = sections[2].evaluate_tangent(sections[2].L);
+        sections[3].k0 = sections[2].k1;
+        return sections;
+    }
+#endif
+    return {};
 }
 
 //------------------------------------------------------------------------------
