@@ -64,8 +64,8 @@ network::edge_index network::insert_edge(segment s)
     }
 
     if (n1 == invalid_node) {
-        n0 = alloc_node();
-        _nodes[n0] = {p1, invalid_edge};
+        n1 = alloc_node();
+        _nodes[n1] = {p1, invalid_edge};
     }
 
     //

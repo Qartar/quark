@@ -36,66 +36,62 @@ public:
     struct node_iterator {
         node_index node_begin;
         node_index node_end;
-        node_index node_cur;
         node_index const* free_begin;
         node_index const* free_end;
 
-        node_iterator operator++() const {
-            node_index cur = node_cur + 1;
-            node_index const* free_cur = free_begin;
-            while(cur < node_end && free_cur < free_end) {
-                if (*free_cur < cur - node_begin) {
-                    ++free_cur;
-                } else if (*free_cur == cur - node_begin) {
-                    ++cur;
-                    ++free_cur;
+        node_iterator& operator++() {
+            ++node_begin;
+            while(node_begin < node_end && free_begin < free_end) {
+                if (*free_begin < node_begin) {
+                    ++free_begin;
+                } else if (*free_begin == node_begin) {
+                    ++node_begin;
+                    ++free_begin;
                 } else {
                     break;
                 }
             }
-            return {node_begin, node_end, cur, free_cur, free_end};
+            return *this;
         }
         node_index operator*() const {
-            return node_cur;
+            return node_begin;
         }
         friend bool operator==(node_iterator const& lhs, node_iterator const& rhs) {
-            return lhs.node_cur == rhs.node_cur;
+            return lhs.node_begin == rhs.node_begin;
         }
         friend bool operator!=(node_iterator const& lhs, node_iterator const& rhs) {
-            return lhs.node_cur != rhs.node_cur;
+            return lhs.node_begin != rhs.node_begin;
         }
     };
 
     struct edge_iterator {
         edge_index edge_begin;
         edge_index edge_end;
-        edge_index edge_cur;
         edge_index const* free_begin;
         edge_index const* free_end;
 
-        edge_iterator operator++() const {
-            edge_index cur = edge_cur + 1;
-            edge_index const* free_cur = free_begin;
-            while(cur < edge_end && free_cur < free_end) {
-                if (*free_cur < cur - edge_begin) {
-                    ++free_cur;
-                } else if (*free_cur == cur - edge_begin) {
-                    cur += 2; // edges are always allocated in pairs
-                    ++free_cur;
+        edge_iterator& operator++() {
+            ++edge_begin;
+            while(edge_begin < edge_end && free_begin < free_end) {
+                if (*free_begin < edge_begin) {
+                    ++free_begin;
+                } else if (*free_begin == edge_begin) {
+                    edge_begin += 2; // edges are always allocated in pairs
+                    ++free_begin;
                 } else {
                     break;
                 }
             }
-            return {edge_begin, edge_end, cur, free_cur, free_end};
+            return *this;
         }
         edge_index operator*() const {
-            return edge_cur;
+            return edge_begin;
         }
         friend bool operator==(edge_iterator const& lhs, edge_iterator const& rhs) {
-            return lhs.edge_cur == rhs.edge_cur;
+            return lhs.edge_begin == rhs.edge_begin;
         }
         friend bool operator!=(edge_iterator const& lhs, edge_iterator const& rhs) {
-            return lhs.edge_cur != rhs.edge_cur;
+            return lhs.edge_begin != rhs.edge_begin;
         }
     };
 
@@ -106,10 +102,10 @@ public:
         node_index const* free_end;
 
         node_iterator begin() {
-            return ++node_iterator{node_begin, node_end, node_begin - 1, free_begin, free_end};
+            return ++node_iterator{node_begin - 1, node_end, free_begin, free_end};
         }
         node_iterator end() {
-            return node_iterator{node_begin, node_end, node_end, free_end, free_end};
+            return node_iterator{node_end, node_end, free_end, free_end};
         }
     };
 
@@ -120,10 +116,10 @@ public:
         edge_index const* free_end;
 
         edge_iterator begin() {
-            return ++edge_iterator{edge_begin, edge_end, edge_begin - 1, free_begin, free_end};
+            return ++edge_iterator{edge_begin - 1, edge_end, free_begin, free_end};
         }
         edge_iterator end() {
-            return edge_iterator{edge_begin, edge_end, edge_end, free_end, free_end};
+            return edge_iterator{edge_end, edge_end, free_end, free_end};
         }
     };
 
