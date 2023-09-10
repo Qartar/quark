@@ -48,6 +48,9 @@ public:
     // Derivatives
     //
 
+    //! Return a segment over the same curve but with endpoints reversed
+    segment reverse() const;
+
     //! Evaluate position of the spline segment with respect to arclength `s`
     vec2 evaluate(float s) const;
 
@@ -119,6 +122,36 @@ inline vec2 segment::final_tangent() const
         case segment_type::arc:
         case segment_type::transition:
             return evaluate_tangent(1 / _inverse_length);
+
+        default:
+            __assume(false);
+    }
+}
+
+//------------------------------------------------------------------------------
+inline segment segment::reverse() const
+{
+    switch (type()) {
+        case segment_type::line:
+            return from_line(
+                final_position(),
+                -final_tangent(),
+                length());
+
+        case segment_type::arc:
+            return from_arc(
+                final_position(),
+                -final_tangent(),
+                length(),
+                -final_curvature());
+
+        case segment_type::transition:
+            return from_transition(
+                final_position(),
+                -final_tangent(),
+                length(),
+                -final_curvature(),
+                -initial_curvature());
 
         default:
             __assume(false);

@@ -2,6 +2,8 @@ set(SHARED_SOURCES
     cm_bounds.h
     cm_clothoid.cpp
     cm_clothoid.h
+    cm_clothoid_network.cpp
+    cm_clothoid_network.h
     cm_color.h
     cm_config.cpp
     cm_config.h
