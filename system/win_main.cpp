@@ -52,7 +52,8 @@ application* application::_singleton = nullptr;
 //------------------------------------------------------------------------------
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR szCmdLine, int nCmdShow)
 {
-    return application(hInstance).main(szCmdLine, nCmdShow);
+    static application app(hInstance);
+    return app.main(szCmdLine, nCmdShow);
 }
 
 //------------------------------------------------------------------------------
