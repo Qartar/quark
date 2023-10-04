@@ -1,31 +1,24 @@
-// g_player.h
+// g_rail_station.h
 //
 
 #pragma once
 
 #include "g_object.h"
-#include "g_usercmd.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-class ship;
+class rail_network;
 
 //------------------------------------------------------------------------------
-struct player_view {
-    vec2 origin;
-    vec2 size;
-};
-
-//------------------------------------------------------------------------------
-class player : public object
+class rail_station : public object
 {
 public:
     static const object_type _type;
 
 public:
-    player();
-    virtual ~player();
+    rail_station();
+    virtual ~rail_station();
 
     void spawn();
 
@@ -37,15 +30,8 @@ public:
     virtual float get_rotation(time_value time) const override;
     virtual mat3 get_transform(time_value time) const override;
 
-    player_view view(time_value time) const;
-
-    void set_aspect(float aspect);
-    virtual void update_usercmd(usercmd cmd, time_value time);
-
 protected:
-    player_view _view;
-    usercmd _usercmd;
-    time_value _usercmd_time;
+
 };
 
 } // namespace game

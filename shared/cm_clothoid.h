@@ -60,6 +60,10 @@ public:
     //! Evaluate curvature of the spline segment with respect to arclength `s`
     float evaluate_curvature(float s) const;
 
+    //! Return the closest point on the segemnt to to given point `p` with the
+    //! arclength of the closest point returned as the z component of the result.
+    vec3 get_closest_point(vec2 p) const;
+
 private:
     vec2 _initial_position;
     vec2 _initial_tangent;

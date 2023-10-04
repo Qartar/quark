@@ -46,6 +46,10 @@ struct usercmd
         select      = (1 << 0),
         zoom_in     = (1 << 1),
         zoom_out    = (1 << 2),
+        scroll_left = (1 << 3),
+        scroll_right = (1 << 4),
+        scroll_up   = (1 << 5),
+        scroll_down = (1 << 6),
     };
     ENUM_FLAG_FRIEND_OPERATORS(usercmd::button);
 

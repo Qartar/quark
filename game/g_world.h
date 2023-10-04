@@ -5,6 +5,7 @@
 
 #include "g_usercmd.h"
 #include "g_object.h"
+#include "g_rail_network.h"
 
 #include "p_material.h"
 #include "p_rigidbody.h"
@@ -179,6 +180,8 @@ public:
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
 
+    rail_network& rail_network() { return _rail_network; }
+
 private:
     //! Sparse array of objects in the world, resized as needed
     std::vector<std::unique_ptr<object>> _objects;
@@ -228,6 +231,8 @@ private:
     int _framenum;
 
     network::message_storage _message;
+
+    game::rail_network _rail_network;
 
 protected:
     enum class message_type

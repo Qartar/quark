@@ -151,6 +151,8 @@ public:
     edge const& get_edge(edge_index e) const { return _edges[e]; }
     segment const& get_segment(edge_index e) const { return _segments[e]; }
 
+    bool get_closest_segment(vec2 position, float max_distance, edge_index& e, float& s) const;
+
 protected:
     //! Insert an existing edge into an existing node
     void node_insert_edge(node_index n, edge_index e);

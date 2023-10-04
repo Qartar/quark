@@ -34,6 +34,20 @@ void player::draw(render::system* renderer, time_value time) const
 {
     (void)renderer;
     (void)time;
+
+    vec2 cursor = (_usercmd.cursor - vec2(.5f)) * renderer->view().size + renderer->view().origin;
+    float sz = renderer->view().size.length() * (1.f / 512.f);
+
+    clothoid::network::edge_index edge;
+    float length;
+
+    if (get_world()->rail_network().get_closest_segment(cursor, 8.f, edge, length)) {
+        renderer->draw_box(vec2(sz), cursor, color4(0,1,0,1));
+        vec2 spos = get_world()->rail_network().get_segment(edge).evaluate(length);
+        renderer->draw_box(vec2(sz), spos, color4(1,0,0,1));
+    } else {
+        renderer->draw_box(vec2(sz), cursor, color4(1,1,0,1));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -78,8 +92,32 @@ void player::set_aspect(float aspect)
 //------------------------------------------------------------------------------
 void player::update_usercmd(usercmd cmd, time_value time)
 {
-    (void)time;
+    constexpr float zoom_speed = 1.f + (1.f / 32.f);
+    constexpr float scroll_speed = 1.f;
+
+    float delta_time = (time - _usercmd_time).to_seconds();
+
+    if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
+        _view.origin.y += scroll_speed * _view.size.x * delta_time;
+    }
+    if (!!(_usercmd.buttons & usercmd::button::scroll_down)) {
+        _view.origin.y -= scroll_speed * _view.size.x * delta_time;
+    }
+    if (!!(_usercmd.buttons & usercmd::button::scroll_left)) {
+        _view.origin.x -= scroll_speed * _view.size.x * delta_time;
+    }
+    if (!!(_usercmd.buttons & usercmd::button::scroll_right)) {
+        _view.origin.x += scroll_speed * _view.size.x * delta_time;
+    }
+
     _usercmd = cmd;
+    _usercmd_time = time;
+
+    if (_usercmd.action == usercmd::action::zoom_in) {
+        _view.size *= (1.f / zoom_speed);
+    } else if (_usercmd.action == usercmd::action::zoom_out) {
+        _view.size *= zoom_speed;
+    }
 }
 
 } // namespace game

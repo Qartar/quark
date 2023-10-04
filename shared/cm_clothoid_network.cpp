@@ -256,4 +256,25 @@ network::edge_range network::edges() const {
     };
 }
 
+//------------------------------------------------------------------------------
+bool network::get_closest_segment(vec2 position, float max_distance, edge_index& e, float& s) const
+{
+    float best_distance_sqr = square(max_distance);
+    e = invalid_edge;
+    s = 0.f;
+    for (edge_index ei : edges()) {
+        if (ei & 1) {
+            continue;
+        }
+        vec3 p = _segments[ei].get_closest_point(position);
+        float dsqr = length_sqr(p.to_vec2() - position);
+        if (dsqr < best_distance_sqr) {
+            best_distance_sqr = dsqr;
+            e = ei;
+            s = p.z;
+        }
+    }
+    return e != invalid_edge;
+}
+
 } // namespace clothoid

@@ -2,6 +2,7 @@
 //
 
 #include "cm_clothoid.h"
+#include "cm_shared.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace clothoid {
@@ -170,6 +171,60 @@ void segment::fresnel_integral(double x, double* c, double* s) const
     t = mpi * x;
     *c = copysign(0.5 + (f * ss - g * cc) / t, xxa);
     *s = copysign(0.5 - (f * cc + g * ss) / t, xxa);
+}
+
+//------------------------------------------------------------------------------
+vec3 segment::get_closest_point(vec2 p) const
+{
+    switch (type()) {
+        case segment_type::line: {
+            vec2 r = p - _initial_position;
+            vec2 v = _initial_tangent;
+
+            float s = min(max(dot(r, v), 0.f), length());
+            return vec3(_initial_position + v * s, s);
+        }
+
+        case segment_type::arc: {
+            float radius = 1.f / _initial_curvature;
+            vec2 center = _initial_position - _initial_tangent.cross(radius);
+            vec2 final_pos = final_position();
+            vec2 dir = p - center;
+
+            vec2 initial_edge_dir = _initial_position - center;
+            vec2 final_edge_dir = final_pos - center;
+            float initial_edge_dist = dot(dir, initial_edge_dir.cross(-1));
+            float final_edge_dist = dot(dir, final_edge_dir.cross(-1));
+
+            if (radius < 0) {
+                initial_edge_dist = -initial_edge_dist;
+                final_edge_dist = -final_edge_dist;
+            }
+
+            if (initial_edge_dist < 0 && final_edge_dist > 0) {
+                if (dot(dir, final_pos - _initial_position) < 0) {
+                    return vec3(_initial_position, 0);
+                } else {
+                    return vec3(final_pos, length());
+                }
+            } else if (initial_edge_dist < 0) {
+                return vec3(_initial_position, 0);
+            } else if (final_edge_dist > 0) {
+                return vec3(final_pos, length());
+            } else {
+                vec2 v = dir.normalize() * abs(radius);
+                float theta = atan2(initial_edge_dist, dot(dir, initial_edge_dir));
+                return vec3(center + v, theta * abs(radius));
+            }
+        }
+
+        case segment_type::transition: {
+            return vec3(_initial_position, 0); // TODO
+        }
+
+        default:
+            __assume(false);
+    }
 }
 
 } // namespace clothoid

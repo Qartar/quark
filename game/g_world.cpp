@@ -9,6 +9,8 @@
 #include "p_collide.h"
 #include "p_trace.h"
 
+#include "g_train.h"
+
 #include <algorithm>
 #include <set>
 
@@ -23,6 +25,8 @@ world::world()
     , _physics(
         std::bind(&world::physics_filter_callback, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&world::physics_collide_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
+    , _framenum(0)
+    , _rail_network(this)
 {
     for (_index = 0; _index < max_worlds; ++_index) {
         if (!_singletons[_index]) {
@@ -60,6 +64,39 @@ void world::reset()
 
     _sequence = 0;
     _framenum = 0;
+
+    spawn<train>();
+
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2(-200, 0), vec2(1, 0), 400));
+#if 0
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(200, 0), vec2(1, 0), math::pi<float> * 50.f, 1.f/100.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(300, 100), vec2(0, 1), math::pi<float> * 50.f, 1.f/100.f));
+#else
+    _rail_network.add_segment(
+        clothoid::segment::from_transition(vec2(200, 0), vec2(1, 0), math::pi<float> * 75.f * (100.f / 103.262383f), 0, 1.f/75.f / (100.f / 103.262383f)));
+    _rail_network.add_segment(
+        clothoid::segment::from_transition(vec2(377.952576f, 100), vec2(0, 1), math::pi<float> * 75.f * (100.f / 103.262383f), 1.f/75.f / (100.f / 103.262383f), 0));
+#endif
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2(200, 200), vec2(-1, 0), 400));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(-200, 200), vec2(-1, 0), math::pi<float> * 50.f, 1.f/100.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(-300, 100), vec2(0, -1), math::pi<float> * 50.f, 1.f/100.f));
+
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(200, 0), vec2(1, 0), math::pi<float> * 50.f, -1.f/100.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(300, -100), vec2(0, -1), math::pi<float> * 50.f, -1.f/100.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2(200, -200), vec2(-1, 0), 400));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(-200, -200), vec2(-1, 0), math::pi<float> * 50.f, -1.f/100.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(-300, -100), vec2(0, 1), math::pi<float> * 50.f, -1.f/100.f));
 }
 
 //------------------------------------------------------------------------------
@@ -101,6 +138,8 @@ void world::remove(handle<object> object)
 void world::draw(render::system* renderer, time_value time) const
 {
     renderer->draw_starfield();
+
+    _rail_network.draw(renderer, time);
 
     for (auto& obj : _objects) {
         // objects array is sparse

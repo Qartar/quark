@@ -101,6 +101,10 @@ result session::init (string::view cmdline)
         {'-', usercmd::action::zoom_out},
         {K_MWHEELUP, usercmd::action::zoom_in},
         {K_MWHEELDOWN, usercmd::action::zoom_out},
+        {'w', usercmd::button::scroll_up},
+        {'a', usercmd::button::scroll_left},
+        {'s', usercmd::button::scroll_down},
+        {'d', usercmd::button::scroll_right},
     });
 
     init_client();
@@ -539,6 +543,7 @@ void session::new_game()
 
     _world.reset( );
     _worldtime = time_value::zero;
+    _player = _world.spawn<player>();
 
     //
     //  reset players
