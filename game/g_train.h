@@ -39,11 +39,9 @@ protected:
     std::size_t _next_station;
 
     std::vector<edge_index> _path;
-    edge_index _current_edge;
     float _current_distance;
     float _current_speed;
 
-    std::vector<edge_index> _prev;
     int _num_cars;
 
     static constexpr float max_speed = 50.f;
@@ -54,6 +52,9 @@ protected:
 protected:
     float target_speed() const;
     float car_offset(int index) const;
+
+    void draw_locomotive(render::system* renderer, clothoid::segment segment, float s) const;
+    void draw_car(render::system* renderer, clothoid::segment segment, float s) const;
 };
 
 } // namespace game
