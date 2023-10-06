@@ -4,7 +4,6 @@
 #pragma once
 
 #include "cm_string.h"
-#include "g_projectile.h"
 
 #include <functional>
 #include <memory>

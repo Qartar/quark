@@ -204,13 +204,6 @@ private:
 
     render::system* _renderer;
 
-    config::string _net_master;
-    config::string _net_server_name;
-
-    config::string _cl_name;
-    config::string _cl_color;
-    config::integer _cl_weapon;
-
     config::scalar _timescale;
 
     console _console;

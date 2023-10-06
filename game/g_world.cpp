@@ -4,7 +4,6 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_projectile.h"
 #include "g_player.h"
 #include "p_collide.h"
 #include "p_trace.h"
@@ -350,10 +349,6 @@ bool world::physics_filter_callback(physics::rigid_body const* body_a, physics::
 {
     game::object* obj_a = _physics_objects[body_a];
     game::object* obj_b = _physics_objects[body_b];
-
-    if (obj_b->is_type<projectile>()) {
-        return false;
-    }
 
     game::object const* owner_a = obj_a->_owner ? obj_a->_owner.get() : obj_a;
     game::object const* owner_b = obj_b->_owner ? obj_b->_owner.get() : obj_b;

@@ -35,7 +35,6 @@ void session::start_server ()
 
     svs.active = true;
     svs.local = false;
-    _net_server_name = svs.name;
 
     svs.socket.open(network::socket_type::ipv6, PORT_SERVER);
     _netchan.setup(&svs.socket, network::address{});

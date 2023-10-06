@@ -14,37 +14,11 @@ const float colorMinFrac = 0.75f;
 //------------------------------------------------------------------------------
 void session::init_client()
 {
-    float csum;
-
     _client_button_down = 0;
     _client_say = 0;
 
-    if (strlen(_cl_name)) {
-        strcpy(cls.info.name, _cl_name);
-    } else {
-        strcpy(cls.info.name, application::singleton()->username());
-    }
-
-    {
-        int r = 255, g = 255, b = 255;
-        sscanf(_cl_color, "%d %d %d", &r, &g, &b);
-        cls.info.color.r = static_cast<float>(r) * (1.f / 255.f);
-        cls.info.color.g = static_cast<float>(g) * (1.f / 255.f);
-        cls.info.color.b = static_cast<float>(b) * (1.f / 255.f);
-    }
-
-    csum = cls.info.color.r + cls.info.color.g + cls.info.color.b;
-    if ( csum < colorMinFrac ) {
-        if ( csum == 0.0f ) {
-            cls.info.color.r = cls.info.color.g = cls.info.color.b = colorMinFrac * 0.334f;
-        } else {
-            float   invsum = colorMinFrac / csum;
-
-            cls.info.color.r *= invsum;
-            cls.info.color.g *= invsum;
-            cls.info.color.b *= invsum;
-        }
-    }
+    strcpy(cls.info.name, application::singleton()->username());
+    cls.info.color = color3(1,1,1);
 
     _net_bytes.fill(0);
 }
@@ -52,8 +26,6 @@ void session::init_client()
 //------------------------------------------------------------------------------
 void session::shutdown_client()
 {
-    _cl_name = string::view(cls.info.name.data());
-    _cl_color = va("%i %i %i", (int )(cls.info.color.r*255), (int )(cls.info.color.g*255), (int )(cls.info.color.b*255) );
 }
 
 //------------------------------------------------------------------------------
@@ -254,14 +226,6 @@ void session::info_ask ()
         if (cls.socket.open(network::socket_type::ipv6, PORT_CLIENT+ii)) {
             break;
         }
-    }
-
-    //  ping master server
-    if (cls.socket.resolve(_net_master, addr)) {
-        if (addr.port == 0) {
-            addr.port = PORT_SERVER;
-        }
-        cls.socket.printf(addr, "info");
     }
 
     //  ping local network

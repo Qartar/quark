@@ -26,11 +26,6 @@ namespace game {
 session::session()
     : _menu_active(true)
     , _dedicated(false)
-    , _net_master("net_master", "oedhead.no-ip.org", config::archive, "master server hostname")
-    , _net_server_name("net_serverName", "Quark Server", config::archive, "local server name")
-    , _cl_name("ui_name", "", config::archive, "user info: name")
-    , _cl_color("ui_color", "255 0 0", config::archive, "user info: color")
-    , _cl_weapon("ui_weapon", 0, config::archive, "user info: weapon")
     , _timescale("timescale", 1.f, config::server, "")
     , _restart_time(time_value::zero)
     , _zoom(1)
@@ -85,7 +80,7 @@ result session::init (string::view cmdline)
 
     memset( _clientsay, 0, LONG_STRING );
 
-    strcpy( svs.name, _net_server_name );
+    strcpy_s( svs.name, "server" );
 
     cls.active = false;
     cls.local = false;
@@ -117,18 +112,6 @@ result session::init (string::view cmdline)
         _dedicated = true;
         start_server( );
     }
-
-    // sound indices are shared over the network so sounds
-    // need to be registed in the same order on all clients
-    pSound->load_sound("assets/sound/tank_move.wav");
-    pSound->load_sound("assets/sound/tank_idle.wav");
-    pSound->load_sound("assets/sound/tank_explode.wav");
-    pSound->load_sound("assets/sound/turret_move.wav");
-    pSound->load_sound("assets/sound/blaster_fire.wav");
-    pSound->load_sound("assets/sound/blaster_impact.wav");
-    pSound->load_sound("assets/sound/cannon_fire.wav");
-    pSound->load_sound("assets/sound/cannon_impact.wav");
-    pSound->load_sound("assets/sound/missile_flight.wav");
 
     return result::success;
 }

@@ -61,8 +61,6 @@ set(QUARK_SOURCES
     game/g_player.cpp
     game/g_player.h
     game/g_particles.cpp
-    game/g_projectile.cpp
-    game/g_projectile.h
     game/g_rail_network.cpp
     game/g_rail_network.h
     game/g_rail_signal.cpp
