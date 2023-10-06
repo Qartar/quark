@@ -50,6 +50,7 @@ struct usercmd
         scroll_right = (1 << 4),
         scroll_up   = (1 << 5),
         scroll_down = (1 << 6),
+        pan         = (1 << 7),
     };
     ENUM_FLAG_FRIEND_OPERATORS(usercmd::button);
 

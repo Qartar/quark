@@ -109,6 +109,15 @@ void player::update_usercmd(usercmd cmd, time_value time)
     if (!!(_usercmd.buttons & usercmd::button::scroll_right)) {
         _view.origin.x += scroll_speed * _view.size.x * delta_time;
     }
+    if (!!(_usercmd.buttons & usercmd::button::zoom_in)) {
+        _view.size *= exp(-zoom_speed * delta_time);
+    }
+    if (!!(_usercmd.buttons & usercmd::button::zoom_out)) {
+        _view.size *= exp(zoom_speed * delta_time);
+    }
+    if (!!(_usercmd.buttons & usercmd::button::pan)) {
+        _view.origin -= (cmd.cursor - _usercmd.cursor) * _view.size;
+    }
 
     _usercmd = cmd;
     _usercmd_time = time;
