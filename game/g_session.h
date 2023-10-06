@@ -14,10 +14,6 @@ class image;
 class system;
 } // namespace render
 
-constexpr const time_delta RESTART_TIME = time_delta::from_seconds(5.0f);
-
-#define SPAWN_BUFFER    32
-
 #define PROTOCOL_VERSION    4
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,14 +71,6 @@ typedef enum netops_e
     svc_snapshot,   //  game snapshot
     svc_restart     //  game restart
 } netops_t;
-
-//------------------------------------------------------------------------------
-enum class game_mode
-{
-    singleplayer,
-    deathmatch,
-    cooperative,
-};
 
 //------------------------------------------------------------------------------
 typedef struct  message_s
@@ -193,8 +181,6 @@ public:
     bool _menu_active;
     bool _dedicated;
 
-    static int find_server_by_name(void *lpvoid);
-
 private:
     menu::window _menu;
     game::world _world;
@@ -202,22 +188,7 @@ private:
 
     render::system* _renderer;
 
-    config::string _net_master;
-    config::string _net_server_name;
-
-    config::string _cl_name;
-    config::string _cl_color;
-    config::integer _cl_weapon;
-
     console _console;
-
-    game_mode _mode;
-
-    time_value _restart_time;
-
-    float _zoom;
-    vec2 _origin;
-    vec3 _scroll;
 
     time_value _worldtime;
     time_value _frametime;
@@ -233,8 +204,6 @@ private:
     void draw_menu();
 
     void draw_netgraph();
-
-    void spawn_player(std::size_t num);
 
     message_t _messages[MAX_MESSAGES];
     int _num_messages;

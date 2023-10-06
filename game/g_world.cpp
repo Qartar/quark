@@ -4,7 +4,6 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_aicontroller.h"
 #include "g_faction.h"
 #include "g_navigation.h"
 #include "g_projectile.h"

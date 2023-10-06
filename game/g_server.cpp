@@ -27,15 +27,12 @@ void session::start_server ()
 
         svs.clients[0].info.name = cls.info.name;
         svs.clients[0].info.color = cls.info.color;
-
-        spawn_player(0);
     }
 
     _menu_active = false;
 
     svs.active = true;
     svs.local = false;
-    _net_server_name = svs.name;
 
     svs.socket.open(network::socket_type::ipv6, PORT_SERVER);
     _netchan.setup(&svs.socket, network::address{});
@@ -209,8 +206,6 @@ void session::client_connect(network::address const& remote, string::view messag
 
         // init their tank
 
-        spawn_player(client);
-
         write_message(va("%s connected.", cl.info.name.data()));
 
         // broadcast existing client information to new client
@@ -246,11 +241,6 @@ void session::client_command(network::message& message, std::size_t /*client*/)
     cmd.action = static_cast<decltype(cmd.action)>(message.read_byte());
     cmd.buttons = static_cast<decltype(cmd.buttons)>(message.read_byte());
     cmd.modifiers = static_cast<decltype(cmd.modifiers)>(message.read_byte());
-
-    //game::tank* player = _world.player(client);
-    //if (player) {
-    //    player->update_usercmd(cmd);
-    //}
 }
 
 //------------------------------------------------------------------------------

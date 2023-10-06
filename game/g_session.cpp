@@ -6,14 +6,11 @@
 
 #include "cm_keys.h"
 #include "cm_parser.h"
-#include "g_aicontroller.h"
 #include "g_player.h"
 #include "g_ship_editor.h"
-#include "resource.h"
 #include "version.h"
 
 #include <cstdarg>
-#include <numeric>
 
 // global object
 game::session* g_Game;
@@ -25,15 +22,6 @@ namespace game {
 session::session()
     : _menu_active(true)
     , _dedicated(false)
-    , _net_master("net_master", "oedhead.no-ip.org", config::archive, "master server hostname")
-    , _net_server_name("net_serverName", "Quark Server", config::archive, "local server name")
-    , _cl_name("ui_name", "", config::archive, "user info: name")
-    , _cl_color("ui_color", "255 0 0", config::archive, "user info: color")
-    , _cl_weapon("ui_weapon", 0, config::archive, "user info: weapon")
-    , _restart_time(time_value::zero)
-    , _zoom(1)
-    , _origin(vec2_zero)
-    , _scroll(vec3_zero)
     , _worldtime(time_value::zero)
     , _frametime(time_value::zero)
     , _framenum(0)
@@ -90,7 +78,7 @@ result session::init (string::view cmdline)
 
     memset( _clientsay, 0, LONG_STRING );
 
-    strcpy( svs.name, _net_server_name );
+    strcpy_s( svs.name, "server" );
 
     cls.active = false;
     cls.local = false;
@@ -130,18 +118,6 @@ result session::init (string::view cmdline)
         start_server( );
     }
 
-    // sound indices are shared over the network so sounds
-    // need to be registed in the same order on all clients
-    pSound->load_sound("assets/sound/tank_move.wav");
-    pSound->load_sound("assets/sound/tank_idle.wav");
-    pSound->load_sound("assets/sound/tank_explode.wav");
-    pSound->load_sound("assets/sound/turret_move.wav");
-    pSound->load_sound("assets/sound/blaster_fire.wav");
-    pSound->load_sound("assets/sound/blaster_impact.wav");
-    pSound->load_sound("assets/sound/cannon_fire.wav");
-    pSound->load_sound("assets/sound/cannon_impact.wav");
-    pSound->load_sound("assets/sound/missile_flight.wav");
-
     return result::success;
 }
 
@@ -163,9 +139,6 @@ result session::run_frame(time_delta time)
     get_packets( );
 
     _frametime += time;
-
-    _zoom *= std::exp(_scroll.z * time.to_seconds());
-    _origin += _scroll.to_vec2() / _zoom * time.to_seconds();
 
     // step session
 
@@ -204,10 +177,6 @@ result session::run_frame(time_delta time)
     // update sound
 
     pSound->update( );
-
-    if (_restart_time != time_value::zero && (_frametime > _restart_time) && !_menu_active ) {
-        restart();
-    }
 
     return result::success;
 }
@@ -391,22 +360,6 @@ void session::key_event(int key, bool down)
         for (int i = 0; i < MAX_MESSAGES; i++) {
             _messages[i].time = _frametime;
         }
-    } else if ((key == K_MWHEELUP) && down) {
-        _zoom = _zoom * 1.1f;
-    } else if ((key == K_MWHEELDOWN) && down) {
-        _zoom = _zoom / 1.1f;
-    } else if (key == '+' || key == '=') {
-        _scroll.z = down ? 1.f : 0.f;
-    } else if (key == '-') {
-        _scroll.z = down ? -1.f : 0.f;
-    } else if (key == K_LEFTARROW) {
-        _scroll.x = down ? -1000.f : 0.f;
-    } else if (key == K_RIGHTARROW) {
-        _scroll.x = down ? 1000.f : 0.f;
-    } else if (key == K_UPARROW) {
-        _scroll.y = down ? 1000.f : 0.f;
-    } else if (key == K_DOWNARROW) {
-        _scroll.y = down ? -1000.f : 0.f;
     }
 
     // user commands here
@@ -416,12 +369,6 @@ void session::key_event(int key, bool down)
             if (_clients[0].input.key_event(key, down)) {
                 return;
             }
-        }
-        for (int ii = 0; ii < MAX_PLAYERS; ++ii) {
-            //game::tank* player = _world.player(ii);
-            //if (player && _clients[ii].input.key_event(key, down)) {
-            //    player->update_usercmd(_clients[ii].input.generate());
-            //}
         }
     }
 
@@ -433,18 +380,6 @@ void session::key_event(int key, bool down)
 
     if (key == K_ESCAPE) {
         _menu_active ^= 1;
-        return;
-    }
-
-    if (key == K_F2) {
-        byte    msg[2];
-
-        msg[0] = svc_restart;
-        msg[1] = 5;
-
-        broadcast(2, msg);
-
-        _restart_time = _frametime + RESTART_TIME;
         return;
     }
 }
@@ -473,13 +408,6 @@ void session::cursor_event(vec2 position)
 //------------------------------------------------------------------------------
 void session::gamepad_event(int /*index*/, gamepad const& /*pad*/)
 {
-    if (!_dedicated) {
-        //game::tank* player = _world.player(index);
-        //if (player) {
-        //    _clients[index].input.gamepad_event(pad);
-        //    player->update_usercmd(_clients[index].input.generate());
-        //}
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -555,7 +483,6 @@ void session::resume()
 //------------------------------------------------------------------------------
 void session::new_game()
 {
-    _restart_time = time_value::zero;
     _world.clear_particles( );
 
     if (!svs.active) {
@@ -580,10 +507,6 @@ void session::new_game()
             break;
         else if (svs.active && !svs.clients[i].active )
             continue;
-
-        if (_restart_time == time_value::zero/* || !_world.player(i)*/) {
-            spawn_player(i);
-        }
     }
 
     _menu_active = false;
@@ -592,8 +515,6 @@ void session::new_game()
 //------------------------------------------------------------------------------
 void session::restart()
 {
-    _restart_time = time_value::zero;
-
     if (!svs.active) {
         return;
     }
@@ -604,28 +525,9 @@ void session::restart()
         } else if (svs.local && !svs.clients[ii].active) {
             continue;
         }
-
-        //assert(_world.player(ii) != nullptr);
-        //_world.player(ii)->respawn();
     }
 
     _menu_active = false;
-}
-
-//------------------------------------------------------------------------------
-void session::spawn_player(std::size_t /*num*/)
-{
-    //
-    //  initialize tank object
-    //
-
-    //assert(_world.player(num) == nullptr);
-    //game::tank* player = _world.spawn_player(num);
-    //player->_color = color4(svs.clients[num].info.color);
-    //player->_weapon = svs.clients[num].info.weapon;
-    //player->_client = _clients + num;
-
-    //player->respawn();
 }
 
 //------------------------------------------------------------------------------
