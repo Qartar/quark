@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_train.h"
+#include "g_rail_station.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -12,31 +13,13 @@ namespace game {
 const object_type train::_type(object::_type);
 
 //------------------------------------------------------------------------------
-train::train()
+train::train(int num_cars)
     : _next_station(SIZE_MAX)
-#if 0
     , _current_distance(0)
     , _current_speed(0)
-    , _num_cars(0)
-#else
-    , _current_distance(16)
-    , _current_speed(30)
-    , _num_cars(16)
-#endif
+    , _target_distance(0)
+    , _num_cars(num_cars)
 {
-    _path.push_back(0);
-    _path.push_back(2);
-    _path.push_back(4);
-    _path.push_back(6);
-    _path.push_back(8);
-    _path.push_back(10);
-
-    _path.push_back(0);
-    _path.push_back(12);
-    _path.push_back(14);
-    _path.push_back(16);
-    _path.push_back(18);
-    _path.push_back(20);
 }
 
 //------------------------------------------------------------------------------
@@ -136,6 +119,11 @@ void train::draw_locomotive(render::system* renderer, clothoid::segment segment,
         _current_speed > target + .5f ? color4(1,0,0,1) : color4(1,1,1,1));
 #elif 0
     renderer->draw_string(va("%zu", _prev.size()), pos, color4(1,1,1,1));
+#elif 0
+    renderer->draw_string(
+        va("%s %.0f", _schedule[_next_station]->name().c_str(), _target_distance - _current_distance),
+        pos,
+        color4(1,1,1,1));
 #endif
 }
 
@@ -193,13 +181,18 @@ void train::think()
     _current_distance += _current_speed * FRAMETIME.to_seconds();
     if (_current_distance - train_length > seg.length()) {
         _current_distance -= seg.length();
+        _target_distance -= seg.length();
         if (_path.size() > 1) {
-            _path.push_back(_path[0]); // TEMP: loop
             _path.erase(_path.begin());
         }
     }
 
-    float s = target_speed();
+    if (_current_distance >= _target_distance) {
+        _current_distance = _target_distance;
+        next_station();
+    }
+
+    float s = min(target_speed(), sqrt(2.f * max(0.f, _target_distance - _current_distance) * max_deceleration));
     if (_current_speed > s) {
         _current_speed = max(s, _current_speed - max_deceleration * FRAMETIME.to_seconds());
     } else if (_current_speed < s) {
@@ -226,6 +219,70 @@ mat3 train::get_transform(time_value time) const
 {
     (void)time;
     return mat3_identity;
+}
+
+//------------------------------------------------------------------------------
+void train::set_schedule(std::vector<handle<rail_station>> const& schedule)
+{
+    _schedule = schedule;
+    _next_station = SIZE_MAX;
+    next_station();
+}
+
+//------------------------------------------------------------------------------
+void train::next_station()
+{
+    if (!_schedule.size()) {
+        return;
+    }
+
+    _next_station = (_next_station + 1) % _schedule.size();
+    if (!_path.size()) {
+        _path.push_back(_schedule[_next_station]->edge());
+        _current_distance = _schedule[_next_station]->dist();
+        _target_distance = _current_distance;
+        return;
+    }
+
+    float path_distance = 0.f;
+    float stopping_distance = .5f * square(_current_speed) / max_deceleration;
+
+    rail_position start{};
+    rail_position goal = rail_position::from_edge(
+        _schedule[_next_station]->edge(),
+        _schedule[_next_station]->dist());
+
+    std::size_t prev_size = _path.size();
+    for (std::size_t ii = 0; ii < _path.size(); ++ii) {
+        clothoid::segment s = get_world()->rail_network().get_segment(_path[ii]);
+        if (path_distance + s.length() > _current_distance + stopping_distance) {
+            prev_size = ii + 1;
+            start = rail_position::from_edge(
+                _path[ii],
+                _current_distance + stopping_distance - path_distance);
+            path_distance += s.length();
+            break;
+        }
+        path_distance += s.length();
+    }
+
+    edge_index path[1024];
+    std::size_t path_size = get_world()->rail_network().find_path(
+        start,
+        goal,
+        path,
+        countof(path));
+
+    _path.resize(prev_size + path_size);
+    for (std::size_t ii = 0; ii < path_size; ++ii) {
+        if (path[ii] == goal.edge) {
+            _target_distance = path_distance + goal.dist;
+        } else {
+            clothoid::segment s = get_world()->rail_network().get_segment(path[ii]);
+            path_distance += s.length();
+        }
+        _path[prev_size + ii] = path[ii];
+    }
 }
 
 //------------------------------------------------------------------------------

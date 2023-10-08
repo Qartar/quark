@@ -15,9 +15,10 @@ class rail_station : public object
 {
 public:
     static const object_type _type;
+    using edge_index = int;
 
 public:
-    rail_station();
+    rail_station(edge_index edge, float dist, string::view name);
     virtual ~rail_station();
 
     void spawn();
@@ -30,8 +31,14 @@ public:
     virtual float get_rotation(time_value time) const override;
     virtual mat3 get_transform(time_value time) const override;
 
-protected:
+    edge_index edge() const { return _edge; }
+    float dist() const { return _dist; }
+    string::view name() const { return _name; }
 
+protected:
+    edge_index _edge;
+    float _dist;
+    string::buffer _name;
 };
 
 } // namespace game

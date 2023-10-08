@@ -209,6 +209,20 @@ void network::free_edges(edge_index e)
 }
 
 //------------------------------------------------------------------------------
+vec2 network::node_position(node_index n) const
+{
+    assert(n != invalid_node);
+    return _nodes[n].position;
+}
+
+//------------------------------------------------------------------------------
+network::edge_index network::first_edge(node_index n) const
+{
+    assert(n != invalid_node);
+    return _nodes[n].first_edge;
+}
+
+//------------------------------------------------------------------------------
 network::edge_index network::next_edge(edge_index e) const
 {
     assert(e != invalid_edge);
@@ -234,6 +248,13 @@ vec2 network::edge_direction(edge_index e) const
 {
     assert(e != invalid_edge);
     return _segments[e].initial_tangent();
+}
+
+//------------------------------------------------------------------------------
+float network::edge_length(edge_index e) const
+{
+    assert(e != invalid_edge);
+    return _segments[e].length();
 }
 
 //------------------------------------------------------------------------------

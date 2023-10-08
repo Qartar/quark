@@ -134,6 +134,10 @@ public:
     //! Remove the given node and all connected edges
     void remove_node(node_index n);
 
+    //! Return the position of the given node
+    vec2 node_position(node_index n) const;
+    //! Return the first edge starting from the given node
+    edge_index first_edge(node_index n) const;
     //! Return the next edge starting from the same node as the given edge
     edge_index next_edge(edge_index e) const;
 
@@ -143,6 +147,8 @@ public:
     node_index end_node(edge_index e) const;
     //! Return the direction of the given edge
     vec2 edge_direction(edge_index e) const;
+    //! Return the length of the given edge
+    float edge_length(edge_index e) const;
 
     node_range nodes() const;
     edge_range edges() const;

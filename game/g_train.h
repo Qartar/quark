@@ -21,7 +21,7 @@ public:
     using edge_index = int;
 
 public:
-    train();
+    train(int num_cars);
     virtual ~train();
 
     void spawn();
@@ -34,6 +34,8 @@ public:
     virtual float get_rotation(time_value time) const override;
     virtual mat3 get_transform(time_value time) const override;
 
+    void set_schedule(std::vector<handle<rail_station>> const& schedule);
+
 protected:
     std::vector<handle<rail_station>> _schedule;
     std::size_t _next_station;
@@ -41,6 +43,8 @@ protected:
     std::vector<edge_index> _path;
     float _current_distance;
     float _current_speed;
+
+    float _target_distance;
 
     int _num_cars;
 
@@ -50,6 +54,8 @@ protected:
     static constexpr float max_lateral_acceleration = 4.f;
 
 protected:
+    void next_station();
+
     float target_speed() const;
     float car_offset(int index) const;
 

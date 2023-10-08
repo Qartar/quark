@@ -15,8 +15,31 @@ class rail_station;
 class train;
 
 //------------------------------------------------------------------------------
+struct rail_position
+{
+    using edge_index = int;
+    using node_index = int;
+    bool is_edge : 1,
+         is_node : 1;
+    node_index node;
+    edge_index edge;
+    float dist;
+
+    static rail_position from_edge(edge_index edge, float dist) {
+        return {true, false, -1, edge, dist};
+    }
+    static rail_position from_node(node_index node) {
+        return {false, true, node, -1, 0};
+    }
+};
+
+//------------------------------------------------------------------------------
 class rail_network
 {
+public:
+    using edge_index = int;
+    using node_index = int;
+
 public:
     rail_network(world* w);
     virtual ~rail_network();
@@ -30,6 +53,8 @@ public:
     clothoid::segment get_segment(clothoid::network::edge_index edge) const;
 
     bool get_closest_segment(vec2 position, float max_distance, clothoid::network::edge_index& edge, float& length) const;
+
+    std::size_t find_path(rail_position start, rail_position goal, edge_index* edges, std::size_t max_edges) const;
 
 protected:
     world* _world;
