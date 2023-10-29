@@ -49,7 +49,7 @@ Arithmetic  function   domain     # trials      peak         rms
 Cephes Math Library Release 2.8:  June, 2000
 Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
 *************************************************************************/
-void segment::fresnel_integral(double x, double* c, double* s) const
+void segment::fresnel_integral(double x, double* c, double* s)
 {
     double xxa;
     double f;

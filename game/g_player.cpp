@@ -12,6 +12,66 @@ namespace game {
 const object_type player::_type(object::_type);
 
 //------------------------------------------------------------------------------
+std::vector<clothoid::segment> connect_linear_segments(vec2 p0, vec2 t0, vec2 p1, vec2 t1)
+{
+    float theta = acos(dot(t0, t1));
+    mat2 m(t0.x, t0.y, -t0.y, t0.x);
+
+    // normalized clothoid coordinates for the required angle
+    vec2 s;
+    float t = sqrt(theta / math::pi<float>);
+    clothoid::segment::fresnel_integral(t, s.x, s.y);
+    s *= math::pi<float>;
+    if (cross(t0, t1) < 0) {
+        s.y *= -1.f;
+        theta *= -1.f;
+    }
+    // transformed coordinates of the combined normalized curves
+    vec2 r = (s + vec2(s.x, -s.y) * mat2::rotate(theta)) * m;
+
+    // calculate the maximum size of the transition curve
+    float scale = min(cross(p1 - p0, t1) / cross(r, t1),
+                      cross(p1 - p0, t0) / cross(r, t0));
+    // length and curvature of the curves based on scaling parameter
+    float length = scale * sqrt(abs(theta) * math::pi<float>);
+    float curvature = theta / length;
+
+    if (isnan(length) || length < 1.f) {
+        return {};
+    }
+
+    // midpoint of the transition curves
+    vec2 mid = p0 + s * m * scale;
+
+    float den = cross(t0, t1);
+    float u = cross(p1 - p0, t0) / den;
+    float v = cross(p1 - p0, -t1) / den;
+
+    if (u - v > 1e-3f) {
+        // linear extension from p0
+        vec2 dp = t0 * (u - v);
+        return {
+            clothoid::segment::from_line(p0, t0, u - v),
+            clothoid::segment::from_transition(dp + p0, t0, length, 0.f, curvature),
+            clothoid::segment::from_transition(dp + mid, t0 * mat2::rotate(.5f * theta), length, curvature, 0),
+        };
+    } else if (v - u > 1e-3f) {
+        // linear extension from p1
+        return {
+            clothoid::segment::from_transition(p0, t0, length, 0.f, curvature),
+            clothoid::segment::from_transition(mid, t0 * mat2::rotate(.5f * theta), length, curvature, 0),
+            clothoid::segment::from_line(p1 - t1 * (v - u), t1, v - u),
+        };
+    } else {
+        // no linear extension
+        return {
+            clothoid::segment::from_transition(p0, t0, length, 0.f, curvature),
+            clothoid::segment::from_transition(mid, t0 * mat2::rotate(.5f * theta), length, curvature, 0),
+        };
+    }
+}
+
+//------------------------------------------------------------------------------
 player::player()
     : _usercmd{}
 {

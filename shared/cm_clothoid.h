@@ -64,6 +64,8 @@ public:
     //! arclength of the closest point returned as the z component of the result.
     vec3 get_closest_point(vec2 p) const;
 
+    static void fresnel_integral(float x, float&c, float& s);
+
 private:
     vec2 _initial_position;
     vec2 _initial_tangent;
@@ -84,8 +86,7 @@ private:
         , _final_curvature(final_curvature)
     {}
 
-    void fresnel_integral(float x, float&c, float& s) const;
-    void fresnel_integral(double x, double* c, double* s) const;
+    static void fresnel_integral(double x, double* c, double* s);
 };
 
 //------------------------------------------------------------------------------
@@ -294,7 +295,7 @@ inline float segment::evaluate_curvature(float s) const
 }
 
 //------------------------------------------------------------------------------
-inline void segment::fresnel_integral(float x, float& c, float& s) const
+inline void segment::fresnel_integral(float x, float& c, float& s)
 {
     double C, S;
     fresnel_integral(x, &C, &S);
