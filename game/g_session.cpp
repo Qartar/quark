@@ -101,6 +101,7 @@ result session::init (string::view cmdline)
         {'a', usercmd::button::scroll_left},
         {'s', usercmd::button::scroll_down},
         {'d', usercmd::button::scroll_right},
+        {K_F1, usercmd::action::follow},
     });
 
     init_client();

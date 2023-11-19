@@ -15,6 +15,7 @@ class ship;
 struct player_view {
     vec2 origin;
     vec2 size;
+    float angle;
 };
 
 //------------------------------------------------------------------------------
@@ -46,6 +47,11 @@ protected:
     player_view _view;
     usercmd _usercmd;
     time_value _usercmd_time;
+
+    handle<object> _follow;
+
+protected:
+    void on_follow();
 };
 
 } // namespace game

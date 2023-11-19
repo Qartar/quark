@@ -284,7 +284,7 @@ void session::draw_world()
             player_view plv = pl->view(_worldtime);
             view.origin = plv.origin;
             view.size = plv.size;
-            view.angle = 0;
+            view.angle = plv.angle;
         } else {
             view.origin = _player->get_position(_worldtime);
             view.size /= _zoom;

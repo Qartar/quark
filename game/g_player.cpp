@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_player.h"
+#include "g_train.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -77,6 +78,7 @@ player::player()
 {
     _view.origin = vec2_zero;
     _view.size = vec2(640.f, 480.f);
+    _view.angle = 0.f;
 }
 
 //------------------------------------------------------------------------------
@@ -139,8 +141,40 @@ mat3 player::get_transform(time_value time) const
 //------------------------------------------------------------------------------
 player_view player::view(time_value time) const
 {
-    (void)time;
-    return _view;
+    constexpr float zoom_speed = 1.f + (1.f / 32.f);
+    constexpr float scroll_speed = 1.f;
+
+    player_view view = _view;
+
+    if (_follow) {
+        view.origin = _follow->get_position(time);
+        view.angle = _follow->get_rotation(time);
+    }
+
+    if (time > _usercmd_time) {
+        float delta_time = (time - _usercmd_time).to_seconds();
+
+        if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
+            view.origin.y += scroll_speed * _view.size.x * delta_time;
+        }
+        if (!!(_usercmd.buttons & usercmd::button::scroll_down)) {
+            view.origin.y -= scroll_speed * _view.size.x * delta_time;
+        }
+        if (!!(_usercmd.buttons & usercmd::button::scroll_left)) {
+            view.origin.x -= scroll_speed * _view.size.x * delta_time;
+        }
+        if (!!(_usercmd.buttons & usercmd::button::scroll_right)) {
+            view.origin.x += scroll_speed * _view.size.x * delta_time;
+        }
+        if (!!(_usercmd.buttons & usercmd::button::zoom_in)) {
+            view.size *= exp(-zoom_speed * delta_time);
+        }
+        if (!!(_usercmd.buttons & usercmd::button::zoom_out)) {
+            view.size *= exp(zoom_speed * delta_time);
+        }
+    }
+
+    return view;
 }
 
 //------------------------------------------------------------------------------
@@ -186,6 +220,32 @@ void player::update_usercmd(usercmd cmd, time_value time)
         _view.size *= (1.f / zoom_speed);
     } else if (_usercmd.action == usercmd::action::zoom_out) {
         _view.size *= zoom_speed;
+    } else if (_usercmd.action == usercmd::action::follow) {
+        on_follow();
+    }
+}
+
+//------------------------------------------------------------------------------
+void player::on_follow()
+{
+    handle<object> prev = nullptr;
+
+    // cycle through all train objects
+    for (auto obj : get_world()->objects()) {
+        if (obj->is_type<train>()) {
+            if (prev == _follow) {
+                _follow = obj;
+                break;
+            }
+            prev = obj;
+        }
+    }
+
+    // stop following if no more trains
+    if (prev == _follow) {
+        _view = view(_usercmd_time);
+        _view.angle = 0.f;
+        _follow = nullptr;
     }
 }
 

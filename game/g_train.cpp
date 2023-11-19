@@ -46,7 +46,7 @@ void train::draw(render::system* renderer, time_value time) const
     for (std::size_t ii = 0; ii < _path.size(); ++ii) {
         clothoid::segment seg = get_world()->rail_network().get_segment(_path[ii]);
 
-        if (dist < seg.length()) {
+        if (dist <= seg.length() || ii == _path.size() - 1) {
             draw_locomotive(renderer, seg, dist);
             break;
         }
@@ -60,7 +60,7 @@ void train::draw(render::system* renderer, time_value time) const
         for (std::size_t jj = 0; jj < _path.size(); ++jj) {
             clothoid::segment seg = get_world()->rail_network().get_segment(_path[jj]);
 
-            if (dist < seg.length()) {
+            if (dist <= seg.length() || jj == _path.size() - 1) {
                 draw_car(renderer, seg, dist);
                 break;
             }
@@ -203,14 +203,43 @@ void train::think()
 //------------------------------------------------------------------------------
 vec2 train::get_position(time_value time) const
 {
-    (void)time;
+    float dist = _current_distance + _current_speed * (time - get_world()->frametime()).to_seconds();
+    for (std::size_t ii = 0; ii < _path.size(); ++ii) {
+        clothoid::segment seg = get_world()->rail_network().get_segment(_path[ii]);
+
+        if (dist <= seg.length() || ii == _path.size() - 1) {
+            vec2 pos = seg.evaluate(dist);
+            vec2 dir = seg.evaluate_tangent(dist);
+            float k = seg.evaluate_curvature(dist);
+            // offset laterally to align the trucks onto the rail instead of the center
+            if (k) {
+                constexpr float truck_offset = 9.6f;
+                pos -= (1.f - cos(k * truck_offset)) * dir.cross(1.f / k);
+            }
+            return pos;
+        }
+
+        dist -= seg.length();
+    }
+
     return vec2_zero;
 }
 
 //------------------------------------------------------------------------------
 float train::get_rotation(time_value time) const
 {
-    (void)time;
+    float dist = _current_distance + _current_speed * (time - get_world()->frametime()).to_seconds();
+    for (std::size_t ii = 0; ii < _path.size(); ++ii) {
+        clothoid::segment seg = get_world()->rail_network().get_segment(_path[ii]);
+
+        if (dist <= seg.length() || ii == _path.size() - 1) {
+            vec2 dir = seg.evaluate_tangent(dist);
+            return atan2f(dir.y, dir.x);
+        }
+
+        dist -= seg.length();
+    }
+
     return 0.f;
 }
 

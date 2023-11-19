@@ -38,6 +38,7 @@ struct usercmd
         move,
         zoom_in,
         zoom_out,
+        follow,
     };
 
     enum class button
