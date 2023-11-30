@@ -181,7 +181,7 @@ vec3 segment::get_closest_point(vec2 p) const
             vec2 r = p - _initial_position;
             vec2 v = _initial_tangent;
 
-            float s = min(max(dot(r, v), 0.f), length());
+            float s = min(max(dot(r, v), 0.f), _length);
             return vec3(_initial_position + v * s, s);
         }
 
@@ -205,12 +205,12 @@ vec3 segment::get_closest_point(vec2 p) const
                 if (dot(dir, final_pos - _initial_position) < 0) {
                     return vec3(_initial_position, 0);
                 } else {
-                    return vec3(final_pos, length());
+                    return vec3(final_pos, _length);
                 }
             } else if (initial_edge_dist < 0) {
                 return vec3(_initial_position, 0);
             } else if (final_edge_dist > 0) {
-                return vec3(final_pos, length());
+                return vec3(final_pos, _length);
             } else {
                 vec2 v = dir.normalize() * abs(radius);
                 float theta = atan2(initial_edge_dist, dot(dir, initial_edge_dir));

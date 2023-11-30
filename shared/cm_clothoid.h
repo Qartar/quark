@@ -38,7 +38,7 @@ public:
     segment_type type() const;
     vec2 initial_position() const { return _initial_position; }
     vec2 initial_tangent() const { return _initial_tangent; }
-    float length() const { return 1.f / _inverse_length; }
+    float length() const { return _length; }
     float initial_curvature() const { return _initial_curvature; }
     vec2 final_position() const;
     vec2 final_tangent() const;
@@ -69,10 +69,10 @@ public:
 private:
     vec2 _initial_position;
     vec2 _initial_tangent;
+    float _length;
     float _inverse_length;
     float _initial_curvature;
     float _final_curvature;
-    // can fit another 4-bytes here for alignment
 
     static constexpr float _pi = 3.14159265358979323846f;
     static constexpr float _half_pi = 1.57079632679489661923f;
@@ -81,6 +81,7 @@ private:
     segment(vec2 position, vec2 direction, float length, float initial_curvature, float final_curvature)
         : _initial_position(position)
         , _initial_tangent(direction)
+        , _length(length)
         , _inverse_length(1.f / length)
         , _initial_curvature(initial_curvature)
         , _final_curvature(final_curvature)
@@ -110,7 +111,7 @@ inline vec2 segment::final_position() const
 
         case segment_type::arc:
         case segment_type::transition:
-            return evaluate(1 / _inverse_length);
+            return evaluate(_length);
 
         default:
             __assume(false);
@@ -126,7 +127,7 @@ inline vec2 segment::final_tangent() const
 
         case segment_type::arc:
         case segment_type::transition:
-            return evaluate_tangent(1 / _inverse_length);
+            return evaluate_tangent(_length);
 
         default:
             __assume(false);
