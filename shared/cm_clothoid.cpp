@@ -219,7 +219,21 @@ vec3 segment::get_closest_point(vec2 p) const
         }
 
         case segment_type::transition: {
-            return vec3(_initial_position, 0); // TODO
+            float s = dot(p - _initial_position, _initial_tangent);
+            for (int ii = 0; ii < 32; ++ii) {
+                vec2 r = evaluate(s);
+                vec2 t = evaluate_tangent(s);
+                float ds = dot(p - r, t);
+                if (s > _length && ds > 0) {
+                    return vec3(final_position(), _length);
+                } else if (s < 0 && ds < 0) {
+                    return vec3(_initial_position, 0);
+                } else if (abs(ds) < 1e-6f) {
+                    break;
+                }
+                s += ds;
+            }
+            return vec3(evaluate(s), s);
         }
 
         default:
