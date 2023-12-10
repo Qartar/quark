@@ -35,56 +35,70 @@ void train::spawn()
 //------------------------------------------------------------------------------
 void train::draw(render::system* renderer, time_value time) const
 {
-    (void)renderer;
-    (void)time;
-
     if (!_path.size()) {
         return;
     }
 
-    float dist = _current_distance + _current_speed * (time - get_world()->frametime()).to_seconds();
-    for (std::size_t ii = 0; ii < _path.size(); ++ii) {
+    time_delta delta_time = time - get_world()->frametime();
+    float distance = _current_distance + _current_speed * delta_time.to_seconds();
+
+    draw(renderer, distance, color4(1,1,1,1));
+}
+
+//------------------------------------------------------------------------------
+void train::draw(render::system* renderer, float distance, color4 color) const
+{
+    int num_trucks = _num_cars * 2 + 2;
+    vec2* truck_position = (vec2*)alloca(sizeof(vec2) * num_trucks);
+
+    // evaluate truck positions
+    float path_length = 0.f;
+    for (std::size_t ii = 0, jj = 0; ii < _path.size() && jj < num_trucks; ++ii) {
         clothoid::segment seg = get_world()->rail_network().get_segment(_path[ii]);
-
-        if (dist <= seg.length() || ii == _path.size() - 1) {
-            draw_locomotive(renderer, seg, dist);
-            break;
-        }
-
-        dist -= seg.length();
-    }
-
-    for (int ii = 0; ii < _num_cars; ++ii) {
-        dist = _current_distance - car_offset(ii) + _current_speed * (time - get_world()->frametime()).to_seconds();
-
-        for (std::size_t jj = 0; jj < _path.size(); ++jj) {
-            clothoid::segment seg = get_world()->rail_network().get_segment(_path[jj]);
-
-            if (dist <= seg.length() || jj == _path.size() - 1) {
-                draw_car(renderer, seg, dist);
+        for (; jj < num_trucks; ++jj) {
+            float s = distance - this->truck_offset(int(num_trucks - jj - 1)) - path_length;
+            if (s > seg.length()) {
                 break;
             }
-
-            dist -= seg.length();
+            truck_position[num_trucks - jj - 1] = seg.evaluate(s);
+            // draw truck positions
+            {
+                vec2 p = truck_position[num_trucks - jj - 1];
+                vec2 t = seg.evaluate_tangent(s);
+                renderer->draw_line(p - t.cross(2), p + t.cross(2), color, color);
+            }
         }
+        path_length += seg.length();
+    }
+
+    // draw locomotive
+    {
+        vec2 pos = .5f * (truck_position[0] + truck_position[1]);
+        vec2 dir = (truck_position[0] - truck_position[1]).normalize();
+
+        mat3 tx = mat3(dir.x, dir.y, 0,
+            -dir.y, dir.x, 0,
+            pos.x, pos.y, 1);
+
+        draw_locomotive(renderer, tx, color);
+    }
+
+    // draw cars
+    for (int ii = 0; ii < _num_cars; ++ii) {
+        vec2 pos = .5f * (truck_position[ii * 2 + 2] + truck_position[ii * 2 + 3]);
+        vec2 dir = (truck_position[ii * 2 + 2] - truck_position[ii * 2 + 3]).normalize();
+
+        mat3 tx = mat3(dir.x, dir.y, 0,
+            -dir.y, dir.x, 0,
+            pos.x, pos.y, 1);
+
+        draw_car(renderer, tx, color);
     }
 }
 
 //------------------------------------------------------------------------------
-void train::draw_locomotive(render::system* renderer, clothoid::segment segment, float s) const
+void train::draw_locomotive(render::system* renderer, mat3 tx, color4 color) const
 {
-    vec2 pos = segment.evaluate(s);
-    vec2 dir = segment.evaluate_tangent(s);
-    float k = segment.evaluate_curvature(s);
-    // offset laterally to align the trucks onto the rail instead of the center
-    if (k) {
-        constexpr float truck_offset = 9.6f;
-        pos -= (1.f - cos(k * truck_offset)) * dir.cross(1.f / k);
-    }
-    mat3 tx = mat3(dir.x, dir.y, 0,
-                  -dir.y, dir.x, 0,
-                   pos.x, pos.y, 1);
-
     const vec2 pts[] = {
         vec2(-12, 1.6f) * tx, vec2(-12,-1.6f) * tx,
         vec2(11.3f, 1.6f) * tx, vec2(11.3f, -1.6f) * tx,
@@ -104,12 +118,12 @@ void train::draw_locomotive(render::system* renderer, clothoid::segment segment,
 
     renderer->draw_triangles(pts, clr, idx, countof(idx));
 
-    renderer->draw_line(pts[0], pts[1], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[1], pts[3], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[3], pts[5], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[5], pts[4], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[4], pts[2], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[2], pts[0], color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_line(pts[0], pts[1], color, color);
+    renderer->draw_line(pts[1], pts[3], color, color);
+    renderer->draw_line(pts[3], pts[5], color, color);
+    renderer->draw_line(pts[5], pts[4], color, color);
+    renderer->draw_line(pts[4], pts[2], color, color);
+    renderer->draw_line(pts[2], pts[0], color, color);
 
 #if 0
     float target = target_speed();
@@ -128,20 +142,8 @@ void train::draw_locomotive(render::system* renderer, clothoid::segment segment,
 }
 
 //------------------------------------------------------------------------------
-void train::draw_car(render::system* renderer, clothoid::segment segment, float s) const
+void train::draw_car(render::system* renderer, mat3 tx, color4 color) const
 {
-    vec2 pos = segment.evaluate(s);
-    vec2 dir = segment.evaluate_tangent(s);
-    float k = segment.evaluate_curvature(s);
-    // offset laterally to align the trucks onto the rail instead of the center
-    if (k) {
-        constexpr float truck_offset = 5.6f;
-        pos -= (1.f - cos(k * truck_offset)) * dir.cross(1.f / k);
-    }
-    mat3 tx = mat3(dir.x, dir.y, 0,
-                  -dir.y, dir.x, 0,
-                   pos.x, pos.y, 1);
-
     vec2 pts[4] = {
         vec2(-8, 1.6f) * tx,
         vec2(-8, -1.6f) * tx,
@@ -162,10 +164,10 @@ void train::draw_car(render::system* renderer, clothoid::segment segment, float 
 
     renderer->draw_triangles(pts, clr, idx, countof(idx));
 
-    renderer->draw_line(pts[0], pts[1], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[1], pts[3], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[3], pts[2], color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_line(pts[2], pts[0], color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_line(pts[0], pts[1], color, color);
+    renderer->draw_line(pts[1], pts[3], color, color);
+    renderer->draw_line(pts[3], pts[2], color, color);
+    renderer->draw_line(pts[2], pts[0], color, color);
 }
 
 //------------------------------------------------------------------------------
@@ -208,15 +210,7 @@ vec2 train::get_position(time_value time) const
         clothoid::segment seg = get_world()->rail_network().get_segment(_path[ii]);
 
         if (dist <= seg.length() || ii == _path.size() - 1) {
-            vec2 pos = seg.evaluate(dist);
-            vec2 dir = seg.evaluate_tangent(dist);
-            float k = seg.evaluate_curvature(dist);
-            // offset laterally to align the trucks onto the rail instead of the center
-            if (k) {
-                constexpr float truck_offset = 9.6f;
-                pos -= (1.f - cos(k * truck_offset)) * dir.cross(1.f / k);
-            }
-            return pos;
+            return seg.evaluate(dist);
         }
 
         dist -= seg.length();
@@ -389,13 +383,22 @@ float train::target_speed() const
 //------------------------------------------------------------------------------
 float train::car_offset(int index) const
 {
-    constexpr float locomotive_length = 24.f;
-    constexpr float car_length = 16.f;
-    constexpr float coupling_length = 1.f;
-
-    return .5f * (locomotive_length + car_length)
-        + coupling_length
+    return (locomotive_length + coupling_length)
         + index * (car_length + coupling_length);
+}
+
+//------------------------------------------------------------------------------
+float train::truck_offset(int index) const
+{
+    if (index == 0) {
+        return 2.4f;
+    } else if (index == 1) {
+        return locomotive_length - 2.4f;
+    } else if ((index & 1) == 0) {
+        return car_offset(index / 2 - 1) + 2.4f;
+    } else {
+        return car_offset(index / 2 - 1) + car_length - 2.4f;
+    }
 }
 
 } // namespace game

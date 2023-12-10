@@ -53,14 +53,21 @@ protected:
     static constexpr float max_deceleration = 4.f;
     static constexpr float max_lateral_acceleration = 4.f;
 
+    static constexpr float locomotive_length = 24.f;
+    static constexpr float car_length = 16.f;
+    static constexpr float coupling_length = 1.f;
+
 protected:
     void next_station();
 
     float target_speed() const;
     float car_offset(int index) const;
+    float truck_offset(int index) const;
 
-    void draw_locomotive(render::system* renderer, clothoid::segment segment, float s) const;
-    void draw_car(render::system* renderer, clothoid::segment segment, float s) const;
+    void draw(render::system* renderer, float distance, color4 color) const;
+    void draw_locomotive(render::system* renderer, mat3 transform, color4 color) const;
+    void draw_car(render::system* renderer, mat3 transform, color4 color) const;
+
 };
 
 } // namespace game
