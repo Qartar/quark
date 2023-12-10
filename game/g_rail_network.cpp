@@ -24,6 +24,19 @@ rail_network::~rail_network()
 }
 
 //------------------------------------------------------------------------------
+void rail_network::clear()
+{
+    _signals.clear();
+    _signal_block_index.clear();
+    _stations.clear();
+    _trains.clear();
+
+    _network = {};
+
+    _signal_blocks.clear();
+}
+
+//------------------------------------------------------------------------------
 void rail_network::draw(render::system* renderer, time_value time) const
 {
     (void)time;

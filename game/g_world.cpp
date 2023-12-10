@@ -114,6 +114,8 @@ void world::clear()
 
     _physics_objects.clear();
     _particles.clear();
+
+    _rail_network.clear();
 }
 
 //------------------------------------------------------------------------------

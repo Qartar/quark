@@ -44,6 +44,8 @@ public:
     rail_network(world* w);
     virtual ~rail_network();
 
+    void clear();
+
     void draw(render::system* renderer, time_value time) const;
 
     void add_segment(clothoid::segment s);
