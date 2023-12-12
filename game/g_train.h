@@ -67,6 +67,7 @@ protected:
     void draw(render::system* renderer, float distance, color4 color) const;
     void draw_locomotive(render::system* renderer, mat3 transform, color4 color) const;
     void draw_car(render::system* renderer, mat3 transform, color4 color) const;
+    void draw_coupler(render::system* renderer, mat3 transform, color4 color) const;
 
 };
 

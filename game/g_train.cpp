@@ -71,6 +71,18 @@ void train::draw(render::system* renderer, float distance, color4 color) const
         path_length += seg.length();
     }
 
+    // draw couplers
+    for (int ii = 0; ii < _num_cars; ++ii) {
+        vec2 pos = .5f * (truck_position[ii * 2 + 1] + truck_position[ii * 2 + 2]);
+        vec2 dir = (truck_position[ii * 2 + 1] - truck_position[ii * 2 + 2]).normalize();
+
+        mat3 tx = mat3(dir.x, dir.y, 0,
+            -dir.y, dir.x, 0,
+            pos.x, pos.y, 1);
+
+        draw_coupler(renderer, tx, color);
+    }
+
     // draw locomotive
     {
         vec2 pos = .5f * (truck_position[0] + truck_position[1]);
@@ -149,6 +161,35 @@ void train::draw_car(render::system* renderer, mat3 tx, color4 color) const
         vec2(-8, -1.6f) * tx,
         vec2(8, 1.6f) * tx,
         vec2(8, -1.6f) * tx,
+    };
+
+    const color4 clr[4] = {
+        color4(0,0,0,1),
+        color4(0,0,0,1),
+        color4(0,0,0,1),
+        color4(0,0,0,1),
+    };
+
+    const int idx[6] = {
+        0, 1, 3, 0, 3, 2,
+    };
+
+    renderer->draw_triangles(pts, clr, idx, countof(idx));
+
+    renderer->draw_line(pts[0], pts[1], color, color);
+    renderer->draw_line(pts[1], pts[3], color, color);
+    renderer->draw_line(pts[3], pts[2], color, color);
+    renderer->draw_line(pts[2], pts[0], color, color);
+}
+
+//------------------------------------------------------------------------------
+void train::draw_coupler(render::system* renderer, mat3 tx, color4 color) const
+{
+    vec2 pts[4] = {
+        vec2(-1, .2f) * tx,
+        vec2(-1, -.2f) * tx,
+        vec2(1, .2f) * tx,
+        vec2(1, -.2f) * tx,
     };
 
     const color4 clr[4] = {
