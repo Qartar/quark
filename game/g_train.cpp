@@ -17,6 +17,7 @@ train::train(int num_cars)
     : _next_station(SIZE_MAX)
     , _current_distance(0)
     , _current_speed(0)
+    , _current_acceleration(0)
     , _target_distance(0)
     , _num_cars(num_cars)
 {
@@ -39,8 +40,10 @@ void train::draw(render::system* renderer, time_value time) const
         return;
     }
 
-    time_delta delta_time = time - get_world()->frametime();
-    float distance = _current_distance + _current_speed * delta_time.to_seconds();
+    float delta_time = (time - get_world()->frametime()).to_seconds();
+    float distance = _current_distance
+        + _current_speed * delta_time
+        + .5f * _current_acceleration * square(delta_time);
 
     draw(renderer, distance, color4(1,1,1,1));
 }
@@ -219,15 +222,15 @@ void train::think()
     }
 
     clothoid::segment seg = get_world()->rail_network().get_segment(_path[0]);
-    float train_length = car_offset(_num_cars - 1);
 
-    _current_distance += _current_speed * FRAMETIME.to_seconds();
-    if (_current_distance - train_length > seg.length()) {
+    _current_distance += _current_speed * FRAMETIME.to_seconds()
+        + .5f * _current_acceleration * square(FRAMETIME.to_seconds());
+    _current_speed += _current_acceleration * FRAMETIME.to_seconds();
+
+    if (_current_distance - length() > seg.length()) {
         _current_distance -= seg.length();
         _target_distance -= seg.length();
-        if (_path.size() > 1) {
-            _path.erase(_path.begin());
-        }
+        _path.erase(_path.begin());
     }
 
     if (_current_distance >= _target_distance) {
@@ -236,25 +239,27 @@ void train::think()
     }
 
     float s = min(target_speed(), sqrt(2.f * max(0.f, _target_distance - _current_distance) * max_deceleration));
-    if (_current_speed > s) {
-        _current_speed = max(s, _current_speed - max_deceleration * FRAMETIME.to_seconds());
-    } else if (_current_speed < s) {
-        _current_speed = min(s, _current_speed + max_acceleration * FRAMETIME.to_seconds());
-    }
+
+    float accel = (s - _current_speed) / FRAMETIME.to_seconds();
+    _current_acceleration = clamp(accel, -max_deceleration, max_acceleration);
 }
 
 //------------------------------------------------------------------------------
 vec2 train::get_position(time_value time) const
 {
-    float dist = _current_distance + _current_speed * (time - get_world()->frametime()).to_seconds();
+    float delta_time = (time - get_world()->frametime()).to_seconds();
+    float distance = _current_distance
+        + _current_speed * delta_time
+        + .5f * _current_acceleration * square(delta_time);
+
     for (std::size_t ii = 0; ii < _path.size(); ++ii) {
         clothoid::segment seg = get_world()->rail_network().get_segment(_path[ii]);
 
-        if (dist <= seg.length() || ii == _path.size() - 1) {
-            return seg.evaluate(dist);
+        if (distance <= seg.length() || ii == _path.size() - 1) {
+            return seg.evaluate(distance);
         }
 
-        dist -= seg.length();
+        distance -= seg.length();
     }
 
     return vec2_zero;
@@ -263,16 +268,20 @@ vec2 train::get_position(time_value time) const
 //------------------------------------------------------------------------------
 float train::get_rotation(time_value time) const
 {
-    float dist = _current_distance + _current_speed * (time - get_world()->frametime()).to_seconds();
+    float delta_time = (time - get_world()->frametime()).to_seconds();
+    float distance = _current_distance
+        + _current_speed * delta_time
+        + .5f * _current_acceleration * square(delta_time);
+
     for (std::size_t ii = 0; ii < _path.size(); ++ii) {
         clothoid::segment seg = get_world()->rail_network().get_segment(_path[ii]);
 
-        if (dist <= seg.length() || ii == _path.size() - 1) {
-            vec2 dir = seg.evaluate_tangent(dist);
+        if (distance <= seg.length() || ii == _path.size() - 1) {
+            vec2 dir = seg.evaluate_tangent(distance);
             return atan2f(dir.y, dir.x);
         }
 
-        dist -= seg.length();
+        distance -= seg.length();
     }
 
     return 0.f;
@@ -440,6 +449,12 @@ float train::truck_offset(int index) const
     } else {
         return car_offset(index / 2 - 1) + car_length - 2.4f;
     }
+}
+
+//------------------------------------------------------------------------------
+float train::length() const
+{
+    return car_offset(_num_cars);
 }
 
 } // namespace game

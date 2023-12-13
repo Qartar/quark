@@ -36,6 +36,8 @@ public:
 
     void set_schedule(std::vector<handle<rail_station>> const& schedule);
 
+    float length() const;
+
 protected:
     std::vector<handle<rail_station>> _schedule;
     std::size_t _next_station;
@@ -43,6 +45,7 @@ protected:
     std::vector<edge_index> _path;
     float _current_distance;
     float _current_speed;
+    float _current_acceleration;
 
     float _target_distance;
 
