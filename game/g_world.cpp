@@ -73,9 +73,9 @@ void world::reset()
     _rail_network.add_segment(
         clothoid::segment::from_line(vec2(200, 200), vec2(-1, 0), 400));
     _rail_network.add_segment(
-        clothoid::segment::from_arc(vec2(-200, 200), vec2(-1, 0), math::pi<float> * 50.f, 1.f/100.f));
+        clothoid::segment::from_transition(vec2(-200, 200), vec2(-1, 0), math::pi<float> *75.f * (100.f / 103.262383f), 0, 1.f / 75.f / (100.f / 103.262383f)));
     _rail_network.add_segment(
-        clothoid::segment::from_arc(vec2(-300, 100), vec2(0, -1), math::pi<float> * 50.f, 1.f/100.f));
+        clothoid::segment::from_transition(vec2(-377.952576f, 100), vec2(0, -1), math::pi<float> *75.f * (100.f / 103.262383f), 1.f / 75.f / (100.f / 103.262383f), 0));
 
     _rail_network.add_segment(
         clothoid::segment::from_arc(vec2(200, 0), vec2(1, 0), math::pi<float> * 25.f, -1.f/50.f));
@@ -97,12 +97,31 @@ void world::reset()
     _rail_network.add_segment(
         clothoid::segment::from_line(vec2{-766.5f, 766.5f}, vec2(0, 1), 400.f));
 
+    _rail_network.add_segment(
+        clothoid::segment::from_transition(vec2(-766.5f, 1166.5f), vec2(0, 1), math::pi<float> * 100.f, 0, -1.f/400.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2(-725.827393f, 1475.849f), vec2(0.382683456f, 0.923879504f), math::pi<float> * 200.f, -1.f/400.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_transition(vec2{-203.202209f, 1692.32751f}, vec2{0.923879504f, -0.382683486f}, math::pi<float> * 100.f, -1.f/400.f, 0));
+
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2{44.3004303f, 1502.34460f}, vec2{0.707106709f, -0.707106829f}, 400.f + 295.148468f));
+
+    _rail_network.add_segment(
+        clothoid::segment::from_transition(vec2{535.844543f, 1010.80042f}, vec2{0.707106709f, -0.707106829f}, math::pi<float> * 100.f, 0, -1.f/400.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2{725.827454f, 763.297729f}, vec2{0.382683307f, -0.923879564f}, math::pi<float> * 200.f, -1.f/400.f));
+    _rail_network.add_segment(
+        clothoid::segment::from_transition(vec2{509.348938f, 240.672577f}, vec2{-0.923879564f, -0.382683277f}, math::pi<float> * 100.f, -1.f/400.f, 0));
+
     auto A = _rail_network.add_station(vec2(-100, 200), "A");
     auto B = _rail_network.add_station(vec2(100, 0), "B");
     auto C = _rail_network.add_station(vec2(-100, -100), "C");
     auto D = _rail_network.add_station(vec2(-766.5f, 1166.5f), "D");
 
-    spawn<train>(16)->set_schedule({B, C, A, D});
+    spawn<train>(16)->set_schedule({B, D});
+    spawn<train>(8)->set_schedule({B, C, A});
+    spawn<train>(4)->set_schedule({B, A});
 }
 
 //------------------------------------------------------------------------------
