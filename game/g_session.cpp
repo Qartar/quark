@@ -159,7 +159,7 @@ result session::run_frame(time_delta time)
             }
         }
 
-        if (_worldtime > time_value((1 + _world.framenum()) * FRAMETIME) && svs.active) {
+        while (_worldtime > time_value((1 + _world.framenum()) * FRAMETIME) && svs.active) {
             _world.run_frame();
             if (!svs.local) {
                 write_frame();
