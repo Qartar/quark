@@ -51,6 +51,13 @@ protected:
 
     int _num_cars;
 
+    time_value _wait_time;
+
+    enum class state {
+        moving,
+        waiting,
+    } _state;
+
     static constexpr float max_speed = 50.f;
     static constexpr float max_acceleration = 4.f;
     static constexpr float max_deceleration = 4.f;

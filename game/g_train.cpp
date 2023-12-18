@@ -20,6 +20,8 @@ train::train(int num_cars)
     , _current_acceleration(0)
     , _target_distance(0)
     , _num_cars(num_cars)
+    , _wait_time(time_value::zero)
+    , _state(state::moving)
 {
 }
 
@@ -233,9 +235,22 @@ void train::think()
         _path.erase(_path.begin());
     }
 
-    if (_current_distance >= _target_distance) {
-        _current_distance = _target_distance;
-        next_station();
+    if (_state == state::moving) {
+        if (_current_distance >= _target_distance) {
+            _current_distance = _target_distance;
+            _state = state::waiting;
+            _wait_time = get_world()->frametime() + time_delta::from_seconds(20);
+        }
+    }
+
+    if (_state == state::waiting) {
+        if (_wait_time > get_world()->frametime()) {
+            _current_acceleration = clamp(-_current_speed / FRAMETIME.to_seconds(), -max_deceleration, 0.f);
+            return;
+        } else {
+            _state = state::moving;
+            next_station();
+        }
     }
 
     float s = min(target_speed(), sqrt(2.f * max(0.f, _target_distance - _current_distance) * max_deceleration));
