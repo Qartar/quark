@@ -227,7 +227,7 @@ void train::think()
 
     _current_distance += _current_speed * FRAMETIME.to_seconds()
         + .5f * _current_acceleration * square(FRAMETIME.to_seconds());
-    _current_speed += _current_acceleration * FRAMETIME.to_seconds();
+    _current_speed = max(0.f, _current_speed + _current_acceleration * FRAMETIME.to_seconds());
 
     if (_current_distance - length() > seg.length()) {
         _current_distance -= seg.length();
@@ -236,7 +236,7 @@ void train::think()
     }
 
     if (_state == state::moving) {
-        if (_current_distance >= _target_distance) {
+        if (_current_distance >= _target_distance - 1e-3f) {
             _current_distance = _target_distance;
             _state = state::waiting;
             _wait_time = get_world()->frametime() + time_delta::from_seconds(20);
@@ -253,10 +253,34 @@ void train::think()
         }
     }
 
-    float s = min(target_speed(), sqrt(2.f * max(0.f, _target_distance - _current_distance) * max_deceleration));
+    float target_acceleration = (target_speed() - _current_speed) / FRAMETIME.to_seconds();
 
-    float accel = (s - _current_speed) / FRAMETIME.to_seconds();
-    _current_acceleration = clamp(accel, -max_deceleration, max_acceleration);
+    // stopping distance at current speed
+    float d = .5f * square(_current_speed) / max_deceleration;
+    // stopping distance assuming maximum acceleration this frame
+    float d2 = .5f * square(_current_speed + max_acceleration * FRAMETIME.to_seconds()) / max_deceleration
+        + _current_speed * FRAMETIME.to_seconds() + .5f * max_acceleration * square(FRAMETIME.to_seconds());
+
+    if (_target_distance - _current_distance < d) {
+        target_acceleration = -max_deceleration;
+    } else if (_target_distance - _current_distance < d2) {
+        // solve for acceleration this frame that moves the train precisely to
+        // the stopping distance next frame (at maximum deceleration)
+        float a = .5f * square(FRAMETIME.to_seconds());
+        float b = _current_speed * FRAMETIME.to_seconds()
+            + .5f * max_deceleration * square(FRAMETIME.to_seconds());
+        float c = .5f * square(_current_speed)
+            + max_deceleration * _current_speed * FRAMETIME.to_seconds()
+            - (_target_distance - _current_distance) * max_deceleration;
+        float det = b * b - 4.f * a * c;
+        // always use the second (or singular) solution if it exists
+        if (det >= 0.f) {
+            float q = -.5f * (b + std::copysign(std::sqrt(det), b));
+            target_acceleration = min(c / q, target_acceleration);
+        }
+    }
+
+    _current_acceleration = clamp(target_acceleration, -max_deceleration, max_acceleration);
 }
 
 //------------------------------------------------------------------------------
