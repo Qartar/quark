@@ -86,6 +86,16 @@ public:
         return type().is_type(other_type::_type);
     }
 
+    //! Return this object as `other_type` if this type is derived from `other_type`
+    template<typename other_type> other_type* as_type() {
+        return is_type<other_type>() ? static_cast<other_type*>(this) : nullptr;
+    }
+
+    //! Return this object as `other_type` if this type is derived from `other_type`
+    template<typename other_type> other_type const* as_type() const {
+        return is_type<other_type>() ? static_cast<other_type const*>(this) : nullptr;
+    }
+
     virtual object_type const& type() const { return _type; }
     virtual void draw(render::system* renderer, time_value time) const;
     virtual bool touch(object *other, physics::collision const* collision);
