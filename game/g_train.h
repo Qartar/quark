@@ -67,6 +67,8 @@ protected:
     static constexpr float car_length = 16.f;
     static constexpr float coupling_length = 1.f;
 
+    static constexpr float distance_epsilon = 1e-3f;
+
 protected:
     void next_station();
 
@@ -79,6 +81,9 @@ protected:
     void draw_car(render::system* renderer, mat3 transform, color4 color) const;
     void draw_coupler(render::system* renderer, mat3 transform, color4 color) const;
 
+    bool check_collisions(float& collision_distance) const;
+    bool check_collision(train const* other, float& collision_distance) const;
+    bool check_path_intersection(train const* other, edge_index& edge, float& offset, float& other_offset, float& length) const;
 };
 
 } // namespace game

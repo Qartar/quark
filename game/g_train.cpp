@@ -253,6 +253,7 @@ void train::think()
         }
     }
 
+    float target_distance = _target_distance;
     float target_acceleration = (target_speed() - _current_speed) / FRAMETIME.to_seconds();
 
     // stopping distance at current speed
@@ -261,9 +262,17 @@ void train::think()
     float d2 = .5f * square(_current_speed + max_acceleration * FRAMETIME.to_seconds()) / max_deceleration
         + _current_speed * FRAMETIME.to_seconds() + .5f * max_acceleration * square(FRAMETIME.to_seconds());
 
-    if (_target_distance - _current_distance < d) {
+    // check for potential collisions along path
+    float collision_distance;
+    if (check_collisions(collision_distance)) {
+        if (collision_distance - _current_distance < d2) {
+            target_distance = min(target_distance, collision_distance);
+        }
+    }
+
+    if (target_distance - _current_distance < d) {
         target_acceleration = -max_deceleration;
-    } else if (_target_distance - _current_distance < d2) {
+    } else if (target_distance - _current_distance < d2) {
         // solve for acceleration this frame that moves the train precisely to
         // the stopping distance next frame (at maximum deceleration)
         float a = .5f * square(FRAMETIME.to_seconds());
@@ -271,7 +280,7 @@ void train::think()
             + .5f * max_deceleration * square(FRAMETIME.to_seconds());
         float c = .5f * square(_current_speed)
             + max_deceleration * _current_speed * FRAMETIME.to_seconds()
-            - (_target_distance - _current_distance) * max_deceleration;
+            - (target_distance - _current_distance) * max_deceleration;
         float det = b * b - 4.f * a * c;
         // always use the second (or singular) solution if it exists
         if (det >= 0.f) {
@@ -494,6 +503,110 @@ float train::truck_offset(int index) const
 float train::length() const
 {
     return car_offset(_num_cars);
+}
+
+//------------------------------------------------------------------------------
+bool train::check_collisions(float& collision_distance) const
+{
+    collision_distance = FLT_MAX;
+    // FIXME: cycle through all objects
+    for (auto obj : get_world()->objects()) {
+        if (obj->is_type<train>() && obj != this) {
+            float distance;
+            if (check_collision(obj->as_type<train>(), distance)) {
+                if (distance > _current_distance - distance_epsilon
+                        && distance < collision_distance) {
+                    collision_distance = distance;
+                }
+            }
+        }
+    }
+
+    return collision_distance < FLT_MAX;
+}
+
+//------------------------------------------------------------------------------
+bool train::check_collision(train const* other, float& collision_distance) const
+{
+    edge_index edge;
+    float offset, other_offset, length;
+    if (!check_path_intersection(other, edge, offset, other_offset, length)) {
+        return false;
+    }
+
+    float enter_time = (offset - _current_distance) * other->_current_speed;
+    float other_enter_time = (other_offset - other->_current_distance) * _current_speed;
+
+    if (enter_time < other_enter_time) {
+        return false;
+    }
+
+    float clearance = 15.f;
+    float other_length = other->length() + clearance;
+    float other_tail_time = (other_offset + other_length - other->_current_distance) * _current_speed;
+
+    if (_current_distance - distance_epsilon < offset
+            && other->_current_distance > other_offset
+            && other->_current_distance - other_length < other_offset) {
+        collision_distance = offset;
+        return true;
+    } else if (enter_time > other_tail_time
+            || (_current_distance > offset && other->_current_distance > other_offset)) {
+        // current distance relative to path intersection
+        float d0 = _current_distance - offset;
+        // other distance relative to path intersection
+        float d1 = other->_current_distance - other_offset - other_length;
+
+        collision_distance = _current_distance + (d1 - d0) + .5f * square(other->_current_speed) / max_deceleration;
+        return true;
+    } else {
+        collision_distance = offset;
+        return true;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool train::check_path_intersection(train const* other, edge_index& edge, float& offset, float& other_offset, float& length) const
+{
+    auto const& network = get_world()->rail_network();
+    const float stopping_distance = .5f * square(_current_speed) / max_deceleration;
+
+    offset = 0.f;
+    // iterate over this train's path edges
+    for (std::size_t ii = 0, si = _path.size(); ii < si; ++ii) {
+        other_offset = 0.f;
+        // iterate over other train's path edges until there is an overlap
+        for (std::size_t jj = 0, sj = other->_path.size(); jj < sj; ++jj) {
+            if (network.start_node(_path[ii]) == network.start_node(other->_path[jj])) {
+                edge = _path[ii];
+                length = 0.f;
+                float clearance = (ii && jj) ? network.get_clearance(_path[ii - 1] ^ 1, other->_path[jj - 1] ^ 1) : 0.f;
+                float other_clearance = (ii && jj) ? network.get_clearance(other->_path[jj - 1] ^ 1, _path[ii - 1] ^ 1) : 0.f;
+                // continue iterating over other train's path to find the end of overlap
+                for (std::size_t kk = 0;; ++kk) {
+                    if (ii + kk >= si || jj + kk >= sj
+                        || _path[ii + kk] != other->_path[jj + kk]) {
+                        break;
+                    }
+                    length += network.get_segment(_path[ii + kk]).length();
+                }
+                offset -= max(clearance, other_clearance);
+                other_offset -= max(clearance, other_clearance);
+                length += max(clearance, other_clearance);
+                return true;
+            }
+
+            other_offset += network.get_segment(other->_path[jj]).length();
+        }
+
+        if (offset - _current_distance > stopping_distance) {
+            return false;
+        }
+
+        offset += network.get_segment(_path[ii]).length();
+    }
+
+    return false;
 }
 
 } // namespace game
