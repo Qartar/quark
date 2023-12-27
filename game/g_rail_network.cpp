@@ -34,6 +34,8 @@ void rail_network::clear()
     _network = {};
 
     _signal_blocks.clear();
+
+    _clearance.clear();
 }
 
 //------------------------------------------------------------------------------
@@ -71,7 +73,10 @@ void rail_network::draw(render::system* renderer, time_value time) const
 //------------------------------------------------------------------------------
 void rail_network::add_segment(clothoid::segment s)
 {
-    _network.insert_edge(s);
+    auto edge = _network.insert_edge(s);
+
+    update_clearance(edge);
+    update_clearance(edge ^ 1);
 }
 
 //------------------------------------------------------------------------------
@@ -97,6 +102,12 @@ handle<rail_station> rail_network::add_station(vec2 position, string::view name)
 clothoid::segment rail_network::get_segment(clothoid::network::edge_index edge) const
 {
     return _network.get_segment(edge);
+}
+
+//------------------------------------------------------------------------------
+clothoid::network::node_index rail_network::start_node(clothoid::network::edge_index edge) const
+{
+    return _network.start_node(edge);
 }
 
 //------------------------------------------------------------------------------
@@ -234,6 +245,60 @@ std::size_t rail_network::find_path(rail_position start, rail_position goal, edg
 
     // search failed
     return 0;
+}
+
+//------------------------------------------------------------------------------
+bool rail_network::calculate_clearance(clothoid::network::edge_index e0, clothoid::network::edge_index e1, float clearance, float& c0, float& c1) const
+{
+    clothoid::segment s0 = _network.get_segment(e0);
+    clothoid::segment s1 = _network.get_segment(e1);
+
+    c0 = clearance;
+
+    for (int ii = 0; ii < 32; ++ii) {
+        vec2 p0 = s0.evaluate(c0);
+        vec2 t0 = s0.evaluate_tangent(c0);
+
+        vec3 p1 = s1.get_closest_point(p0);
+        vec2 t1 = s1.evaluate_tangent(p1.z);
+
+        c1 = p1.z;
+
+        float d = length(p1.to_vec2() - p0);
+        float ds = (clearance - d) / dot(t0, t1);
+        if (abs(clearance - d) < 1e-6f) {
+            break;
+        } else if (c0 < 0.f && ds < 0.f) {
+            return false;
+        } else if (c0 > s0.length() && ds > 0.f) {
+            return false;
+        }
+
+        c0 += ds;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+void rail_network::update_clearance(clothoid::network::edge_index edge)
+{
+    clothoid::segment s = _network.get_segment(edge);
+    clothoid::network::node_index node = _network.start_node(edge);
+
+    for (auto e = _network.first_edge(node); e != clothoid::network::invalid_edge; e = _network.next_edge(e)) {
+        if (e == edge) {
+            continue;
+        }
+        if (dot(s.initial_tangent(), _network.get_segment(e).initial_tangent()) < .999f) {
+            continue;
+        }
+        float c0, c1;
+        if (calculate_clearance(edge, e, junction_clearance, c0, c1)) {
+            _clearance[std::make_pair(edge, e)] = c0;
+            _clearance[std::make_pair(e, edge)] = c1;
+        }
+    }
 }
 
 } // namespace game

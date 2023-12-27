@@ -7,6 +7,8 @@
 #include "cm_string.h"
 #include "g_object.h"
 
+#include <map>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -40,6 +42,9 @@ public:
     using edge_index = int;
     using node_index = int;
 
+    static constexpr float track_clearance = 5.f;
+    static constexpr float junction_clearance = 4.f;
+
 public:
     rail_network(world* w);
     virtual ~rail_network();
@@ -53,6 +58,10 @@ public:
     handle<rail_station> add_station(vec2 position, string::view name);
 
     clothoid::segment get_segment(clothoid::network::edge_index edge) const;
+
+    clothoid::network::node_index start_node(clothoid::network::edge_index edge) const;
+
+    float get_clearance(clothoid::network::edge_index from, clothoid::network::edge_index to) const;
 
     bool get_closest_segment(vec2 position, float max_distance, clothoid::network::edge_index& edge, float& length) const;
 
@@ -74,6 +83,20 @@ protected:
     };
 
     std::vector<signal_block> _signal_blocks;
+
+    using edge_pair = std::pair<clothoid::network::edge_index, clothoid::network::edge_index>;
+    std::map<edge_pair, float> _clearance;
+
+protected:
+    bool calculate_clearance(clothoid::network::edge_index e0, clothoid::network::edge_index e1, float clearance, float& c0, float& c1) const;
+    void update_clearance(clothoid::network::edge_index edge);
 };
+
+//------------------------------------------------------------------------------
+inline float rail_network::get_clearance(clothoid::network::edge_index from, clothoid::network::edge_index to) const
+{
+    auto it = _clearance.find(std::make_pair(from, to));
+    return it != _clearance.end() ? it->second : 0.f;
+}
 
 } // namespace game
