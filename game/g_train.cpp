@@ -489,13 +489,13 @@ float train::car_offset(int index) const
 float train::truck_offset(int index) const
 {
     if (index == 0) {
-        return 2.4f;
+        return 3.f;
     } else if (index == 1) {
-        return locomotive_length - 2.4f;
+        return locomotive_length - 3.0f;
     } else if ((index & 1) == 0) {
-        return car_offset(index / 2 - 1) + 2.4f;
+        return car_offset(index / 2 - 1) + 2.0f;
     } else {
-        return car_offset(index / 2 - 1) + car_length - 2.4f;
+        return car_offset(index / 2 - 1) + car_length - 2.0f;
     }
 }
 
