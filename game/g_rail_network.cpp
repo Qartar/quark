@@ -89,7 +89,7 @@ handle<rail_signal> rail_network::add_signal(vec2 position)
 //------------------------------------------------------------------------------
 handle<rail_station> rail_network::add_station(vec2 position, string::view name)
 {
-    clothoid::network::edge_index edge;
+    edge_index edge;
     float dist;
     if (get_closest_segment(position, 1.f, edge, dist)) {
         return _world->spawn<rail_station>(edge, dist, name);
@@ -99,13 +99,13 @@ handle<rail_station> rail_network::add_station(vec2 position, string::view name)
 }
 
 //------------------------------------------------------------------------------
-clothoid::segment rail_network::get_segment(clothoid::network::edge_index edge) const
+clothoid::segment rail_network::get_segment(edge_index edge) const
 {
     return _network.get_segment(edge);
 }
 
 //------------------------------------------------------------------------------
-clothoid::network::node_index rail_network::start_node(clothoid::network::edge_index edge) const
+rail_network::node_index rail_network::start_node(edge_index edge) const
 {
     return _network.start_node(edge);
 }
@@ -114,7 +114,7 @@ clothoid::network::node_index rail_network::start_node(clothoid::network::edge_i
 bool rail_network::get_closest_segment(
     vec2 position,
     float max_distance,
-    clothoid::network::edge_index& edge,
+    edge_index& edge,
     float& length) const
 {
     return _network.get_closest_segment(
@@ -156,7 +156,7 @@ std::size_t rail_network::find_path(rail_position start, rail_position goal, edg
     } else if (start.is_node) {
         // populate initial search state with all edges connected to start node
         for (edge_index edge = _network.first_edge(start.node)
-            ; edge != clothoid::network::invalid_edge
+            ; edge != invalid_edge
             ; edge = _network.next_edge(edge)) {
 
             node_index node = _network.end_node(edge);
@@ -218,7 +218,7 @@ std::size_t rail_network::find_path(rail_position start, rail_position goal, edg
         // add all suitable edges from the search node to the queue
         vec2 dir = _network.get_segment(search[idx].edge).final_tangent();
         for (edge_index edge = _network.first_edge(search[idx].node)
-            ; edge != clothoid::network::invalid_edge
+            ; edge != invalid_edge
             ; edge = _network.next_edge(edge)) {
 
             if (dot(dir, _network.edge_direction(edge)) < .999f) {
@@ -248,22 +248,26 @@ std::size_t rail_network::find_path(rail_position start, rail_position goal, edg
 }
 
 //------------------------------------------------------------------------------
-bool rail_network::calculate_clearance(clothoid::network::edge_index e0, clothoid::network::edge_index e1, float clearance, float& c0, float& c1) const
+bool rail_network::calculate_clearance(edge_index e0, edge_index e1, float clearance, float& c0, float& c1) const
 {
     clothoid::segment s0 = _network.get_segment(e0);
     clothoid::segment s1 = _network.get_segment(e1);
 
+    // initial guess
     c0 = clearance;
 
     for (int ii = 0; ii < 32; ++ii) {
+        // point on segment 0 for current guess
         vec2 p0 = s0.evaluate(c0);
         vec2 t0 = s0.evaluate_tangent(c0);
 
+        // closest point on segment 1 to point on segment 0
         vec3 p1 = s1.get_closest_point(p0);
         vec2 t1 = s1.evaluate_tangent(p1.z);
 
         c1 = p1.z;
 
+        // refine guess until within epsilon or outside segment
         float d = length(p1.to_vec2() - p0);
         float ds = (clearance - d) / dot(t0, t1);
         if (abs(clearance - d) < 1e-6f) {
@@ -281,18 +285,21 @@ bool rail_network::calculate_clearance(clothoid::network::edge_index e0, clothoi
 }
 
 //------------------------------------------------------------------------------
-void rail_network::update_clearance(clothoid::network::edge_index edge)
+void rail_network::update_clearance(edge_index edge)
 {
     clothoid::segment s = _network.get_segment(edge);
-    clothoid::network::node_index node = _network.start_node(edge);
+    node_index node = _network.start_node(edge);
 
-    for (auto e = _network.first_edge(node); e != clothoid::network::invalid_edge; e = _network.next_edge(e)) {
+    // iterate over all edges at the start node
+    for (auto e = _network.first_edge(node); e != invalid_edge; e = _network.next_edge(e)) {
         if (e == edge) {
             continue;
         }
+        // ignore edges that are not the same direction
         if (dot(s.initial_tangent(), _network.get_segment(e).initial_tangent()) < .999f) {
             continue;
         }
+        // calculate and update clearance for both edges
         float c0, c1;
         if (calculate_clearance(edge, e, junction_clearance, c0, c1)) {
             _clearance[std::make_pair(edge, e)] = c0;
