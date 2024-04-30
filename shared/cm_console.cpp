@@ -130,7 +130,7 @@ void console_buffer::append_row(string::view text)
             }
 
             char const* next = strpbrk(prev, "\r\n\t ");
-            if (next >= text.end()) {
+            if (!next) {
                 next = text.end();
             }
             std::size_t next_columns = num_columns({row_begin, next});
@@ -445,7 +445,16 @@ void console::printf(string::literal fmt, ...)
     int len = vsnprintf(msg, msg_size, fmt.c_str(), ap);
     va_end(ap);
 
-    if (len > 0) {
+    if (len >= msg_size) {
+        char* buf = (char*)malloc(len + 1);
+
+        va_start(ap, fmt);
+        len = vsnprintf(buf, len + 1, fmt.c_str(), ap);
+        va_end(ap);
+
+        _buffer.append({buf, buf + len});
+        free(buf);
+    } else if (len > 0) {
         _buffer.append({msg, msg + len});
     }
 }
