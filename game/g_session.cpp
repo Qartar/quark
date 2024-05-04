@@ -112,6 +112,9 @@ result session::init (string::view cmdline)
     if (cmdline.contains("dedicated")) {
         _dedicated = true;
         start_server( );
+    } else {
+        start_server_local();
+        start_client_local();
     }
 
     return result::success;
