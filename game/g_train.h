@@ -58,16 +58,23 @@ protected:
         waiting,
     } _state;
 
+    //! Maximum speed, ignoring track geometry
     static constexpr float max_speed = 50.f;
-    static constexpr float max_acceleration = 4.f;
-    static constexpr float max_deceleration = 4.f;
+    //! Maximum acceleration
+    static constexpr float max_acceleration = 1.f;
+    //! Maximum deceleration
+    static constexpr float max_deceleration = 1.f;
+    //! Maximum lateral acceleration, used to determine maximum speed due to track curvature
     static constexpr float max_lateral_acceleration = 4.f;
 
     static constexpr float locomotive_length = 24.f;
     static constexpr float car_length = 16.f;
     static constexpr float coupling_length = 1.f;
 
-    static constexpr float distance_epsilon = 1e-3f;
+    //! Minimum following distance
+    static constexpr float tail_clearance = 15.f;
+
+    static constexpr float distance_epsilon = 1e-1f;
 
 protected:
     void next_station();
@@ -81,9 +88,21 @@ protected:
     void draw_car(render::system* renderer, mat3 transform, color4 color) const;
     void draw_coupler(render::system* renderer, mat3 transform, color4 color) const;
 
+    //! Information about a path intersection between two trains
+    struct intersection_info {
+        //! First edge of the shared path
+        edge_index edge;
+        //! Length of the shared path
+        float length;
+        //! Distance to the first edge relative to the path of `this` and `other` respectively.
+        float distance[2];
+        //! Distance from the first edge needed to maintain lateral clearance for `this` and `other`.
+        float enter_clearance[2];
+    };
+
     bool check_collisions(float& collision_distance) const;
     bool check_collision(train const* other, float& collision_distance) const;
-    bool check_path_intersection(train const* other, edge_index& edge, float& offset, float& other_offset, float& length) const;
+    bool check_path_intersection(train const* other, intersection_info& info) const;
 };
 
 } // namespace game
