@@ -88,6 +88,7 @@ private:
     {}
 
     static void fresnel_integral(double x, double* c, double* s);
+    static void fresnel_integral_simd(double x, double* c, double* s);
 };
 
 //------------------------------------------------------------------------------
@@ -299,7 +300,7 @@ inline float segment::evaluate_curvature(float s) const
 inline void segment::fresnel_integral(float x, float& c, float& s)
 {
     double C, S;
-    fresnel_integral(x, &C, &S);
+    fresnel_integral_simd(x, &C, &S);
     c = float(C);
     s = float(S);
 }
