@@ -316,7 +316,7 @@ void session::draw_world()
         if (_player->is_type<player>()) {
             player const* pl = static_cast<player const*>(_player.get());
             const_cast<player*>(pl)->set_aspect(aspect_ratio);
-            player_view plv = pl->view(_worldtime);
+            player_view plv = pl->view(_worldtime, _frametime);
             view.origin = plv.origin;
             view.size = plv.size;
             view.angle = 0;

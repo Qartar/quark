@@ -20,6 +20,7 @@ player::player()
     : _view({vec2_zero, vec2(640.f, 480.0f)})
     , _usercmd({})
     , _usercmd_time(time_delta::zero)
+    , _timescale_time(time_value::zero)
     , _selection_start(vec2_zero)
     , _selection_time(time_delta::zero)
     , _is_selecting(false)
@@ -116,6 +117,39 @@ void player::draw(render::system* renderer, time_value time) const
     } else {
         draw_selection(renderer, time, _selection);
     }
+
+    constexpr time_delta fade_time = time_delta::from_seconds(1.5f);
+    // FIXME: using _usercmd_time as proxy for realtime
+    if (_usercmd_time - _timescale_time < fade_time) {
+        string::view str = "";
+        if (get_world()->timescale() == 0.f) {
+            str = "||";
+        } else if (get_world()->timescale() == 1.f) {
+            str = ">";
+        } else if (get_world()->timescale() == 3.f) {
+            str = ">>";
+        } else if (get_world()->timescale() == 9.f) {
+            str = ">>>";
+        }
+
+        float t = 1.f - (_usercmd_time - _timescale_time) / fade_time;
+
+        // Text orientation is fixed in worldspace, create a new view with no
+        // rotation so that the text always appears in the top right corner.
+        render::view old_view = renderer->view();
+        render::view view = old_view;
+        view.angle = 0.f;
+        renderer->set_view(view);
+
+        vec2 offset = renderer->string_size(">>>");
+        vec2 size = renderer->string_size(str);
+        renderer->draw_string(
+            str,
+            view.origin + offset - .5f * (view.size + size),
+            color4(.9f * t * t, 1, 1, t));
+
+        renderer->set_view(old_view);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -204,10 +238,17 @@ mat3 player::get_transform(time_value time) const
 }
 
 //------------------------------------------------------------------------------
-player_view player::view(time_value time) const
+player_view player::view(time_value time, time_value realtime) const
 {
-    (void)time;
-    return _view;
+    (void)realtime;
+
+    if (_follow) {
+        game::player_view view = _view;
+        view.origin = _follow->get_position(time);
+        return view;
+    } else {
+        return _view;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -217,12 +258,12 @@ void player::set_aspect(float aspect)
 }
 
 //------------------------------------------------------------------------------
-void player::update_usercmd(usercmd cmd, time_value time)
+void player::update_usercmd(usercmd cmd, time_value realtime)
 {
     constexpr float zoom_speed = 1.f + (1.f / 4.f);
     constexpr float scroll_speed = 1.f;
 
-    float delta_time = (time - _usercmd_time).to_seconds();
+    float delta_time = (realtime - _usercmd_time).to_seconds();
 
     if (!!(cmd.buttons & usercmd::button::select)
         && !(_usercmd.buttons & usercmd::button::select)) {
@@ -261,10 +302,10 @@ void player::update_usercmd(usercmd cmd, time_value time)
     }
 
     _usercmd = cmd;
-    _usercmd_time = time;
+    _usercmd_time = realtime;
 
     if (_follow) {
-        _view.origin = _follow->get_position(time);
+        _view.origin = _follow->get_position();
     }
 
     vec2 cursor = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
@@ -278,7 +319,7 @@ void player::update_usercmd(usercmd cmd, time_value time)
         if (_selection.size()) {
             vec2 origin = vec2_zero;
             for (auto&& ship : _selection) {
-                origin += ship->get_position(time);
+                origin += ship->get_position();
             }
             origin /= float(_selection.size());
             vec2 direction = normalize(cursor - origin);
@@ -287,6 +328,15 @@ void player::update_usercmd(usercmd cmd, time_value time)
                 ship->navigation()->set_heading(rot2(math::deg2rad(heading)));
             }
         }
+    } else if (_usercmd.action == usercmd::action::speed_up) {
+        get_world()->on_speed_up();
+        _timescale_time = realtime;
+    } else if (_usercmd.action == usercmd::action::speed_down) {
+        get_world()->on_speed_down();
+        _timescale_time = realtime;
+    } else if (_usercmd.action == usercmd::action::pause) {
+        get_world()->on_pause();
+        _timescale_time = realtime;
     }
 }
 

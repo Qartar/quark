@@ -28,6 +28,8 @@ world::world()
     , _physics(
         std::bind(&world::physics_filter_callback, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&world::physics_collide_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
+    , _timescale(1)
+    , _prev_timescale(1)
 {
     static console_command cmd("solve_ballistics", &ballistics::solve_ballistic_coefficient_cmd);
     for (_index = 0; _index < max_worlds; ++_index) {
@@ -374,6 +376,34 @@ bool world::physics_collide_callback(physics::rigid_body const* body_a, physics:
     game::object* obj_b = handle<object>(body_b->get_handle_bits()).get();
 
     return obj_a->touch(obj_b, &collision);
+}
+
+//------------------------------------------------------------------------------
+void world::on_speed_up()
+{
+    _timescale = clamp(3.f * _timescale, 1.f, 9.f);
+}
+
+//------------------------------------------------------------------------------
+void world::on_speed_down()
+{
+    if (_timescale > 1.f) {
+        _prev_timescale = 1.f;
+        _timescale = (1.f / 3.f) * _timescale;
+    } else {
+        _timescale = 0.f;
+    }
+}
+
+//------------------------------------------------------------------------------
+void world::on_pause()
+{
+    if (_timescale) {
+        _prev_timescale = _timescale;
+        _timescale = 0.f;
+    } else {
+        _timescale = _prev_timescale;
+    }
 }
 
 } // namespace game

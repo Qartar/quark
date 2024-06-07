@@ -187,6 +187,12 @@ public:
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
 
+    float timescale() const { return _timescale; } //!< Game speed as a multiplier
+
+    void on_speed_up(); //!< Command callback for increasing the game speed
+    void on_speed_down(); //!< Command callback for decreasing the game speed
+    void on_pause(); //!< Command callback for pausing/unpausing the game world
+
 private:
     //! Sparse array of objects in the world, resized as needed
     std::vector<std::unique_ptr<object>> _objects;
@@ -220,6 +226,9 @@ private:
 
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
+
+    float _timescale; //!< Current game speed as a multiplier
+    float _prev_timescale; //!< Previous game speed, used for unpausing
 
     //
     // particle system

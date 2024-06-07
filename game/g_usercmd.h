@@ -42,6 +42,9 @@ struct usercmd
         toggle_shield,
         zoom_in,
         zoom_out,
+        speed_up,
+        speed_down,
+        pause,
     };
 
     enum class button

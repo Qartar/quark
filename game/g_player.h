@@ -37,15 +37,17 @@ public:
     virtual rot2 get_rotation(time_value time) const override;
     virtual mat3 get_transform(time_value time) const override;
 
-    player_view view(time_value time) const;
+    player_view view(time_value time, time_value realtime) const;
 
     void set_aspect(float aspect);
-    virtual void update_usercmd(usercmd cmd, time_value time);
+    virtual void update_usercmd(usercmd cmd, time_value realtime);
 
 protected:
     player_view _view;
     usercmd _usercmd;
-    time_value _usercmd_time;
+    time_value _usercmd_time; //!< realtime, not frametime
+
+    time_value _timescale_time; //!< realtime since game speed was changed
 
     handle<ship> _hover;
     handle<ship> _follow;

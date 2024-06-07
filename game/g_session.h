@@ -209,8 +209,6 @@ private:
     config::string _cl_color;
     config::integer _cl_weapon;
 
-    config::scalar _timescale;
-
     console _console;
 
     game_mode _mode;
