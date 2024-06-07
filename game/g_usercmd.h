@@ -39,6 +39,9 @@ struct usercmd
         zoom_in,
         zoom_out,
         follow,
+        speed_up,
+        speed_down,
+        pause,
     };
 
     enum class button

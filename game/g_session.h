@@ -204,8 +204,6 @@ private:
 
     render::system* _renderer;
 
-    config::scalar _timescale;
-
     console _console;
 
     game_mode _mode;

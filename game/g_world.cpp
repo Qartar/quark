@@ -26,6 +26,8 @@ world::world()
         std::bind(&world::physics_collide_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
     , _framenum(0)
     , _rail_network(this)
+    , _timescale(1)
+    , _prev_timescale(1)
 {
     for (_index = 0; _index < max_worlds; ++_index) {
         if (!_singletons[_index]) {
@@ -395,6 +397,34 @@ bool world::physics_collide_callback(physics::rigid_body const* body_a, physics:
     game::object* obj_b = _physics_objects[body_b];
 
     return obj_a->touch(obj_b, &collision);
+}
+
+//------------------------------------------------------------------------------
+void world::on_speed_up()
+{
+    _timescale = clamp(3.f * _timescale, 1.f, 9.f);
+}
+
+//------------------------------------------------------------------------------
+void world::on_speed_down()
+{
+    if (_timescale > 1.f) {
+        _prev_timescale = 1.f;
+        _timescale = (1.f / 3.f) * _timescale;
+    } else {
+        _timescale = 0.f;
+    }
+}
+
+//------------------------------------------------------------------------------
+void world::on_pause()
+{
+    if (_timescale) {
+        _prev_timescale = _timescale;
+        _timescale = 0.f;
+    } else {
+        _timescale = _prev_timescale;
+    }
 }
 
 } // namespace game

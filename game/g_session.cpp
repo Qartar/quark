@@ -26,7 +26,6 @@ namespace game {
 session::session()
     : _menu_active(true)
     , _dedicated(false)
-    , _timescale("timescale", 1.f, config::server, "")
     , _restart_time(time_value::zero)
     , _zoom(1)
     , _worldtime(time_value::zero)
@@ -102,6 +101,9 @@ result session::init (string::view cmdline)
         {'s', usercmd::button::scroll_down},
         {'d', usercmd::button::scroll_right},
         {K_F1, usercmd::action::follow},
+        {',', usercmd::action::speed_down},
+        {'.', usercmd::action::speed_up},
+        {K_SPACE, usercmd::action::pause},
     });
 
     init_client();
@@ -153,12 +155,12 @@ result session::run_frame(time_delta time)
 
     if (!_menu_active || svs.active) {
         // clamp world step size
-        _worldtime += std::min(time, FRAMETIME) * _timescale;
+        _worldtime += std::min(time, FRAMETIME) * _world.timescale();
 
         // update client
         if (!_dedicated) {
             if (_player && _player->is_type<player>()) {
-                static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate(), _worldtime);
+                static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate(), _frametime);
             }
         }
 
@@ -425,7 +427,7 @@ void session::cursor_event(vec2 position)
 
     _clients[0].input.cursor_event(position / vec2(size) * vec2(1,-1) + vec2(0,1));
     if (_player && _player->is_type<player>()) {
-        static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate_direct(), _worldtime);
+        static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate_direct(), _frametime);
     }
 
     if (_menu_active) {
