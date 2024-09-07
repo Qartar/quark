@@ -50,6 +50,20 @@ protected:
 
     time_value _timescale_time; //!< realtime since game speed was changed
 
+    enum class input_state {
+        none,
+        track,
+        signal,
+        station,
+    };
+
+    input_state _input_state;
+
+    vec2 _track_start_pos;
+    vec2 _track_start_dir;
+    vec2 _track_end_pos;
+    vec2 _track_end_dir;
+
     handle<object> _follow;
 
 protected:

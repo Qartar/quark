@@ -38,6 +38,9 @@ public:
 
     float length() const;
 
+    void draw_debug(render::system* renderer, time_value time) const;
+    void draw_path(render::system* renderer, time_value time) const;
+
 protected:
     std::vector<handle<rail_station>> _schedule;
     std::size_t _next_station;
@@ -52,11 +55,28 @@ protected:
     int _num_cars;
 
     time_value _wait_time;
+    time_value _idle_time; //!< time train has been idle
 
     enum class state {
         moving,
         waiting,
     } _state;
+
+    mutable int _collision_type;
+    mutable handle<train> _collision_train;
+
+    struct debug {
+        static constexpr int size = 1024;
+        float current_distance[size];
+        float current_speed[size];
+        float current_acceleration[size];
+
+        float target_distance[size];
+        float collision_distance[size];
+        int collision_type[size];
+        edge_index collision_edge[size];
+        int collision_train[size];
+    } _debug;
 
     //! Maximum speed, ignoring track geometry
     static constexpr float max_speed = 50.f;
@@ -85,7 +105,8 @@ protected:
 
     void draw(render::system* renderer, float distance, color4 color) const;
     void draw_locomotive(render::system* renderer, mat3 transform, color4 color) const;
-    void draw_car(render::system* renderer, mat3 transform, color4 color) const;
+    void draw_boxcar(render::system* renderer, mat3 transform, color4 color) const;
+    void draw_tanker(render::system* renderer, mat3 transform, color4 color) const;
     void draw_coupler(render::system* renderer, mat3 transform, color4 color) const;
 
     //! Information about a path intersection between two trains

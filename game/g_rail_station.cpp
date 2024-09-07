@@ -33,6 +33,11 @@ void rail_station::spawn()
 void rail_station::draw(render::system* renderer, time_value time) const
 {
     renderer->draw_string(_name, get_position(time), color4(1,1,1,1));
+    {
+        vec2 pos = get_world()->rail_network().get_segment(_edge).evaluate(_dist);
+        vec2 dir = get_world()->rail_network().get_segment(_edge).evaluate_tangent(_dist);
+        renderer->draw_line(pos - dir.cross(3), pos + dir.cross(3), color4(1,1,1,1), color4(1,1,1,1));
+    }
 }
 
 //------------------------------------------------------------------------------

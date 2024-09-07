@@ -330,4 +330,218 @@ vec3 segment::get_closest_point(vec2 p) const
     }
 }
 
+//------------------------------------------------------------------------------
+inline float point_line_distance_sqr(vec2 a, vec2 b, vec2 c)
+{
+    return square(cross(c - a, b - a)) / length_sqr(b - a);
+}
+
+//------------------------------------------------------------------------------
+bool intersect_line_triangle(vec2 a, vec2 b, vec2 c, vec2 d, vec2 e)
+{
+    float abc = cross(b - a, c - a);
+    if (cross(b - a, d - a) * abc < 0
+        && cross(b - a, e - a) * abc < 0) {
+        return false;
+    }
+
+    if (cross(c - b, d - b) * abc < 0
+        && cross(c - b, e - b) * abc < 0) {
+        return false;
+    }
+
+    if (cross(a - c, d - c) * abc < 0
+        && cross(a - c, e - c) * abc < 0) {
+        return false;
+    }
+
+    float de = cross(c - d, e - d);
+    if (cross(a - d, e - d) * de > 0
+        && cross(b - d, e - d) * de > 0) {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+bool intersect_segments(vec2 a, vec2 b, vec2 d, vec2 e, float& s1, float& s2)
+{
+    s1 = cross(d - a, e - d) / cross(b - a, e - d);
+    s2 = cross(a - d, b - a) / cross(e - d, b - a);
+
+    if (s1 < 0 || s1 > 1 || s2 < 0 || s2 > 1) {
+        return false;
+    }
+
+    s1 *= (b - a).length();
+    s2 *= (e - d).length();
+    return true;
+}
+
+//------------------------------------------------------------------------------
+bool intersect_segments_r(segment const& l1, vec2 d, vec2 e, float& s1, float& s2)
+{
+    vec2 a, b, c;
+    l1.bounding_triangle(a, b, c);
+    float d1 = point_line_distance_sqr(a, b, c);
+    if (d1 < 1e-6f) {
+        // line-line intersection test
+        return intersect_segments(a, b, d, e, s1, s2);
+    }
+
+    if (!intersect_line_triangle(a, b, c, d, e)) {
+        return false;
+    }
+
+    segment l11, l12;
+    l1.split(.5f * l1.length(), l11, l12);
+    if (intersect_segments_r(l11, d, e, s1, s2)) {
+        return true;
+    } else if (intersect_segments_r(l12, d, e, s1, s2)) {
+        s1 += l11.length();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool intersect_segments_r(vec2 a, vec2 b, segment const& l2, float& s1, float& s2)
+{
+    vec2 d, e, f;
+    l2.bounding_triangle(d, e, f);
+    float d2 = point_line_distance_sqr(d, e, f);
+    if (d2 < 1e-6f) {
+        // line-line intersection test
+        return intersect_segments(a, b, d, e, s1, s2);
+    }
+
+    if (!intersect_line_triangle(d, e, f, a, b)) {
+        return false;
+    }
+
+    segment l21, l22;
+    l2.split(.5f * l2.length(), l21, l22);
+    if (intersect_segments_r(a, b, l21, s1, s2)) {
+        float s12, s22;
+        if (intersect_segments_r(a, b, l22, s12, s22) && s1 > s12) {
+            s1 = s12;
+            s2 = s22 + l21.length();
+            return true;
+        }
+        return true;
+    } else if (intersect_segments_r(a, b, l22, s1, s2)) {
+        s2 += l21.length();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+bool intersect_triangles(vec2 a, vec2 b, vec2 c, vec2 d, vec2 e, vec2 f)
+{
+    float abc = cross(b - a, c - a);
+    if (cross(b - a, d - a) * abc < 0
+        && cross(b - a, e - a) * abc < 0
+        && cross(b - a, f - a) * abc < 0) {
+        return false;
+    }
+
+    if (cross(c - b, d - b) * abc < 0
+        && cross(c - b, e - b) * abc < 0
+        && cross(c - b, f - b) * abc < 0) {
+        return false;
+    }
+
+    if (cross(a - c, d - c) * abc < 0
+        && cross(a - c, e - c) * abc < 0
+        && cross(a - c, f - c) * abc < 0) {
+        return false;
+    }
+
+    float def = cross(e - d, f - d);
+    if (cross(e - d, a - d) * def < 0
+        && cross(e - d, b - d) * def < 0
+        && cross(e - d, c - d) * def < 0) {
+        return false;
+    }
+
+    if (cross(f - e, a - e) * def < 0
+        && cross(f - e, b - e) * def < 0
+        && cross(f - e, c - e) * def < 0) {
+        return false;
+    }
+
+    if (cross(d - f, a - f) * def < 0
+        && cross(d - f, b - f) * def < 0
+        && cross(d - f, c - f) * def < 0) {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+bool intersect_segments_r(segment const& l1, segment const& l2, float& s1, float& s2)
+{
+    vec2 a, b, c, d, e, f;
+    l1.bounding_triangle(a, b, c);
+    l2.bounding_triangle(d, e, f);
+
+    float d1 = point_line_distance_sqr(a, b, c);
+    float d2 = point_line_distance_sqr(d, e, f);
+    if (d1 < 1e-6f && d2 < 1e-6f) {
+        // line-line intersection test
+        return intersect_segments(a, b, d, e, s1, s2);
+    } else if (d1 < 1e-6f) {
+        // line-segment intersection test
+        return intersect_segments_r(l1, d, e, s1, s2);
+    } else if (d2 < 1e-6f) {
+        // segment-line intersection test
+        return intersect_segments_r(a, b, l2, s1, s2);
+    }
+
+    if (!intersect_triangles(a, b, c, d, e, f)) {
+        return false;
+    }
+
+    segment l11, l12;
+    l1.split(.5f * l1.length(), l11, l12);
+    l11.bounding_triangle(a, b, c);
+    if (intersect_triangles(a, b, c, d, e, f)) {
+        segment l21, l22;
+        l2.split(.5f * l2.length(), l21, l22);
+        if (intersect_segments_r(l11, l21, s1, s2)) {
+            return true;
+        } else if (intersect_segments_r(l11, l22, s1, s2)) {
+            s2 += l21.length();
+            return true;
+        }
+    }
+
+    l12.bounding_triangle(a, b, c);
+    if (intersect_triangles(a, b, c, d, e, f)) {
+        segment l21, l22;
+        l2.split(.5f * l2.length(), l21, l22);
+        if (intersect_segments_r(l12, l21, s1, s2)) {
+            s1 += l11.length();
+            return true;
+        } else if (intersect_segments_r(l12, l22, s1, s2)) {
+            s1 += l11.length();
+            s2 += l21.length();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool segment::intersect(segment const& other, float& s, float& t) const
+{
+    return intersect_segments_r(*this, other, s, t);
+}
+
 } // namespace clothoid

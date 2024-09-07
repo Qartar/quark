@@ -21,6 +21,7 @@ train::train(int num_cars)
     , _target_distance(0)
     , _num_cars(num_cars)
     , _wait_time(time_value::zero)
+    , _idle_time(time_value::zero)
     , _state(state::moving)
 {
 }
@@ -42,12 +43,197 @@ void train::draw(render::system* renderer, time_value time) const
         return;
     }
 
+#if 1
+    // draw collisions
+    float collision_distance;
+    if (check_collisions(collision_distance)) {
+        for (std::size_t jj = 0; jj < _path.size(); ++jj) {
+            clothoid::segment seg = get_world()->rail_network().get_segment(_path[jj]);
+
+            if (collision_distance <= seg.length() || jj == _path.size() - 1) {
+                vec2 p = seg.evaluate(collision_distance);
+                vec2 t = seg.evaluate_tangent(collision_distance);
+                color4 c(1,1,1,1);
+                switch (_collision_type) {
+                    case 1: c = color4(1,0,0,1); break;
+                    case 2: c = color4(0,1,0,1); break;
+                    case 3: c = color4(0,0,1,1); break;
+                }
+                renderer->draw_line(p - t.cross(3), p + t.cross(3), c, c);
+                break;
+            }
+
+            collision_distance -= seg.length();
+        }
+    }
+#endif
+
     float delta_time = (time - get_world()->frametime()).to_seconds();
     float distance = _current_distance
         + _current_speed * delta_time
         + .5f * _current_acceleration * square(delta_time);
 
     draw(renderer, distance, color4(1,1,1,1));
+
+    // draw stopping distance
+    {
+        float stopping_distance = distance + .5f * square(_current_speed + _current_acceleration * delta_time) / max_deceleration;
+
+        for (std::size_t jj = 0; jj < _path.size(); ++jj) {
+            clothoid::segment seg = get_world()->rail_network().get_segment(_path[jj]);
+
+            if (stopping_distance <= seg.length() || jj == _path.size() - 1) {
+                vec2 p = seg.evaluate(stopping_distance);
+                vec2 t = seg.evaluate_tangent(stopping_distance);
+                renderer->draw_line(p - t.cross(3), p + t.cross(3), color4(1,1,0,1), color4(1,1,0,1));
+                break;
+            }
+
+            stopping_distance -= seg.length();
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+void train::draw_debug(render::system* renderer, time_value time) const
+{
+    (void)time;
+    mat3 tx;
+
+    render::view old_view = renderer->view();
+    render::view new_view = {
+        vec2_zero,
+        0.f,
+        false,
+        vec2(float(debug::size), 100.f),
+        old_view.viewport,
+    };
+    renderer->set_view(new_view);
+    //float scale = float(debug::size) / renderer->view().size.x;
+    tx.set_identity();
+    tx[0][0] *= -.95f;
+    tx[2][0] = .5f * debug::size * .95f;
+    tx[2][1] = -45;
+
+    constexpr float distance_scale = 0.015f;
+
+    color4 color_index[] = {
+        color4(1,1,1,1),
+        color4(1,0,0,1),
+        color4(0,1,0,1),
+        color4(0,0,1,1),
+        color4(1,0,1,1),
+        color4(1,1,0,1),
+        color4(0,1,1,1),
+        color4(1,.5f,0,1),
+        color4(0,1,.5f,1),
+        color4(.5f,0,1,1),
+        color4(.5f,1,0,1),
+        color4(0,.5f,1,1),
+        color4(1,0,.5f,1),
+    };
+
+    color4 type_color[] = {
+        color4(0,0,0,0),
+        color4(1,0,0,1),
+        color4(0,1,0,1),
+        color4(0,.5f,1,1),
+    };
+
+    int framenum = get_world()->framenum();
+    for (int ii = 1; ii < debug::size - 1; ++ii) {
+        if (framenum - ii - 2 < 0) {
+            break;
+        }
+
+        int i0 = (framenum - ii) % debug::size;
+        int i1 = (framenum - ii - 1) % debug::size;
+
+        // current distance
+        //renderer->draw_line(
+        //    vec2(float(ii + 0), .1f * _debug.current_distance[i0]) * tx,
+        //    vec2(float(ii + 1), .1f * _debug.current_distance[i1]) * tx,
+        //    color4(1,1,1,1), color4(1,1,1,1));
+        // current speed
+        //renderer->draw_line(
+        //    vec2(float(ii + 0), _debug.current_speed[i0]) * tx,
+        //    vec2(float(ii + 1), _debug.current_speed[i1]) * tx,
+        //    color4(1,.5f,0,1), color4(1,.5f,0,1));
+        // current acceleration
+        //renderer->draw_line(
+        //    vec2(float(ii + 0), 10.f * _debug.current_acceleration[i0]) * tx,
+        //    vec2(float(ii + 1), 10.f * _debug.current_acceleration[i1]) * tx,
+        //    color4(1,0,0,1), color4(1,0,0,1));
+        // stopping distance
+        renderer->draw_line(
+            vec2(float(ii + 0), distance_scale * .5f * square(_debug.current_speed[i0]) / max_deceleration) * tx,
+            vec2(float(ii + 1), distance_scale * .5f * square(_debug.current_speed[i1]) / max_deceleration) * tx,
+            color4(1,1,0,1), color4(1,1,0,1));
+        // target distance
+        renderer->draw_line(
+            vec2(float(ii + 0), distance_scale * (_debug.target_distance[i0] - _debug.current_distance[i0])) * tx,
+            vec2(float(ii + 1), distance_scale * (_debug.target_distance[i1] - _debug.current_distance[i1])) * tx,
+            color4(0,1,1,1), color4(0,1,1,1));
+        // collision distance
+        if (_debug.collision_type[i0] && _debug.collision_type[i1]) {
+            color4 c0 = type_color[_debug.collision_type[i0]];
+            color4 c1 = type_color[_debug.collision_type[i1]];
+            renderer->draw_line(
+                vec2(float(ii + 0), distance_scale * (_debug.collision_distance[i0] - _debug.current_distance[i0])) * tx,
+                vec2(float(ii + 1), distance_scale * (_debug.collision_distance[i1] - _debug.current_distance[i1])) * tx,
+                c0, c1);
+        }
+        // current distance
+        renderer->draw_line(
+            vec2(float(ii + 0), distance_scale * _debug.current_distance[i0]) * tx,
+            vec2(float(ii + 1), distance_scale * _debug.current_distance[i1]) * tx,
+            color4(1,1,1,.5f), color4(1,1,1,.5f));
+        // collision edge
+        if (_debug.collision_edge[i0] >= 0 && _debug.collision_edge[i1] >= 0) {
+            renderer->draw_line(
+                vec2(float(ii + 0), -1) * tx,
+                vec2(float(ii + 1), -1) * tx,
+                color_index[_debug.collision_edge[i0] % countof(color_index)],
+                color_index[_debug.collision_edge[i1] % countof(color_index)]);
+        }
+        // collision train
+        if (_debug.collision_train[i0] >= 0 && _debug.collision_train[i1] >= 0) {
+            renderer->draw_line(
+            vec2(float(ii + 0), -2) * tx,
+            vec2(float(ii + 1), -2) * tx,
+            color_index[_debug.collision_train[i0] % countof(color_index)],
+            color_index[_debug.collision_train[i1] % countof(color_index)]);
+        }
+    }
+
+    renderer->set_view(old_view);
+}
+
+//------------------------------------------------------------------------------
+void train::draw_path(render::system* renderer, time_value time) const
+{
+    (void)time;
+
+    auto const& network = get_world()->rail_network();
+    float dx = renderer->window()->width() / renderer->view().size.x;
+    float d = 0.f;
+    for (std::size_t ii = 0, sz = _path.size(); ii < sz; ++ii) {
+        auto const& s = network.get_segment(_path[ii]);
+        int n = int(s.length() * dx);
+        vec2 p0 = s.initial_position();
+        for (int jj = 1; jj <= n; ++jj) {
+            float t = jj * s.length() / n;
+            if (d + t > _target_distance) {
+                vec2 p1 = s.evaluate(_target_distance - d);
+                renderer->draw_line(p0, p1, color4(1,.8f,0,1), color4(1,.8f,0,1));
+                break;
+            }
+            vec2 p1 = s.evaluate(jj * s.length() / n);
+            renderer->draw_line(p0, p1, color4(1,.8f,0,1), color4(1,.8f,0,1));
+            p0 = p1;
+        }
+        d += s.length();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -109,7 +295,11 @@ void train::draw(render::system* renderer, float distance, color4 color) const
             -dir.y, dir.x, 0,
             pos.x, pos.y, 1);
 
-        draw_car(renderer, tx, color);
+        if (_self.get_index() & 1) {
+            draw_boxcar(renderer, tx, color);
+        } else {
+            draw_tanker(renderer, tx, color);
+        }
     }
 }
 
@@ -159,7 +349,7 @@ void train::draw_locomotive(render::system* renderer, mat3 tx, color4 color) con
 }
 
 //------------------------------------------------------------------------------
-void train::draw_car(render::system* renderer, mat3 tx, color4 color) const
+void train::draw_boxcar(render::system* renderer, mat3 tx, color4 color) const
 {
     vec2 pts[4] = {
         vec2(-8, 1.6f) * tx,
@@ -185,6 +375,71 @@ void train::draw_car(render::system* renderer, mat3 tx, color4 color) const
     renderer->draw_line(pts[1], pts[3], color, color);
     renderer->draw_line(pts[3], pts[2], color, color);
     renderer->draw_line(pts[2], pts[0], color, color);
+}
+
+//------------------------------------------------------------------------------
+void train::draw_tanker(render::system* renderer, mat3 tx, color4 color) const
+{
+    float w = 1.6f;
+    float x = .5f * w;
+
+    vec2 pts[4] = {
+        vec2(-8 + x, 1.6f) * tx,
+        vec2(-8 + x, -1.6f) * tx,
+        vec2(8 - x, 1.6f) * tx,
+        vec2(8 - x, -1.6f) * tx,
+    };
+
+    const color4 clr[4] = {
+        color4(0,0,0,1),
+        color4(0,0,0,1),
+        color4(0,0,0,1),
+        color4(0,0,0,1),
+    };
+
+    const int idx[6] = {
+        0, 1, 3, 0, 3, 2,
+    };
+
+    renderer->draw_triangles(pts, clr, idx, countof(idx));
+
+    //renderer->draw_line(pts[0], pts[1], color, color);
+    renderer->draw_line(pts[1], pts[3], color, color);
+    //renderer->draw_line(pts[3], pts[2], color, color);
+    renderer->draw_line(pts[2], pts[0], color, color);
+
+    {
+        vec2 cap[34];
+        color4 cclr[34];
+        int cidx[96];
+        for (int ii = 0; ii <= 32; ++ii) {
+            float t = .5f * math::pi<float> * float(ii - 16) / 16.f;
+            cap[ii] = vec2(-8 + x - x * cos(t), -w * sin(t)) * tx;
+            cclr[ii] = color4(0,0,0,1);
+        }
+        cap[33] = vec2(-8 + x, 0) * tx;
+        cclr[33] = color4(0,0,0,1);
+
+        for (int ii = 0; ii < 32; ++ii) {
+            cidx[ii * 3 + 0] = ii + 0;
+            cidx[ii * 3 + 1] = ii + 1;
+            cidx[ii * 3 + 2] = 33;
+        }
+        renderer->draw_triangles(cap, cclr, cidx, countof(cidx));
+        for (int ii = 0; ii < 32; ++ii) {
+            renderer->draw_line(cap[ii + 0], cap[ii + 1], color, color);
+        }
+
+        for (int ii = 0; ii <= 32; ++ii) {
+            float t = .5f * math::pi<float> * float(ii - 16) / 16.f;
+            cap[ii] = vec2(8 - x + x * cos(t), -w * sin(t)) * tx;
+        }
+        cap[33] = vec2(8 - x, 0) * tx;
+        renderer->draw_triangles(cap, cclr, cidx, countof(cidx));
+        for (int ii = 0; ii < 32; ++ii) {
+            renderer->draw_line(cap[ii + 0], cap[ii + 1], color, color);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -219,6 +474,15 @@ void train::draw_coupler(render::system* renderer, mat3 tx, color4 color) const
 //------------------------------------------------------------------------------
 void train::think()
 {
+    int debug_index = get_world()->framenum() % debug::size;
+    _debug.current_distance[debug_index] = _current_distance;
+    _debug.current_speed[debug_index] = _current_speed;
+    _debug.current_acceleration[debug_index] = _current_acceleration;
+    _debug.target_distance[debug_index] = _target_distance;
+    _debug.collision_type[debug_index] = 0;
+    _debug.collision_edge[debug_index] = -1;
+    _debug.collision_train[debug_index] = -1;
+
     if (!_path.size()) {
         return;
     }
@@ -228,6 +492,10 @@ void train::think()
     _current_distance += max(0.f, _current_speed * FRAMETIME.to_seconds()
         + .5f * _current_acceleration * square(FRAMETIME.to_seconds()));
     _current_speed = max(0.f, _current_speed + _current_acceleration * FRAMETIME.to_seconds());
+
+    if (_current_speed > 0) {
+        _idle_time = get_world()->frametime();
+    }
 
     if (_current_distance - length() > seg.length()) {
         _current_distance -= seg.length();
@@ -268,6 +536,21 @@ void train::think()
         if (collision_distance - _current_distance < d2 + distance_epsilon) {
             target_distance = min(target_distance, collision_distance);
         }
+
+        _debug.collision_distance[debug_index] = collision_distance;
+        _debug.collision_type[debug_index] = _collision_type;
+        {
+            float dist = 0.f;
+            for (std::size_t ii = 0; ii < _collision_train->_path.size(); ++ii) {
+                float len = get_world()->rail_network().get_segment(_collision_train->_path[ii]).length();
+                if (dist + len > _collision_train->length()) {
+                    _debug.collision_edge[debug_index] = _collision_train->_path[ii];
+                    break;
+                }
+                dist += len;
+            }
+        }
+        _debug.collision_train[debug_index] = int(_collision_train->_self.get_index());
     }
 
     if (target_distance - _current_distance < d) {
@@ -368,7 +651,8 @@ void train::next_station()
     float path_distance = 0.f;
     float stopping_distance = .5f * square(_current_speed) / max_deceleration;
 
-    rail_position start{};
+    rail_position start = rail_position::from_edge(
+        _path.back(), 0.f);
     rail_position goal = rail_position::from_edge(
         _schedule[_next_station]->edge(),
         _schedule[_next_station]->dist());
@@ -387,12 +671,27 @@ void train::next_station()
         path_distance += s.length();
     }
 
+    if (start.edge == goal.edge && start.dist < goal.dist) {
+        _target_distance = goal.dist;
+        return;
+    }
+
     edge_index path[1024];
     std::size_t path_size = get_world()->rail_network().find_path(
         start,
         goal,
         path,
         countof(path));
+
+    if (!path_size) {
+        goal.edge ^= 1;
+        goal.dist = get_world()->rail_network().get_segment(goal.edge).length() - goal.dist;
+        path_size = get_world()->rail_network().find_path(
+            start,
+            goal,
+            path,
+            countof(path));
+    }
 
     _path.resize(prev_size + path_size);
     for (std::size_t ii = 0; ii < path_size; ++ii) {
@@ -509,6 +808,7 @@ float train::length() const
 bool train::check_collisions(float& collision_distance) const
 {
     collision_distance = FLT_MAX;
+    int collision_type = _collision_type;
     // FIXME: cycle through all objects
     for (auto obj : get_world()->objects()) {
         if (obj->is_type<train>() && obj != this) {
@@ -517,11 +817,14 @@ bool train::check_collisions(float& collision_distance) const
                 if (distance > _current_distance - distance_epsilon
                         && distance < collision_distance) {
                     collision_distance = distance;
+                    collision_type = _collision_type;
+                    _collision_train = obj->as_type<train>();
                 }
             }
         }
     }
 
+    _collision_type = collision_type;
     return collision_distance < FLT_MAX;
 }
 
@@ -548,6 +851,7 @@ bool train::check_collision(train const* other, float& collision_distance) const
 
         // distance to the path intersection plus lateral clearance
         collision_distance = info.distance[0] - info.enter_clearance[0];
+        _collision_type = 1; // DEBUG
         return true;
     } else if (info.distance[1]
         && info.distance[1] > other->_current_distance - other->length() - tail_clearance) {
@@ -572,16 +876,26 @@ bool train::check_collision(train const* other, float& collision_distance) const
         float d4 = info.distance[0] - info.enter_clearance[0];
 
         collision_distance = max(d3, d4);
+        _collision_type = 2; // DEBUG
         return true;
     } else {
         // current distance relative to path intersection
-        float d0 = info.distance[0] - _current_distance;
+        //float d0 = info.distance[0] - _current_distance;
         // other distance relative to path intersection
         float d1 = info.distance[1] - (other->_current_distance - other->length() - tail_clearance);
-        // distance to the back of the other train along the common path
-        float d3 = _current_distance + (d0 - d1);
 
-        collision_distance = d3 + .5f * square(other->_current_speed) / max_deceleration;
+        // 
+        float d2 = .5f * square(other->_current_speed) / max_deceleration - d1;
+
+        if (d2 > info.length/* + info.exit_clearance[1]*/) {
+            return false;
+        }
+
+        // distance to the back of the other train along the common path
+        //float d3 = _current_distance + (d0 - d1);
+
+        collision_distance = info.distance[0] + d2;//d3 + .5f * square(other->_current_speed) / max_deceleration;
+        _collision_type = 3; // DEBUG
         return true;
     }
 }

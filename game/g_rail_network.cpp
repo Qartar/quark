@@ -42,41 +42,191 @@ void rail_network::clear()
 void rail_network::draw(render::system* renderer, time_value time) const
 {
     (void)time;
-    render::view const& view = renderer->view();
-    //float diag = view.size.length() / float(view.viewport.size().length());
-    float diag = 16.f * view.size.length() / float(renderer->window()->size().length());
+
+    // draw clearance
+    for (auto& kv : _clearance) {
+        auto seg = _network.get_segment(kv.first.first);
+        vec2 p = seg.evaluate(kv.second);
+        vec2 t = seg.evaluate_tangent(kv.second);
+        renderer->draw_line(p + t.cross(2), p - t.cross(2), color4(1,1,1,1), color4(1,1,1,1));
+    }
+
+    // draw edges
     for (auto edge : _network.edges()) {
         // skip opposite edges
         if (edge & 1) {
             continue;
         }
-        clothoid::segment s = _network.get_segment(edge);
-        if (s.type() == clothoid::segment_type::line) {
-            renderer->draw_line(
-                s.initial_position(),
-                s.final_position(),
-                color4(1,1,1,1),
-                color4(1,1,1,1));
+        draw_segment(renderer, _network.get_segment(edge));
+    }
+
+#if 0
+    // draw nodes
+    for (auto node : _network.nodes()) {
+        vec2 p = _network.node_position(node);
+        renderer->draw_arc(p, 1, 0, 0, 2.f * math::pi<float>, color4(1,.5f,0,1));
+        renderer->draw_string(va("%d", node), p, color4(1,.5f,0,1));
+    }
+#endif
+}
+
+//------------------------------------------------------------------------------
+void rail_network::draw_segment(render::system* renderer, clothoid::segment s) const
+{
+    render::view const& view = renderer->view();
+    //float diag = view.size.length() / float(view.viewport.size().length());
+    //float diag = 16.f * view.size.length() / float(renderer->window()->size().length());
+    vec2 to_pixels = vec2(renderer->window()->size()) / view.size;
+
+    auto curvature_color = [](float k) {
+#if 1
+        (void)k;
+        return color4(.5f,.5f,.5f,1);
+#else // color by curvature
+        float vsqr = 4.f/*train::max_lateral_acceleration*/ / abs(k);
+        if (vsqr > square(50.f/*train::max_speed*/)) {
+            return color4(.5f,.5f,.5f,1);
         } else {
-            float n = max(2.f, s.length() / diag);
-            vec2 p0 = s.initial_position();
-            for (float ii = 1.f; ii < n; ii += 1.f) {
-                vec2 p1 = s.evaluate(ii / n * s.length());
-                renderer->draw_line(p0, p1, color4(1,1,1,1), color4(1,1,1,1));
-                p0 = p1;
+            float v = sqrt(vsqr);
+            if (v > 35.f) {
+                float t = (v - 35.f) / 15.f;
+                return color4(.5f,.5f,.5f,1) * t + color4(.5f,.5f,0,1) * (1.f - t);
+            } else {
+                float t = v / 35.f;
+                return color4(.5f,.5f,0,1) * t + color4(.5f,0,0,1) * (1.f - t);
             }
-            renderer->draw_line(p0, s.final_position(), color4(1,1,1,1), color4(1,1,1,1));
         }
+#endif
+    };
+
+#if 0 // Draw segment bounding triangles
+    if (s.type() == clothoid::segment_type::arc) {
+        vec2 v1, v2, v3;
+        s.bounding_triangle(v1, v2, v3);
+        renderer->draw_line(v1, v2, color4(.6f,1,0,.5f), color4(.6f,1,0,.5f));
+        renderer->draw_line(v2, v3, color4(.6f,1,0,.5f), color4(.6f,1,0,.5f));
+        renderer->draw_line(v3, v1, color4(.6f,1,0,.5f), color4(.6f,1,0,.5f));
+        renderer->draw_box(vec2(4.f), v1, color4(0,1,0,1));
+        renderer->draw_box(vec2(4.f), v2, color4(0,1,0,1));
+        renderer->draw_box(vec2(4.f), v3, color4(0,1,0,1));
+    } else if (s.type() == clothoid::segment_type::transition) {
+        vec2 v1, v2, v3;
+        s.bounding_triangle(v1, v2, v3);
+        renderer->draw_line(v1, v2, color4(0,1,.6f,.5f), color4(0,1,.6f,.5f));
+        renderer->draw_line(v2, v3, color4(0,1,.6f,.5f), color4(0,1,.6f,.5f));
+        renderer->draw_line(v3, v1, color4(0,1,.6f,.5f), color4(0,1,.6f,.5f));
+        renderer->draw_box(vec2(4.f), v1, color4(0,1,0,1));
+        renderer->draw_box(vec2(4.f), v2, color4(0,1,0,1));
+        renderer->draw_box(vec2(4.f), v3, color4(0,1,0,1));
+    }
+#endif
+
+    if (s.type() == clothoid::segment_type::line) {
+        renderer->draw_line(
+            s.initial_position() + s.initial_tangent().cross(.75f),
+            s.final_position() + s.final_tangent().cross(.75f),
+            curvature_color(0.f),
+            curvature_color(0.f));
+        renderer->draw_line(
+            s.initial_position() - s.initial_tangent().cross(.75f),
+            s.final_position() - s.final_tangent().cross(.75f),
+            curvature_color(0.f),
+            curvature_color(0.f));
+    } else {
+        vec2 p0 = s.initial_position();
+        vec2 t0 = s.initial_tangent();
+        vec2 p1 = s.final_position();
+        vec2 t1 = s.final_tangent();
+        float s0 = 0.f;
+        float s1 = s.length();
+
+        float k0 = s.initial_curvature();
+        float k1 = s.final_curvature();
+
+        while (true) {
+            float s2 = .5f * (s0 + s1);
+            vec2 p2 = s.evaluate(s2);
+            vec2 t2 = s.evaluate_tangent(s2);
+            float k2 = s.evaluate_curvature(s2);
+            // projection of p2 onto (p1 - p0)
+            vec2 p3 = p0 + (p1 - p0) * dot(p2 - p0, p1 - p0) / (p1 - p0).length_sqr();
+            float dsqr = ((p2 - p3) * to_pixels).length_sqr();
+            if (dsqr < 1.f) {
+                renderer->draw_line(
+                    p1 + t1.cross(.75f),
+                    p2 + t2.cross(.75f),
+                    curvature_color(k1),
+                    curvature_color(k2));
+                renderer->draw_line(
+                    p1 - t1.cross(.75f),
+                    p2 - t2.cross(.75f),
+                    curvature_color(k1),
+                    curvature_color(k2));
+                p1 = p2;
+                t1 = t2;
+                s1 = s2;
+                k1 = k2;
+                if (s0 == 0.f) {
+                    renderer->draw_line(
+                        p0 + t0.cross(.75f),
+                        p2 + t2.cross(.75f),
+                        curvature_color(k0),
+                        curvature_color(k2));
+                    renderer->draw_line(
+                        p0 - t0.cross(.75f),
+                        p2 - t2.cross(.75f),
+                        curvature_color(k0),
+                        curvature_color(k2));
+                    break;
+                } else {
+                    p0 = s.initial_position();
+                    t0 = s.initial_tangent();
+                    s0 = 0.f;
+                    k0 = s.initial_curvature();
+                }
+            } else {
+                p0 = p2;
+                t0 = t2;
+                s0 = s2;
+                k0 = k2;
+            }
+        }
+#if 0
+        int n = int(ceil(.25f * s.length()));
+        float f = s.length() / float(n);
+        for (int ii = 0; ii < n + 1; ++ii) {
+            float t = float(ii) * f;
+            vec2 p = s.evaluate(t);
+            vec2 d = s.evaluate_tangent(t).cross(-1);
+            float k = s.evaluate_curvature(t);
+            renderer->draw_line(p, p + d / k, color4(1,1,1,.1f), color4(1,1,1,.1f));
+        }
+#endif
+        //float n = max(2.f, s.length() / diag);
+        //vec2 p0 = s.initial_position();
+        //for (float ii = 1.f; ii < n; ii += 1.f) {
+        //    vec2 p1 = s.evaluate(ii / n * s.length());
+        //    renderer->draw_line(p0, p1, color4(1,1,1,1), color4(1,1,1,1));
+        //    p0 = p1;
+        //}
+        //renderer->draw_line(p0, s.final_position(), color4(1,1,1,1), color4(1,1,1,1));
     }
 }
 
 //------------------------------------------------------------------------------
 void rail_network::add_segment(clothoid::segment s)
 {
+    if (s.type() == clothoid::segment_type::arc && abs(s.length() * s.initial_curvature()) > .5f * math::pi<float>) {
+        clothoid::segment s1, s2;
+        s.split(.5f * s.length(), s1, s2);
+        add_segment(s1);
+        add_segment(s2);
+    } else {
     auto edge = _network.insert_edge(s);
 
     update_clearance(edge);
     update_clearance(edge ^ 1);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -296,14 +446,26 @@ void rail_network::update_clearance(edge_index edge)
             continue;
         }
         // ignore edges that are not the same direction
-        if (dot(s.initial_tangent(), _network.get_segment(e).initial_tangent()) < .999f) {
+        if (dot(s.initial_tangent(), _network.get_segment(e).initial_tangent()) < -.999f) {
+            continue;
+        } else if (dot(s.initial_tangent(), _network.get_segment(e).initial_tangent()) < 0) {
+            _clearance[std::make_pair(edge, e)] = junction_clearance;
+            _clearance[std::make_pair(e, edge)] = junction_clearance;
             continue;
         }
         // calculate and update clearance for both edges
         float c0, c1;
         if (calculate_clearance(edge, e, junction_clearance, c0, c1)) {
-            _clearance[std::make_pair(edge, e)] = c0;
-            _clearance[std::make_pair(e, edge)] = c1;
+            //float c2, c3;
+            //if (calculate_clearance(e, edge, junction_clearance, c3, c2)) {
+            //    c0 = max(c0, c2);
+            //    c1 = max(c1, c3);
+            //}
+            //if (c0 < junction_clearance || c1 < junction_clearance) {
+            //    int breakme = 1; (void)breakme;
+            //}
+            _clearance[std::make_pair(edge, e)] = max(junction_clearance, c0);
+            _clearance[std::make_pair(e, edge)] = max(junction_clearance, c1);
         }
     }
 }

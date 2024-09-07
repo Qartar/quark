@@ -13,6 +13,21 @@ namespace game {
 const object_type player::_type(object::_type);
 
 //------------------------------------------------------------------------------
+float determinant(vec2 a, vec2 b)
+{
+#if 0
+    float w = a.y * b.x;
+    float c = fma(-a.y, b.x, w);
+    float d = fma(a.x, b.y, -w);
+    return c + d;
+#else
+    double c = a.x * b.y;
+    double d = a.y * b.x;
+    return float(c - d);
+#endif
+}
+
+//------------------------------------------------------------------------------
 std::vector<clothoid::segment> connect_linear_segments(vec2 p0, vec2 t0, vec2 p1, vec2 t1)
 {
     float theta = acos(dot(t0, t1));
@@ -73,10 +88,106 @@ std::vector<clothoid::segment> connect_linear_segments(vec2 p0, vec2 t0, vec2 p1
 }
 
 //------------------------------------------------------------------------------
+std::vector<clothoid::segment> extend_linear_segment(vec2 p0, vec2 t0, vec2 p1)
+{
+    mat2 m(t0.x, t0.y, -t0.y, t0.x);
+    float theta = .5f * math::pi<float>;
+
+    // normalized clothoid coordinates for the maximum angle
+    vec2 s;
+    float t = sqrt(2.f * theta / math::pi<float>);
+    clothoid::segment::fresnel_integral(t, s.x, s.y);
+    s *= math::pi<float>;
+    if (cross(t0, p1 - p0) < 0) {
+        s.y *= -1.f;
+        theta *= -1.f;
+    }
+    // transformed coordinates of the maximal curve
+    vec2 r = s * m;
+
+    if (cross(r, p1 - p0) * theta < 0.f) {
+        float phi = atan2(cross(t0, p1 - p0), dot(t0, p1 - p0));
+        // iterate to find t with the approximation:
+        //  phi(t) ~= 0.519 t^2
+        t = sqrt((1.f / 0.519f) * abs(phi));
+        clothoid::segment::fresnel_integral(t, s.x, s.y);
+        for (int ii = 0; ii < 4; ++ii) {
+            float dphi = atan2(s.y, s.x) - abs(phi);
+            t -= dphi * (.5f / 0.519f);
+            clothoid::segment::fresnel_integral(t, s.x, s.y);
+        }
+        if (theta < 0.f) {
+            s.y *= -1.f;
+            theta = -.5f * math::pi<float> * t * t;
+        } else {
+            theta = .5f * math::pi<float> * t * t;
+        }
+        s *= math::pi<float>;
+        r = s * m;
+    } else {
+        // project p1 onto r
+        p1 = p0 + r * dot(p1 - p0, r) / r.length_sqr();
+    }
+
+    // calculate the maximum size of the transition curve
+    float scale = sqrt((p1 - p0).length_sqr() / r.length_sqr());
+    float length = scale * sqrt(2.f * abs(theta) * math::pi<float>);
+    float curvature = 2.f * theta / length;
+
+    if (isnan(length) || length < 1.f) {
+        return {};
+    }
+
+    return {
+        clothoid::segment::from_transition(p0, t0, length, 0.f, curvature),
+    };
+}
+
+//------------------------------------------------------------------------------
+std::vector<clothoid::segment> extend_curved_segment(vec2 p0, vec2 t0, float k0, vec2 p1)
+{
+    static float T = 0.f;
+    float t = square(cos(T));
+    float s = 1.f;//square(cos(T * .0539f));
+    T += 0.01f;
+    (void)p1;
+
+    float B = t / k0;//(p1 - p0).length();
+    float t2 = t * (1.f - s);
+    float t1 = (1.f - t) * s + t;
+    float L2 = math::pi<float> * B * (t - t2);
+    float L1 = math::pi<float> * B * (t1 - t);
+    float k2 = t2 / B;
+    float k1 = t1 / B;
+
+    if (L2 < 1.f && L1 < 1.f) {
+        return {};
+    } else if (L2 < 1.f) {
+        return {
+            clothoid::segment::from_transition(p0, t0, L1, k0, k1),
+            clothoid::segment::from_arc(p0, t0, L1, k0),
+        };
+    } else if (L1 < 1.f) {
+        return {
+            clothoid::segment::from_transition(p0, t0, L2, k0, k2),
+            clothoid::segment::from_arc(p0, t0, L2, k0),
+        };
+    } else {
+        return {
+            clothoid::segment::from_transition(p0, t0, L2, k0, k2),
+            clothoid::segment::from_transition(p0, t0, L1, k0, k1),
+            clothoid::segment::from_arc(p0, t0, max(L2, L1), k0),
+        };
+    }
+
+}
+
+//------------------------------------------------------------------------------
 player::player()
     : _usercmd{}
     , _usercmd_time(time_value::zero)
     , _timescale_time(time_value::zero)
+    , _input_state(input_state::none)
 {
     _view.origin = vec2_zero;
     _view.size = vec2(640.f, 480.f);
@@ -99,18 +210,142 @@ void player::draw(render::system* renderer, time_value time) const
     (void)renderer;
     (void)time;
 
-    vec2 cursor = (_usercmd.cursor - vec2(.5f)) * renderer->view().size + renderer->view().origin;
+    mat2 rotation = mat2::rotate(renderer->view().angle);
+
+    vec2 cursor = (_usercmd.cursor - vec2(.5f)) * renderer->view().size * rotation + renderer->view().origin;
     float sz = renderer->view().size.length() * (1.f / 512.f);
 
     clothoid::network::edge_index edge;
-    float length;
+    float dist;
 
-    if (get_world()->rail_network().get_closest_segment(cursor, 8.f, edge, length)) {
+    if (get_world()->rail_network().get_closest_segment(cursor, 1.5f * rail_network::track_clearance, edge, dist)) {
         renderer->draw_box(vec2(sz), cursor, color4(0,1,0,1));
-        vec2 spos = get_world()->rail_network().get_segment(edge).evaluate(length);
-        renderer->draw_box(vec2(sz), spos, color4(1,0,0,1));
+        vec2 spos = get_world()->rail_network().get_segment(edge).evaluate(dist);
+        if (length(cursor - get_world()->rail_network().get_segment(edge).initial_position()) < .5f * rail_network::track_clearance) {
+            renderer->draw_box(vec2(sz), get_world()->rail_network().get_segment(edge).initial_position(), color4(1,0,1,1));
+        } else if (length(cursor - get_world()->rail_network().get_segment(edge).final_position()) < .5f * rail_network::track_clearance) {
+            renderer->draw_box(vec2(sz), get_world()->rail_network().get_segment(edge).final_position(), color4(1,0,1,1));
+        } else if (length(cursor - spos) >= .5f * rail_network::track_clearance) {
+            vec2 tangent = get_world()->rail_network().get_segment(edge).evaluate_tangent(dist).cross(1);
+            if (dot(cursor - spos, tangent) < 0.f) {
+                renderer->draw_box(vec2(sz), spos - tangent * rail_network::track_clearance, color4(1,1,0,1));
+            } else {
+                renderer->draw_box(vec2(sz), spos + tangent * rail_network::track_clearance, color4(1,1,0,1));
+            }
+        } else {
+            renderer->draw_box(vec2(sz), spos, color4(1,0,0,1));
+            renderer->draw_arc(spos, rail_network::junction_clearance, 0, 0, 2.f * math::pi<float>, color4(1,0,0,.5f));
+        }
     } else {
         renderer->draw_box(vec2(sz), cursor, color4(1,1,0,1));
+    }
+
+#if 0
+
+#if 0
+    auto connection = connect_linear_segments(
+        vec2(300, 0), normalize(vec2(2, 1)), cursor, normalize(vec2(-1, 1)));
+
+    get_world()->rail_network().draw_segment(renderer,
+        clothoid::segment::from_line(vec2(300, 0), -normalize(vec2(2, 1)), 25));
+    get_world()->rail_network().draw_segment(renderer,
+        clothoid::segment::from_line(cursor, normalize(vec2(-1, 1)), 25));
+#elif 0
+    auto connection = extend_linear_segment(
+        vec2(300, 0), normalize(vec2(2, 1)), cursor);
+
+    get_world()->rail_network().draw_segment(renderer,
+        clothoid::segment::from_line(vec2(300, 0), -normalize(vec2(2, 1)), 25));
+#else
+    auto connection = extend_curved_segment(
+        vec2(500, 100), normalize(vec2(2, 1)), 1.f / 200.f, cursor);
+
+    get_world()->rail_network().draw_segment(renderer,
+        clothoid::segment::from_arc(vec2(500, 100), -normalize(vec2(2, 1)), 50, -1.f / 200.f));
+#endif
+    for (auto& s : connection) {
+        get_world()->rail_network().draw_segment(renderer, s);
+    }
+#endif
+
+#if 1
+    {
+        clothoid::segment l1 = clothoid::segment::from_arc(vec2(0, -800), vec2(0, -1), 400.f, 1.f / 400.f);
+        clothoid::segment l2 = clothoid::segment::from_arc(vec2(300, -800), vec2(-1, 0), 400.f, 1.f / 400.f);
+        clothoid::segment l3 = clothoid::segment::from_transition(vec2(200, -800), vec2(0, -1), 400.f, -1.f / 400.f, 0.f);
+        get_world()->rail_network().draw_segment(renderer, l1);
+        get_world()->rail_network().draw_segment(renderer, l2);
+        get_world()->rail_network().draw_segment(renderer, l3);
+
+        float s1, s2;
+        do {
+            float r1 = 1.f / l1.initial_curvature();
+            float r2 = 1.f / l2.initial_curvature();
+            vec2 c1 = l1.initial_position() - l1.initial_tangent().cross(r1);
+            vec2 c2 = l2.initial_position() - l2.initial_tangent().cross(r2);
+            vec2 dr = c2 - c1;
+            float d = dr.length();
+            if (d > abs(r1) + abs(r2)) {
+                break;//return false;
+            }
+            float x = (d * d - r2 * r2 + r1 * r1) / (2.f * d);
+            float y = sqrt(max(0.f, r1 * r1 - x * x));
+
+            vec2 vx = dr.normalize();
+            vec2 vy = vx.cross(1.f);
+
+            vec2 p0 = c1 + vx * x + vy * y;
+            s1 = atan2f(dot(p0 - c1, l1.initial_tangent() * r1),
+                        dot(p0 - c1, l1.initial_tangent().cross(r1))) * r1;
+            s2 = atan2f(dot(p0 - c2, l2.initial_tangent() * r2),
+                        dot(p0 - c2, l2.initial_tangent().cross(r2))) * r2;
+
+            if (s1 >= 0 && s1 <= l1.length() && s2 >= 0 && s2 <= l2.length()) {
+                renderer->draw_box(vec2(4), p0, color4(0,1,0,1));
+                //renderer->draw_box(vec2(4), l1.evaluate(s1), color4(1,0,0,1));
+                //renderer->draw_box(vec2(4), l2.evaluate(s2), color4(1,1,0,1));
+            } else {
+                renderer->draw_box(vec2(4), p0, color4(1,0,0,1));
+            }
+
+            if (y > 1e-6f) {
+                vec2 p1 = c1 + vx * x - vy * y;
+                s1 = atan2f(dot(p1 - c1, l1.initial_tangent() * r1),
+                            dot(p1 - c1, l1.initial_tangent().cross(r1))) * r1;
+                s2 = atan2f(dot(p1 - c2, l2.initial_tangent() * r2),
+                            dot(p1 - c2, l2.initial_tangent().cross(r2))) * r2;
+
+                if (s1 >= 0 && s1 <= l1.length() && s2 >= 0 && s2 <= l2.length()) {
+                    renderer->draw_box(vec2(4), p1, color4(0,1,0,1));
+                    //renderer->draw_box(vec2(4), l1.evaluate(s1), color4(0,1,0,1));
+                    //renderer->draw_box(vec2(4), l2.evaluate(s2), color4(0,1,1,1));
+                } else {
+                    renderer->draw_box(vec2(4), p1, color4(1,0,0,1));
+                }
+            }
+        } while (false);
+
+        if (l1.intersect(l2, s1, s2)) {
+            vec2 p1 = l1.evaluate(s1);
+            renderer->draw_box(vec2(4), p1, color4(1,1,1,1));
+        }
+
+        if (l1.intersect(l3, s1, s2)) {
+            vec2 p1 = l1.evaluate(s1);
+            renderer->draw_box(vec2(4), p1, color4(1,1,1,1));
+        }
+
+        if (l2.intersect(l3, s1, s2)) {
+            vec2 p1 = l2.evaluate(s1);
+            renderer->draw_box(vec2(4), p1, color4(1,1,1,1));
+        }
+    }
+
+#endif
+
+    if (_follow) {
+        //_follow->as_type<train>()->draw_debug(renderer, time);
+        //_follow->as_type<train>()->draw_path(renderer, time);
     }
 
     constexpr time_delta fade_time = time_delta::from_seconds(1.5f);
@@ -287,6 +522,7 @@ void player::on_follow()
 
     // stop following if no more trains
     if (prev == _follow) {
+        //_view = view(_usercmd_time);
         _view.angle = 0.f;
         _follow = nullptr;
     }

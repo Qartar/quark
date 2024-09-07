@@ -64,7 +64,20 @@ public:
     //! arclength of the closest point returned as the z component of the result.
     vec3 get_closest_point(vec2 p) const;
 
+    //! Return three vertices of the bounding triangle for the given segment. If
+    //! the segment is a line then the third vertex is equal to the second.
+    void bounding_triangle(vec2& v1, vec2& v2, vec2& v3) const;
+
+    //! Split the segment into two subsegments at the given arclength `s`.
+    void split(float s, segment& s1, segment& s2) const;
+
+    //! Return true if this segment intersects the given segment and evaluates
+    //! the arclength along this segment `s` and given segment `t` at the
+    //! intersection point.
+    bool intersect(segment const& other, float& s, float& t) const;
+
     static void fresnel_integral(float x, float&c, float& s);
+    static void fresnel_integral_simd(float x, float&c, float& s);
 
 private:
     vec2 _initial_position;
@@ -297,7 +310,82 @@ inline float segment::evaluate_curvature(float s) const
 }
 
 //------------------------------------------------------------------------------
+inline void segment::bounding_triangle(vec2& v1, vec2& v2, vec2& v3) const
+{
+    switch (type()) {
+        case segment_type::line: {
+            v1 = _initial_position;
+            v2 = final_position();
+            v3 = v2;
+            break;
+        }
+
+        case segment_type::arc: {
+            // FIXME: assumes theta <= pi/2
+            v1 = _initial_position;
+            v2 = final_position();
+            float s = cross(v2 - v1, final_tangent()) / cross(_initial_tangent, final_tangent());
+            v3 = v1 + _initial_tangent * s;
+            break;
+        }
+
+        case segment_type::transition: {
+            v1 = _initial_position;
+            v2 = final_position();
+            float s = cross(v2 - v1, final_tangent()) / cross(_initial_tangent, final_tangent());
+            v3 = v1 + _initial_tangent * s;
+            break;
+        }
+
+        default:
+            __assume(false);
+    }
+}
+
+//------------------------------------------------------------------------------
+inline void segment::split(float s, segment& s1, segment& s2) const
+{
+    switch (type()) {
+        case segment_type::line: {
+            vec2 p2 = evaluate(s);
+            s1 = from_line(_initial_position, _initial_tangent, s);
+            s2 = from_line(p2, _initial_tangent, _length - s);
+            break;
+        }
+
+        case segment_type::arc: {
+            vec2 p2 = evaluate(s);
+            vec2 t2 = evaluate_tangent(s);
+            s1 = from_arc(_initial_position, _initial_tangent, s, _initial_curvature);
+            s2 = from_arc(p2, t2, _length - s, _initial_curvature);
+            break;
+        }
+
+        case segment_type::transition: {
+            vec2 p2 = evaluate(s);
+            vec2 t2 = evaluate_tangent(s);
+            float k2 = evaluate_curvature(s);
+            s1 = from_transition(_initial_position, _initial_tangent, s, _initial_curvature, k2);
+            s2 = from_transition(p2, t2, _length - s, k2, _final_curvature);
+            break;
+        }
+
+        default:
+            __assume(false);
+    }
+}
+
+//------------------------------------------------------------------------------
 inline void segment::fresnel_integral(float x, float& c, float& s)
+{
+    double C, S;
+    fresnel_integral_simd(x, &C, &S);
+    c = float(C);
+    s = float(S);
+}
+
+//------------------------------------------------------------------------------
+inline void segment::fresnel_integral_simd(float x, float& c, float& s)
 {
     double C, S;
     fresnel_integral_simd(x, &C, &S);
