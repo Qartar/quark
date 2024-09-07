@@ -101,6 +101,45 @@ ship::ship()
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
 
+    int idx = int((hull_idx + countof(ship_hulls) - 1) % countof(ship_hulls));
+    if (idx == 0) {
+        // 46cm/45 Type 94
+        _turrets.push_back({vec2(48,0), 7.f, 3, 2.5f, .46f, 20.7f});
+        _turrets.push_back({vec2(24,0), 7.f, 3, 2.5f, .46f, 20.7f});
+        _turrets.push_back({vec2(-48,0), 7.f, 3, 2.5f, .46f, 20.7f});
+        _turret_angles = {0, 0, math::pi<float>};
+    } else if (idx == 1) {
+        // 16" Mark 7
+        _turrets.push_back({vec2(48,0), 6.5f, 3, 2.25f, .406f, 20.f});
+        _turrets.push_back({vec2(24,0), 6.5f, 3, 2.25f, .406f, 20.f});
+        _turrets.push_back({vec2(-48,0), 6.5f, 3, 2.25f, .406f, 20.f});
+        _turret_angles = {0, 0, math::pi<float>};
+    } else if (idx == 2) {
+        // BL 14-inch Mark VII
+        _turrets.push_back({vec2(40,0), 6.f, 4, 2.f, .3556f, 16.f});
+        _turrets.push_back({vec2(16,0), 6.f, 4, 2.f, .3556f, 16.f});
+        _turret_angles = {0, 0};
+    } else if (idx == 3) {
+        // 28 cm SK C/28
+        _turrets.push_back({vec2(32,0), 5.5f, 3, 1.75f, .28f, 13.9f});
+        _turrets.push_back({vec2(-32,0), 5.5f, 3, 1.75f, .28f, 13.9f});
+        _turret_angles = {0, math::pi<float>};
+    } else if (idx == 4) {
+        // BL 6-inch Mark XXIII
+        _turrets.push_back({vec2(32,0), 3.f, 3, 1.f, .152f, 7.6f});
+        _turrets.push_back({vec2(16,0), 3.f, 3, 1.f, .152f, 7.6f});
+        _turrets.push_back({vec2(-16,0), 3.f, 3, 1.f, .152f, 7.6f});
+        _turrets.push_back({vec2(-32,0), 3.f, 3, 1.f, .152f, 7.6f});
+        _turret_angles = {0, 0, math::pi<float>, math::pi<float>};
+    } else if (idx == 5) {
+        // QF 4.7-inch Mark IX & XII
+        _turrets.push_back({vec2(24,0), 2.f, 2, 0.75f, .12f, 5.4f});
+        _turrets.push_back({vec2(12,0), 2.f, 2, 0.75f, .12f, 5.4f});
+        _turrets.push_back({vec2(-12,0), 2.f, 2, 0.75f, .12f, 5.4f});
+        _turrets.push_back({vec2(-24,0), 2.f, 2, 0.75f, .12f, 5.4f});
+        _turret_angles = {0, 0, math::pi<float>, math::pi<float>};
+    }
+
     _model = &ship_model;
 }
 
@@ -127,8 +166,8 @@ void ship::spawn()
     _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
     _subsystems.push_back(_engines);
 
-    _shield = get_world()->spawn<game::shield>(&_shape, this);
-    _subsystems.push_back(_shield);
+    //_shield = get_world()->spawn<game::shield>(&_shape, this);
+    //_subsystems.push_back(_shield);
 
     _navigation = get_world()->spawn<game::navigation>(this);
     _subsystems.push_back(_navigation);
@@ -196,6 +235,35 @@ void ship::draw(render::system* renderer, time_value time) const
                 vec2 v0 = (*child_shape)[ii] * tx;
                 vec2 v1 = (*child_shape)[(ii + 1)] * tx;
                 renderer->draw_line(v0, v1, color4(0,1,0,1), color4(0,1,0,1));
+            }
+        }
+
+        for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
+            auto const& turret = _turrets[jj];
+            vec2 v = turret.position * tx;
+            renderer->draw_arc(v, turret.radius, 0, 0, 2.f * math::pi<float>, color4(0,1,0,1));
+
+            mat3 turret_tx = mat3::transform(turret.position, rot2(_turret_angles[jj])) * tx;
+            for (int ii = 0; ii < turret.num_guns; ++ii) {
+                float x = 0.f;//turret.radius * .5f;
+                float y = turret.spacing * (ii - .5f * (turret.num_guns - 1));
+                vec2 v1 = vec2(x, y);
+#if 1
+                vec2 pts[4] = {
+                    (v1 + vec2(0, .5f * turret.calibre)) * turret_tx,
+                    (v1 + vec2(turret.length, .5f * turret.calibre)) * turret_tx,
+                    (v1 + vec2(turret.length, -.5f * turret.calibre)) * turret_tx,
+                    (v1 + vec2(0, -.5f * turret.calibre)) * turret_tx
+                };
+                renderer->draw_line(pts[0], pts[1], color4(0,1,0,1), color4(0,1,0,1));
+                renderer->draw_line(pts[1], pts[2], color4(0,1,0,1), color4(0,1,0,1));
+                renderer->draw_line(pts[2], pts[3], color4(0,1,0,1), color4(0,1,0,1));
+#else
+                vec2 pts[2] = {
+                    v1 * turret_tx, (v1 + vec2(turret.length, 0)) * turret_tx
+                };
+                renderer->draw_line(pts[0], pts[1], color4(0,1,0,1), color4(0,1,0,1));
+#endif
             }
         }
     }
@@ -316,7 +384,9 @@ void ship::think()
                 break;
             }
         }
-        _shield->recharge(1.f / 5.f);
+        if (_shield) {
+            _shield->recharge(1.f / 5.f);
+        }
     }
 
     //

@@ -54,6 +54,15 @@ public:
 
     bool is_destroyed() const { return _is_destroyed; }
 
+    struct turret {
+        vec2    position;
+        float   radius;
+        int     num_guns;
+        float   spacing;
+        float   calibre;
+        float   length;
+    };
+
 protected:
     game::usercmd _usercmd;
 
@@ -65,6 +74,9 @@ protected:
     handle<game::shield> _shield;
     handle<game::navigation> _navigation;
     std::vector<handle<weapon>> _weapons;
+
+    std::vector<turret> _turrets;
+    std::vector<float> _turret_angles;
 
     time_value _dead_time;
 
