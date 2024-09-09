@@ -16,6 +16,9 @@ struct projectile_info
     bool inertia; //!< whether to inherit owner velocity
     bool homing; //!< whether to seek target
 
+    float acceleration; //!< maximum acceleration if homing
+    time_delta delay_time; //!< time until acceleration begins
+
     time_delta fuse_time; //!< time to removal
     time_delta fade_time; //!< duration of fade before removal
 

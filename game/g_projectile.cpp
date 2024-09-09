@@ -49,12 +49,14 @@ void projectile::spawn()
 //------------------------------------------------------------------------------
 void projectile::think()
 {
-    if (get_world()->frametime() - _spawn_time > _info.fuse_time) {
+    time_delta delta_time = get_world()->frametime() - _spawn_time;
+
+    if (delta_time > _info.fuse_time) {
         get_world()->remove(this);
         return;
     }
 
-    if (_info.homing) {
+    if (_info.homing && delta_time > _info.delay_time) {
         update_homing();
     }
 
@@ -65,49 +67,50 @@ void projectile::think()
 //------------------------------------------------------------------------------
 void projectile::update_homing()
 {
-    vec2 direction = get_linear_velocity();
-    float speed = direction.normalize_length();
-    float bestValue = .5f * math::sqrt2<float>;
-    game::object* bestTarget = nullptr;
+    if (_target) {
+        vec2 relative_position = _target->get_position() - get_position();
+        vec2 relative_velocity = _target->get_linear_velocity() - get_linear_velocity();
 
-    for (auto* obj : get_world()->objects()) {
-        if (!obj->is_type<ship>()) {
-            continue;
+        // no homing if we missed the target
+        if (dot(relative_position, relative_velocity) > 0.f) {
+            return;
         }
 
-        vec2 displacement = obj->get_position() - get_position();
-        float value = displacement.normalize().dot(direction);
-        if (value > bestValue) {
-            bestValue = value;
-            bestTarget = obj;
-        }
-    }
+        float delta_time = -dot(relative_position, relative_velocity) / dot(relative_velocity, relative_velocity);
+        vec2 target_pos = _target->get_position() + _target->get_linear_velocity() * delta_time;
+        vec2 target_dir = normalize(target_pos - get_position());
 
-    if (bestTarget && bestValue < 0.995f) {
-        vec2 target_pos = bestTarget->get_position();
-        vec2 closest_point = get_position() + direction * (target_pos - get_position()).dot(direction);
-        vec2 displacement = (target_pos - closest_point).normalize();
-        vec2 delta = displacement * speed * 0.5f * FRAMETIME.to_seconds();
-        vec2 new_velocity = (get_linear_velocity() + delta).normalize() * speed;
-        set_linear_velocity(new_velocity);
+        // Project linear velocity onto target direction to determine course correction.
+        vec2 correction = relative_velocity - target_dir * dot(relative_velocity, target_dir);
+        float deltav = _info.acceleration * FRAMETIME.to_seconds();
+        if (dot(correction, correction) < square(deltav)) {
+            // If correction is less than max acceleration use the remaining
+            // delta-v to accelerate towards the intercept point. This will
+            // slightly invalidate the intercept point, which will be corrected
+            // in the next update.
+            float accel = sqrt(square(deltav) - dot(correction, correction));
+            set_linear_velocity(get_linear_velocity() + correction + target_dir * accel);
+        } else {
+            // Otherwise apply maximum delta-v towards the course correction.
+            set_linear_velocity(get_linear_velocity() + normalize(correction) * deltav);
+        }
     }
 }
 
 //------------------------------------------------------------------------------
 void projectile::update_effects()
 {
-    time_value time = get_world()->frametime();
-
-    if (time > _impact_time) {
+    if (get_world()->frametime() > _impact_time) {
         return;
     }
 
-    float a = min(1.f, (_spawn_time + _info.fuse_time - get_world()->frametime()) / _info.fade_time);
+    time_delta delta_time = get_world()->frametime() - _spawn_time;
+    float a = min(1.f, (_info.fuse_time - delta_time) / _info.fade_time);
     vec2 p1 = get_position() - get_linear_velocity()
-        * (std::min(FRAMETIME, time - _spawn_time) / time_delta::from_seconds(1));
+        * (std::min(FRAMETIME, delta_time) / time_delta::from_seconds(1));
     vec2 p2 = get_position();
 
-    if (_info.flight_effect != effect_type::none) {
+    if (_info.flight_effect != effect_type::none && delta_time > _info.delay_time) {
         get_world()->add_trail_effect(
             _info.flight_effect,
             p2,

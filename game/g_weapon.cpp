@@ -29,7 +29,9 @@ const std::vector<weapon_info> weapon::_types = {
             /* speed */             786.f,
             /* inertia */           true,
             /* homing */            false,
-            /* fuse_time */         time_delta::from_seconds(5.f),
+            /* acceleration */      0.f,
+            /* delay_time */        time_delta::zero,
+            /* fuse_time */         time_delta::from_seconds(8.f),
             /* fade_time */         time_delta::from_seconds(1.f),
             /* color */             color4(1.f, 0.f, 0.f, 1.f),
             /* tail_time */         time_delta::from_seconds(.02f),
@@ -51,6 +53,8 @@ const std::vector<weapon_info> weapon::_types = {
             /* speed */             1280.f,
             /* inertia */           true,
             /* homing */            false,
+            /* acceleration */      0.f,
+            /* delay_time */        time_delta::zero,
             /* fuse_time */         time_delta::from_seconds(5.f),
             /* fade_time */         time_delta::from_seconds(1.f),
             /* color */             color4(1.f, .5f, 0.f, 1.f),
@@ -73,7 +77,9 @@ const std::vector<weapon_info> weapon::_types = {
             /* speed */             256.f,
             /* inertia */           true,
             /* homing */            true,
-            /* fuse_time */         time_delta::from_seconds(5.f),
+            /* acceleration */      128.f,
+            /* delay_time */        time_delta::from_seconds(.5f),
+            /* fuse_time */         time_delta::from_seconds(12.f),
             /* fade_time */         time_delta::from_seconds(1.f),
             /* color */             color4(1.f, 1.f, 1.f, 1.f),
             /* tail_time */         time_delta::from_seconds(.02f),
@@ -238,7 +244,7 @@ void weapon::think()
 
         if (_projectile_target && time - _last_attack_time <= projectile_info.count * projectile_info.delay) {
             if (_projectile_count < projectile_info.count && _projectile_count * projectile_info.delay <= time - _last_attack_time) {
-                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.projectile, _random.uniform_real() < .8f ? _projectile_target : nullptr);
+                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.projectile, _projectile_target);
                 vec2 start = get_position() * _owner->rigid_body().get_transform();
                 vec2 end = _projectile_target_pos * _projectile_target->rigid_body().get_transform();
 
