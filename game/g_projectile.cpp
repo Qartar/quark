@@ -44,6 +44,20 @@ void projectile::spawn()
     object::spawn();
 
     get_world()->add_body(this, &_rigid_body);
+
+    // Point defense weapons should target any threatening projectiles in range,
+    // not just those targeting the owning ship. This however avoids a spatial
+    // query each frame which the physics engine is currently not optimized for.
+    if (_info.homing) {
+        game::ship* target_ship = _target->as_type<game::ship>();
+        if (target_ship) {
+            for (handle<game::weapon> weapon : target_ship->weapons()) {
+                if (std::holds_alternative<point_defense_weapon_info>(weapon->info())) {
+                    weapon->add_point_defense_target(this);
+                }
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -54,6 +68,37 @@ void projectile::think()
     if (delta_time > _info.fuse_time) {
         get_world()->remove(this);
         return;
+    }
+
+    if (_info.proximity_fuse && _target) {
+        // Find the closest approach between the two projectiles
+        vec2 relative_position = _target->get_position() - get_position();
+        vec2 relative_velocity = _target->get_linear_velocity() - get_linear_velocity();
+
+        float a = dot(relative_velocity, relative_velocity);
+        float b = 2.f * dot(relative_velocity, relative_position);
+        float c = dot(relative_position, relative_position) - square(_info.proximity_fuse);
+        float d = b * b - 4.f * a * c;
+
+        if (d >= 0.f) {
+            float q = -.5f * (b + std::copysign(std::sqrt(d), b));
+            float t1 = q / a;
+            float t2 = c / q;
+
+            float t = min(t1, t2);
+            if (t < 0.f) {
+                t = max(t1, t2);
+            }
+
+            // Detonate if closer than proximity fuse distance within the next frame
+            if (t >= 0.f && t <= FRAMETIME.to_seconds()) {
+                physics::collision collision = {};
+                collision.point = get_position() + get_linear_velocity() * t;
+                collision.normal = normalize(get_linear_velocity());
+                touch(_target.get(), &collision);
+                get_world()->remove(_target);
+            }
+        }
     }
 
     if (_info.homing && delta_time > _info.delay_time) {
@@ -150,7 +195,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
     }
 
     // calculate impact time
-    {
+    if (collision) {
         vec2 displacement = (collision->point - get_position());
         vec2 relative_velocity = get_linear_velocity();
         if (other) {
@@ -158,6 +203,8 @@ bool projectile::touch(object *other, physics::collision const* collision)
         }
         float delta_time = displacement.dot(relative_velocity) / relative_velocity.length_sqr();
         _impact_time = get_world()->frametime() + time_delta::from_seconds(1) * delta_time;
+    } else {
+        _impact_time = get_world()->frametime();
     }
 
     float factor = (other && other->is_type<shield>()) ? .5f : 1.f;

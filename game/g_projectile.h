@@ -19,6 +19,8 @@ struct projectile_info
     float acceleration; //!< maximum acceleration if homing
     time_delta delay_time; //!< time until acceleration begins
 
+    float proximity_fuse; //!< distance to target to detonate
+
     time_delta fuse_time; //!< time to removal
     time_delta fade_time; //!< duration of fade before removal
 

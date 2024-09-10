@@ -31,6 +31,7 @@ const std::vector<weapon_info> weapon::_types = {
             /* homing */            false,
             /* acceleration */      0.f,
             /* delay_time */        time_delta::zero,
+            /* proximity_fuse */    0.f,
             /* fuse_time */         time_delta::from_seconds(8.f),
             /* fade_time */         time_delta::from_seconds(1.f),
             /* color */             color4(1.f, 0.f, 0.f, 1.f),
@@ -55,6 +56,7 @@ const std::vector<weapon_info> weapon::_types = {
             /* homing */            false,
             /* acceleration */      0.f,
             /* delay_time */        time_delta::zero,
+            /* proximity_fuse */    0.f,
             /* fuse_time */         time_delta::from_seconds(5.f),
             /* fade_time */         time_delta::from_seconds(1.f),
             /* color */             color4(1.f, .5f, 0.f, 1.f),
@@ -79,6 +81,7 @@ const std::vector<weapon_info> weapon::_types = {
             /* homing */            true,
             /* acceleration */      128.f,
             /* delay_time */        time_delta::from_seconds(.5f),
+            /* proximity_fuse */    0.f,
             /* fuse_time */         time_delta::from_seconds(12.f),
             /* fade_time */         time_delta::from_seconds(1.f),
             /* color */             color4(1.f, 1.f, 1.f, 1.f),
@@ -110,6 +113,32 @@ const std::vector<weapon_info> weapon::_types = {
         /* launch_sound */      sound::asset::invalid,
         /* impact_effect */     effect_type::none,
         /* impact_sound */      sound::asset::invalid,
+    },
+    point_defense_weapon_info{
+        /* name */              "point defense",
+        /* reload_time */       time_delta::from_seconds(8.f),
+        /* delay */             time_delta::from_seconds(.1f),
+        /* count */             30,
+        /* intercept_range */   512.f,
+        /* projectile */        {
+            /* damage */            .1f,
+            /* speed */             1280.f,
+            /* inertia */           true,
+            /* homing */            false,
+            /* acceleration */      0.f,
+            /* delay_time */        time_delta::zero,
+            /* proximity_fuse */    1.f,
+            /* fuse_time */         time_delta::from_seconds(.5f),
+            /* fade_time */         time_delta::from_seconds(.1f),
+            /* color */             color4(1.f, .5f, 0.f, 1.f),
+            /* tail_time */         time_delta::from_seconds(.02f),
+            /* launch_effect */     effect_type::none,
+            /* launch_sound */      sound::asset::invalid,
+            /* flight_effect */     effect_type::none,
+            /* flight sound */      sound::asset::invalid,
+            /* impact_effect */     effect_type::cannon_impact,
+            /* impact_sound */      sound::asset::invalid,
+                                },
     },
 };
 
@@ -370,6 +399,83 @@ void weapon::think()
                 }
 
                 ++_pulse_count;
+            }
+        }
+    }
+
+    //
+    // update point defense
+    //
+
+    if (std::holds_alternative<point_defense_weapon_info>(_info)) {
+        auto& point_defense_info = std::get<point_defense_weapon_info>(_info);
+
+        if (time - _last_attack_time > point_defense_info.reload_time) {
+            _projectile_count = 0;
+            _last_attack_time = time;
+        }
+
+        _projectile_target = nullptr;
+        float best_distance_sqr = FLT_MAX;
+
+        if (_projectile_count < point_defense_info.count && point_defense_info.delay <= time - _last_attack_time) {
+            vec2 projectile_start = get_position() * _owner->rigid_body().get_transform();
+
+            // Iterate over all point defense targets and find the best target
+            for (std::size_t ii = 0; ii < _point_defense_targets.size(); ++ii) {
+                game::projectile* target = _point_defense_targets[ii].get();
+                if (!target) {
+                    _point_defense_targets[ii] = _point_defense_targets.back();
+                    _point_defense_targets.pop_back();
+                    --ii;
+                    continue;
+                }
+
+                vec2 end = target->get_position();
+
+                vec2 relative_velocity = target->get_linear_velocity();
+                if (point_defense_info.projectile.inertia) {
+                    relative_velocity -= _owner->get_linear_velocity();
+                }
+
+                // lead target based on relative velocity
+                float dt = intercept_time(end - projectile_start, relative_velocity, point_defense_info.projectile.speed);
+                if (dt > 0.f) {
+                    end += relative_velocity * dt;
+                }
+
+                float distance_sqr = length_sqr(end - projectile_start);
+                if (distance_sqr < square(point_defense_info.intercept_range) && distance_sqr < best_distance_sqr) {
+                    _projectile_target = target;
+                    _projectile_target_pos = end;
+                    best_distance_sqr = distance_sqr;
+                }
+            }
+
+            // If we have a target
+            if (_projectile_target) {
+                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), point_defense_info.projectile, _projectile_target);
+                vec2 dir = (_projectile_target_pos - projectile_start).normalize();
+
+                vec2 projectile_velocity = dir * point_defense_info.projectile.speed;
+                if (point_defense_info.projectile.inertia) {
+                    projectile_velocity += _owner->get_linear_velocity();
+                }
+
+                proj->set_position(projectile_start, true);
+                proj->set_linear_velocity(projectile_velocity);
+                proj->set_rotation(std::atan2(dir.y, dir.x), true);
+
+                if (point_defense_info.projectile.launch_effect != effect_type::none) {
+                    get_world()->add_effect(time, point_defense_info.projectile.launch_effect, projectile_start, dir * 2);
+                }
+
+                if (point_defense_info.projectile.launch_sound != sound::asset::invalid) {
+                    get_world()->add_sound(point_defense_info.projectile.launch_sound, projectile_start, point_defense_info.projectile.damage);
+                }
+
+                ++_projectile_count;
+                _last_attack_time = time;
             }
         }
     }

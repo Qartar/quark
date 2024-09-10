@@ -52,7 +52,16 @@ struct pulse_weapon_info : base_weapon_info
 };
 
 //------------------------------------------------------------------------------
-using weapon_info = std::variant<projectile_weapon_info, beam_weapon_info, pulse_weapon_info>;
+struct point_defense_weapon_info : base_weapon_info
+{
+    time_delta delay; //!< time between each projectile in an attack
+    int count; //!< number of projectiles in each attack
+    float intercept_range; //!< maximum range for intended intercept
+    projectile_info projectile;
+};
+
+//------------------------------------------------------------------------------
+using weapon_info = std::variant<projectile_weapon_info, beam_weapon_info, pulse_weapon_info, point_defense_weapon_info>;
 
 //------------------------------------------------------------------------------
 class weapon : public subsystem
@@ -81,6 +90,8 @@ public:
     bool is_attacking() const { return _is_attacking; }
     bool is_repeating() const { return _is_repeating; }
 
+    void add_point_defense_target(game::projectile* target) { _point_defense_targets.push_back(target); }
+
     static weapon_info const& by_random(random& r);
 
 protected:
@@ -107,6 +118,8 @@ protected:
     vec2 _pulse_target_pos;
     int _pulse_count;
     game::handle<shield> _pulse_shield;
+
+    std::vector<handle<projectile>> _point_defense_targets;
 
     static const std::vector<weapon_info> _types;
 };
