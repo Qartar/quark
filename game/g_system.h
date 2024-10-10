@@ -18,6 +18,11 @@ public:
         float longitude_of_periapsis; //!< longitude of periapsis in radians
         float mean_anomaly_at_epoch; //!< mean anomaly at epoch in radians
         time_delta period;
+
+        //! Calculate the position in gigameters of the orbiting body at the given time
+        vec2 calculate_position(time_value time) const;
+        //! Calculate the velocity in gigameters per second of the orbiting body at the given time
+        vec2 calculate_velocity(time_value time) const;
     };
 
     struct body
@@ -30,6 +35,8 @@ public:
     };
 
     static constexpr std::size_t invalid_body = SIZE_MAX;
+    //! Gravitational constant in units of gigameters cubed per gigagrams per seconds squared.
+    static constexpr float gravitational_constant = 6.67430e-32f;
 
     body const* bodies() const { return _bodies.data(); }
     std::size_t num_bodies() const { return _bodies.size(); }

@@ -10,6 +10,57 @@
 namespace game {
 
 //------------------------------------------------------------------------------
+vec2 system::orbit::calculate_position(time_value time) const
+{
+    // Calculate mean anomaly
+    float mean_anomaly = mean_anomaly_at_epoch + 2.f * math::pi<float> * (time % period) / period;
+
+    // Calculate eccentric anomaly
+    float eccentric_anomaly = mean_anomaly;
+    for (int ii = 0; ii < 4; ++ii) {
+        // M = E - e sin E
+        // M' = 1 - e cos E
+        float sinE = sin(eccentric_anomaly);
+        float cosE = cos(eccentric_anomaly);
+        eccentric_anomaly -= (eccentric_anomaly - eccentricity * sinE - mean_anomaly)
+            / (1.f - eccentricity * cosE);
+    }
+
+    // Calculate true anomaly
+    float anomaly_coeff = std::sqrt((1.f + eccentricity) / (1.f - eccentricity));
+    float true_anomaly = 2.f * atan(anomaly_coeff * tan(.5f * eccentric_anomaly));
+
+    // Calculate position
+    float radius = semimajor_axis * (1.f - eccentricity * cos(eccentric_anomaly));
+    return radius * vec2(cos(true_anomaly + longitude_of_periapsis), sin(true_anomaly + longitude_of_periapsis));
+}
+
+//------------------------------------------------------------------------------
+vec2 system::orbit::calculate_velocity(time_value time) const
+{
+    // Calculate mean anomaly
+    float mean_anomaly = mean_anomaly_at_epoch + 2.f * math::pi<float> * (time % period) / period;
+
+    // Calculate eccentric anomaly
+    float eccentric_anomaly = mean_anomaly;
+    for (int ii = 0; ii < 4; ++ii) {
+        // M = E - e sin E
+        // M' = 1 - e cos E
+        float sinE = sin(eccentric_anomaly);
+        float cosE = cos(eccentric_anomaly);
+        eccentric_anomaly -= (eccentric_anomaly - eccentricity * sinE - mean_anomaly)
+            / (1.f - eccentricity * cosE);
+    }
+
+    // Calculate true anomaly
+    float anomaly_coeff = std::sqrt((1.f + eccentricity) / (1.f - eccentricity));
+    float true_anomaly = 2.f * atan(anomaly_coeff * tan(.5f * eccentric_anomaly));
+
+    float v = 2.f * math::pi<float> * semimajor_axis / (sqrt(1.f - square(eccentricity)) * period.to_seconds());
+    return v * vec2(-sin(true_anomaly), eccentricity + cos(true_anomaly)) * mat2::rotate(longitude_of_periapsis);
+}
+
+//------------------------------------------------------------------------------
 system::system(random r)
     : _random(r)
     , _bodies(std::move(generate(r)))
@@ -150,7 +201,6 @@ float system::calculate_planetary_radius(float mass)
 //------------------------------------------------------------------------------
 time_delta system::calculate_orbital_period(float mass, float semimajor_axis)
 {
-    constexpr float gravitational_constant = 6.673848e-32f;
     const float mu = mass * gravitational_constant;
     const float a3 = semimajor_axis * semimajor_axis * semimajor_axis;
     return time_delta::from_seconds(2.0 * math::pi<double>) * std::sqrt(a3 / mu);
@@ -160,32 +210,7 @@ time_delta system::calculate_orbital_period(float mass, float semimajor_axis)
 vec2 system::calculate_orbit(time_value time, std::size_t index) const
 {
     assert(index < _bodies.size());
-
-    orbit const& orbit = _bodies[index].orbit;
-
-    // Calculate mean anomaly
-    float mean_anomaly = orbit.mean_anomaly_at_epoch + 2.f * math::pi<float> * (time % orbit.period) / orbit.period;
-
-    // Calculate eccentric anomaly
-    float eccentric_anomaly = mean_anomaly;
-    for (int ii = 0; ii < 4; ++ii) {
-        // M = E - e sin E
-        // M' = 1 - e cos E
-        float sinE = sin(eccentric_anomaly);
-        float cosE = cos(eccentric_anomaly);
-        eccentric_anomaly -= (eccentric_anomaly - orbit.eccentricity * sinE - mean_anomaly)
-                           / (1.f - orbit.eccentricity * cosE);
-    }
-
-    // Calculate true anomaly
-    float cosE = cos(eccentric_anomaly);
-    //float true_anomaly = atan2(1.f - orbit.eccentricity * cosE, cosE - orbit.eccentricity);
-    float anomaly_coeff = std::sqrt((1.f + orbit.eccentricity) / (1.f - orbit.eccentricity));
-    float true_anomaly = 2.f * atan(anomaly_coeff * tan(.5f * eccentric_anomaly));
-
-    // Calculate position
-    float radius = orbit.semimajor_axis * (1.f - orbit.eccentricity * cosE);
-    return radius * vec2(cos(true_anomaly + orbit.longitude_of_periapsis), sin(true_anomaly + orbit.longitude_of_periapsis));
+    return _bodies[index].orbit.calculate_position(time);
 }
 
 //------------------------------------------------------------------------------
