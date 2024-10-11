@@ -81,6 +81,10 @@ public:
         return _value >= rhs._value;
     }
 
+    explicit constexpr operator bool() const {
+        return _value != 0;
+    }
+
 protected:
     int64_t _value;
 

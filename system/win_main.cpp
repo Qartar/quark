@@ -9,6 +9,8 @@
 #include <WS2tcpip.h>
 #include <XInput.h>
 
+#include <immintrin.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace {
 
@@ -32,9 +34,16 @@ int64_t get_ticks_per_second()
 time_value time_value::current()
 {
     static int64_t offset = get_ticks();
-    static double denominator = 1e-6 * static_cast<double>(get_ticks_per_second());
-    double numerator = static_cast<double>(get_ticks() - offset);
-    return time_value::from_microseconds(static_cast<int64_t>(numerator / denominator));
+    static int64_t ticks_per_second = get_ticks_per_second();
+    constexpr int64_t microseconds_per_second = 1000000;
+    int64_t high_product, low_product, remainder, microseconds;
+
+    // Convert QPC ticks to microseconds using 128-bit arithmetic just in case
+    // the 53-bit mantissa from double-precision floating point (i.e. 285 years)
+    // is insufficient.
+    low_product = _mul128(microseconds_per_second, get_ticks() - offset, &high_product);
+    microseconds = _div128(high_product, low_product, ticks_per_second, &remainder);
+    return time_value::from_microseconds(microseconds);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
