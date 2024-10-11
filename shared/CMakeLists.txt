@@ -21,6 +21,8 @@ set(SHARED_SOURCES
     cm_string.cpp
     cm_string.h
     cm_time.h
+    cm_trajectory.cpp
+    cm_trajectory.h
     cm_vector.h
 
     shared.natvis
