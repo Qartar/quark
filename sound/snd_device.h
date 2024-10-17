@@ -5,6 +5,8 @@
 
 #include "cm_sound.h"
 
+typedef unsigned char byte;
+
 //------------------------------------------------------------------------------
 typedef struct buffer_info_s
 {

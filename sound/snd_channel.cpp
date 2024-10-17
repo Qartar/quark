@@ -23,7 +23,7 @@ result cSoundChannel::play(sound::asset asset, bool looping)
     _source = _sound->get_sound(asset);
 
     if (!_source) {
-        log::warning("could not play sound %z: does not exist\n", asset);
+        log::warning("could not play sound %d: does not exist\n", asset);
         return result::failure;
     }
 

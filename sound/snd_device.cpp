@@ -4,30 +4,32 @@
 #include "snd_main.h"
 #include "snd_device.h"
 #include "snd_dsound.h"
+#include "snd_wasapi.h"
 
 //------------------------------------------------------------------------------
 cAudioDevice *cAudioDevice::create(HWND hwnd)
 {
-    cAudioDevice* device;
-    device_state_t state = device_fail;
+    cAudioDevice* device = nullptr;
 
     log::message("------ initializing sound ------\n");
 
-    //  try directsound
-    if ((device = new cDirectSoundDevice(hwnd))) {
-        if ((state = device->get_state()) == device_ready) {
-            return device;
-        }
-
-        device->destroy();
-        delete device;
-
-        if (state == device_abort) {
-            return NULL;
-        }
+    //  try WASAPI
+    if (config::boolean("snd_wasapi", true, config::archive, "use Windows Audio Session API (WASAPI) for sound rendering")) {
+        device = audio_device_wasapi::create();
     }
 
-    return NULL;
+    //  try directsound
+    if (!device && (device = new cDirectSoundDevice(hwnd))) {
+        if (device->get_state() == device_ready) {
+            return device;
+        }
+    
+        device->destroy();
+        delete device;
+        device = nullptr;
+    }
+
+    return device;
 }
 
 //------------------------------------------------------------------------------

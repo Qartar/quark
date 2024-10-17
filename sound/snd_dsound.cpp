@@ -198,7 +198,7 @@ result cDirectSoundDevice::create_buffers()
     log::message("output buffer format:\n");
     log::message("...channels:  %d\n", _buffer_format.nChannels);
     log::message("...bit width: %d\n", _buffer_format.wBitsPerSample);
-    log::message("...frequency: %d\n", _buffer_format.nSamplesPerSec);
+    log::message("...frequency: %u\n", _buffer_format.nSamplesPerSec);
 
     _submix_buffer->Play(0, 0, DSBPLAY_LOOPING);
     _submix_buffer->GetCurrentPosition(NULL, (LPDWORD)&_buffer_offset);
