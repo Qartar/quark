@@ -116,6 +116,9 @@ program::PFNGLATTACHSHADER program::glAttachShader = nullptr;
 program::PFNGLDETACHSHADER program::glDetachShader = nullptr;
 program::PFNGLLINKPROGRAM program::glLinkProgram = nullptr;
 
+// GL_ARB_direct_state_access
+program::PFNGLPROGRAMUNIFORM1F program::glProgramUniform1f = nullptr;
+
 //------------------------------------------------------------------------------
 void program::init()
 {
@@ -127,6 +130,9 @@ void program::init()
     glAttachShader = (PFNGLATTACHSHADER)wglGetProcAddress("glAttachShader");
     glDetachShader = (PFNGLDETACHSHADER)wglGetProcAddress("glDetachShader");
     glLinkProgram = (PFNGLLINKPROGRAM)wglGetProcAddress("glLinkProgram");
+
+    // GL_ARB_direct_state_access
+    glProgramUniform1f = (PFNGLPROGRAMUNIFORM1F)wglGetProcAddress("glProgramUniform1f");
 }
 
 //------------------------------------------------------------------------------
@@ -171,6 +177,12 @@ program::program(shader const& vertex, shader const& fragment)
 void program::use() const
 {
     glUseProgram(_program);
+}
+
+//------------------------------------------------------------------------------
+void program::uniform(GLint location, float v0) const
+{
+    glProgramUniform1f(_program, location, v0);
 }
 
 //------------------------------------------------------------------------------

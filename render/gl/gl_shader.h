@@ -73,6 +73,7 @@ public:
     bool validate_status(string::buffer& info_log) const;
 
     void use() const;
+    void uniform(GLint location, float v0) const;
 
 protected:
     GLuint _program;
@@ -95,6 +96,11 @@ protected:
     static PFNGLATTACHSHADER glAttachShader;
     static PFNGLDETACHSHADER glDetachShader;
     static PFNGLLINKPROGRAM glLinkProgram;
+
+    // GL_ARB_direct_state_access
+    using PFNGLPROGRAMUNIFORM1F = void (APIENTRY*)(GLuint program, GLint location, GLfloat v0);
+
+    static PFNGLPROGRAMUNIFORM1F glProgramUniform1f;
 };
 
 } // namespace gl

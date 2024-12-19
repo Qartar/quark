@@ -26,6 +26,7 @@ system::system(render::window* window)
     , _framebuffer_height("r_height", 0, config::archive, "framebuffer height, or 0 to use window height")
     , _framebuffer_scale("r_scale", 1, config::archive, "framebuffer scale if using window dimensions")
     , _framebuffer_samples("r_samples", -1, config::archive, "framebuffer samples, or -1 to use maximum supported")
+    , _bloom("r_bloom", true, config::archive, "")
     , _window(window)
     , _view{}
     , _view_bounds{}
@@ -53,6 +54,24 @@ result system::init()
     gl::vertex_array::init();
 
     font::init();
+
+    _bloom_downsample = load_shader("bloom_downsample", "assets/shader/bloom.vsh", "assets/shader/bloom_downsample.fsh");
+    _bloom_upsample = load_shader("bloom_upsample", "assets/shader/bloom.vsh", "assets/shader/bloom_upsample.fsh");
+
+    _bloom_ibo = gl::index_buffer<uint16_t>(gl::buffer_usage::static_, gl::buffer_access::draw,
+        {0, 1, 2}
+    );
+    _bloom_vbo = gl::vertex_buffer<vec2>(gl::buffer_usage::static_, gl::buffer_access::draw,
+        {vec2(-1,-1), vec2(3,-1), vec2(-1,3)}
+    );
+    _bloom_vao = gl::vertex_array({
+        gl::vertex_array_attrib{2, GL_FLOAT, gl::vertex_attrib_type::float_, 0}
+    });
+    _bloom_vao.bind_buffer(_bloom_ibo);
+    _bloom_vao.bind_buffer(_bloom_vbo, 0);
+
+    gl::index_buffer<int>().bind();
+    gl::vertex_buffer<int>().bind();
 
     _view.size = vec2(_window->size());
     _view.origin = _view.size * 0.5f;
@@ -106,15 +125,112 @@ void system::begin_frame()
 //------------------------------------------------------------------------------
 void system::end_frame()
 {
+    config::scalar kernel_radius("r_bloomKernelRadius", .02f, config::archive, "");
+    config::scalar bloom_alpha("r_bloomAlpha", .2f, 0, "");
+
     if (_graph) {
         draw_timers();
     }
 
-    gl::framebuffer().draw_buffer(GL_BACK);
-    gl::framebuffer().blit(_framebuffer,
-        0, 0, _framebuffer.width(), _framebuffer.height(),
-        0, 0, _window->size().x, _window->size().y,
-        GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    if (_bloom && _bloom_framebuffers.size()) {
+        glDepthMask(GL_FALSE);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+
+        _bloom_vao.bind();
+        _bloom_downsample->program().use();
+
+        if (_bloom_resolve.name()) {
+            _bloom_resolve.blit(_framebuffer, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+            _bloom_resolve.color_attachment().bind();
+        } else {
+            _framebuffer.color_attachment().bind();
+        }
+
+        _bloom_framebuffers[0].draw();
+
+        glViewport(0, 0, _framebuffer.width() >> 1, _framebuffer.height() >> 1);
+#if 1
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, nullptr);
+#else
+        _bloom_framebuffers[0].blit(_framebuffer,
+            0, 0, _framebuffer.width(), _framebuffer.height(),
+            0, 0, _bloom_framebuffers[0].width(), _bloom_framebuffers[0].height(),
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+#endif
+
+        for (std::size_t ii = 1, sz = _bloom_framebuffers.size(); ii < sz; ++ii) {
+            _bloom_framebuffers[ii].draw();
+            _bloom_framebuffers[ii - 1].color_attachment().bind();
+
+            glViewport(0, 0, _framebuffer.width() >> (ii + 1), _framebuffer.height() >> (ii + 1));
+            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, nullptr);
+        }
+#if 1
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+
+        _bloom_upsample->program().use();
+        _bloom_upsample->program().uniform(0, kernel_radius);
+
+        glBlendColor(0, 0, 0, bloom_alpha);
+        glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+
+        for (std::size_t ii = 0, sz = _bloom_framebuffers.size(); ii < sz - 1; ++ii) {
+            _bloom_framebuffers[sz - ii - 2].draw();
+            _bloom_framebuffers[sz - ii - 1].color_attachment().bind();
+
+            glViewport(0, 0, _framebuffer.width() >> (sz - ii - 1), _framebuffer.height() >> (sz - ii - 1));
+            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, nullptr);
+
+            // set kernel radius for next pass
+            _bloom_upsample->program().uniform(0, kernel_radius / (2 << ii));
+        }
+
+        if (_bloom_resolve.name()) {
+            _bloom_resolve.draw();
+        } else {
+            _framebuffer.draw();
+        }
+        _bloom_framebuffers[0].color_attachment().bind();
+
+        glViewport(0, 0, _framebuffer.width(), _framebuffer.height());
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, nullptr);
+#else
+        gl::framebuffer().draw_buffer(GL_BACK);
+        gl::framebuffer().blit(_bloom_framebuffers[0],
+            0, 0, _bloom_framebuffers[0].width(), _bloom_framebuffers[0].height(),
+            0, 0, _window->size().x, _window->size().y,
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+#endif
+
+        glViewport(0, 0, _framebuffer.width(), _framebuffer.height());
+
+        gl::program().use();
+        gl::vertex_array().bind();
+
+        if (_bloom_resolve.name()) {
+            gl::framebuffer().draw_buffer(GL_BACK);
+            gl::framebuffer().blit(_bloom_resolve,
+                0, 0, _bloom_resolve.width(), _bloom_resolve.height(),
+                0, 0, _window->size().x, _window->size().y,
+                GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        } else {
+            gl::framebuffer().draw_buffer(GL_BACK);
+            gl::framebuffer().blit(_framebuffer,
+                0, 0, _framebuffer.width(), _framebuffer.height(),
+                0, 0, _window->size().x, _window->size().y,
+                GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        }
+
+    } else {
+        gl::framebuffer().draw_buffer(GL_BACK);
+        gl::framebuffer().blit(_framebuffer,
+            0, 0, _framebuffer.width(), _framebuffer.height(),
+            0, 0, _window->size().x, _window->size().y,
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
+
 
     _timers[_timer_index % _timers.size()].end_frame = time_value::current();
 
@@ -126,7 +242,8 @@ void system::end_frame()
     if (_framebuffer_width.modified()
             || _framebuffer_height.modified()
             || _framebuffer_samples.modified()
-            || _framebuffer_scale.modified()) {
+            || _framebuffer_scale.modified()
+            || _bloom.modified()) {
         resize(_window->size());
     }
 }
@@ -162,6 +279,7 @@ void system::resize(vec2i size)
     _framebuffer_height.reset();
     _framebuffer_samples.reset();
     _framebuffer_scale.reset();
+    _bloom.reset();
 
     create_default_font();
     set_default_state();
@@ -249,16 +367,39 @@ void system::set_default_state()
 //------------------------------------------------------------------------------
 void system::create_framebuffer(vec2i size, int samples)
 {
+    GLenum format = _bloom ? GL_RGBA16F : GL_RGBA8;
+
     if (samples) {
         _framebuffer = gl::framebuffer(samples, size.x, size.y, {
-            {gl::attachment_type::color, GL_RGBA8},
+            {gl::attachment_type::color, format},
             {gl::attachment_type::depth_stencil, GL_DEPTH24_STENCIL8},
         });
     } else {
         _framebuffer = gl::framebuffer(size.x, size.y, {
-            {gl::attachment_type::color, GL_RGBA8},
+            {gl::attachment_type::color, format},
             {gl::attachment_type::depth_stencil, GL_DEPTH24_STENCIL8},
         });
+    }
+
+    if (_bloom) {
+        _bloom_framebuffers.resize(8);
+        for (std::size_t ii = 0, sz = _bloom_framebuffers.size(); ii < sz; ++ii) {
+            _bloom_framebuffers[ii] = gl::framebuffer(size.x >> (ii + 1), size.y >> (ii + 1), {
+                {gl::attachment_type::color, GL_RGBA16F}
+            });
+            _bloom_framebuffers[ii].color_attachment().parameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            _bloom_framebuffers[ii].color_attachment().parameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        }
+        if (samples) {
+            _bloom_resolve = gl::framebuffer(size.x, size.y, {
+                {gl::attachment_type::color, format},
+                {gl::attachment_type::depth_stencil, GL_DEPTH24_STENCIL8},
+            });
+        } else {
+            _bloom_resolve = gl::framebuffer();
+        }
+    } else {
+        _bloom_framebuffers.clear();
     }
 }
 

@@ -19,6 +19,7 @@ texture::PFNGLTEXTURESUBIMAGE2D texture::glTextureSubImage2D = nullptr;
 texture::PFNGLBINDTEXTUREUNIT texture::glBindTextureUnit = nullptr;
 texture::PFNGLTEXTURESTORAGE2D texture::glTextureStorage2D = nullptr;
 texture::PFNGLTEXTURESTORAGE2DMULTISAMPLE texture::glTextureStorage2DMultisample = nullptr;
+texture::PFNGLTEXTUREPARAMETERI texture::glTextureParameteri = nullptr;
 
 ////////////////////////////////////////////////////////////////////////////////
 void texture::init()
@@ -34,6 +35,7 @@ void texture::init()
     glBindTextureUnit = (PFNGLBINDTEXTUREUNIT)wglGetProcAddress("glBindTextureUnit");
     glTextureStorage2D = (PFNGLTEXTURESTORAGE2D)wglGetProcAddress("glTextureStorage2D");
     glTextureStorage2DMultisample = (PFNGLTEXTURESTORAGE2DMULTISAMPLE)wglGetProcAddress("glTextureStorage2DMultisample");
+    glTextureParameteri = (PFNGLTEXTUREPARAMETERI)wglGetProcAddress("glTextureParameteri");
 }
 
 //------------------------------------------------------------------------------
@@ -93,6 +95,17 @@ void texture::bind(GLuint textureunit) const
     } else if (glActiveTexture) {
         glActiveTexture(GL_TEXTURE0 + textureunit);
         glBindTexture(_target, _name);
+    }
+}
+
+//------------------------------------------------------------------------------
+void texture::parameter(GLenum pname, GLint param) const
+{
+    if (glTextureParameteri) {
+        glTextureParameteri(_name, pname, param);
+    } else {
+        glBindTexture(_target, _name);
+        glTexParameteri(_target, pname, param);
     }
 }
 

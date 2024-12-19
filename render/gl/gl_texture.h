@@ -24,6 +24,7 @@ public:
     GLuint name() const { return _name; }
 
     void bind(GLuint textureunit = 0) const;
+    void parameter(GLenum pname, GLint param) const;
 
 protected:
     GLuint _name;
@@ -52,12 +53,14 @@ protected:
     using PFNGLBINDTEXTUREUNIT = void (APIENTRY*)(GLuint unit, GLuint texture);
     using PFNGLTEXTURESTORAGE2D = void (APIENTRY*)(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
     using PFNGLTEXTURESTORAGE2DMULTISAMPLE = void (APIENTRY*)(GLuint texture, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
+    using PFNGLTEXTUREPARAMETERI = void (APIENTRY*)(GLuint texture, GLenum pname, GLint param);
 
     static PFNGLCREATETEXTURES glCreateTextures;
     static PFNGLTEXTURESUBIMAGE2D glTextureSubImage2D;
     static PFNGLBINDTEXTUREUNIT glBindTextureUnit;
     static PFNGLTEXTURESTORAGE2D glTextureStorage2D;
     static PFNGLTEXTURESTORAGE2DMULTISAMPLE glTextureStorage2DMultisample;
+    static PFNGLTEXTUREPARAMETERI glTextureParameteri;
 };
 
 //------------------------------------------------------------------------------

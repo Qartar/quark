@@ -14,6 +14,7 @@
 #define GL_UNSIGNED_INT_10_10_10_2      0x8036
 #define GL_UNSIGNED_INT_2_10_10_10_REV  0x8368
 #define GL_BGR                          0x80E0
+#define GL_CLAMP_TO_EDGE                0x812F
 
 //------------------------------------------------------------------------------
 // OpenGL 1.3
@@ -106,6 +107,14 @@
 #define GL_RENDERBUFFER_BINDING         0x8CA7
 #define GL_MAX_COLOR_ATTACHMENTS        0x8CDF
 #define GL_MAX_RENDERBUFFER_SIZE        0x84E8
+
+//------------------------------------------------------------------------------
+// ARB_texture_float
+
+// Accepted by the <internalFormat> parameter of TexImage1D,
+// TexImage2D, and TexImage3D:
+
+#define GL_RGBA16F                      0x881A
 
 //------------------------------------------------------------------------------
 // ARB_texture_multisample

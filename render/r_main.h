@@ -7,7 +7,9 @@
 #include "cm_string.h"
 #include "cm_time.h"
 
+#include "gl/gl_buffer.h"
 #include "gl/gl_framebuffer.h"
+#include "gl/gl_vertex_array.h"
 #include "gl/gl_types.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,6 +109,17 @@ private:
     config::integer _framebuffer_samples;
 
     gl::framebuffer _framebuffer;
+
+    config::boolean _bloom;
+
+    std::vector<gl::framebuffer> _bloom_framebuffers;
+    gl::framebuffer _bloom_resolve;
+    render::shader const* _bloom_downsample;
+    render::shader const* _bloom_upsample;
+
+    gl::index_buffer<uint16_t> _bloom_ibo;
+    gl::vertex_buffer<vec2> _bloom_vbo;
+    gl::vertex_array _bloom_vao;
 
     render::window* _window;
 

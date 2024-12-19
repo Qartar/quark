@@ -7,6 +7,7 @@
 #include "gl/gl_include.h"
 #include "r_font.h"
 #include "r_model.h"
+#include "r_shader.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {

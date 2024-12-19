@@ -59,6 +59,7 @@ public:
         : framebuffer(samples, width, height, attachments, num_attachments)
     {}
 
+    GLuint name() const { return _name; }
     GLsizei width() const { return _width; }
     GLsizei height() const { return _height; }
 
