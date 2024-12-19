@@ -104,7 +104,7 @@ std::vector<system::body> system::generate(random r) const
             bodies.emplace_back(body{0, 0, orbit{eccentricity, semimajor_axis, longitude_at_periapsis, mean_anomaly_at_epoch, period}, mass, radius});
             bodies[0].num_descendants++;
 
-            semimajor_axis *= 1.5f;
+            semimajor_axis *= 1.8f;
         }
 
         semimajor_axis = hz_max * 2.f;
@@ -115,8 +115,8 @@ std::vector<system::body> system::generate(random r) const
             float eccentricity = r.uniform_real(0.01f, 0.07f);
             float longitude_at_periapsis = r.uniform_real(2.f * math::pi<float>);
             float mean_anomaly_at_epoch = r.uniform_real(2.f * math::pi<float>);
-            time_delta period = calculate_orbital_period(mass + bodies[0].mass, semimajor_axis);
             float scale = 1.f + r.normal_real(0.05f);
+            time_delta period = calculate_orbital_period(mass + bodies[0].mass, semimajor_axis * scale);
 
             bodies.emplace_back(body{0, 0, orbit{eccentricity, semimajor_axis * scale, longitude_at_periapsis, mean_anomaly_at_epoch, period}, mass, radius});
             bodies[0].num_descendants++;

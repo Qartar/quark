@@ -81,7 +81,9 @@ public:
     usercmdgen()
         : _button_state(button::none)
         , _modifier_state(modifier::none)
+        , _cursor_state{}
         , _gamepad_state{}
+        , _queue{}
         , _queue_begin(0)
         , _queue_end(0)
     {}
