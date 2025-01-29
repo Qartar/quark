@@ -343,6 +343,74 @@ void player::draw(render::system* renderer, time_value time) const
 
 #endif
 
+#if 1 // parallel transition curve experiments
+    {
+        clothoid::segment l1 = clothoid::segment::from_transition(vec2(-400, -800), vec2(0, -1), 400.f, -1.f / 400.f, -1.f / 200.f);
+        get_world()->rail_network().draw_segment(renderer, l1);
+
+        float k0 = 1.f / ((1.f / l1.initial_curvature() + 5.f));
+        float k1 = 1.f / ((1.f / l1.final_curvature() + 5.f));
+        float kmid = .5f * (k0 + k1);// * (1.f + .1f * cos(_usercmd_time.to_seconds()));
+        //float kmid = 1.f / (.5f * (1.f / k0 + 1.f / k1));
+
+        clothoid::segment l2 = clothoid::segment::from_transition(vec2(-405, -800), l1.initial_tangent(), 400.f, k0, k1);
+        get_world()->rail_network().draw_segment(renderer, l2);
+
+        float len = 200.f;
+        clothoid::segment l3 = clothoid::segment::from_transition(vec2(-405, -800), l1.initial_tangent(), len, k0, kmid);
+        clothoid::segment l4 = clothoid::segment::from_transition(l3.final_position(), l3.final_tangent(), len, kmid, k1);
+
+        //get_world()->rail_network().draw_segment(renderer, l3);
+        //get_world()->rail_network().draw_segment(renderer, l4);
+
+        vec2 t1 = l1.final_tangent();
+        vec2 p1 = l1.final_position() + t1.cross(5);
+        renderer->draw_box(vec2(2), p1, color4(1,1,1,1));
+
+        for (int ii = 0; ii < 64; ++ii) {
+            vec2 p2 = l4.final_position();
+            kmid *= exp(-1e-2f * cross(p2 - p1, t1));
+            len -= dot(p2 - p1, t1);
+
+            l3 = clothoid::segment::from_transition(vec2(-405, -800), l1.initial_tangent(), len, k0, kmid);
+            l4 = clothoid::segment::from_transition(l3.final_position(), l3.final_tangent(), len, kmid, k1);
+        }
+
+        get_world()->rail_network().draw_segment(renderer, l3);
+        get_world()->rail_network().draw_segment(renderer, l4);
+
+        renderer->draw_line(l1.final_position(), l1.final_position() - l1.final_tangent().cross(1.f / l1.final_curvature()), color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_line(l4.final_position(), l4.final_position() - l4.final_tangent().cross(1.f / l4.final_curvature()), color4(1,1,0,1), color4(1,1,0,1));
+
+        clothoid::segment l5 = clothoid::segment::from_arc(l1.final_position(), l1.final_tangent(), abs(1.f / l1.final_curvature()), l1.final_curvature());
+        clothoid::segment l6 = clothoid::segment::from_arc(l4.final_position(), l4.final_tangent(), abs(1.f / l4.final_curvature()), l4.final_curvature());
+
+        get_world()->rail_network().draw_segment(renderer, l5);
+        get_world()->rail_network().draw_segment(renderer, l6);
+
+        renderer->draw_line(l5.final_position(), l5.final_position() - l5.final_tangent().cross(1.f / l5.final_curvature()), color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_line(l6.final_position(), l6.final_position() - l6.final_tangent().cross(1.f / l6.final_curvature()), color4(1,1,0,1), color4(1,1,0,1));
+
+        auto draw_radius = [](render::system* renderer, clothoid::segment const& s, color4 c) {
+            vec2 p0 = s.initial_position() - s.initial_tangent().cross(1.f / s.initial_curvature());
+            for (int ii = 1; ii <= 128; ++ii) {
+                float t = s.length() * ii / 128.f;
+                float k1 = s.evaluate_curvature(t);
+                vec2 t1 = s.evaluate_tangent(t);
+                vec2 p1 = s.evaluate(t) - t1.cross(1.f / k1);
+
+                renderer->draw_line(p0, p1, c, c);
+                p0 = p1;
+            }
+        };
+
+        draw_radius(renderer, l1, color4(1,1,1,1));
+        draw_radius(renderer, l2, color4(0,1,1,1));
+        draw_radius(renderer, l3, color4(1,1,0,1));
+        draw_radius(renderer, l4, color4(1,1,0,1));
+    }
+#endif
+
     if (_follow) {
         //_follow->as_type<train>()->draw_debug(renderer, time);
         //_follow->as_type<train>()->draw_path(renderer, time);
