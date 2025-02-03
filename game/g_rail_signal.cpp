@@ -9,7 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-const object_type rail_signal::_type(object::_type);
+const object_type rail_signal::_type(sizeof(rail_signal), object::_type);
 
 //------------------------------------------------------------------------------
 rail_signal::rail_signal()

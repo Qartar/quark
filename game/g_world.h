@@ -54,12 +54,11 @@ public:
     //  required for input_iterator
 
     bool operator!=(object_iterator const& other) const {
-        return _begin != other._begin;
+        return _type_index != other._type_index || _type_offset != other._type_offset;
     }
 
     type* operator*() const {
-        assert(_begin < _end);
-        return _begin->get();
+        return reinterpret_cast<type*>(_objects_data[_type_index].data() + _type_offset);
     }
 
     object_iterator& operator++() {
@@ -73,35 +72,40 @@ public:
     }
 
 protected:
-    //! game::world uses a vector of unique_ptrs so convert the template type
-    //! to the appropriate unique_ptr type depending on constness.
-    using pointer_type = typename std::conditional<
-                             std::is_const<type>::value,
-                             std::unique_ptr<typename std::remove_const<type>::type> const*,
-                             std::unique_ptr<type>*>::type;
-
-    pointer_type _begin;
-    pointer_type _end;
+    std::vector<std::vector<byte>>& _objects_data;
+    std::size_t _type_index;
+    std::size_t _last_index;
+    std::size_t _type_offset;
 
 protected:
     template<typename> friend class object_range;
 
-    object_iterator(pointer_type begin, pointer_type end)
-        : _begin(begin)
-        , _end(end)
+    object_iterator(std::vector<std::vector<byte>>& objects_data, std::size_t type_index, std::size_t last_index)
+        : _objects_data(objects_data)
+        , _type_index(type_index)
+        , _last_index(last_index)
+        , _type_offset(0)
     {
         // advance to the first active object
-        if (_begin < _end) {
-            --_begin;
+        if (_type_index <= _last_index) {
+            _type_offset -= object_type::type_size(_type_index);
             next();
         }
-    }
+}
 
     object_iterator& next() {
-        assert(_begin < _end);
+        assert(_type_index <= _last_index);
+        std::size_t type_size = object_type::type_size(_type_index);
         do {
-            ++_begin;
-        } while (_begin < _end && _begin->get() == nullptr);
+            _type_offset += type_size;
+            while (_type_offset >= _objects_data[_type_index].size()) {
+                _type_offset = 0;
+                if (++_type_index > _last_index) {
+                    return *this;
+                }
+                type_size = object_type::type_size(_type_index);
+            }
+        } while (!reinterpret_cast<type*>(_objects_data[_type_index].data() + _type_offset)->get_sequence());
         return *this;
     }
 };
@@ -111,21 +115,22 @@ template<typename type> class object_range
 {
 public:
     using iterator_type = object_iterator<type>;
-    using pointer_type = typename iterator_type::pointer_type;
 
-    iterator_type begin() const { return iterator_type(_begin, _end); }
-    iterator_type end() const { return iterator_type(_end, _end); }
+    iterator_type begin() const { return iterator_type(_objects_data, _type_index, _last_index); }
+    iterator_type end() const { return iterator_type(_objects_data, _last_index + 1, _last_index); }
 
 protected:
     friend world;
 
-    pointer_type _begin;
-    pointer_type _end;
+    std::vector<std::vector<byte>>& _objects_data;
+    std::size_t _type_index;
+    std::size_t _last_index;
 
 protected:
-    object_range(pointer_type begin, pointer_type end)
-        : _begin(begin)
-        , _end(end)
+    object_range(std::vector<std::vector<byte>>& objects_data)
+        : _objects_data(objects_data)
+        , _type_index(typename type::_type.index())
+        , _last_index(typename type::_type.num_derived() + _type_index)
     {}
 };
 
@@ -156,13 +161,10 @@ public:
     T* spawn(Args&& ...args);
 
     //! Return an iterator over all active objects in the world
-    object_range<object const> objects() const;
+    template<typename T = object> object_range<T const> objects() const;
 
     //! Return an iterator over all active objects in the world
-    object_range<object> objects();
-
-    //! Return a handle to the object with the given sequence id
-    template<typename T> handle<T> find(uint64_t sequence) const;
+    template<typename T = object> object_range<T> objects();
 
     random& get_random() { return _random; }
 
@@ -189,8 +191,8 @@ public:
     void on_pause(); //!< Command callback for pausing/unpausing the game world
 
 private:
-    //! Sparse array of objects in the world, resized as needed
-    std::vector<std::unique_ptr<object>> _objects;
+    //! Opaque arrays of objects in the world
+    std::vector<std::vector<byte>> _objects_data;
 
     //! Objects pending removal
     std::queue<handle<object>> _removed;
@@ -267,56 +269,93 @@ T* world::spawn(Args&& ...args)
     static_assert(std::is_base_of<game::object, T>::value,
                   "'spawn': 'T' must be derived from 'game::object'");
 
-    uint64_t obj_index = 0;
-    // try to find an unused slot in the objects array
-    for (; obj_index < _objects.size(); ++obj_index) {
-        if (!_objects[obj_index]) {
-            break;
+    std::size_t type_index = T::_type.index();
+    if (type_index >= _objects_data.size()) {
+        _objects_data.resize(type_index + 1);
+    }
+
+    auto& type_data = _objects_data[type_index];
+    std::size_t type_size = sizeof(T);
+
+    // Check for an uninitialized object in existing objects data
+    for (std::size_t ii = 0, sz = type_data.size(); ii < sz; ii += type_size) {
+        T* obj = reinterpret_cast<T*>(type_data.data() + ii);
+        // check if object is valid
+        if (obj->_self.get_sequence() != 0) {
+            continue; // TODO: skiplist
         }
+
+        obj = new (type_data.data() + ii) T(std::move(args)...);
+        obj->_self = handle<object>(type_index, ii / type_size, _index, ++_sequence);
+        obj->_spawn_time = frametime();
+        obj->spawn();
+        return obj;
     }
 
-    if (obj_index == _objects.size()) {
-        assert(_objects.size() < max_objects);
-        _objects.push_back(std::make_unique<T>(std::move(args)...));
+    // Resize objects data
+    std::size_t prev_size = type_data.size();
+    if (std::is_pod<T>()) {
+        type_data.resize(max(type_size * 8, prev_size * 2));
+        memset(type_data.data() + prev_size, 0, type_data.size() - prev_size);
     } else {
-        _objects[obj_index] = std::make_unique<T>(std::move(args)...);
+        // Ideally all object types would be POD and memcpyable
+        std::vector<byte> new_data(max(type_size * 8, prev_size * 2));
+        for (std::size_t ii = 0, sz = type_data.size(); ii < sz; ii += type_size) {
+            if (reinterpret_cast<T*>(type_data.data() + ii)->get_sequence()) {
+                new (new_data.data() + prev_size) T(std::move(*reinterpret_cast<T*>(type_data.data() + ii)));
+                reinterpret_cast<T*>(type_data.data() + ii)->~T();
+            }
+        }
+        memset(type_data.data() + prev_size, 0, type_data.size() - prev_size);
+        std::swap(type_data, new_data);
     }
 
-    T* obj = static_cast<T*>(_objects[obj_index].get());
-    assert(obj->is_type<T>() && "invalid type info");
-    obj->_self = handle<object>(obj_index, _index, ++_sequence);
+    T* obj = new (type_data.data() + prev_size) T(std::move(args)...);
+    obj->_self = handle<object>(type_index, prev_size / type_size, _index, ++_sequence);
     obj->_spawn_time = frametime();
     obj->spawn();
     return obj;
 }
 
 //------------------------------------------------------------------------------
-template<typename T> handle<T> world::find(uint64_t sequence) const
+template<typename T> object_range<T const> world::objects() const
 {
-    if (!sequence) {
-        return handle<T>(0, _index, 0);
-    }
+    static_assert(std::is_base_of<game::object, T>::value,
+        "'objects': 'T' must be derived from 'game::object'");
+    return object_range<T const>(const_cast<std::vector<std::vector<byte>>&>(_objects_data)); // FIXME: const_cast
+}
 
-    for (auto& obj : _objects) {
-        if (obj.get() && sequence == obj->_self.get_sequence()) {
-            return obj->_self;
-        }
-    }
-
-    return handle<T>(0, _index, 0);
+//------------------------------------------------------------------------------
+template<typename T> object_range<T> world::objects()
+{
+    static_assert(std::is_base_of<game::object, T>::value,
+        "'objects': 'T' must be derived from 'game::object'");
+    return object_range<T>(_objects_data);
 }
 
 //------------------------------------------------------------------------------
 template<typename T> T* world::get(handle<T> h) const
 {
     assert(h.get_world_index() == _index);
-    assert(h.get_index() < max_objects);
-    if (h.get_index() < _objects.size()
-            && _objects[h.get_index()]
-            && h.get_sequence() == _objects[h.get_index()]->_self.get_sequence()) {
-        return static_cast<T*>(_objects[h.get_index()].get());
+    if (!h.get_type_index() || h.get_type_index() >= _objects_data.size()) {
+        return nullptr;
     }
-    return nullptr;
+
+    assert(T::_type.is_base(h.get_type_index()));
+
+    auto& type_data = _objects_data[h.get_type_index()];
+    // Note: T is not necessarily the type of the underlying object
+    std::size_t type_size = object_type::type_size(h.get_type_index());
+    if (h.get_index() * type_size >= type_data.size()) {
+        return nullptr;
+    }
+
+    T const* obj = reinterpret_cast<T const*>(type_data.data() + type_size * h.get_index());
+    if (obj->_self.get_sequence() != h.get_sequence()) {
+        return nullptr;
+    }
+
+    return const_cast<T*>(obj); // FIXME: const_cast
 }
 
 } // namespace game

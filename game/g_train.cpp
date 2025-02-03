@@ -10,7 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-const object_type train::_type(object::_type);
+const object_type train::_type(sizeof(train), object::_type);
 
 //------------------------------------------------------------------------------
 train::train(int num_cars)
@@ -826,16 +826,14 @@ bool train::check_collisions(float& collision_distance) const
     collision_distance = FLT_MAX;
     int collision_type = _collision_type;
     // FIXME: cycle through all objects
-    for (auto obj : get_world()->objects()) {
-        if (obj->is_type<train>() && obj != this) {
-            float distance;
-            if (check_collision(obj->as_type<train>(), distance)) {
-                if (distance > _current_distance - distance_epsilon
-                        && distance < collision_distance) {
-                    collision_distance = distance;
-                    collision_type = _collision_type;
-                    _collision_train = obj->as_type<train>();
-                }
+    for (auto obj : get_world()->objects<train>()) {
+        float distance;
+        if (check_collision(obj, distance)) {
+            if (distance > _current_distance - distance_epsilon
+                    && distance < collision_distance) {
+                collision_distance = distance;
+                collision_type = _collision_type;
+                _collision_train = obj;
             }
         }
     }

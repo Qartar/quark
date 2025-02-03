@@ -10,7 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-const object_type player::_type(object::_type);
+const object_type player::_type(sizeof(player), object::_type);
 
 //------------------------------------------------------------------------------
 float determinant(vec2 a, vec2 b)
@@ -578,14 +578,12 @@ void player::on_follow()
     handle<object> prev = nullptr;
 
     // cycle through all train objects
-    for (auto obj : get_world()->objects()) {
-        if (obj->is_type<train>()) {
-            if (prev == _follow) {
-                _follow = obj;
-                break;
-            }
-            prev = obj;
+    for (auto obj : get_world()->objects<train>()) {
+        if (prev == _follow) {
+            _follow = obj;
+            break;
         }
+        prev = obj;
     }
 
     // stop following if no more trains

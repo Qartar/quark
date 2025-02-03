@@ -9,7 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-const object_type rail_station::_type(object::_type);
+const object_type rail_station::_type(sizeof(rail_station), object::_type);
 
 //------------------------------------------------------------------------------
 rail_station::rail_station(edge_index edge, float dist, string::view name)

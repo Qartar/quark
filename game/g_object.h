@@ -34,9 +34,9 @@ class world;
 class object_type
 {
 public:
-    object_type();
+    object_type(std::size_t size);
     //! Construct type object for type with base class
-    object_type(object_type const& base);
+    object_type(std::size_t size, object_type const& base);
 
     //! Returns `true` if this type is derived from `other_type`
     bool is_type(object_type const& other_type) const {
@@ -44,7 +44,21 @@ public:
             && _type_index <= other_type._type_index + other_type._num_derived;
     }
 
+    std::size_t index() const { return _type_index; }
+    std::size_t num_derived() const { return _num_derived; }
+
+    bool is_base(std::size_t derived_index) const {
+        return derived_index >= _type_index
+            && derived_index <= _type_index + _num_derived;
+    }
+
+    static std::size_t type_size(std::size_t type_index) {
+        return type_index ? _types[type_index]->_type_size : 0;
+    }
+
 protected:
+    //! Size of this type
+    std::size_t _type_size;
     //! Index of this type in the type list
     std::size_t _type_index;
     //! Number of types that are derived directly or indirectly from this type
@@ -60,6 +74,9 @@ protected:
 protected:
     void link(object_type const& base);
     static void insert(std::size_t type_index, std::size_t base_index);
+
+private:
+    object_type(object_type const&) = delete;
 };
 
 //------------------------------------------------------------------------------

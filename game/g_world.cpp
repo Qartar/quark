@@ -216,7 +216,19 @@ void world::reset()
 //------------------------------------------------------------------------------
 void world::clear()
 {
-    _objects.clear();
+    for (std::size_t ii = 1, sz = _objects_data.size(); ii < sz; ++ii) {
+        auto& type_data = _objects_data[ii];
+        std::size_t type_size = object_type::type_size(ii);
+        for (std::size_t jj = 0, jsz = type_data.size(); jj < jsz; jj += type_size) {
+            object* obj = reinterpret_cast<object*>(type_data.data() + jj);
+            if (obj->_self.get_sequence() != 0) {
+                obj->~object();
+                // TODO: unsure whether this is undefined behavior
+                obj->_self = handle<object>();
+            }
+        }
+    }
+    _objects_data.clear();
     // assign with empty queue because std::queue has no clear method
     _removed = std::queue<handle<game::object>>{};
 
@@ -224,24 +236,6 @@ void world::clear()
     _particles.clear();
 
     _rail_network.clear();
-}
-
-//------------------------------------------------------------------------------
-object_range<object const> world::objects() const
-{
-    return object_range<object const>(
-        _objects.data(),
-        _objects.data() + _objects.size()
-    );
-}
-
-//------------------------------------------------------------------------------
-object_range<object> world::objects()
-{
-    return object_range<object>(
-        _objects.data(),
-        _objects.data() + _objects.size()
-    );
 }
 
 //------------------------------------------------------------------------------
@@ -257,12 +251,15 @@ void world::draw(render::system* renderer, time_value time) const
 
     _rail_network.draw(renderer, time);
 
-    for (auto& obj : _objects) {
-        // objects array is sparse
-        if (!obj.get()) {
-            continue;
+    for (std::size_t ii = 1, sz = _objects_data.size(); ii < sz; ++ii) {
+        auto& type_data = _objects_data[ii];
+        std::size_t type_size = object_type::type_size(ii);
+        for (std::size_t jj = 0, jsz = type_data.size(); jj < jsz; jj += type_size) {
+            object const* obj = reinterpret_cast<object const*>(type_data.data() + jj);
+            if (obj->_self.get_sequence() != 0) {
+                obj->draw(renderer, time);
+            }
         }
-        obj->draw(renderer, time);
     }
 
     draw_particles(renderer, time);
@@ -277,26 +274,25 @@ void world::run_frame()
 
     while (_removed.size()) {
         if (_removed.front()) {
-            _objects[_removed.front().get_index()] = nullptr;
+            _removed.front()->~object();
+            // TODO: unsure whether this is undefined behavior
+            _removed.front()->_self = handle<object>();
         }
         _removed.pop();
     }
 
-    for (std::size_t ii = 0; ii < _objects.size(); ++ii) {
-        // objects array is sparse
-        if (!_objects[ii].get()) {
-            continue;
+    for (std::size_t ii = 1, sz = _objects_data.size(); ii < sz; ++ii) {
+        auto& type_data = _objects_data[ii];
+        std::size_t type_size = object_type::type_size(ii);
+        for (std::size_t jj = 0, jsz = type_data.size(); jj < jsz; jj += type_size) {
+            object* obj = reinterpret_cast<object*>(type_data.data() + jj);
+            if (obj->_self.get_sequence() != 0) {
+                obj->think();
+
+                obj->_old_position = obj->get_position();
+                obj->_old_rotation = obj->get_rotation();
+            }
         }
-
-        // objects can spawn other objects, do not think this frame
-        if (_objects[ii]->_spawn_time == frametime()) {
-            continue;
-        }
-
-        _objects[ii]->think();
-
-        _objects[ii]->_old_position = _objects[ii]->get_position();
-        _objects[ii]->_old_rotation = _objects[ii]->get_rotation();
     }
 
     _physics.step(FRAMETIME.to_seconds());
@@ -307,7 +303,9 @@ void world::read_snapshot(network::message& message)
 {
     while (_removed.size()) {
         if (_removed.front()) {
-            _objects[_removed.front().get_index()] = nullptr;
+            _removed.front()->~object();
+            // TODO: unsure whether this is undefined behavior
+            _removed.front()->_self = handle<object>();
         }
         _removed.pop();
     }

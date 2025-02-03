@@ -9,7 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-const object_type character::_type(object::_type);
+const object_type character::_type(sizeof(character), object::_type);
 
 const string::literal names[] = {
     "aaron",        "alice",        "ash",

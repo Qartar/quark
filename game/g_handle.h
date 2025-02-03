@@ -79,6 +79,8 @@ public:
     //! overloaded pointer to member operator to behave like a raw pointer
     T* operator->() { assert(get()); return get(); }
 
+    //! get the type index of the referenced object
+    uint64_t get_type_index() const { return (_value & type_mask) >> type_shift; }
     //! get the index of the referenced object in the world's object array
     uint64_t get_index() const { return (_value & index_mask) >> index_shift; }
     //! get a pointer to world that contains the referenced object
@@ -94,6 +96,8 @@ protected:
     uint64_t _value;
 
 protected:
+    //! number of bits used to store the type index
+    static constexpr uint64_t type_bits = 4;
     //! number of bits used to store the object index
     static constexpr uint64_t index_bits = 16;
     //! number of bits used to store the world index
@@ -101,13 +105,17 @@ protected:
     //! number of bits used to store the sequence id, i.e. the bits remaining after index and system
     static constexpr uint64_t sequence_bits = CHAR_BIT * sizeof(uint64_t) - index_bits - system_bits;
 
+    //! bit offset of the type index
+    static constexpr uint64_t type_shift = 0;
     //! bit offset of the object index
-    static constexpr uint64_t index_shift = 0;
+    static constexpr uint64_t index_shift = type_bits + type_shift;
     //! bit offset of the world index
     static constexpr uint64_t system_shift = index_bits + index_shift;
     //! bit offset of the sequence id
     static constexpr uint64_t sequence_shift = system_bits + system_shift;
 
+    //! bit mask of the type index
+    static constexpr uint64_t type_mask = ((1ULL << type_bits) - 1) << type_shift;
     //! bit mask of the object index
     static constexpr uint64_t index_mask = ((1ULL << index_bits) - 1) << index_shift;
     //! bit mask of the world index
@@ -116,9 +124,13 @@ protected:
     static constexpr uint64_t sequence_mask = ((1ULL << sequence_bits) - 1) << sequence_shift;
 
 protected:
-    handle(uint64_t index_value, uint64_t system_value, uint64_t sequence_value)
-        : _value((index_value << index_shift) | (system_value << system_shift) | (sequence_value << sequence_shift))
+    handle(uint64_t type_value, uint64_t index_value, uint64_t system_value, uint64_t sequence_value)
+        : _value((type_value << type_shift)
+            | (index_value << index_shift)
+            | (system_value << system_shift)
+            | (sequence_value << sequence_shift))
     {
+        assert(type_value < (1ULL << type_bits));
         assert(index_value < (1ULL << index_bits));
         assert(system_value < (1ULL << system_bits));
         assert(sequence_value < (1ULL << sequence_bits));

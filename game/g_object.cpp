@@ -11,8 +11,9 @@ std::array<object_type*, object_type::_max_types> object_type::_types;
 std::size_t object_type::_num_types = 1; // type index 0 is the 'null' type
 
 //------------------------------------------------------------------------------
-object_type::object_type()
-    : _type_index(_num_types)
+object_type::object_type(std::size_t size)
+    : _type_size(size)
+    , _type_index(_num_types)
     , _num_derived(0)
     /*
         Note: `_link` and `_next` must NOT be initialized by the constructor for
@@ -30,8 +31,8 @@ object_type::object_type()
 }
 
 //------------------------------------------------------------------------------
-object_type::object_type(object_type const& base)
-    : object_type()
+object_type::object_type(std::size_t size, object_type const& base)
+    : object_type(size)
 {
     link(base);
 }
@@ -104,7 +105,7 @@ void object_type::insert(std::size_t type_index, std::size_t base_index)
 }
 
 //------------------------------------------------------------------------------
-const object_type object::_type;
+const object_type object::_type(sizeof(object));
 physics::material object::_default_material(0.5f, 0.5f);
 physics::circle_shape object::_default_shape(0.5f);
 
