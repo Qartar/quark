@@ -221,10 +221,26 @@ void player::draw(render::system* renderer, time_value time) const
     if (get_world()->rail_network().get_closest_segment(cursor, 1.5f * rail_network::track_clearance, edge, dist)) {
         renderer->draw_box(vec2(sz), cursor, color4(0,1,0,1));
         vec2 spos = get_world()->rail_network().get_segment(edge).evaluate(dist);
-        if (length(cursor - get_world()->rail_network().get_segment(edge).initial_position()) < .5f * rail_network::track_clearance) {
-            renderer->draw_box(vec2(sz), get_world()->rail_network().get_segment(edge).initial_position(), color4(1,0,1,1));
-        } else if (length(cursor - get_world()->rail_network().get_segment(edge).final_position()) < .5f * rail_network::track_clearance) {
-            renderer->draw_box(vec2(sz), get_world()->rail_network().get_segment(edge).final_position(), color4(1,0,1,1));
+        vec2 start = get_world()->rail_network().get_segment(edge).initial_position();
+        vec2 end = get_world()->rail_network().get_segment(edge).final_position();
+        if (length(cursor - start) < .5f * rail_network::track_clearance) {
+            renderer->draw_box(vec2(sz), start, color4(1,0,1,1));
+        } else if (length(cursor - end) < .5f * rail_network::track_clearance) {
+            renderer->draw_box(vec2(sz), end, color4(1,0,1,1));
+        } else if (length(cursor - start) < rail_network::track_clearance) {
+            vec2 tangent = get_world()->rail_network().get_segment(edge).initial_tangent().cross(1);
+            if (dot(cursor - start, tangent) < 0.f) {
+                renderer->draw_box(vec2(sz), start - tangent * rail_network::track_clearance, color4(1,1,0,1));
+            } else {
+                renderer->draw_box(vec2(sz), start + tangent * rail_network::track_clearance, color4(1,1,0,1));
+            }
+        } else if (length(cursor - end) < rail_network::track_clearance) {
+            vec2 tangent = get_world()->rail_network().get_segment(edge).final_tangent().cross(1);
+            if (dot(cursor - end, tangent) < 0.f) {
+                renderer->draw_box(vec2(sz), end - tangent * rail_network::track_clearance, color4(1,1,0,1));
+            } else {
+                renderer->draw_box(vec2(sz), end + tangent * rail_network::track_clearance, color4(1,1,0,1));
+            }
         } else if (length(cursor - spos) >= .5f * rail_network::track_clearance) {
             vec2 tangent = get_world()->rail_network().get_segment(edge).evaluate_tangent(dist).cross(1);
             if (dot(cursor - spos, tangent) < 0.f) {
@@ -408,6 +424,35 @@ void player::draw(render::system* renderer, time_value time) const
         draw_radius(renderer, l2, color4(0,1,1,1));
         draw_radius(renderer, l3, color4(1,1,0,1));
         draw_radius(renderer, l4, color4(1,1,0,1));
+    }
+#endif
+
+#if 1 // spline experiments
+    {
+        vec2 p0 = vec2(-1200, -800);
+        vec2 p1 = vec2(-2000, -800);
+        vec2 p2 = vec2(-2600, -1400);
+        vec2 p3 = vec2(-3400, -1400);
+
+        renderer->draw_line(p0, p1, color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_line(p1, p2, color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_line(p2, p3, color4(1,1,1,1), color4(1,1,1,1));
+
+        constexpr float max_speed = 50.f; // train::max_speed
+        constexpr float max_lateral_acceleration = 4.f; // train::max_lateral_acceleration
+        constexpr float min_radius = square(max_speed) / max_lateral_acceleration;
+        //constexpr float max_jerk = 1.f; // m/s^3
+        //constexpr float max_transition = max_speed * (max_lateral_acceleration / max_jerk);
+
+        vec2 v1 = ((p0 - p1).normalize() + (p2 - p1).normalize());
+        vec2 c1 = p1 + v1.normalize() * min_radius;
+        renderer->draw_arc(c1, min_radius, 0, 0, 2.f * math::pi<float>, color4(1,1,1,.3f));
+        renderer->draw_arc(p1, min_radius, 0, 0, 2.f * math::pi<float>, color4(1,1,1,.1f));
+
+        vec2 v2 = ((p1 - p2).normalize() + (p3 - p2).normalize());
+        vec2 c2 = p2 + v2.normalize() * min_radius;
+        renderer->draw_arc(c2, min_radius, 0, 0, 2.f * math::pi<float>, color4(1,1,1,.3f));
+        renderer->draw_arc(p2, min_radius, 0, 0, 2.f * math::pi<float>, color4(1,1,1,.1f));
     }
 #endif
 
