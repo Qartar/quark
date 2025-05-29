@@ -216,6 +216,9 @@ void world::reset()
 //------------------------------------------------------------------------------
 void world::clear()
 {
+#if defined(USE_OBJECT_DATA)
+    _objects.clear();
+#else
     for (std::size_t ii = 1, sz = _objects_data.size(); ii < sz; ++ii) {
         auto& type_data = _objects_data[ii];
         std::size_t type_size = object_type::type_size(ii);
@@ -229,6 +232,8 @@ void world::clear()
         }
     }
     _objects_data.clear();
+#endif // !defined(USE_OBJECT_DATA)
+
     // assign with empty queue because std::queue has no clear method
     _removed = std::queue<handle<game::object>>{};
 
@@ -251,6 +256,11 @@ void world::draw(render::system* renderer, time_value time) const
 
     _rail_network.draw(renderer, time);
 
+#if defined(USE_OBJECT_DATA)
+    for (object const* obj : objects()) {
+        obj->draw(renderer, time);
+    }
+#else
     for (std::size_t ii = 1, sz = _objects_data.size(); ii < sz; ++ii) {
         auto& type_data = _objects_data[ii];
         std::size_t type_size = object_type::type_size(ii);
@@ -261,6 +271,7 @@ void world::draw(render::system* renderer, time_value time) const
             }
         }
     }
+#endif // !defined(USE_OBJECT_DATA)
 
     draw_particles(renderer, time);
 }
@@ -281,6 +292,14 @@ void world::run_frame()
         _removed.pop();
     }
 
+#if defined(USE_OBJECT_DATA)
+    for (object* obj : objects()) {
+        obj->think();
+
+        obj->_old_position = obj->get_position();
+        obj->_old_rotation = obj->get_rotation();
+    }
+#else
     for (std::size_t ii = 1, sz = _objects_data.size(); ii < sz; ++ii) {
         auto& type_data = _objects_data[ii];
         std::size_t type_size = object_type::type_size(ii);
@@ -294,6 +313,7 @@ void world::run_frame()
             }
         }
     }
+#endif // !defined(USE_OBJECT_DATA)
 
     _physics.step(FRAMETIME.to_seconds());
 }

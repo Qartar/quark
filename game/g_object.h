@@ -87,7 +87,7 @@ public:
 
 public:
     object(object* owner = nullptr);
-    virtual ~object() {}
+    virtual ~object() { _self = handle<object>(); }
 
     void spawn(); //!< Note: not virtual
 
