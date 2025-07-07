@@ -366,21 +366,21 @@ bool audio_device_wasapi::start_rendering() const
     // Clear rendering buffer
     //
 
-    UINT32 buffer_frame_fount;
-    HRESULT hr = _audio_client->GetBufferSize(&buffer_frame_fount);
+    UINT32 buffer_frame_count;
+    HRESULT hr = _audio_client->GetBufferSize(&buffer_frame_count);
     if (FAILED(hr)) {
         log::message("failed to get buffer size: %s\n", hresult_to_string(hr));
         return false;
     }
 
     BYTE* buffer_data = nullptr;
-    hr = _audio_render_client->GetBuffer(buffer_frame_fount, &buffer_data);
+    hr = _audio_render_client->GetBuffer(buffer_frame_count, &buffer_data);
     if (FAILED(hr)) {
         log::message("failed to get render buffer: %s\n", hresult_to_string(hr));
         return false;
     }
 
-    hr = _audio_render_client->ReleaseBuffer(buffer_frame_fount, AUDCLNT_BUFFERFLAGS_SILENT);
+    hr = _audio_render_client->ReleaseBuffer(buffer_frame_count, AUDCLNT_BUFFERFLAGS_SILENT);
     if (FAILED(hr)) {
         log::message("failed to clear render buffer: %s\n", hresult_to_string(hr));
         return false;
