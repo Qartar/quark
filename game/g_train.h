@@ -49,10 +49,11 @@ protected:
     std::size_t _next_station;
 
     std::vector<edge_index> _path;
+    //! Distance along `_path` to the front of the train
     float _current_distance;
     float _current_speed;
     float _current_acceleration;
-
+    //! Distance along `_path` to the target location
     float _target_distance;
 
     int _num_cars;
@@ -65,6 +66,7 @@ protected:
         waiting,
     } _state;
 
+    // DEBUG START
     mutable int _collision_type;
     mutable handle<train> _collision_train;
 
@@ -80,6 +82,7 @@ protected:
         edge_index collision_edge[size];
         int collision_train[size];
     } _debug;
+    // DEBUG END
 
     //! Maximum speed, ignoring track geometry
     static constexpr float max_speed = 50.f;
@@ -118,10 +121,12 @@ protected:
         edge_index edge;
         //! Length of the shared path
         float length;
-        //! Distance to the first edge relative to the path of `this` and `other` respectively.
+        //! Distance to the first edge relative to the path of either train.
         float distance[2];
-        //! Distance from the first edge needed to maintain lateral clearance for `this` and `other`.
+        //! Distance leading to the first edge needed to maintain lateral clearance for either train.
         float enter_clearance[2];
+        //! Distance following from the last edge needed to maintain lateral clearance for either train.
+        float exit_clearance[2];
     };
 
     bool check_collisions(float& collision_distance) const;

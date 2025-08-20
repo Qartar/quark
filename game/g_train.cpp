@@ -138,6 +138,8 @@ void train::draw_debug(render::system* renderer, time_value time) const
         color4(1,0,0,1),
         color4(0,1,0,1),
         color4(0,.5f,1,1),
+        color4(.5f,0,1,1),
+        color4(1,0,.5f,1),
     };
 
     int framenum = get_world()->framenum();
@@ -664,6 +666,9 @@ void train::next_station()
         return;
     }
 
+    // Determine the start location of the path search based on the current
+    // position of the front of the train and stopping distance.
+    // FIXME: do we actually need to account for stopping distance?
     float path_distance = 0.f;
     float stopping_distance = .5f * square(_current_speed) / max_deceleration;
 
@@ -676,7 +681,7 @@ void train::next_station()
     std::size_t prev_size = _path.size();
     for (std::size_t ii = 0; ii < _path.size(); ++ii) {
         clothoid::segment s = get_world()->rail_network().get_segment(_path[ii]);
-        if (path_distance + s.length() > _current_distance + stopping_distance) {
+        if (path_distance + s.length() >= _current_distance + stopping_distance) {
             prev_size = ii + 1;
             start = rail_position::from_edge(
                 _path[ii],
@@ -687,11 +692,13 @@ void train::next_station()
         path_distance += s.length();
     }
 
+    // If target is on the current path
     if (start.edge == goal.edge && start.dist < goal.dist) {
         _target_distance = goal.dist;
         return;
     }
 
+    // Try to find a path to the goal
     edge_index path[1024];
     std::size_t path_size = get_world()->rail_network().find_path(
         start,
@@ -699,6 +706,7 @@ void train::next_station()
         path,
         countof(path));
 
+    // Try to find a path to the goal from the opposite direction
     if (!path_size) {
         goal.edge ^= 1;
         goal.dist = get_world()->rail_network().get_segment(goal.edge).length() - goal.dist;
@@ -828,6 +836,9 @@ bool train::check_collisions(float& collision_distance) const
     // FIXME: cycle through all objects
     for (auto obj : get_world()->objects<train>()) {
         float distance;
+        if (this == obj) {
+            continue;
+        }
         if (check_collision(obj, distance)) {
             if (distance > _current_distance - distance_epsilon
                     && distance < collision_distance) {
@@ -850,16 +861,34 @@ bool train::check_collision(train const* other, float& collision_distance) const
         return false;
     }
 
-    float enter_time[2] = {
-        (info.distance[0] - info.enter_clearance[0] - _current_distance) * other->_current_speed,
-        (info.distance[1] - info.enter_clearance[1] - other->_current_distance) * _current_speed,
-    };
+    // FIXME: This logic is so convoluted and almost certainly wrong.
+    //
+    // One of the principal sources of confusion is that there are too damn many
+    // variables called 'distance'. Distance is typically relative to the start of
+    // the train's path (i.e. the list of edges the train is travelling) but then
+    // this function introduces a number of 'relative' distance variables to compare
+    // distances of the trains to the start of their paths to the start of the path
+    // intersection.
+    //
+    // In addition, there are a number of special cases for when the path length
+    // is zero which happens when the two paths intersect at a single node but have
+    // no edges in common (e.g. a cross junction), but this can also occur at a
+    // diverging junction (e.g. a Y-junction) when both trains have passed the
+    // final common edge but not the exit clearance for the final node.
 
+    // Both trains are approaching the path intersection
     if (info.distance[0] - info.enter_clearance[0] > _current_distance
         && info.distance[1] - info.enter_clearance[1] > other->_current_distance) {
 
+        // Time to enter the path intersection, multiplied by both trains' speed
+        // to avoid division by zero when either train is stopped.
+        float modified_enter_time[2] = {
+            (info.distance[0] - info.enter_clearance[0] - _current_distance) * other->_current_speed,
+            (info.distance[1] - info.enter_clearance[1] - other->_current_distance) * _current_speed,
+        };
+
         // if this train will reach the intersection first then ignore
-        if (enter_time[0] < enter_time[1]) {
+        if (modified_enter_time[0] < modified_enter_time[1]) {
             return false;
         }
 
@@ -867,7 +896,9 @@ bool train::check_collision(train const* other, float& collision_distance) const
         collision_distance = info.distance[0] - info.enter_clearance[0];
         _collision_type = 1; // DEBUG
         return true;
-    } else if (info.distance[1]
+
+    // Rear of the other train has not passed the start of the path intersection
+    } else if (info.distance[1] /* not a cross junction */
         && info.distance[1] > other->_current_distance - other->length() - tail_clearance) {
 
         // tie-break if both trains could wait for each other at the intersection
@@ -880,35 +911,45 @@ bool train::check_collision(train const* other, float& collision_distance) const
             }
         }
 
-        // current distance relative to path intersection
-        float d0 = info.distance[0] - _current_distance;
         // other distance relative to path intersection
         float d1 = info.distance[1] - (other->_current_distance - other->length() - tail_clearance);
         // distance to the back of the other train along the common path
-        float d3 = _current_distance + (d0 - d1);
+        float d3 = info.distance[0] - d1;
         // distance to the path intersection plus lateral clearance
         float d4 = info.distance[0] - info.enter_clearance[0];
 
         collision_distance = max(d3, d4);
         _collision_type = 2; // DEBUG
         return true;
+
+    // Rear of the other train has passed the start of the path intersection
     } else {
-        // current distance relative to path intersection
-        //float d0 = info.distance[0] - _current_distance;
         // other distance relative to path intersection
         float d1 = info.distance[1] - (other->_current_distance - other->length() - tail_clearance);
 
-        // 
-        float d2 = .5f * square(other->_current_speed) / max_deceleration - d1;
+        // If crossing at a junction and the other train has not cleared the junction
+        if (!info.length && d1 - tail_clearance > -info.exit_clearance[1]) {
+            // distance to the back of the other train along the common path
+            float d3 = info.distance[0] - d1;
+            // distance to the path intersection plus lateral clearance
+            float d4 = info.distance[0] - info.enter_clearance[0];
 
-        if (d2 > info.length/* + info.exit_clearance[1]*/) {
+            collision_distance = max(d3, d4);
+            _collision_type = 4; // DEBUG
+            return true;
+        } else if (!info.length) {
             return false;
         }
 
-        // distance to the back of the other train along the common path
-        //float d3 = _current_distance + (d0 - d1);
+        // stopping distance of the other train
+        float d2 = .5f * square(other->_current_speed) / max_deceleration - d1;
 
-        collision_distance = info.distance[0] + d2;//d3 + .5f * square(other->_current_speed) / max_deceleration;
+        // If the other train cannot stop inside the intersection
+        if (d2 > info.length + info.exit_clearance[1]) {
+            return false;
+        }
+
+        collision_distance = info.distance[0] + d2;
         _collision_type = 3; // DEBUG
         return true;
     }
@@ -920,6 +961,8 @@ bool train::check_path_intersection(train const* other, intersection_info& info)
     auto const& network = get_world()->rail_network();
     const float stopping_distance = .5f * square(_current_speed) / max_deceleration;
 
+    info.exit_clearance[0] = 0.f;
+    info.exit_clearance[1] = 0.f;
     info.distance[1] = 0.f;
     // iterate over other train's path edges
     for (std::size_t jj = 0, sj = other->_path.size(); jj < sj; ++jj) {
@@ -935,9 +978,17 @@ bool train::check_path_intersection(train const* other, intersection_info& info)
                 for (std::size_t kk = 0;; ++kk) {
                     if (ii + kk >= si || jj + kk >= sj
                         || _path[ii + kk] != other->_path[jj + kk]) {
+                        info.exit_clearance[0] = ((ii + kk < si) && (jj + kk < sj)) ? network.get_clearance(_path[ii + kk], other->_path[jj + kk]) : 0.f;
+                        info.exit_clearance[1] = ((ii + kk < si) && (jj + kk < sj)) ? network.get_clearance(other->_path[jj + kk], _path[ii + kk]) : 0.f;
                         break;
                     }
                     info.length += network.get_segment(_path[ii + kk]).length();
+                }
+                // when intersecting at a single junction the clearance between the entering and
+                // exiting edges also needs to be considered
+                if (!info.length) {
+                    info.enter_clearance[0] = max(info.enter_clearance[0], ii ? network.get_clearance(_path[ii - 1] ^ 1, other->_path[jj]) : 0.f);
+                    info.enter_clearance[1] = max(info.enter_clearance[1], jj ? network.get_clearance(other->_path[jj - 1] ^ 1, _path[ii]) : 0.f);
                 }
                 return true;
             }

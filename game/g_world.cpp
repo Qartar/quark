@@ -211,6 +211,49 @@ void world::reset()
 
     spawn<train>(16)->set_schedule({G, H});
     spawn<train>(16)->set_schedule({H, G});
+
+    //
+    //  testing
+    //
+
+#if 1
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2{-2000, 1960}, vec2{0, 1}, 40));
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2{-2000, 2000}, vec2{0, 1}, 40));
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2{-2040, 2000}, vec2{1, 0}, 40));
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2{-2000, 2000}, vec2{1, 0}, 40));
+
+    auto t1a = _rail_network.add_station(vec2(-2000, 1980), "t1a");
+    auto t1b = _rail_network.add_station(vec2(-2000, 2026), "t1b");
+    auto t1c = _rail_network.add_station(vec2(-2040, 2000), "t1c");
+    auto t1d = _rail_network.add_station(vec2(-1960, 2000), "t1d");
+
+    spawn<train>(0)->set_schedule({t1a, t1b});
+    spawn<train>(0)->set_schedule({t1c, t1d});
+#endif
+
+#if 1
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2{-1900, 1920}, vec2{0, 1}, 80));
+    _rail_network.add_segment(
+        clothoid::segment::from_line(vec2{-1900, 2000}, vec2{0, 1}, 80));
+    _rail_network.add_segment(
+        clothoid::segment::from_arc(vec2{-1900, 2000}, vec2{0, 1}, 50, -1.f/80.f));
+
+    auto t2a = _rail_network.add_station(vec2(-1900, 1980), "t2a");
+    auto t2b = _rail_network.add_station(vec2(-1900, 2045), "t2b");
+    auto t2c = _rail_network.add_station(vec2(-1900, 1940), "t2c");
+    auto t2d_p = clothoid::segment::from_arc(vec2{-1900, 2000}, vec2{0, 1}, 50, -1.f/80.f).evaluate(50);
+    auto t2d = _rail_network.add_station(t2d_p, "t2d");
+    auto t2e = _rail_network.add_station(vec2(-1900, 2055), "t2e");
+
+    spawn<train>(0)->set_schedule({t2a, t2b, t2e});
+    spawn<train>(0)->set_schedule({t2c, t2d});
+#endif
+
 }
 
 //------------------------------------------------------------------------------
