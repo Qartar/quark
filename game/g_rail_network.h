@@ -43,6 +43,7 @@ public:
     using node_index = clothoid::network::node_index;
 
     static constexpr edge_index invalid_edge = clothoid::network::invalid_edge;
+    static constexpr node_index invalid_node = clothoid::network::invalid_node;
 
     //! Minimum distance between parallel rails.
     static constexpr float track_clearance = 5.f;
@@ -64,6 +65,10 @@ public:
     handle<rail_signal> add_signal(vec2 position);
     handle<rail_station> add_station(vec2 position, string::view name);
 
+    //! Insert a node by splitting the edge at the given position, returns
+    //! `invalid_node` if node cannot be inserted.
+    node_index insert_node(vec2 position);
+
     clothoid::segment get_segment(edge_index edge) const;
 
     node_index start_node(edge_index edge) const;
@@ -71,6 +76,9 @@ public:
     float get_clearance(edge_index from, edge_index to) const;
 
     bool get_closest_segment(vec2 position, float max_distance, edge_index& edge, float& length) const;
+    //! Get the closest node to the given position, sets node to `invalid_node`
+    //! and returns false if no node exists within the given maximum distance.
+    bool get_closest_node(vec2 position, float max_distance, node_index& node) const;
 
     std::size_t find_path(rail_position start, rail_position goal, edge_index* edges, std::size_t max_edges) const;
 

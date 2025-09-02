@@ -634,6 +634,22 @@ void train::set_schedule(std::vector<handle<rail_station>> const& schedule)
 }
 
 //------------------------------------------------------------------------------
+void train::on_edge_split(edge_index edge, edge_index new_edge, node_index /*new_node*/)
+{
+    for (std::size_t ii = 0, sz = _path.size(); ii < sz; ++ii) {
+        if (_path[ii] == edge) {
+            _path.insert(_path.begin() + ii + 1, new_edge);
+            ++ii;
+            ++sz;
+        } else if (_path[ii] == (edge ^ 1)) {
+            _path.insert(_path.begin() + ii + 1, new_edge ^ 1);
+            ++ii;
+            ++sz;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 void train::next_station()
 {
     if (!_schedule.size()) {

@@ -41,6 +41,9 @@ public:
     void draw_debug(render::system* renderer, time_value time) const;
     void draw_path(render::system* renderer, time_value time) const;
 
+    //! Update internal data when an edge in the rail network is split
+    void on_edge_split(edge_index edge, edge_index new_edge, node_index new_node);
+
 protected:
     std::vector<handle<rail_station>> _schedule;
     std::size_t _next_station;

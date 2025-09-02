@@ -91,6 +91,54 @@ network::edge_index network::insert_edge(segment s)
 }
 
 //------------------------------------------------------------------------------
+void network::split_edge(edge_index e, float dist, edge_index* new_edge, node_index* new_node)
+{
+    assert(e != invalid_edge);
+    assert(dist > epsilon);
+    assert(dist < _segments[e].length() - epsilon);
+
+    // allocate node
+    node_index n0 = start_node(e);
+    node_index n1 = alloc_node();
+    node_index n2 = _edges[e].end_node;
+
+    _nodes[n1].position = _segments[e].evaluate(dist);
+    _nodes[n1].first_edge = invalid_edge;
+
+    node_remove_edge(n2, e^1);
+
+    // allocate new edges
+    edge_index ei = alloc_edges();
+
+    segment s1, s2;
+    _segments[e].split(dist, s1, s2);
+    _segments[e] = s1;
+    _segments[ei] = s2;
+
+    _segments[e^1].split(_segments[e^1].length() - dist, s1, s2);
+    _segments[ei^1] = s1;
+    _segments[e^1] = s2;
+
+    _edges[ei] = {n2, invalid_edge};
+    _edges[ei^1] = {n1, invalid_edge};
+
+    _edges[e].end_node = n1;
+    _edges[e^1].end_node = n0;
+
+    node_insert_edge(n1, ei);
+    node_insert_edge(n1, e^1);
+
+    node_insert_edge(n2, ei^1);
+
+    if (new_edge) {
+        *new_edge = ei;
+    }
+    if (new_node) {
+        *new_node = n1;
+    }
+}
+
+//------------------------------------------------------------------------------
 void network::remove_edge(edge_index e)
 {
     assert(e != invalid_edge);
@@ -296,6 +344,21 @@ bool network::get_closest_segment(vec2 position, float max_distance, edge_index&
         }
     }
     return e != invalid_edge;
+}
+
+//------------------------------------------------------------------------------
+bool network::get_closest_node(vec2 position, float max_distance, node_index& node) const
+{
+    float best_distance_sqr = square(max_distance);
+    node = invalid_node;
+    for (node_index idx : nodes()) {
+        float dsqr = length_sqr(_nodes[idx].position - position);
+        if (dsqr < best_distance_sqr) {
+            best_distance_sqr = dsqr;
+            node = idx;
+        }
+    }
+    return node != invalid_node;
 }
 
 } // namespace clothoid

@@ -125,6 +125,10 @@ public:
 
 public:
     edge_index insert_edge(segment s);
+    //! Split the given edge in place at the given distance along its segment.
+    //! The existing edge is truncated at the given distance and the new edge
+    //! continues to the original endpoint.
+    void split_edge(edge_index e, float dist, edge_index* new_edge, node_index* new_node);
     void remove_edge(edge_index e);
 
     //! Insert a node along an existing edge by splitting it at the given position
@@ -158,6 +162,9 @@ public:
     segment const& get_segment(edge_index e) const { return _segments[e]; }
 
     bool get_closest_segment(vec2 position, float max_distance, edge_index& e, float& s) const;
+    //! Get the closest node to the given position, sets node to `invalid_node`
+    //! and returns false if no node exists within the given maximum distance.
+    bool get_closest_node(vec2 position, float max_distance, node_index& node) const;
 
 protected:
     //! Insert an existing edge into an existing node

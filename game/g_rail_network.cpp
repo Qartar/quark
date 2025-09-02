@@ -6,6 +6,7 @@
 
 #include "g_rail_network.h"
 #include "g_rail_station.h"
+#include "g_train.h"
 
 #include <set>
 
@@ -249,6 +250,53 @@ handle<rail_station> rail_network::add_station(vec2 position, string::view name)
 }
 
 //------------------------------------------------------------------------------
+rail_network::node_index rail_network::insert_node(vec2 position)
+{
+    edge_index edge;
+    float dist;
+
+    // FIXME: epsilon
+    if (!_network.get_closest_segment(position, 5.f, edge, dist)) {
+        return invalid_node;
+    } else if (dist < 5.f || dist > _network.edge_length(edge) - 5.f) {
+        return invalid_node;
+    }
+
+    edge_index new_edge;
+    node_index new_node;
+
+    _network.split_edge(edge, dist, &new_edge, &new_node);
+
+    // update clearance
+    node_index node = _network.end_node(new_edge);
+    for (auto e = _network.first_edge(node); e != invalid_edge; e = _network.next_edge(e)) {
+        if (e == (edge ^ 1)) {
+            continue;
+        }
+
+        auto it = _clearance.find(std::make_pair(edge ^ 1, e));
+        if (it != _clearance.end()) {
+            _clearance[std::make_pair(new_edge ^ 1, e)] = it->second;
+            _clearance.erase(it);
+        }
+
+        it = _clearance.find(std::make_pair(e, edge ^ 1));
+        if (it != _clearance.end()) {
+            _clearance[std::make_pair(e, new_edge ^ 1)] = it->second;
+            _clearance.erase(it);
+        }
+    }
+
+    for (auto obj : _world->objects()) {
+        if (obj->is_type<train>()) {
+            obj->as_type<train>()->on_edge_split(edge, new_edge, new_node);
+        }
+    }
+
+    return new_node;
+}
+
+//------------------------------------------------------------------------------
 clothoid::segment rail_network::get_segment(edge_index edge) const
 {
     return _network.get_segment(edge);
@@ -272,6 +320,18 @@ bool rail_network::get_closest_segment(
         max_distance,
         edge,
         length);
+}
+
+//------------------------------------------------------------------------------
+bool rail_network::get_closest_node(
+    vec2 position,
+    float max_distance,
+    node_index& node) const
+{
+    return _network.get_closest_node(
+        position,
+        max_distance,
+        node);
 }
 
 //------------------------------------------------------------------------------
