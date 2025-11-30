@@ -53,7 +53,7 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
     bounds arc_bounds;
     {
         // minimum angle normalized to (-pi, pi]
-        float amin = std::remainder(min_angle, 2.f * math::pi<float>);
+        float amin = std::remainder(min_angle, 2.f * math::pi);
         // maximum angle, normalized to (-pi, ...]
         float amax = amin + (max_angle - min_angle);
 
@@ -63,16 +63,16 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
         };
         arc_bounds = bounds::from_points(points);
 
-        if (amin <= -.5f * math::pi<float> && amax >= -.5f * math::pi<float>) {
+        if (amin <= -.5f * math::pi && amax >= -.5f * math::pi) {
             arc_bounds[0][1] = center.y - radius;
         }
         if (amin <= 0.f && amax >= 0.f) {
             arc_bounds[1][0] = center.x + radius;
         }
-        if (amin <= .5f * math::pi<float> && amax >= .5f * math::pi<float>) {
+        if (amin <= .5f * math::pi && amax >= .5f * math::pi) {
             arc_bounds[1][1] = center.y + radius;
         }
-        if (amin <= math::pi<float> && amax >= math::pi<float>) {
+        if (amin <= math::pi && amax >= math::pi) {
             arc_bounds[0][0] = center.x - radius;
         }
 
@@ -189,7 +189,7 @@ void system::draw_particles(time_value time, render::particle const* particles, 
         glBegin(GL_TRIANGLE_FAN);
 
         // Number of circle segments, approximation for pi / acos(1 - 1/2x)
-        int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, radius * view_scale - 0.25f)));
+        int n = 1 + static_cast<int>(math::pi * sqrtf(max(0.f, radius * view_scale - 0.25f)));
         int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
 
         glColor4fv(color_in);
@@ -330,7 +330,7 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
     glEnd();
 
     // Number of circle segments, approximation for pi / acos(1 - 1/2x)
-    int n = 1 + static_cast<int>(math::pi<float> * sqrtf(max(0.f, width * view_scale - 0.25f)));
+    int n = 1 + static_cast<int>(math::pi * sqrtf(max(0.f, width * view_scale - 0.25f)));
     int k = std::max<int>(4, 360 / n);
 
     // Draw half-circle at start

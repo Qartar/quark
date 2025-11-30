@@ -64,12 +64,12 @@ void world::reset()
     _framenum = 0;
 
     for (int ii = 0; ii < 6; ++ii) {
-        float angle = float(ii) * (math::pi<float> * 2.f / 6.f);
+        float angle = float(ii) * (math::pi * 2.f / 6.f);
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>();
-        sh->set_position(-dir * 192.f, true);
-        sh->set_rotation(rot2(angle + math::pi<float> * .75f), true);
+        sh->set_position(-dir * 1024.f, true);
+        sh->set_rotation(rot2(angle + math::pi * .75f), true);
 
         // spawn ai controller to control the ship
         if (ii == 0) {

@@ -26,7 +26,7 @@ shield::shield(physics::shape const* base, game::ship* owner)
     float radius = .6f * _base->calculate_bounds(mat3_identity).size().length();
 
     for (int ii = 0; ii < kNumVertices; ++ii) {
-        float a = ii * (2.f * math::pi<float> / kNumVertices);
+        float a = ii * (2.f * math::pi / kNumVertices);
         _vertices[ii] = vec2(std::cos(a), std::sin(a)) * radius;
         _flux[ii] = 0.f;
         _prev_flux[ii] = 0.f;

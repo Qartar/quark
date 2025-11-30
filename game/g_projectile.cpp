@@ -66,7 +66,7 @@ void projectile::update_homing()
 {
     vec2 direction = get_linear_velocity();
     float speed = direction.normalize_length();
-    float bestValue = .5f * math::sqrt2<float>;
+    float bestValue = .5f * math::sqrt2;
     game::object* bestTarget = nullptr;
 
     for (auto* obj : get_world()->objects()) {

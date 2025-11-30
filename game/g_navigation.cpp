@@ -67,7 +67,7 @@ void navigation::think()
 
             // Angle of arc between current and target position on circle
             float arc_angle = std::atan2(local.x, target_radius - std::abs(local.y));
-            arc_angle = std::fmod(arc_angle + 2.f * math::pi<float>, 2.f * math::pi<float>);
+            arc_angle = std::fmod(arc_angle + 2.f * math::pi, 2.f * math::pi);
 
             // Length of the arc between current and target position
             float arc_length = target_radius * arc_angle;

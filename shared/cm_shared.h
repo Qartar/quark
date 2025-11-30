@@ -28,15 +28,37 @@ using word = std::uint16_t;
 //------------------------------------------------------------------------------
 namespace math {
 
-template<typename T> constexpr T ln2 = T(0.693147180559945309417);
+class constant {
+private:
+    double _value;
 
-template<typename T> constexpr T pi = T(3.14159265358979323846);
+public:
+    constexpr constant(double value) : _value(value) {}
+    constant constexpr operator-() const { return constant(-_value); }
 
-template<typename T> constexpr T sqrt2 = T(1.41421356237309504880);
+    template<typename T> constexpr operator T() const { return T(_value); }
+    template<typename T> T constexpr operator+(T a) const { return T(*this) + a; }
+    template<typename T> T constexpr operator-(T a) const { return T(*this) - a; }
+    template<typename T> T constexpr operator*(T a) const { return T(*this) * a; }
+    template<typename T> T constexpr operator/(T a) const { return T(*this) / a; }
+    template<typename T> friend T constexpr operator+(T a, constant b) { return a + T(b); }
+    template<typename T> friend T constexpr operator-(T a, constant b) { return a - T(b); }
+    template<typename T> friend T constexpr operator*(T a, constant b) { return a * T(b); }
+    template<typename T> friend T constexpr operator/(T a, constant b) { return a / T(b); }
 
-template<typename T> constexpr T deg2rad(T value) { return value * pi<T> / T(180.0); }
+    template<typename T> friend bool constexpr operator<(T a, constant b) { return a < T(b); }
+    template<typename T> friend bool constexpr operator>(T a, constant b) { return a > T(b); }
+    template<typename T> friend bool constexpr operator<=(T a, constant b) { return a <= T(b); }
+    template<typename T> friend bool constexpr operator>=(T a, constant b) { return a >= T(b); }
+};
 
-template<typename T> constexpr T rad2deg(T value) { return value * T(180.0) / pi<T>; }
+static constexpr constant ln2(0.693147180559945309417);
+static constexpr constant pi(3.14159265358979323846);
+static constexpr constant sqrt2(1.41421356237309504880);
+
+template<typename T> constexpr T deg2rad(T value) { return value * T(pi / 180.0); }
+
+template<typename T> constexpr T rad2deg(T value) { return value * T(180.0 / pi); }
 
 } // namespace math
 

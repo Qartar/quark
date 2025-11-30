@@ -41,7 +41,7 @@ void subsystem::think()
             damage(this, overload * overload_damage * FRAMETIME.to_seconds());
         }
     } else {
-        float decay_coeff = -std::expm1(-math::ln2<float> * FRAMETIME.to_seconds() / power_lambda);
+        float decay_coeff = -std::expm1(-math::ln2 * FRAMETIME.to_seconds() / power_lambda);
         _current_power += (_desired_power - _damage - _current_power) * decay_coeff;
     }
 }
@@ -91,8 +91,8 @@ engines::engines(game::ship* owner, engines_info info)
     , _linear_velocity_target(vec2_zero)
     , _angular_velocity_target(0)
 {
-    _linear_drag_coefficient = std::exp(-math::ln2<float> * FRAMETIME.to_seconds() / _engines_info.linear_drag_lambda);
-    _angular_drag_coefficient = std::exp(-math::ln2<float> * FRAMETIME.to_seconds() / _engines_info.angular_drag_lambda);
+    _linear_drag_coefficient = std::exp(-math::ln2 * FRAMETIME.to_seconds() / _engines_info.linear_drag_lambda);
+    _angular_drag_coefficient = std::exp(-math::ln2 * FRAMETIME.to_seconds() / _engines_info.angular_drag_lambda);
 }
 
 //------------------------------------------------------------------------------

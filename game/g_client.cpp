@@ -347,7 +347,7 @@ void session::draw_world()
     // update sound listener
 
     pSound->set_listener(
-        vec3(view.origin.x, view.origin.y, view.size.x * math::sqrt2<float>),
+        vec3(view.origin.x, view.origin.y, view.size.x * math::sqrt2),
         vec3(0,0,-1), // forward
         vec3(1,0,0), // right
         vec3(0,1,0) // up

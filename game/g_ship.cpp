@@ -107,13 +107,13 @@ ship::ship()
         _turrets.push_back({vec2(48,0), 7.f, 3, 2.5f, .46f, 20.7f});
         _turrets.push_back({vec2(24,0), 7.f, 3, 2.5f, .46f, 20.7f});
         _turrets.push_back({vec2(-48,0), 7.f, 3, 2.5f, .46f, 20.7f});
-        _turret_angles = {0, 0, math::pi<float>};
+        _turret_angles = {0, 0, math::pi};
     } else if (idx == 1) {
         // 16" Mark 7
         _turrets.push_back({vec2(48,0), 6.5f, 3, 2.25f, .406f, 20.f});
         _turrets.push_back({vec2(24,0), 6.5f, 3, 2.25f, .406f, 20.f});
         _turrets.push_back({vec2(-48,0), 6.5f, 3, 2.25f, .406f, 20.f});
-        _turret_angles = {0, 0, math::pi<float>};
+        _turret_angles = {0, 0, math::pi};
     } else if (idx == 2) {
         // BL 14-inch Mark VII
         _turrets.push_back({vec2(40,0), 6.f, 4, 2.f, .3556f, 16.f});
@@ -123,21 +123,21 @@ ship::ship()
         // 28 cm SK C/28
         _turrets.push_back({vec2(32,0), 5.5f, 3, 1.75f, .28f, 13.9f});
         _turrets.push_back({vec2(-32,0), 5.5f, 3, 1.75f, .28f, 13.9f});
-        _turret_angles = {0, math::pi<float>};
+        _turret_angles = {0, math::pi};
     } else if (idx == 4) {
         // BL 6-inch Mark XXIII
         _turrets.push_back({vec2(32,0), 3.f, 3, 1.f, .152f, 7.6f});
         _turrets.push_back({vec2(16,0), 3.f, 3, 1.f, .152f, 7.6f});
         _turrets.push_back({vec2(-16,0), 3.f, 3, 1.f, .152f, 7.6f});
         _turrets.push_back({vec2(-32,0), 3.f, 3, 1.f, .152f, 7.6f});
-        _turret_angles = {0, 0, math::pi<float>, math::pi<float>};
+        _turret_angles = {0, 0, math::pi, math::pi};
     } else if (idx == 5) {
         // QF 4.7-inch Mark IX & XII
         _turrets.push_back({vec2(24,0), 2.f, 2, 0.75f, .12f, 5.4f});
         _turrets.push_back({vec2(12,0), 2.f, 2, 0.75f, .12f, 5.4f});
         _turrets.push_back({vec2(-12,0), 2.f, 2, 0.75f, .12f, 5.4f});
         _turrets.push_back({vec2(-24,0), 2.f, 2, 0.75f, .12f, 5.4f});
-        _turret_angles = {0, 0, math::pi<float>, math::pi<float>};
+        _turret_angles = {0, 0, math::pi, math::pi};
     }
 
     _model = &ship_model;
@@ -241,7 +241,7 @@ void ship::draw(render::system* renderer, time_value time) const
         for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
             auto const& turret = _turrets[jj];
             vec2 v = turret.position * tx;
-            renderer->draw_arc(v, turret.radius, 0, 0, 2.f * math::pi<float>, color4(0,1,0,1));
+            renderer->draw_arc(v, turret.radius, 0, 0, 2.f * math::pi, color4(0,1,0,1));
 
             mat3 turret_tx = mat3::transform(turret.position, rot2(_turret_angles[jj])) * tx;
             for (int ii = 0; ii < turret.num_guns; ++ii) {

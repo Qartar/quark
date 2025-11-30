@@ -108,7 +108,7 @@ public:
     }
 
     virtual float calculate_area() const override {
-        return math::pi<float> * _radius * _radius;
+        return math::pi * _radius * _radius;
     }
 
     virtual void calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const override {

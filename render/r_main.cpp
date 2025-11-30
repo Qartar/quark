@@ -110,7 +110,7 @@ result system::init()
         _starfield_colors[ii * 2 + 1] = _starfield_colors[ii * 2 + 0];
     }
 
-    float k = 2.f * math::pi<float> / countof(_costbl);
+    float k = 2.f * math::pi / countof(_costbl);
     for (int ii = 0; ii < countof(_costbl); ++ii) {
         _sintbl[ii] = std::sin(k * ii);
         _costbl[ii] = std::cos(k * ii);

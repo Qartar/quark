@@ -64,7 +64,7 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real();
                 p->position = position + vec2(std::cos(r)*d,std::sin(r)*d);
                 p->velocity = direction * _random.uniform_real(0.25f, 1.f)
@@ -90,7 +90,7 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
 
                 p->position = position + vec2(_random.uniform_real(-2.f, 2.f),_random.uniform_real(-2.f, 2.f));
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(128.f);
 
                 p->velocity = vec2(cos(r)*d,sin(r)*d);
@@ -132,12 +132,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(8.f * scale);
 
                 p->position = position + vec2(cos(r),sin(r))*d;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 128.f * strength;
 
                 p->velocity = vec2(cos(r),sin(r))*d;
@@ -157,12 +157,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(2.f * scale);
 
                 p->position = position + vec2(cos(r)*d,sin(r)*d);
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(128.f * scale);
 
                 p->velocity = vec2(cos(r)*d,sin(r)*d);
@@ -200,12 +200,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(4.f);
 
                 p->position = position + vec2(cos(r),sin(r))*d;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 32.f;
 
                 p->velocity = vec2(cos(r),sin(r))*d;
@@ -226,18 +226,18 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(.5f);
 
                 p->position = position + vec2(cos(r)*d,sin(r)*d);
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f);
 
                 p->velocity = vec2(cos(r)*d,sin(r)*d);
                 p->velocity += direction * _random.uniform_real(96.f);
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f, 128.f);
 
                 p->acceleration = vec2(cos(r), sin(r))*d;
@@ -275,12 +275,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(4.f);
 
                 p->position = position + vec2(cos(r),sin(r))*d;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 32.f;
 
                 p->velocity = vec2(cos(r),sin(r))*d;
@@ -318,18 +318,18 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(.5f);
 
                 p->position = position + vec2(cos(r)*d,sin(r)*d);
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f);
 
                 p->velocity = vec2(cos(r)*d,sin(r)*d);
                 p->velocity += direction * _random.uniform_real(96.f);
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f, 128.f);
 
                 p->acceleration = vec2(cos(r), sin(r))*d;
@@ -382,12 +382,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(16.f * scale);
 
                 p->position = position + vec2(cos(r),sin(r))*d;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 128.f * strength;
 
                 p->velocity = vec2(cos(r),sin(r))*d;
@@ -407,12 +407,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(2.f * scale);
 
                 p->position = position + vec2(cos(r)*d,sin(r)*d);
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(128.f * scale);
 
                 p->velocity = vec2(cos(r)*d,sin(r)*d);
@@ -452,7 +452,7 @@ void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position,
                 if ( (p = add_particle(frametime() + FRAMETIME * t)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real();
                 p->position = position + vec2(std::cos(r)*d,std::sin(r)*d) + lerp * static_cast<float>(ii) / static_cast<float>(count);
                 p->velocity = direction * _random.uniform_real(.25f, .75f) + vec2(_random.uniform_real(-24.f, 24.f),_random.uniform_real(-24.f, 24.f));
@@ -473,12 +473,12 @@ void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position,
                 if ( (p = add_particle(frametime() + FRAMETIME * t)) == NULL )
                     return;
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real();
 
                 p->position = position + vec2(std::cos(r),std::sin(r))*d + lerp * static_cast<float>(ii) / static_cast<float>(count);
 
-                r = _random.uniform_real(2.f * math::pi<float>);
+                r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f);
 
                 p->velocity = direction * _random.uniform_real(.25f, 1.f) + vec2(_random.uniform_real(-48.f, 48.f),_random.uniform_real(-48.f, 48.f));
