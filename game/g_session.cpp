@@ -100,6 +100,7 @@ result session::init (string::view cmdline)
         {K_CTRL, usercmd::modifier::control},
         {K_SHIFT, usercmd::modifier::shift},
         {K_MOUSE1, usercmd::button::select},
+        {K_MOUSE2, usercmd::button::pan},
         {'m', usercmd::action::move},
         {'1', usercmd::action::weapon_1},
         {'2', usercmd::action::weapon_2},
@@ -109,6 +110,10 @@ result session::init (string::view cmdline)
         {'-', usercmd::button::zoom_out},
         {K_MWHEELUP, usercmd::action::zoom_in},
         {K_MWHEELDOWN, usercmd::action::zoom_out},
+        {'w', usercmd::button::scroll_up},
+        {'a', usercmd::button::scroll_left},
+        {'s', usercmd::button::scroll_down},
+        {'d', usercmd::button::scroll_right},
     });
 
     init_client();
@@ -400,22 +405,6 @@ void session::key_event(int key, bool down)
         return;
     }
 
-    if (key >= K_F1 && key <= K_F12) {
-        cls.number = key - K_F1;
-        std::vector<game::object const*> controllers;
-        for (auto const& obj : _world.objects()) {
-            if (obj->is_type<aicontroller>() || obj->is_type<player>()) {
-                controllers.push_back(obj);
-            }
-        }
-
-        if (cls.number >= 0 && cls.number < controllers.size()) {
-            _player = controllers[cls.number];
-        } else {
-            _player = nullptr;
-        }
-    }
-
     // menu commands
 
     if (key == K_ESCAPE) {
@@ -551,6 +540,7 @@ void session::new_game()
 
     _world.reset( );
     _worldtime = time_value::zero;
+    _player = _world.spawn<player>();
 
     //
     //  reset players

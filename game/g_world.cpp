@@ -72,11 +72,7 @@ void world::reset()
         sh->set_rotation(rot2(angle + math::pi * .75f), true);
 
         // spawn ai controller to control the ship
-        if (ii == 0) {
-            spawn<player>(sh);
-        } else {
-            spawn<aicontroller>(sh);
-        }
+        spawn<aicontroller>(sh);
     }
 }
 

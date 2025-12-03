@@ -15,14 +15,12 @@ namespace game {
 const object_type player::_type(object::_type);
 
 //------------------------------------------------------------------------------
-player::player(ship* target)
-    : _ship(target)
-    , _move_selection(0)
-    , _move_appending(0)
-    , _weapon_selection(0)
-    , _destroyed_time(time_value::max)
+player::player()
+    : _view({vec2_zero, vec2(640.f, 480.0f)})
+    , _usercmd({})
+    , _usercmd_time(time_delta::zero)
 {
-    _view.origin = _ship ? _ship->get_position() : vec2_zero;
+    _view.origin = vec2_zero;
     _view.size = vec2(640.f, 480.f);
 }
 
@@ -39,136 +37,41 @@ void player::spawn()
 //------------------------------------------------------------------------------
 void player::draw(render::system* renderer, time_value time) const
 {
-    if (!_ship || _ship->is_destroyed()) {
-        return;
-    }
-
-    vec2 pos = get_position(time);
-
-    auto const& waypoints = _ship->navigation()->waypoints();
-    for (std::size_t ii = 0, sz = waypoints.size(); ii < sz; ++ii) {
-        vec2 next = waypoints[ii];
-        renderer->draw_line(pos, next, color4(0,1,0,.5f), color4(0,1,0,.5f));
-        pos = next;
-    }
-
-    {
-        vec2 scale = renderer->view().size / vec2(640,480);
-        vec2 origin = renderer->view().origin - vec2(290, 220) * scale;
-        vec2 box_size = vec2(36,16) * scale;
-        vec2 sel_size = box_size * vec2(1, .5f);
-        mat3 transform = mat3(scale.x, 0, 0,
-                              0, scale.y, 0,
-                              origin.x, origin.y, 1);
-
-        if (!_ship->engines()->current_power()) {
-            renderer->draw_box(box_size, vec2(0,0) * transform, color4(.5f,.5f,.5f,1));
-        } else if (waypoints.size()) {
-            renderer->draw_box(box_size, vec2(0,0) * transform, color4(1.f,.8f,.2f,1));
-        } else {
-            renderer->draw_box(box_size, vec2(0,0) * transform, color4(1.f,1.f,1.f,1));
-        }
-
-        if (_move_selection) {
-            renderer->draw_box(sel_size, vec2(0,16) * transform, color4(.4f,1.f,.2f,1));
-        }
-
-        for (std::size_t ii = 0, sz = _ship->weapons().size(); ii < sz; ++ii) {
-            if (_ship->weapons()[ii]->current_power() < _ship->weapons()[ii]->maximum_power()) {
-                renderer->draw_box(box_size, vec2(40.f * (ii + 1), 0) * transform, color4(.5f,.5f,.5f,1));
-            } else if (_ship->weapons()[ii]->is_attacking()) {
-                renderer->draw_box(box_size, vec2(40.f * (ii + 1), 0) * transform, color4(1.f,.8f,.2f,1));
-            } else {
-                renderer->draw_box(box_size, vec2(40.f * (ii + 1), 0) * transform, color4(1.f,1.f,1.f,1));
-            }
-            if (_weapon_selection & (1 << ii)) {
-                renderer->draw_box(sel_size, vec2(40.f * (ii + 1), 16) * transform, color4(.4f,1.f,.2f,1));
-            }
-        }
-    }
-
-#if 0
-    if (_waypoints.size()) {
-        vec2 local = _waypoints[0] * _ship->get_inverse_transform(lerp);
-        float radius = (square(local.x) + square(local.y)) / (2.f * local.y);
-        vec2 center = vec2(0, radius) * _ship->get_transform(lerp);
-        renderer->draw_arc(center, std::abs(radius), 0.f, 0.f, 2.f * math::pi<float>, color4(0,.5f,1.f,.5f));
-    }
-
-    float dr = _ship->get_linear_velocity().length();
-    float da = _ship->get_angular_velocity();
-
-    if (dr && da) {
-        float radius = dr / da;
-        vec2 center = vec2(0, std::copysign(radius, da)) * _ship->get_transform(lerp);
-        renderer->draw_arc(center, std::abs(radius), 0.f, 0.f, 2.f * math::pi<float>, color4(1.f,.5f,0,.5f));
-    }
-
-    if (da) {
-        float radius = _ship->engines()->maximum_linear_speed() / _ship->engines()->maximum_angular_speed();
-        vec2 center = vec2(0, std::copysign(radius, da)) * _ship->get_transform(lerp);
-        renderer->draw_arc(center, std::abs(radius), 0.f, 0.f, 2.f * math::pi<float>, color4(1.f,0,0,.5f));
-    }
-#endif
+    (void)renderer;
+    (void)time;
 }
 
 //------------------------------------------------------------------------------
 void player::think()
 {
-    time_value time = get_world()->frametime();
-
-    if (!_ship) {
-        return;
-    }
-
-    _view = view(time);
-
-    //
-    // handle respawn
-    //
-
-    if (_ship->is_destroyed()) {
-        if (_destroyed_time > time) {
-            _destroyed_time = time;
-        } else if (time - _destroyed_time >= respawn_time) {
-            _destroyed_time = time_value::max;
-            get_world()->remove(_ship.get());
-
-            // spawn a new ship to replace the destroyed ship's place
-            _ship = get_world()->spawn<ship>();
-            _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
-            _ship->set_rotation(rot2(_random.uniform_real(2.f * math::pi)), true);
-
-        }
-    }
 }
 
 //------------------------------------------------------------------------------
 vec2 player::get_position(time_value time) const
 {
-    return _ship ? _ship->get_position(time) : vec2_zero;
+    (void)time;
+    return vec2_zero;
 }
 
 //------------------------------------------------------------------------------
 rot2 player::get_rotation(time_value time) const
 {
-    return _ship ? _ship->get_rotation(time) : rot2_identity;
+    (void)time;
+    return rot2_identity;
 }
 
 //------------------------------------------------------------------------------
 mat3 player::get_transform(time_value time) const
 {
-    return _ship ? _ship->get_transform(time) : mat3_identity;
+    (void)time;
+    return mat3_identity;
 }
 
 //------------------------------------------------------------------------------
 player_view player::view(time_value time) const
 {
-    if (_ship) {
-        return {_ship->get_position(time), _view.size};
-    } else {
-        return _view;
-    }
+    (void)time;
+    return _view;
 }
 
 //------------------------------------------------------------------------------
@@ -180,136 +83,40 @@ void player::set_aspect(float aspect)
 //------------------------------------------------------------------------------
 void player::update_usercmd(usercmd cmd, time_value time)
 {
-    if (cmd.buttons != _usercmd.buttons) {
-        usercmd::button pressed = cmd.buttons & ~_usercmd.buttons;
-        if (!!(pressed & usercmd::button::select)) {
-            if (_move_selection) {
-                vec2 world_cursor = (cmd.cursor - vec2(.5f, .5f)) * _view.size + _ship->get_position(time);
-                if (!!(cmd.modifiers & usercmd::modifier::shift)) {
-                    _ship->navigation()->add_waypoint(world_cursor);
-                    _move_appending = true;
-                } else {
-                    _ship->navigation()->set_waypoint(world_cursor);
-                    _move_selection = false;
-                }
-            } else if (_weapon_selection) {
-                vec2 world_cursor = (cmd.cursor - vec2(.5f, .5f)) * _view.size + _ship->get_position(time);
-                if (attack(world_cursor, !!(cmd.modifiers & usercmd::modifier::control))) {
-                    _weapon_selection = 0;
-                }
-            }
-        }
+    constexpr float zoom_speed = 1.f + (1.f / 32.f);
+    constexpr float scroll_speed = 1.f;
+
+    float delta_time = (time - _usercmd_time).to_seconds();
+
+    if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
+        _view.origin.y += scroll_speed * _view.size.x * delta_time;
     }
-
-    switch (cmd.action) {
-        case usercmd::action::move:
-            _move_selection = !_move_selection;
-            _weapon_selection = 0;
-            break;
-
-        case usercmd::action::weapon_1:
-            toggle_weapon(0, !!(cmd.modifiers & usercmd::modifier::control));
-            break;
-
-        case usercmd::action::weapon_2:
-            toggle_weapon(1, !!(cmd.modifiers & usercmd::modifier::control));
-            break;
-
-        case usercmd::action::weapon_3:
-            toggle_weapon(2, !!(cmd.modifiers & usercmd::modifier::control));
-            break;
-
-        case usercmd::action::toggle_shield:
-            if (!!(cmd.modifiers & usercmd::modifier::control)) {
-                handle<shield> shield = _ship->shield();
-                if (shield && shield->desired_power() < shield->maximum_power()) {
-                    shield->increase_power(shield->maximum_power());
-                } else if (shield) {
-                    shield->decrease_power(shield->maximum_power());
-                }
-            }
-            break;
-
-        case usercmd::action::zoom_in:
-            _view.size /= 1.1f;
-            break;
-
-        case usercmd::action::zoom_out:
-            _view.size *= 1.1f;
-            break;
-
-        default:
-            break;
+    if (!!(_usercmd.buttons & usercmd::button::scroll_down)) {
+        _view.origin.y -= scroll_speed * _view.size.x * delta_time;
     }
-
-    if ((cmd.buttons & usercmd::button::zoom_in) == usercmd::button::zoom_in) {
-        _view.size *= std::exp(-1.f * (time - _usercmd_time).to_seconds());
-    } else if ((cmd.buttons & usercmd::button::zoom_out) == usercmd::button::zoom_out) {
-        _view.size *= std::exp(1.f * (time - _usercmd_time).to_seconds());
+    if (!!(_usercmd.buttons & usercmd::button::scroll_left)) {
+        _view.origin.x -= scroll_speed * _view.size.x * delta_time;
     }
-
-    if (_move_appending && !(cmd.modifiers & usercmd::modifier::shift)) {
-        _move_selection = false;
-        _move_appending = false;
+    if (!!(_usercmd.buttons & usercmd::button::scroll_right)) {
+        _view.origin.x += scroll_speed * _view.size.x * delta_time;
+    }
+    if (!!(_usercmd.buttons & usercmd::button::zoom_in)) {
+        _view.size *= exp(-zoom_speed * delta_time);
+    }
+    if (!!(_usercmd.buttons & usercmd::button::zoom_out)) {
+        _view.size *= exp(zoom_speed * delta_time);
+    }
+    if (!!(_usercmd.buttons & usercmd::button::pan)) {
+        _view.origin -= (cmd.cursor - _usercmd.cursor) * _view.size;
     }
 
     _usercmd = cmd;
     _usercmd_time = time;
-}
 
-//------------------------------------------------------------------------------
-bool player::attack(vec2 position, bool repeat)
-{
-    ship* target = nullptr;
-    for (auto obj : get_world()->objects()) {
-        if (!obj->is_type<ship>()) {
-            continue;
-        }
-        mat3 tx = mat3::inverse_transform(obj->get_position(), obj->get_rotation());
-        if (!obj->rigid_body().get_shape()->contains_point(position * tx)) {
-            continue;
-        }
-        target = static_cast<ship*>(obj);
-        break;
-    }
-
-    if (!target) {
-        return false;
-    }
-
-    for (std::size_t ii = 0, sz = _ship->weapons().size(); ii < sz; ++ii) {
-        if (!(_weapon_selection & (1 << ii))) {
-            continue;
-        }
-
-        handle<weapon> weapon = _ship->weapons()[ii];
-        if (std::holds_alternative<projectile_weapon_info>(weapon->info())
-            || std::holds_alternative<pulse_weapon_info>(weapon->info())) {
-            weapon->attack_point(target, vec2_zero, repeat);
-        } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
-            vec2 v = _random.uniform_nsphere<vec2>();
-            weapon->attack_sweep(target, v * -4.f, v * 4.f, repeat);
-        }
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-void player::toggle_weapon(int weapon_index, bool toggle_power)
-{
-    if (_ship->weapons().size() > weapon_index) {
-        handle<weapon> weapon = _ship->weapons()[weapon_index];
-        if (toggle_power) {
-            if (weapon->desired_power() < weapon->maximum_power()) {
-                weapon->increase_power(weapon->maximum_power());
-            } else {
-                weapon->decrease_power(weapon->maximum_power());
-            }
-        } else {
-            _move_selection = false;
-            _weapon_selection ^= (1 << weapon_index);
-        }
+    if (_usercmd.action == usercmd::action::zoom_in) {
+        _view.size *= (1.f / zoom_speed);
+    } else if (_usercmd.action == usercmd::action::zoom_out) {
+        _view.size *= zoom_speed;
     }
 }
 
