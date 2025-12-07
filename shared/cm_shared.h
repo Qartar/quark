@@ -54,6 +54,7 @@ public:
 
 static constexpr constant ln2(0.693147180559945309417);
 static constexpr constant pi(3.14159265358979323846);
+static constexpr constant twopi(6.28318530717958647693);
 static constexpr constant sqrt2(1.41421356237309504880);
 
 template<typename T> constexpr T deg2rad(T value) { return value * T(pi / 180.0); }

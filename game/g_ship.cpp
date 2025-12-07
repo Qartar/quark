@@ -18,53 +18,26 @@ namespace game {
 const object_type ship::_type(object::_type);
 physics::material ship::_material(0.5f, 1.0f, 5.0f);
 
-vec2 main_body_vertices[] = {
-    {11.0000000, 6.00000000 },
-    {10.0000000, 7.00000000 },
-    {8.00000000, 8.00000000 },
-    {5.00000000, 9.00000000 },
-    {-1.00000000, 9.00000000 },
-    {-7.00000000, 5.00000000 },
-    {-7.00000000, -5.00000000 },
-    {-1.00000000, -9.00000000 },
-    {-1.00000000, -9.00000000 },
-    {5.00000000, -9.00000000 },
-    {8.00000000, -8.00000000 },
-    {10.0000000, -7.00000000 },
-    {11.0000000, -6.00000000 },
-    {11.0000000, 6.00000000 },
-};
+#define QBZ(a,b,c,t)        \
+    (((1-t)*(1-t)*(a)+2*(1-t)*t*(b)+t*t*(c)))
 
-vec2 left_engine_vertices[] = {
-    vec2(8, -8) + vec2{-1.00000000, 9.0000000 },
-    vec2(8, -8) + vec2{-1.00000000, 10.0000000 },
-    vec2(8, -8) + vec2{-16.0000000, 10.0000000 },
-    vec2(8, -8) + vec2{-17.0000000, 9.00000000 },
-    vec2(8, -8) + vec2{-17.0000000, 7.00000000 },
-    vec2(8, -8) + vec2{-16.0000000, 6.00000000 },
-    vec2(8, -8) + vec2{-9.0000000, 5.00000000 },
-    vec2(8, -8) + vec2{-7.0000000, 5.00000000 },
-};
+#define QBZ8(a,b,c)         \
+    QBZ(a,b,c,0),           \
+    QBZ(a,b,c,0.125f),      \
+    QBZ(a,b,c,0.25f),       \
+    QBZ(a,b,c,0.375f),      \
+    QBZ(a,b,c,0.5f),        \
+    QBZ(a,b,c,0.625f),      \
+    QBZ(a,b,c,0.75f),       \
+    QBZ(a,b,c,0.875)
 
-vec2 right_engine_vertices[] = {
-    vec2(8, 8) + vec2{-1.00000000, -9.0000000 },
-    vec2(8, 8) + vec2{-1.00000000, -10.0000000 },
-    vec2(8, 8) + vec2{-16.0000000, -10.0000000 },
-    vec2(8, 8) + vec2{-17.0000000, -9.00000000 },
-    vec2(8, 8) + vec2{-17.0000000, -7.00000000 },
-    vec2(8, 8) + vec2{-16.0000000, -6.00000000 },
-    vec2(8, 8) + vec2{-9.0000000, -5.00000000 },
-    vec2(8, 8) + vec2{-7.0000000, -5.00000000 },
-};
+#define SHIP(L,B) {         \
+    QBZ8(vec2(0.5f * L, 0.f), vec2(0.3f * L, 0.5f * B), vec2(0.f, 0.5f * B)),   \
+    QBZ8(vec2(0.f, 0.5f * B), vec2(-0.5f * L, 0.5f * B), vec2(-0.5f * L, 0.f)),   \
+    QBZ8(vec2(-0.5f * L, 0.f), vec2(-0.5f * L, -0.5f * B), vec2(0.f, -0.5f * B)),   \
+    QBZ8(vec2(0.f, -0.5f * B), vec2(0.3f * L, -0.5f * B), vec2(0.5f * L, 0.f)),   }
 
-#define SHIP(L,B)           \
-    {vec2{L * .5f, B * 0.f},     \
-    vec2{L * 0.f, B * .5f},     \
-    vec2{L * -.5f, B * .4f},    \
-    vec2{L * -.5f, B * -.4f},   \
-    vec2{L * 0.f, B * -.5f}}
-
-const vec2 ship_hulls[][5] = {
+const vec2 ship_hulls[][32] = {
     // yamato-class battleship
     SHIP(263.f, 39.f),
 
@@ -84,61 +57,95 @@ const vec2 ship_hulls[][5] = {
     SHIP(115.f, 11.f),
 };
 
-static int hull_idx = 0;
+const ship_info ships_info[] =
+{
+    {
+        string::buffer("Yamato-class battleship"),
+        263.f, 39.f, 0.f,
+        //{{{std::make_unique<physics::convex_shape>(SHIP(263.f, 39.f))}}},
+        {{{std::make_unique<physics::convex_shape>(ship_hulls[0])}}},
+        SHIP(263.f, 39.f),
+        {
+            // 46cm/45 Type 94
+            {vec2(52,0), 7.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 3, 2.5f, .46f, 20.7f},
+            {vec2(30,0), 7.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 3, 2.5f, .46f, 20.7f},
+            {vec2(-65,0), 7.f, math::pi, .75f * vec2(-math::pi, math::pi), math::pi, 3, 2.5f, .46f, 20.7f},
+        }
+    },
+    {
+        string::buffer("Iowa-class battleship"),
+        270.f, 33.f, 0.f,
+        {{{std::make_unique<physics::convex_shape>(ship_hulls[1])}}},
+        SHIP(270.f, 33.f),
+        {
+            // 16"/50 Mark 7
+            {vec2(48,0), 6.5f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 3, 2.25f, .406f, 20.f},
+            {vec2(24,0), 6.5f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 3, 2.25f, .406f, 20.f},
+            {vec2(-48,0), 6.5f, math::pi, .75f * vec2(-math::pi, math::pi), math::pi, 3, 2.25f, .406f, 20.f},
+        }
+    },
+    {
+        string::buffer("King George V-class battleship"),
+        227.f, 31.5f, 0.f,
+        {{{std::make_unique<physics::convex_shape>(ship_hulls[2])}}},
+        SHIP(227.f, 31.5f),
+        {
+            // BL 14-inch Mark VII
+            {vec2(40,0), 6.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 4, 2.f, .3556f, 16.f},
+            {vec2(16,0), 6.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 4, 2.f, .3556f, 16.f},
+        }
+    },
+    {
+        string::buffer("Deutschland-class heavy cruiser"),
+        186.f, 21.7f, 0.f,
+        {{{std::make_unique<physics::convex_shape>(ship_hulls[3])}}},
+        SHIP(186.f, 21.7f),
+        {
+            // 28 cm SK C/28
+            {vec2(32,0), 5.5f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 3, 1.75f, .28f, 13.9f},
+            {vec2(-32,0), 5.5f, math::pi, .75f * vec2(-math::pi, math::pi), math::pi, 3, 1.75f, .28f, 13.9f},
+        }
+    },
+    {
+        string::buffer("Town-class light cruiser"),
+        180.f, 19.f, 0.f,
+        {{{std::make_unique<physics::convex_shape>(ship_hulls[4])}}},
+        SHIP(180.f, 19.f),
+        {
+            // BL 6-inch Mark XXIII
+            {vec2(32,0), 3.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 3, 1.f, .152f, 7.6f},
+            {vec2(16,0), 3.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 3, 1.f, .152f, 7.6f},
+            {vec2(-16,0), 3.f, math::pi, .75f * vec2(-math::pi, math::pi), math::pi, 3, 1.f, .152f, 7.6f},
+            {vec2(-32,0), 3.f, math::pi, .75f * vec2(-math::pi, math::pi), math::pi, 3, 1.f, .152f, 7.6f},
+        }
+    },
+    {
+        string::buffer("Tribal-class destroyer"),
+        115.f, 11.f, 0.f,
+        {{{std::make_unique<physics::convex_shape>(ship_hulls[5])}}},
+        SHIP(115.f, 11.f),
+        {
+            // QF 4.7-inch Mark IX & XII
+            {vec2(24,0), 2.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 2, 0.75f, .12f, 5.4f},
+            {vec2(12,0), 2.f, 0, .75f * vec2(-math::pi, math::pi), math::pi, 2, 0.75f, .12f, 5.4f},
+            {vec2(-12,0), 2.f, math::pi, .75f * vec2(-math::pi, math::pi), math::pi, 2, 0.75f, .12f, 5.4f},
+            {vec2(-24,0), 2.f, math::pi, .75f * vec2(-math::pi, math::pi), math::pi, 2, 0.75f, .12f, 5.4f},
+        }
+    },
+};
+
+static int ships_idx = 0;
 
 //------------------------------------------------------------------------------
 ship::ship()
     : _usercmd{}
-    , _shield(nullptr)
     , _dead_time(time_value::max)
     , _is_destroyed(false)
-    //, _shape({
-    //    {std::make_unique<physics::convex_shape>(main_body_vertices)},
-    //    {std::make_unique<physics::convex_shape>(left_engine_vertices), vec2(-8, 8)},
-    //    {std::make_unique<physics::convex_shape>(right_engine_vertices), vec2(-8, -8)}})
-    , _shape({
-        {std::make_unique<physics::convex_shape>(ship_hulls[hull_idx++ % countof(ship_hulls)])}})
+    , _info(&ships_info[ships_idx++ % countof(ships_info)])
 {
-    _rigid_body = physics::rigid_body(&_shape, &_material, 1.f);
+    _rigid_body = physics::rigid_body(&_info->shape, &_material, 1.f);
 
-    int idx = int((hull_idx + countof(ship_hulls) - 1) % countof(ship_hulls));
-    if (idx == 0) {
-        // 46cm/45 Type 94
-        _turrets.push_back({vec2(48,0), 7.f, 3, 2.5f, .46f, 20.7f});
-        _turrets.push_back({vec2(24,0), 7.f, 3, 2.5f, .46f, 20.7f});
-        _turrets.push_back({vec2(-48,0), 7.f, 3, 2.5f, .46f, 20.7f});
-        _turret_angles = {0, 0, math::pi};
-    } else if (idx == 1) {
-        // 16" Mark 7
-        _turrets.push_back({vec2(48,0), 6.5f, 3, 2.25f, .406f, 20.f});
-        _turrets.push_back({vec2(24,0), 6.5f, 3, 2.25f, .406f, 20.f});
-        _turrets.push_back({vec2(-48,0), 6.5f, 3, 2.25f, .406f, 20.f});
-        _turret_angles = {0, 0, math::pi};
-    } else if (idx == 2) {
-        // BL 14-inch Mark VII
-        _turrets.push_back({vec2(40,0), 6.f, 4, 2.f, .3556f, 16.f});
-        _turrets.push_back({vec2(16,0), 6.f, 4, 2.f, .3556f, 16.f});
-        _turret_angles = {0, 0};
-    } else if (idx == 3) {
-        // 28 cm SK C/28
-        _turrets.push_back({vec2(32,0), 5.5f, 3, 1.75f, .28f, 13.9f});
-        _turrets.push_back({vec2(-32,0), 5.5f, 3, 1.75f, .28f, 13.9f});
-        _turret_angles = {0, math::pi};
-    } else if (idx == 4) {
-        // BL 6-inch Mark XXIII
-        _turrets.push_back({vec2(32,0), 3.f, 3, 1.f, .152f, 7.6f});
-        _turrets.push_back({vec2(16,0), 3.f, 3, 1.f, .152f, 7.6f});
-        _turrets.push_back({vec2(-16,0), 3.f, 3, 1.f, .152f, 7.6f});
-        _turrets.push_back({vec2(-32,0), 3.f, 3, 1.f, .152f, 7.6f});
-        _turret_angles = {0, 0, math::pi, math::pi};
-    } else if (idx == 5) {
-        // QF 4.7-inch Mark IX & XII
-        _turrets.push_back({vec2(24,0), 2.f, 2, 0.75f, .12f, 5.4f});
-        _turrets.push_back({vec2(12,0), 2.f, 2, 0.75f, .12f, 5.4f});
-        _turrets.push_back({vec2(-12,0), 2.f, 2, 0.75f, .12f, 5.4f});
-        _turrets.push_back({vec2(-24,0), 2.f, 2, 0.75f, .12f, 5.4f});
-        _turret_angles = {0, 0, math::pi, math::pi};
-    }
+    _turrets.resize(_info->turrets.size(), {});
 
     _model = &ship_model;
 }
@@ -166,19 +173,8 @@ void ship::spawn()
     _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .125f, 8.f, .0625f, .5f, .5f});
     _subsystems.push_back(_engines);
 
-    //_shield = get_world()->spawn<game::shield>(&_shape, this);
-    //_subsystems.push_back(_shield);
-
     _navigation = get_world()->spawn<game::navigation>(this);
     _subsystems.push_back(_navigation);
-
-    bounds b = _shape.calculate_bounds(mat3_identity);
-    constexpr vec2 ofs[] = {{.2f,0}, {.1f, 0}, {-.2f, 0}, {-.3f, 0}};
-    for (int ii = 0; ii < 4; ++ii) {
-        weapon_info info = weapon::by_random(_random);
-        _weapons.push_back(get_world()->spawn<weapon>(this, info, ofs[ii] * b.size().x + vec2(b.center().x,0)));
-        _subsystems.push_back(_weapons.back());
-    }
 
     std::vector<handle<subsystem>> assignments(_subsystems.begin(), _subsystems.end());
     for (auto& ch : _crew) {
@@ -193,173 +189,64 @@ void ship::spawn()
 //------------------------------------------------------------------------------
 void ship::draw(render::system* renderer, time_value time) const
 {
-#if 0
-        {
-            auto tx = get_transform(time);
-
-            const vec2 pts[][5] = {
-                // yamato-class battleship
-                SHIP(263.f, 39.f),
-
-                // iowa-class battleship
-                SHIP(270.f, 33.f),
-
-                // king george v-class battleship
-                SHIP(227.f, 31.5f),
-
-                // deutschland-class cruiser
-                SHIP(186.f, 21.7f),
-
-                // town-class cruiser
-                SHIP(180.f, 19.f),
-
-                // tribal-class destroyer
-                SHIP(115.f, 11.f),
-            };
-
-            static int s_idx = 0;
-            int idx = ++s_idx %  countof(pts);
-            for (int ii = 0; ii < countof(pts[idx]); ++ii) {
-                vec2 v0 = pts[idx][ii] * tx;
-                vec2 v1 = pts[idx][(ii + 1) % countof(pts[idx])] * tx;
-                renderer->draw_line(v0, v1, color4(0,1,0,1), color4(0,1,0,1));
-            }
-        }
-#elif 1
     if (!_is_destroyed) {
+        constexpr color4 color(.8f,.9f,1.f,1.f);
         auto tx = get_transform(time);
 
-        for (auto const& child : _shape) {
-            auto child_shape = static_cast<physics::convex_shape const*>(child.shape.get());
-            for (int ii = 0; ii < child_shape->num_vertices(); ++ii) {
-                vec2 v0 = (*child_shape)[ii] * tx;
-                vec2 v1 = (*child_shape)[(ii + 1)] * tx;
-                renderer->draw_line(v0, v1, color4(0,1,0,1), color4(0,1,0,1));
+        // draw hull outline
+        {
+            vec2 v0 = _info->outline[0] * tx;
+            for (std::size_t ii = 1; ii < _info->outline.size(); ++ii) {
+                vec2 v1 = _info->outline[ii] * tx;
+                renderer->draw_line(v0, v1, color, color);
+                v0 = v1;
             }
+            vec2 v1 = _info->outline[0] * tx;
+            renderer->draw_line(v0, v1, color, color);
         }
 
+        // draw turrets
         for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
-            auto const& turret = _turrets[jj];
-            vec2 v = turret.position * tx;
-            renderer->draw_arc(v, turret.radius, 0, 0, 2.f * math::pi, color4(0,1,0,1));
+            auto const& turret = _info->turrets[jj];
+            mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[jj].traverse)) * tx;
 
-            mat3 turret_tx = mat3::transform(turret.position, rot2(_turret_angles[jj])) * tx;
+            // draw turret outline
+            vec2 f1 = vec2(turret.radius, .6f * turret.radius) * turret_tx;
+            vec2 f2 = vec2(turret.radius, -.6f * turret.radius) * turret_tx;
+            vec2 m1 = vec2(.3f * turret.radius, turret.radius) * turret_tx;
+            vec2 m2 = vec2(.3f * turret.radius, -turret.radius) * turret_tx;
+            vec2 m3 = vec2(-.3f * turret.radius, turret.radius) * turret_tx;
+            vec2 m4 = vec2(-.3f * turret.radius, -turret.radius) * turret_tx;
+            vec2 r1 = vec2(-2.f * turret.radius, .8f * turret.radius) * turret_tx;
+            vec2 r2 = vec2(-2.f * turret.radius, -.8f * turret.radius) * turret_tx;
+
+            renderer->draw_line(f1, f2, color, color);
+            renderer->draw_line(f1, m1, color, color);
+            renderer->draw_line(f2, m2, color, color);
+            renderer->draw_line(m1, m3, color, color);
+            renderer->draw_line(m2, m4, color, color);
+            renderer->draw_line(m3, r1, color, color);
+            renderer->draw_line(m4, r2, color, color);
+            renderer->draw_line(r1, r2, color, color);
+
+            // draw guns
             for (int ii = 0; ii < turret.num_guns; ++ii) {
-                float x = 0.f;//turret.radius * .5f;
+                float x = turret.radius;
                 float y = turret.spacing * (ii - .5f * (turret.num_guns - 1));
                 vec2 v1 = vec2(x, y);
-#if 1
+
                 vec2 pts[4] = {
-                    (v1 + vec2(0, .5f * turret.calibre)) * turret_tx,
-                    (v1 + vec2(turret.length, .5f * turret.calibre)) * turret_tx,
-                    (v1 + vec2(turret.length, -.5f * turret.calibre)) * turret_tx,
-                    (v1 + vec2(0, -.5f * turret.calibre)) * turret_tx
+                    (v1 + vec2(0, 1.5f * turret.caliber)) * turret_tx,
+                    (v1 + vec2(0.9f * turret.length, .5f * turret.caliber)) * turret_tx,
+                    (v1 + vec2(0.9f * turret.length, -.5f * turret.caliber)) * turret_tx,
+                    (v1 + vec2(0, -1.5f * turret.caliber)) * turret_tx
                 };
-                renderer->draw_line(pts[0], pts[1], color4(0,1,0,1), color4(0,1,0,1));
-                renderer->draw_line(pts[1], pts[2], color4(0,1,0,1), color4(0,1,0,1));
-                renderer->draw_line(pts[2], pts[3], color4(0,1,0,1), color4(0,1,0,1));
-#else
-                vec2 pts[2] = {
-                    v1 * turret_tx, (v1 + vec2(turret.length, 0)) * turret_tx
-                };
-                renderer->draw_line(pts[0], pts[1], color4(0,1,0,1), color4(0,1,0,1));
-#endif
+                renderer->draw_line(pts[0], pts[1], color, color);
+                renderer->draw_line(pts[1], pts[2], color, color);
+                renderer->draw_line(pts[2], pts[3], color, color);
             }
         }
     }
-#else
-
-    if (!_is_destroyed) {
-        renderer->draw_model(_model, get_transform(time), _color);
-
-
-        constexpr color4 subsystem_colors[2][2] = {
-            { color4(.4f, 1.f, .2f, .225f), color4(1.f, .2f, 0.f, .333f) },
-            { color4(.4f, 1.f, .2f, 1.00f), color4(1.f, .2f, 0.f, 1.00f) },
-        };
-
-        float alpha = 1.f;
-        if (time > _dead_time && time - _dead_time < destruction_time) {
-            alpha = 1.f - (time - _dead_time) / destruction_time;
-        }
-
-        //
-        // draw reactor ui
-        //
-
-        if (_reactor) {
-            constexpr float mint = (3.f / 4.f) * math::pi<float>;
-            constexpr float maxt = (5.f / 4.f) * math::pi<float>;
-            constexpr float radius = 40.f;
-            constexpr float edge_width = 1.f;
-            constexpr float edge = edge_width / radius;
-
-            vec2 pos = get_position(time);
-
-            for (int ii = 0; ii < _reactor->maximum_power(); ++ii) {
-                bool damaged = ii >= _reactor->maximum_power() - std::ceil(_reactor->damage() - .2f);
-                bool powered = ii < _reactor->current_power();
-
-                color4 c = subsystem_colors[powered][damaged]; c.a *= alpha;
-
-                float t0 = maxt - (maxt - mint) * (float(ii + 1) / float(_reactor->maximum_power()));
-                float t1 = maxt - (maxt - mint) * (float(ii + 0) / float(_reactor->maximum_power()));
-                renderer->draw_arc(pos, radius, 3.f, t0 + .5f * edge, t1 - .5f * edge, c);
-            }
-        }
-
-        //
-        // draw shield ui
-        //
-
-        if (_shield) {
-            constexpr float mint = (-1.f / 4.f) * math::pi<float>;
-            constexpr float maxt = (1.f / 4.f) * math::pi<float>;
-            constexpr float radius = 40.f;
-
-            float midt =  mint + (maxt - mint) * (_shield->strength() / _shield->info().maximum_power);
-
-            vec2 pos = get_position(time);
-
-            color4 c0 = _shield->colors()[1]; c0.a *= 1.5f * alpha;
-            color4 c1 = _shield->colors()[1]; c1.a = alpha;
-            renderer->draw_arc(pos, radius, 3.f, mint, maxt, c0);
-            renderer->draw_arc(pos, radius, 3.f, mint, midt, c1);
-        }
-
-        //
-        // draw subsystems ui
-        //
-
-        vec2 position = get_position(time) - vec2(8.f * (_subsystems.size() - 2.f) * .5f, 40.f);
-
-        for (auto const& subsystem : _subsystems) {
-            // reactor subsystem ui is drawn explicitly
-            if (subsystem->info().type == subsystem_type::reactor) {
-                continue;
-            }
-
-            // draw power bar for each subsystem power level
-            for (int ii = 0; ii < subsystem->maximum_power(); ++ii) {
-                bool damaged = ii >= subsystem->maximum_power() - std::ceil(subsystem->damage() - .2f);
-                bool powered = ii < subsystem->current_power();
-
-                color4 c = subsystem_colors[powered][damaged]; c.a *= alpha;
-
-                renderer->draw_box(vec2(7,3), position + vec2(0, 10.f + 4.f * ii), c);
-            }
-
-            for (auto const& ch : _crew) {
-                if (ch->assignment() == subsystem) {
-                    color4 c = ch->health() ? color4(1,1,1,alpha) : color4(1,.2f,0,alpha);
-                    renderer->draw_box(vec2(7,3), position + vec2(0,10 - 4), c);
-                }
-            }
-
-            position += vec2(8,0);
-        }
-    }
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -384,8 +271,18 @@ void ship::think()
                 break;
             }
         }
-        if (_shield) {
-            _shield->recharge(1.f / 5.f);
+    }
+
+    {
+        vec2 cursor = _usercmd.cursor;
+        auto tx = get_transform(time);
+        for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
+            auto const& turret = _info->turrets[jj];
+            vec2 dir = normalize(cursor - turret.position * tx);
+
+            float angle = atan2f(dir.y, dir.x) - get_rotation(time).radians() - _info->turrets[jj].orientation;
+            angle -= math::twopi * std::round(angle / math::twopi); // normalize to [-pi,pi)
+            _turrets[jj].traverse = clamp(angle, _info->turrets[jj].traverse[0], _info->turrets[jj].traverse[1]);
         }
     }
 
@@ -401,11 +298,11 @@ void ship::think()
             // random explosion at a random point on the ship
             if (s > .2f) {
                 // find a random point on the ship's model
-                bounds b = _shape.calculate_bounds(mat3_identity);
+                bounds b = _rigid_body.get_shape()->calculate_bounds(mat3_identity);
                 vec2 v;
                 do {
                     v = b.mins() + b.size() * vec2(_random.uniform_real(), _random.uniform_real());
-                } while (!_shape.contains_point(v));
+                } while (!_rigid_body.get_shape()->contains_point(v));
 
                 get_world()->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
                 if (s * s > t) {
@@ -422,7 +319,6 @@ void ship::think()
             // remove all subsystems
             _crew.clear();
             _subsystems.clear();
-            _weapons.clear();
 
             _is_destroyed = true;
         }

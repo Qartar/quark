@@ -17,6 +17,37 @@ class navigation;
 class subsystem;
 
 //------------------------------------------------------------------------------
+struct turret_info
+{
+    vec2 position; //!< Position of the turret on the ship
+    float radius; //!< Radius of the turret ring
+    float orientation; //!< Default orientation, in radians from ship ahead
+    vec2 traverse; //!< Minimuim and maximum traverse angle, in radians from default orientation
+    float traverse_speed; //!< Angular speed in radians/sec
+
+    int num_guns; //!< Number of gun barrels
+    float spacing; //!< Spacing between each gun barrel
+    float caliber; //!< Internal diameter of gun barrels
+    float length; //!< Length of gun barrels
+};
+
+//------------------------------------------------------------------------------
+struct ship_info
+{
+    string::buffer name;
+
+    float length;
+    float beam;
+
+    float displacement;
+
+    physics::compound_shape shape;
+    std::vector<vec2> outline;
+
+    std::vector<turret_info> turrets;
+};
+
+//------------------------------------------------------------------------------
 class ship : public object
 {
 public:
@@ -45,23 +76,10 @@ public:
     handle<subsystem> reactor() { return _reactor; }
     handle<game::engines> engines() { return _engines; }
     handle<game::engines const> engines() const { return _engines; }
-    handle<game::shield> shield() { return _shield; }
-    handle<game::shield const> shield() const { return _shield; }
     handle<game::navigation> navigation() { return _navigation; }
     handle<game::navigation const> navigation() const { return _navigation; }
-    std::vector<handle<weapon>>& weapons() { return _weapons; }
-    std::vector<handle<weapon>> const& weapons() const { return _weapons; }
 
     bool is_destroyed() const { return _is_destroyed; }
-
-    struct turret {
-        vec2    position;
-        float   radius;
-        int     num_guns;
-        float   spacing;
-        float   calibre;
-        float   length;
-    };
 
 protected:
     game::usercmd _usercmd;
@@ -71,12 +89,16 @@ protected:
 
     handle<subsystem> _reactor;
     handle<game::engines> _engines;
-    handle<game::shield> _shield;
     handle<game::navigation> _navigation;
-    std::vector<handle<weapon>> _weapons;
 
-    std::vector<turret> _turrets;
-    std::vector<float> _turret_angles;
+    ship_info const* _info;
+
+    struct turret_state {
+        float traverse; //!< Current traverse angle in radians, relative to default orientation
+        float elevation; //!< Current elevation angle in radians
+    };
+
+    std::vector<turret_state> _turrets;
 
     time_value _dead_time;
 
@@ -86,7 +108,6 @@ protected:
     static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
 
     static physics::material _material;
-    physics::compound_shape _shape;
 };
 
 } // namespace game
