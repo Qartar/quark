@@ -4,6 +4,7 @@
 #pragma once
 
 #include "cm_string.h"
+#include "cm_vector.h"
 
 #include <memory>
 #include <map>
@@ -35,7 +36,7 @@ enum flags
     modified    = 1 << 3,
 };
 
-enum class value_type { string, integer, boolean, scalar };
+enum class value_type { string, integer, boolean, scalar, vector };
 
 //------------------------------------------------------------------------------
 class variable_base
@@ -74,15 +75,18 @@ protected:
     int get_integer() const;
     bool get_boolean() const;
     float get_scalar() const;
+    vec4 get_vector() const;
 
     void set_string(string_view s);
     void set_integer(int i);
     void set_boolean(bool b);
     void set_scalar(float f);
+    void set_vector(vec4 v);
 
     string_buffer to_string(int i) const;
     string_buffer to_string(bool b) const;
     string_buffer to_string(float f) const;
+    string_buffer to_string(vec4 v) const;
 };
 
 //------------------------------------------------------------------------------
@@ -113,15 +117,18 @@ protected:
     int get_integer() const { return _base->get_integer(); }
     bool get_boolean() const { return _base->get_boolean(); }
     float get_scalar() const { return _base->get_scalar(); }
+    vec4 get_vector() const { return _base->get_vector(); }
 
     void set_string(string_view s) { _base->set_string(s); }
     void set_integer(int i) { _base->set_integer(i); }
     void set_boolean(bool b) { _base->set_boolean(b); }
     void set_scalar(float f) { _base->set_scalar(f); }
+    void set_vector(vec4 v) { _base->set_vector(v); }
 
     string_buffer to_string(int i) const { return _base->to_string(i); }
     string_buffer to_string(bool b) const { return _base->to_string(b); }
     string_buffer to_string(float f) const { return _base->to_string(f); }
+    string_buffer to_string(vec4 v) const { return _base->to_string(v); }
 };
 
 //------------------------------------------------------------------------------
@@ -170,6 +177,22 @@ public:
 
     operator float() const;
     config::scalar& operator=(float f);
+};
+
+//------------------------------------------------------------------------------
+class vector : public variable
+{
+public:
+    vector(string_view name, vec4 value, int flags, string_view description)
+        : variable(name, to_string(value), value_type::vector, flags, description)
+    {}
+
+    operator vec2() const;
+    operator vec3() const;
+    operator vec4() const;
+    config::vector& operator=(vec2 v);
+    config::vector& operator=(vec3 v);
+    config::vector& operator=(vec4 v);
 };
 
 //------------------------------------------------------------------------------

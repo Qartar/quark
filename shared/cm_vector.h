@@ -209,6 +209,7 @@ public:
     constexpr float dot(vec4 const& V) const { return x*V.x + y*V.y + z*V.z + w*V.w; }
     constexpr vec4 cross(vec4 const& V) const { return vec4(y*V.z - z*V.y, z*V.x - x*V.z, x*V.y - y*V.x, 0.0f); }
 
+    constexpr vec2 to_vec2() const { return vec2(x, y); }
     constexpr vec3 to_vec3() const { return vec3(x, y, z); }
 
 // argument dependent lookup

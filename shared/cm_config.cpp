@@ -17,7 +17,7 @@ system* system::_singleton = nullptr;
 
 namespace {
 
-static constexpr string_literal type_strings[] = { "string", "integer", "boolean", "scalar" };
+static constexpr string_literal type_strings[] = { "string", "integer", "boolean", "scalar", "vector" };
 
 //------------------------------------------------------------------------------
 value_type type_from_string(string_view type_string)
@@ -82,6 +82,17 @@ void variable_base::set(string_view value)
             }
             break;
         }
+
+        case value_type::vector: {
+            vec4 v = vec4_zero;
+            int n = sscanf_s(value.c_str(), "%f %f %f %f", &v[0], &v[1], &v[2], &v[3]);
+            if (n >= 2) {
+                set_vector(v);
+            } else {
+                log::message("cannot set variable '^fff%s^xxx' to non-vector value '^fff%s^xxx'\n", name().c_str(), value.c_str());
+            }
+            break;
+        }
     }
 }
 
@@ -111,6 +122,12 @@ void variable_base::set_scalar(float f)
 }
 
 //------------------------------------------------------------------------------
+void variable_base::set_vector(vec4 v)
+{
+    set_string(to_string(v));
+}
+
+//------------------------------------------------------------------------------
 string_buffer variable_base::to_string(int i) const
 {
     return string_buffer(va("%d", i));
@@ -125,18 +142,13 @@ string_buffer variable_base::to_string(bool b) const
 //------------------------------------------------------------------------------
 string_buffer variable_base::to_string(float f) const
 {
-    string_buffer s(va("%f", f));
-    if (s[0] != '.') {
-        // strip trailing zeroes
-        while (s.back() == '0') {
-            s.pop_back();
-        }
-        // strip trailing decimal point
-        if (s.back() == '.') {
-            s.pop_back();
-        }
-    }
-    return string_buffer(s.c_str());
+    return string_buffer(va("%g", f));
+}
+
+//------------------------------------------------------------------------------
+string_buffer variable_base::to_string(vec4 v) const
+{
+    return string_buffer(va("%g %g %g %g", v.x, v.y, v.z, v.w));
 }
 
 //------------------------------------------------------------------------------
@@ -163,6 +175,14 @@ bool variable_base::get_boolean() const
 float variable_base::get_scalar() const
 {
     return static_cast<float>(std::atof(_value.c_str()));
+}
+
+//------------------------------------------------------------------------------
+vec4 variable_base::get_vector() const
+{
+    vec4 v;
+    sscanf_s(_value.c_str(), "%f %f %f %f", &v[0], &v[1], &v[2], &v[3]);
+    return v;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -232,6 +252,46 @@ scalar::operator float() const
 config::scalar& scalar::operator=(float f)
 {
     set_scalar(f);
+    return *this;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+vector::operator vec2() const
+{
+    return get_vector().to_vec2();
+}
+
+//------------------------------------------------------------------------------
+vector::operator vec3() const
+{
+    return get_vector().to_vec3();
+}
+
+//------------------------------------------------------------------------------
+vector::operator vec4() const
+{
+    return get_vector();
+}
+
+//------------------------------------------------------------------------------
+config::vector& vector::operator=(vec2 v)
+{
+    set_vector(vec4(v.x, v.y, 0, 0));
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+config::vector& vector::operator=(vec3 v)
+{
+    set_vector(vec4(v.x, v.y, v.z, 0));
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+config::vector& vector::operator=(vec4 v)
+{
+    set_vector(v);
     return *this;
 }
 
