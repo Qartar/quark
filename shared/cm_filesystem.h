@@ -40,6 +40,8 @@ public:
     std::size_t size() const;
     //! seek to the given offset within the stream
     bool seek(std::intptr_t offset, file::seek origin);
+    //! return the current offset from the beginning of the stream
+    std::intptr_t tell() const;
 
     //! print formatted string into the stream
     std::size_t printf(string::literal fmt, ...);

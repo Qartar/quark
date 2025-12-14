@@ -115,6 +115,16 @@ bool stream::seek(std::intptr_t offset, file::seek origin)
 }
 
 //------------------------------------------------------------------------------
+std::intptr_t stream::tell() const
+{
+#if defined(_WIN32)
+    return _ftelli64(_handle);
+#else
+    return ftell(_handle);
+#endif
+}
+
+//------------------------------------------------------------------------------
 std::size_t stream::size() const
 {
     if (!_handle) {
