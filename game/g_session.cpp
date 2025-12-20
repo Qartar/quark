@@ -56,6 +56,11 @@ session::session()
 }
 
 //------------------------------------------------------------------------------
+session::~session()
+{
+}
+
+//------------------------------------------------------------------------------
 result session::init (string::view cmdline)
 {
     _renderer = application::singleton()->window()->renderer();
@@ -141,10 +146,7 @@ result session::init (string::view cmdline)
 //------------------------------------------------------------------------------
 void session::shutdown()
 {
-    if (_ship_editor) {
-        delete _ship_editor;
-        _ship_editor = nullptr;
-    }
+    _ship_editor = nullptr;
 
     stop_client( );
     shutdown_client();
@@ -258,7 +260,7 @@ void session::draw_menu()
 //------------------------------------------------------------------------------
 void session::command_editor(parser::text const& /*args*/)
 {
-    _ship_editor = new game::ship_editor();
+    _ship_editor = std::make_unique<ship_editor>();
     _menu_active = false;
     if (_console.active()) {
         _console.char_event('`');

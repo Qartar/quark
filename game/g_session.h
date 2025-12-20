@@ -168,7 +168,7 @@ class session : public log
 {
 public:
     session();
-    ~session() {}
+    ~session();
 
     result init (string::view cmdline);
     void shutdown ();
@@ -247,7 +247,7 @@ private:
     config::boolean _net_graph;
     std::array<std::size_t, 256> _net_bytes;
 
-    ship_editor* _ship_editor;
+    std::unique_ptr<ship_editor> _ship_editor;
     console_command _command_editor;
     void command_editor(parser::text const& args);
 
