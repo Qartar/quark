@@ -44,6 +44,7 @@ enum class effect_type
     missile_impact,
     blaster_impact,
     explosion,
+    splash,
 };
 
 //------------------------------------------------------------------------------

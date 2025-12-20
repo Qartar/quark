@@ -4,6 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "cm_ballistics.h"
 #include "g_projectile.h"
 #include "g_ship.h"
 #include "g_shield.h"
@@ -17,12 +18,18 @@ physics::circle_shape projectile::_shape(1.0f);
 physics::material projectile::_material(0.5f, 1.0f);
 
 //------------------------------------------------------------------------------
-projectile::projectile(object* owner, projectile_info info)
+projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 velocity)
     : object(owner)
     , _info(info)
+    , _position(position)
+    , _velocity(velocity)
     , _impact_time(time_value::max)
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1e-3f);
+    set_position(position.to_vec2(), true);
+    set_linear_velocity(velocity.to_vec2());
+    vec2 direction = normalize(velocity.to_vec2());
+    set_rotation(rot2(direction.x, direction.y), true);
     _channel = pSound->allocate_channel();
 }
 
@@ -48,88 +55,25 @@ void projectile::spawn()
 //------------------------------------------------------------------------------
 void projectile::think()
 {
-    if (get_world()->frametime() - _spawn_time > _info.fuse_time) {
+    vec3 new_position = _position;
+    vec3 new_velocity = _velocity;
+
+    ballistics::step(new_position, new_velocity, 2e-6f, FRAMETIME);
+
+    set_linear_velocity((new_position.to_vec2() - get_position()) / FRAMETIME.to_seconds());
+
+    _position = new_position;
+    _velocity = new_velocity;
+
+    if (_position.z < 0.f) {
+        // intersect with z=0 plane
+        float t = _position.z / _velocity.z;
+        vec3 p = _position - _velocity * t;
+
+        _impact_time = get_world()->frametime() + (FRAMETIME - time_delta::from_seconds(t));
+
+        get_world()->add_effect(_impact_time, effect_type::splash, p.to_vec2(), vec2_zero, .5f * _info.damage);
         get_world()->remove(this);
-        return;
-    }
-
-    if (_info.homing) {
-        update_homing();
-    }
-
-    update_effects();
-    update_sound();
-}
-
-//------------------------------------------------------------------------------
-void projectile::update_homing()
-{
-    vec2 direction = get_linear_velocity();
-    float speed = direction.normalize_length();
-    float bestValue = .5f * math::sqrt2;
-    game::object* bestTarget = nullptr;
-
-    for (auto* obj : get_world()->objects()) {
-        if (!obj->is_type<ship>()) {
-            continue;
-        }
-
-        vec2 displacement = obj->get_position() - get_position();
-        float value = displacement.normalize().dot(direction);
-        if (value > bestValue) {
-            bestValue = value;
-            bestTarget = obj;
-        }
-    }
-
-    if (bestTarget && bestValue < 0.995f) {
-        vec2 target_pos = bestTarget->get_position();
-        vec2 closest_point = get_position() + direction * (target_pos - get_position()).dot(direction);
-        vec2 displacement = (target_pos - closest_point).normalize();
-        vec2 delta = displacement * speed * 0.5f * FRAMETIME.to_seconds();
-        vec2 new_velocity = (get_linear_velocity() + delta).normalize() * speed;
-        set_linear_velocity(new_velocity);
-    }
-}
-
-//------------------------------------------------------------------------------
-void projectile::update_effects()
-{
-    time_value time = get_world()->frametime();
-
-    if (time > _impact_time) {
-        return;
-    }
-
-    float a = min(1.f, (_spawn_time + _info.fuse_time - get_world()->frametime()) / _info.fade_time);
-    vec2 p1 = get_position() - get_linear_velocity()
-        * (std::min(FRAMETIME, time - _spawn_time) / time_delta::from_seconds(1));
-    vec2 p2 = get_position();
-
-    if (_info.flight_effect != effect_type::none) {
-        get_world()->add_trail_effect(
-            _info.flight_effect,
-            p2,
-            p1,
-            get_linear_velocity() * -0.5f,
-            4.f * a );
-    }
-}
-
-//------------------------------------------------------------------------------
-void projectile::update_sound()
-{
-    if (_info.flight_sound != sound::asset::invalid) {
-        if (_channel) {
-            if (!_channel->playing()) {
-                _channel->loop(_info.flight_sound);
-            }
-            _channel->set_volume(0.1f);
-            _channel->set_attenuation(0.0f);
-            _channel->set_origin(vec3(get_position()));
-        }
-    } else if (_channel && _channel->playing()) {
-        _channel->stop();
     }
 }
 
@@ -137,6 +81,11 @@ void projectile::update_sound()
 bool projectile::touch(object *other, physics::collision const* collision)
 {
     if (other && !other->is_type<projectile>() && !other->touch(this, collision)) {
+        return false;
+    }
+
+    // TODO: need to intersect with ship components in 3d space
+    if (_position.z > 12.f) {
         return false;
     }
 
@@ -172,35 +121,25 @@ bool projectile::touch(object *other, physics::collision const* collision)
 //------------------------------------------------------------------------------
 void projectile::draw(render::system* renderer, time_value time) const
 {
-#if 0
-    constexpr time_delta tail_time = time_delta::from_seconds(.04f);
+    constexpr color4 color(1,1,1,1);
 
-    if (time - _info.tail_time > _impact_time) {
+    if (time > _impact_time) {
         return;
     }
 
-    float a = min(1.f, (_spawn_time + _info.fuse_time - time) / _info.fade_time);
-    vec2 p1 = get_position(std::max(_spawn_time, time - _info.tail_time));
-    vec2 p2 = get_position(std::min(_impact_time, time));
-
-    renderer->draw_line(1.f, p2, p1,
-        _info.color * color4(1,1,1,a),
-        _info.color * color4(1,1,1,0),
-        _info.color * color4(1,1,1,a),
-        _info.color * color4(1,1,1,0));
-#else
     mat3 tx = get_transform(std::min(_impact_time, time));
-    vec2 p[4] = {
-        vec2( 1, 0) * tx,
-        vec2( 0, 1) * tx,
-        vec2(-1, 0) * tx,
-        vec2( 0,-1) * tx,
+    vec2 p[5] = {
+        vec2( _info.diameter, 0) * tx,
+        vec2( 0, .5f * _info.diameter) * tx,
+        vec2(-2.f * _info.diameter, .5f * _info.diameter) * tx,
+        vec2(-2.f * _info.diameter,-.5f * _info.diameter) * tx,
+        vec2( 0,-.5f * _info.diameter) * tx,
     };
-    renderer->draw_line(p[0], p[1], color4(0,1,0,1), color4(0,1,0,1));
-    renderer->draw_line(p[1], p[2], color4(0,1,0,1), color4(0,1,0,1));
-    renderer->draw_line(p[2], p[3], color4(0,1,0,1), color4(0,1,0,1));
-    renderer->draw_line(p[3], p[0], color4(0,1,0,1), color4(0,1,0,1));
-#endif
+    renderer->draw_line(p[0], p[1], color, color);
+    renderer->draw_line(p[1], p[2], color, color);
+    renderer->draw_line(p[2], p[3], color, color);
+    renderer->draw_line(p[3], p[4], color, color);
+    renderer->draw_line(p[4], p[0], color, color);
 }
 
 //------------------------------------------------------------------------------
@@ -211,9 +150,6 @@ void projectile::read_snapshot(network::message const& message)
     _owner = get_world()->find<object>(message.read_long());
     set_position(message.read_vector());
     set_linear_velocity(message.read_vector());
-
-    update_effects();
-    update_sound();
 }
 
 //------------------------------------------------------------------------------

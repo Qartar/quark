@@ -1,4 +1,6 @@
 set(SHARED_SOURCES
+    cm_ballistics.cpp
+    cm_ballistics.h
     cm_bounds.h
     cm_color.h
     cm_config.cpp

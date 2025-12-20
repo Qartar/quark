@@ -83,7 +83,7 @@ void player::set_aspect(float aspect)
 //------------------------------------------------------------------------------
 void player::update_usercmd(usercmd cmd, time_value time)
 {
-    constexpr float zoom_speed = 1.f + (1.f / 32.f);
+    constexpr float zoom_speed = 1.f + (1.f / 4.f);
     constexpr float scroll_speed = 1.f;
 
     float delta_time = (time - _usercmd_time).to_seconds();

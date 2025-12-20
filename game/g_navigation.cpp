@@ -63,7 +63,7 @@ void navigation::think()
 
             // Decrease linear speed if turn radius is too large
             float turn_radius = linear_speed / angular_speed;
-            linear_speed *= min(1.f, target_radius / turn_radius);
+            //linear_speed *= min(1.f, target_radius / turn_radius);
 
             // Angle of arc between current and target position on circle
             float arc_angle = std::atan2(local.x, target_radius - std::abs(local.y));

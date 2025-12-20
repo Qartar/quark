@@ -5,6 +5,8 @@
 
 #include "g_object.h"
 #include "p_compound.h"
+#include "cm_string.h"
+#include "cm_table.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -24,13 +26,20 @@ struct turret_info
     vec2 position; //!< Position of the turret on the ship
     float radius; //!< Radius of the turret ring
     float orientation; //!< Default orientation, in radians from ship ahead
-    vec2 traverse; //!< Minimuim and maximum traverse angle, in radians from default orientation
+    vec2 traverse; //!< Minimum and maximum traverse angle, in radians from default orientation
     float traverse_speed; //!< Angular speed in radians/sec
+    vec2 elevation; //!< Minimum and maximum elevation angle, in radians from level
+    float elevation_speed; //!< Angular speed in radians/sec
+
+    time_delta reload_time;
 
     int num_guns; //!< Number of gun barrels
     float spacing; //!< Spacing between each gun barrel
     float caliber; //!< Internal diameter of gun barrels
     float length; //!< Length of gun barrels
+
+    float shell_mass; //!< Mass of shell
+    float shell_velocity; //!< Muzzle velocity of shell
 };
 
 //------------------------------------------------------------------------------
@@ -100,14 +109,32 @@ protected:
     struct turret_state {
         float traverse; //!< Current traverse angle in radians, relative to default orientation
         float elevation; //!< Current elevation angle in radians
+
+        float traverse_target;
+        float elevation_target;
+
+        time_delta time_of_flight;
+
+        time_value refire_time;
     };
 
     std::vector<turret_state> _turrets;
 
+    handle<ship const> _primary_target;
 
-
+    table<float> _primary_gunnery_table;
 
     static physics::material _material;
+
+protected:
+    void update_targets();
+    void update_firing_solution(handle<ship const> target, std::size_t turret_index);
+
+    //! Return the position, direction, and inertial velocity (i.e. inherited velocity) of the given turret/gun
+    void get_firing_vectors(std::size_t turret_index, std::size_t gun_index, vec3& position, vec3& direction, vec3& inertial_velocity) const;
+
+    //! Populate range/elevation tables, this should eventually be moved to the gun info
+    void populate_gunnery_tables();
 };
 
 } // namespace game

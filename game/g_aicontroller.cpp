@@ -78,9 +78,13 @@ void aicontroller::think()
     //
 
     {
+#if 0
         constexpr float radius = 128.f;
         vec2 target = vec2(radius, -radius) * _ship->get_transform();
         _ship->navigation()->set_waypoint(target);
+#else
+        _ship->navigation()->set_waypoint(vec2(8192.f, 32768.f));
+#endif
     }
 }
 

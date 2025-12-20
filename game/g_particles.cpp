@@ -428,6 +428,77 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             break;
         }
 
+        case effect_type::splash: {
+            render::particle* p;
+            float scale = std::sqrt(strength);
+
+            // shock wave
+
+            if ( (p = add_particle(time)) == NULL )
+                return;
+
+            p->position = position;
+            p->velocity = direction * 48.0f * scale;
+
+            p->color = color4(0.8f,0.9f,1.0f,0.5f);
+            p->color_velocity = color4(0,0,0,-.2f / std::sqrt(scale));
+            p->size = 16.0f * scale;
+            p->size_velocity = 32.0f;
+            p->flags = render::particle::invert;
+#if 0
+            // fire
+
+            for (int ii = 0; ii < 64 * scale; ++ii) {
+                if ( (p = add_particle(time)) == NULL )
+                    return;
+
+                r = _random.uniform_real(2.f * math::pi);
+                d = _random.uniform_real(8.f * scale);
+
+                p->position = position + vec2(cos(r),sin(r))*d;
+
+                r = _random.uniform_real(2.f * math::pi);
+                d = sqrt(_random.uniform_real()) * 128.f * strength;
+
+                p->velocity = vec2(cos(r),sin(r))*d;
+                p->velocity += direction * d * 0.5f;
+
+                p->color = color4(1.0f,_random.uniform_real(),0.0f,0.1f);
+                p->color_velocity = color4(0,0,0,-p->color.a/(0.5f+square(_random.uniform_real())*2.5f));
+                p->size = _random.uniform_real(8.f, 24.f) * scale;
+                p->size_velocity = 1.0f * strength;
+
+                p->drag = _random.uniform_real(2.f, 4.f) * scale;
+            }
+
+            // debris
+
+            for (int ii = 0; ii < 32 * scale; ++ii) {
+                if ( (p = add_particle(time)) == NULL )
+                    return;
+
+                r = _random.uniform_real(2.f * math::pi);
+                d = _random.uniform_real(2.f * scale);
+
+                p->position = position + vec2(cos(r)*d,sin(r)*d);
+
+                r = _random.uniform_real(2.f * math::pi);
+                d = _random.uniform_real(128.f * scale);
+
+                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity += direction * d * 0.5f;
+
+                p->color = color4(1,_random.uniform_real(.5f, 1.f),0,1);
+                p->color_velocity = color4(0,0,0,_random.uniform_real(-2.5f, -1.5f));
+                p->size = 0.5f;
+                p->size_velocity = 0.0f;
+                p->drag = _random.uniform_real(.5f, 1.f);
+                p->flags = render::particle::tail;
+            }
+#endif
+            break;
+        }
+
         default:
             break;
     }

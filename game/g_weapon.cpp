@@ -27,12 +27,7 @@ std::vector<weapon_info> weapon::_types = {
         /* projectile */        {
             /* damage */            .2f,
             /* speed */             786.f,
-            /* inertia */           true,
-            /* homing */            false,
-            /* fuse_time */         time_delta::from_seconds(5.f),
-            /* fade_time */         time_delta::from_seconds(1.f),
-            /* color */             color4(1.f, 0.f, 0.f, 1.f),
-            /* tail_time */         time_delta::from_seconds(.02f),
+            /* diameter */          1.f,
             /* launch_effect */     effect_type::blaster,
             /* launch_sound */      sound::asset::invalid,
             /* flight_effect */     effect_type::none,
@@ -49,12 +44,7 @@ std::vector<weapon_info> weapon::_types = {
         /* projectile */        {
             /* damage */            .3f,
             /* speed */             1280.f,
-            /* inertia */           true,
-            /* homing */            false,
-            /* fuse_time */         time_delta::from_seconds(5.f),
-            /* fade_time */         time_delta::from_seconds(1.f),
-            /* color */             color4(1.f, .5f, 0.f, 1.f),
-            /* tail_time */         time_delta::from_seconds(.02f),
+            /* diameter */          1.f,
             /* launch_effect */     effect_type::cannon,
             /* launch_sound */      sound::asset::invalid,
             /* flight_effect */     effect_type::none,
@@ -71,12 +61,7 @@ std::vector<weapon_info> weapon::_types = {
         /* projectile */        {
             /* damage */            .2f,
             /* speed */             256.f,
-            /* inertia */           true,
-            /* homing */            true,
-            /* fuse_time */         time_delta::from_seconds(5.f),
-            /* fade_time */         time_delta::from_seconds(1.f),
-            /* color */             color4(1.f, 1.f, 1.f, 1.f),
-            /* tail_time */         time_delta::from_seconds(.02f),
+            /* diameter */          1.f,
             /* launch_effect */     effect_type::none,
             /* launch_sound */      sound::asset::invalid,
             /* flight_effect */     effect_type::missile_trail,
@@ -222,14 +207,11 @@ void weapon::think()
 
         if (_projectile_target && time - _last_attack_time <= projectile_info.count * projectile_info.delay) {
             if (_projectile_count < projectile_info.count && _projectile_count * projectile_info.delay <= time - _last_attack_time) {
-                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.projectile);
+                game::projectile* proj = get_world()->spawn<projectile>(_owner.get(), projectile_info.projectile, vec3_zero, vec3_zero);
                 vec2 start = get_position() * _owner->rigid_body().get_transform();
                 vec2 end = _projectile_target_pos * _projectile_target->rigid_body().get_transform();
 
                 vec2 relative_velocity = _projectile_target->get_linear_velocity();
-                if (projectile_info.projectile.inertia) {
-                    relative_velocity -= _owner->get_linear_velocity();
-                }
 
                 // lead target based on relative velocity
                 float dt = intercept_time(end - start, relative_velocity, projectile_info.projectile.speed);
@@ -240,9 +222,6 @@ void weapon::think()
                 vec2 dir = (end - start).normalize();
 
                 vec2 projectile_velocity = dir * projectile_info.projectile.speed;
-                if (projectile_info.projectile.inertia) {
-                    projectile_velocity += _owner->get_linear_velocity();
-                }
 
                 proj->set_position(start, true);
                 proj->set_linear_velocity(projectile_velocity);

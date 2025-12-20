@@ -13,14 +13,7 @@ struct projectile_info
 {
     float damage; //!< damage of the projectile
     float speed; //!< launch speed of the projectile
-    bool inertia; //!< whether to inherit owner velocity
-    bool homing; //!< whether to seek target
-
-    time_delta fuse_time; //!< time to removal
-    time_delta fade_time; //!< duration of fade before removal
-
-    color4 color; //!< draw color
-    time_delta tail_time; //!< size of projectile tail
+    float diameter; //!< 
 
     effect_type launch_effect;
     sound::asset launch_sound;
@@ -39,7 +32,7 @@ public:
     static const object_type _type;
 
 public:
-    projectile(object* owner, projectile_info info);
+    projectile(object* owner, projectile_info info, vec3 position, vec3 velocity);
     ~projectile();
 
     void spawn();
@@ -60,14 +53,12 @@ public:
 protected:
     projectile_info _info;
 
+    vec3 _position;
+    vec3 _velocity;
+
     time_value _impact_time;
 
     sound::channel* _channel;
-
-protected:
-    void update_homing();
-    void update_effects();
-    void update_sound();
 };
 
 } // namespace game
