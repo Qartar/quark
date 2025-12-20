@@ -18,8 +18,6 @@
 // global object
 game::session* g_Game;
 
-void find_server(bool connect);
-
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -27,10 +25,6 @@ namespace game {
 session::session()
     : _menu_active(true)
     , _dedicated(false)
-    , _upgrade_frac("g_upgradeFrac", 0.5f, config::archive|config::server, "upgrade fraction")
-    , _upgrade_penalty("g_upgradePenalty", 0.2f, config::archive|config::server, "upgrade penalty")
-    , _upgrade_min("g_upgradeMin", 0.2f, config::archive|config::server, "minimum upgrade fraction")
-    , _upgrades("g_upgrades", true, config::archive|config::server, "enable upgrades")
     , _net_master("net_master", "oedhead.no-ip.org", config::archive, "master server hostname")
     , _net_server_name("net_serverName", "Quark Server", config::archive, "local server name")
     , _cl_name("ui_name", "", config::archive, "user info: name")

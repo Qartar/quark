@@ -16,6 +16,8 @@ class weapon;
 class navigation;
 class subsystem;
 
+class faction;
+
 //------------------------------------------------------------------------------
 struct turret_info
 {
@@ -54,7 +56,7 @@ public:
     static const object_type _type;
 
 public:
-    ship();
+    ship(handle<game::faction> faction);
     ~ship();
 
     void spawn();
@@ -79,7 +81,7 @@ public:
     handle<game::navigation> navigation() { return _navigation; }
     handle<game::navigation const> navigation() const { return _navigation; }
 
-    bool is_destroyed() const { return _is_destroyed; }
+    handle<game::faction> faction() const { return _faction; }
 
 protected:
     game::usercmd _usercmd;
@@ -91,6 +93,8 @@ protected:
     handle<game::engines> _engines;
     handle<game::navigation> _navigation;
 
+    handle<game::faction> _faction;
+
     ship_info const* _info;
 
     struct turret_state {
@@ -100,12 +104,8 @@ protected:
 
     std::vector<turret_state> _turrets;
 
-    time_value _dead_time;
 
-    bool _is_destroyed;
 
-    static constexpr time_delta destruction_time = time_delta::from_seconds(3.f);
-    static constexpr time_delta respawn_time = time_delta::from_seconds(3.f);
 
     static physics::material _material;
 };

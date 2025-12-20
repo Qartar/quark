@@ -77,68 +77,10 @@ void aicontroller::think()
     // update navigation
     //
 
-    if (!_ship->is_destroyed()) {
+    {
         constexpr float radius = 128.f;
         vec2 target = vec2(radius, -radius) * _ship->get_transform();
         _ship->navigation()->set_waypoint(target);
-    }
-
-    //
-    // update weapons
-    //
-
-    for (auto& weapon : _ship->weapons()) {
-        if (!_ship->is_destroyed() && _random.uniform_real() < .01f) {
-            // get a list of all ships in the world
-            std::vector<game::ship*> ships;
-            for (auto* object : get_world()->objects()) {
-                if (object != _ship && object->is_type<ship>()) {
-                    if (!static_cast<ship*>(object)->is_destroyed()) {
-                        ships.push_back(static_cast<ship*>(object));
-                    }
-                }
-            }
-
-            // select a random target
-            if (ships.size()) {
-                game::ship* target = ships[_random.uniform_int(ships.size())];
-                if (std::holds_alternative<projectile_weapon_info>(weapon->info())
-                    || std::holds_alternative<pulse_weapon_info>(weapon->info())) {
-                    weapon->attack_point(target, vec2_zero);
-                } else if (std::holds_alternative<beam_weapon_info>(weapon->info())) {
-                    vec2 v = _random.uniform_nsphere<vec2>();
-                    weapon->attack_sweep(target, v * -4.f, v * 4.f);
-                }
-            }
-        }
-
-        if (!_ship->is_destroyed()) {
-            // cancel pending attacks on targets that have been destroyed
-            if (weapon->target() && weapon->target()->is_type<ship>()) {
-                if (static_cast<ship const*>(weapon->target())->is_destroyed()) {
-                    weapon->cancel();
-                }
-            }
-        }
-    }
-
-    //
-    // handle respawn
-    //
-
-    if (_ship->is_destroyed()) {
-        if (_destroyed_time > time) {
-            _destroyed_time = time;
-        } else if (time - _destroyed_time >= respawn_time) {
-            _destroyed_time = time_value::max;
-            get_world()->remove(_ship.get());
-
-            // spawn a new ship to replace the destroyed ship's place
-            _ship = get_world()->spawn<ship>();
-            _ship->set_position(vec2(_random.uniform_real(-320.f, 320.f), _random.uniform_real(-240.f, 240.f)), true);
-            _ship->set_rotation(rot2(_random.uniform_real(2.f * math::pi)), true);
-
-        }
     }
 }
 

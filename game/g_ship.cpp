@@ -6,6 +6,7 @@
 
 #include "g_ship.h"
 #include "g_character.h"
+#include "g_faction.h"
 #include "g_navigation.h"
 #include "g_shield.h"
 #include "g_weapon.h"
@@ -137,11 +138,10 @@ const ship_info ships_info[] =
 static int ships_idx = 0;
 
 //------------------------------------------------------------------------------
-ship::ship()
+ship::ship(handle<game::faction> faction)
     : _usercmd{}
-    , _dead_time(time_value::max)
-    , _is_destroyed(false)
     , _info(&ships_info[ships_idx++ % countof(ships_info)])
+    , _faction(faction)
 {
     _rigid_body = physics::rigid_body(&_info->shape, &_material, 1.f);
 
@@ -189,62 +189,62 @@ void ship::spawn()
 //------------------------------------------------------------------------------
 void ship::draw(render::system* renderer, time_value time) const
 {
-    if (!_is_destroyed) {
-        constexpr color4 color(.8f,.9f,1.f,1.f);
-        auto tx = get_transform(time);
+    color4 color = _faction ? _faction->color() : color4(.8f,.9f,1.f,1.f);
+    auto tx = get_transform(time);
 
-        // draw hull outline
-        {
-            vec2 v0 = _info->outline[0] * tx;
-            for (std::size_t ii = 1; ii < _info->outline.size(); ++ii) {
-                vec2 v1 = _info->outline[ii] * tx;
-                renderer->draw_line(v0, v1, color, color);
-                v0 = v1;
-            }
-            vec2 v1 = _info->outline[0] * tx;
+    // draw hull outline
+    {
+        vec2 v0 = _info->outline[0] * tx;
+        for (std::size_t ii = 1; ii < _info->outline.size(); ++ii) {
+            vec2 v1 = _info->outline[ii] * tx;
             renderer->draw_line(v0, v1, color, color);
+            v0 = v1;
         }
+        vec2 v1 = _info->outline[0] * tx;
+        renderer->draw_line(v0, v1, color, color);
+    }
 
-        // draw turrets
-        for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
-            auto const& turret = _info->turrets[jj];
-            mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[jj].traverse)) * tx;
+    // draw turrets
+    for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
+        auto const& turret = _info->turrets[jj];
+        mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[jj].traverse)) * tx;
 
-            // draw turret outline
-            vec2 f1 = vec2(turret.radius, .6f * turret.radius) * turret_tx;
-            vec2 f2 = vec2(turret.radius, -.6f * turret.radius) * turret_tx;
-            vec2 m1 = vec2(.3f * turret.radius, turret.radius) * turret_tx;
-            vec2 m2 = vec2(.3f * turret.radius, -turret.radius) * turret_tx;
-            vec2 m3 = vec2(-.3f * turret.radius, turret.radius) * turret_tx;
-            vec2 m4 = vec2(-.3f * turret.radius, -turret.radius) * turret_tx;
-            vec2 r1 = vec2(-2.f * turret.radius, .8f * turret.radius) * turret_tx;
-            vec2 r2 = vec2(-2.f * turret.radius, -.8f * turret.radius) * turret_tx;
+        // draw turret outline
+        vec2 f1 = vec2(turret.radius, .6f * turret.radius) * turret_tx;
+        vec2 f2 = vec2(turret.radius, -.6f * turret.radius) * turret_tx;
+        vec2 m1 = vec2(.3f * turret.radius, turret.radius) * turret_tx;
+        vec2 m2 = vec2(.3f * turret.radius, -turret.radius) * turret_tx;
+        vec2 m3 = vec2(-.3f * turret.radius, turret.radius) * turret_tx;
+        vec2 m4 = vec2(-.3f * turret.radius, -turret.radius) * turret_tx;
+        vec2 r1 = vec2(-2.f * turret.radius, .8f * turret.radius) * turret_tx;
+        vec2 r2 = vec2(-2.f * turret.radius, -.8f * turret.radius) * turret_tx;
 
-            renderer->draw_line(f1, f2, color, color);
-            renderer->draw_line(f1, m1, color, color);
-            renderer->draw_line(f2, m2, color, color);
-            renderer->draw_line(m1, m3, color, color);
-            renderer->draw_line(m2, m4, color, color);
-            renderer->draw_line(m3, r1, color, color);
-            renderer->draw_line(m4, r2, color, color);
-            renderer->draw_line(r1, r2, color, color);
+        renderer->draw_line(f1, f2, color, color);
+        renderer->draw_line(f1, m1, color, color);
+        renderer->draw_line(f2, m2, color, color);
+        renderer->draw_line(m1, m3, color, color);
+        renderer->draw_line(m2, m4, color, color);
+        renderer->draw_line(m3, r1, color, color);
+        renderer->draw_line(m4, r2, color, color);
+        renderer->draw_line(r1, r2, color, color);
 
-            // draw guns
-            for (int ii = 0; ii < turret.num_guns; ++ii) {
-                float x = turret.radius;
-                float y = turret.spacing * (ii - .5f * (turret.num_guns - 1));
-                vec2 v1 = vec2(x, y);
+        float l = 0.9f * cos(_turrets[jj].elevation) * turret.length;
 
-                vec2 pts[4] = {
-                    (v1 + vec2(0, 1.5f * turret.caliber)) * turret_tx,
-                    (v1 + vec2(0.9f * turret.length, .5f * turret.caliber)) * turret_tx,
-                    (v1 + vec2(0.9f * turret.length, -.5f * turret.caliber)) * turret_tx,
-                    (v1 + vec2(0, -1.5f * turret.caliber)) * turret_tx
-                };
-                renderer->draw_line(pts[0], pts[1], color, color);
-                renderer->draw_line(pts[1], pts[2], color, color);
-                renderer->draw_line(pts[2], pts[3], color, color);
-            }
+        // draw guns
+        for (int ii = 0; ii < turret.num_guns; ++ii) {
+            float x = turret.radius;
+            float y = turret.spacing * (ii - .5f * (turret.num_guns - 1));
+            vec2 v1 = vec2(x, y);
+
+            vec2 pts[4] = {
+                (v1 + vec2(0, 1.5f * turret.caliber)) * turret_tx,
+                (v1 + vec2(l, .5f * turret.caliber)) * turret_tx,
+                (v1 + vec2(l, -.5f * turret.caliber)) * turret_tx,
+                (v1 + vec2(0, -1.5f * turret.caliber)) * turret_tx
+            };
+            renderer->draw_line(pts[0], pts[1], color, color);
+            renderer->draw_line(pts[1], pts[2], color, color);
+            renderer->draw_line(pts[2], pts[3], color, color);
         }
     }
 }
@@ -252,27 +252,13 @@ void ship::draw(render::system* renderer, time_value time) const
 //------------------------------------------------------------------------------
 bool ship::touch(object* /*other*/, physics::collision const* /*collision*/)
 {
-    return !_is_destroyed;
+    return true;
 }
 
 //------------------------------------------------------------------------------
 void ship::think()
 {
     time_value time = get_world()->frametime();
-
-    if (_dead_time > time && _reactor && _reactor->damage() == _reactor->maximum_power()) {
-        _dead_time = time;
-    }
-
-    if (_dead_time > time) {
-        for (auto& subsystem : _subsystems) {
-            if (subsystem->damage()) {
-                subsystem->repair(1.f / 15.f);
-                break;
-            }
-        }
-    }
-
     {
         vec2 cursor = _usercmd.cursor;
         auto tx = get_transform(time);
@@ -283,44 +269,6 @@ void ship::think()
             float angle = atan2f(dir.y, dir.x) - get_rotation(time).radians() - _info->turrets[jj].orientation;
             angle -= math::twopi * std::round(angle / math::twopi); // normalize to [-pi,pi)
             _turrets[jj].traverse = clamp(angle, _info->turrets[jj].traverse[0], _info->turrets[jj].traverse[1]);
-        }
-    }
-
-    //
-    // Death sequence
-    //
-
-    if (time > _dead_time) {
-        if (time - _dead_time < destruction_time) {
-            float t = min(.8f, (time - _dead_time) / destruction_time);
-            float s = powf(_random.uniform_real(), 6.f * (1.f - t));
-
-            // random explosion at a random point on the ship
-            if (s > .2f) {
-                // find a random point on the ship's model
-                bounds b = _rigid_body.get_shape()->calculate_bounds(mat3_identity);
-                vec2 v;
-                do {
-                    v = b.mins() + b.size() * vec2(_random.uniform_real(), _random.uniform_real());
-                } while (!_rigid_body.get_shape()->contains_point(v));
-
-                get_world()->add_effect(time, effect_type::explosion, v * get_transform(), vec2_zero, .2f * s);
-                if (s * s > t) {
-                    sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
-                    get_world()->add_sound(_sound_explosion, get_position(), .2f * s);
-                }
-            }
-        } else if (!_is_destroyed) {
-            // add final explosion effect
-            get_world()->add_effect(time, effect_type::explosion, get_position(), vec2_zero);
-            sound::asset _sound_explosion = pSound->load_sound("assets/sound/cannon_impact.wav");
-            get_world()->add_sound(_sound_explosion, get_position());
-
-            // remove all subsystems
-            _crew.clear();
-            _subsystems.clear();
-
-            _is_destroyed = true;
         }
     }
 }

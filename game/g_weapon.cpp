@@ -197,13 +197,9 @@ void weapon::think()
 {
     subsystem::think();
 
-    ship const* target_ship = _target && _target->is_type<ship>()
-        ? static_cast<ship const*>(_target.get()) : nullptr;
-
     // cancel pending attacks if weapon subsystem has been damaged or if target
     // has been destroyed (ships are not immediately removed when destroyed)
-    if (current_power() < maximum_power() || !_target
-            || (target_ship && target_ship->is_destroyed())) {
+    if (current_power() < maximum_power() || !_target) {
         cancel();
     }
 
