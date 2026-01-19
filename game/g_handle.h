@@ -135,6 +135,10 @@ protected:
     }
 
     uint64_t get_world_index() const { return (_value & system_mask) >> system_shift; }
+
+    explicit handle(uint64_t bits)
+        : _value(bits)
+    {}
 };
 
 //------------------------------------------------------------------------------

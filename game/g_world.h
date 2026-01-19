@@ -210,7 +210,6 @@ private:
     template<typename T> T* get(handle<T> handle) const;
 
     physics::world _physics;
-    std::map<physics::rigid_body const*, game::object*> _physics_objects;
 
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);

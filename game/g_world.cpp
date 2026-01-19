@@ -310,7 +310,6 @@ void world::clear()
     // assign with empty queue because std::queue has no clear method
     _removed = std::queue<handle<game::object>>{};
 
-    _physics_objects.clear();
     _particles.clear();
 }
 
@@ -492,35 +491,18 @@ void world::write_effect(time_value time, effect_type type, vec2 position, vec2 
 //------------------------------------------------------------------------------
 game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore) const
 {
-    struct candidate {
-        float fraction;
-        physics::contact contact;
-        game::object* object;
+    // TODO: Should either expose trace results to the caller or push the filtering
+    // into the physics world to avoid an arbitrarily sized results array here.
+    physics::world::trace_result tr[32];
 
-        bool operator<(candidate const& other) const {
-            return fraction < other.fraction;
-        }
-    };
-
-    std::set<candidate> candidates;
-    for (auto& other : _physics_objects) {
-        if (other.second == ignore || other.second->_owner == ignore) {
+    std::size_t num_results = _physics.trace(start, end, tr, ignore ? countof(tr) : 1);
+    for (std::size_t ii = 0; ii < num_results; ++ii) {
+        game::object* obj = handle<object>(tr[ii].body->get_handle_bits()).get();
+        if (ignore == obj || (ignore && ignore == obj->_owner)) {
             continue;
         }
-
-        auto tr = physics::trace(other.first, start, end);
-        if (tr.get_fraction() < 1.0f) {
-            candidates.insert(candidate{
-                tr.get_fraction(),
-                tr.get_contact(),
-                other.second}
-            );
-        }
-    }
-
-    if (candidates.size()) {
-        contact = candidates.begin()->contact;
-        return candidates.begin()->object;
+        contact = tr[ii].c;
+        return obj;
     }
 
     return nullptr;
@@ -537,21 +519,21 @@ void world::add_sound(sound::asset sound_asset, vec2 position, float volume)
 void world::add_body(game::object* owner, physics::rigid_body* body)
 {
     _physics.add_body(body);
-    _physics_objects[body] = owner;
+    body->set_handle_bits(owner->_self._value);
 }
 
 //------------------------------------------------------------------------------
 void world::remove_body(physics::rigid_body* body)
 {
     _physics.remove_body(body);
-    _physics_objects.erase(body);
+    body->set_handle_bits(0);
 }
 
 //------------------------------------------------------------------------------
 bool world::physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b)
 {
-    game::object* obj_a = _physics_objects[body_a];
-    game::object* obj_b = _physics_objects[body_b];
+    game::object* obj_a = handle<object>(body_a->get_handle_bits()).get();
+    game::object* obj_b = handle<object>(body_b->get_handle_bits()).get();
 
     if (obj_b->is_type<projectile>()) {
         return false;
@@ -570,8 +552,8 @@ bool world::physics_filter_callback(physics::rigid_body const* body_a, physics::
 //------------------------------------------------------------------------------
 bool world::physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision)
 {
-    game::object* obj_a = _physics_objects[body_a];
-    game::object* obj_b = _physics_objects[body_b];
+    game::object* obj_a = handle<object>(body_a->get_handle_bits()).get();
+    game::object* obj_b = handle<object>(body_b->get_handle_bits()).get();
 
     return obj_a->touch(obj_b, &collision);
 }

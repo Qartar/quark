@@ -38,6 +38,20 @@ public:
 
     void step(float delta_time);
 
+    struct trace_result
+    {
+        physics::contact c; //!< Trace intersection
+        float fraction; //!< Fraction along trace
+        physics::rigid_body* body; //!< Intersected body
+    };
+
+    //! Trace through all bodies in the world from `start` to `end` and return
+    //! a list of contacts in `results` sorted by trace fraction.
+    std::size_t trace(vec2 start,
+                      vec2 end,
+                      trace_result* results,
+                      std::size_t max_results) const;
+
 protected:
     std::vector<physics::rigid_body*> _bodies;
 

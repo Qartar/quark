@@ -21,6 +21,7 @@ public:
         , _inverse_inertia(0)
         , _center_of_mass(0,0)
         , _material(material)
+        , _handle_bits(0)
     {
         set_mass(mass);
     }
@@ -121,6 +122,18 @@ public:
         return _material;
     }
 
+    //
+    //  game interface
+    //
+
+    uint64_t get_handle_bits() const {
+        return _handle_bits;
+    }
+
+    void set_handle_bits(uint64_t bits) {
+        _handle_bits = bits;
+    }
+
 protected:
     motion _motion;
 
@@ -129,6 +142,8 @@ protected:
     vec2 _center_of_mass;
 
     material const* _material;
+
+    uint64_t _handle_bits;
 };
 
 } // namespace physics

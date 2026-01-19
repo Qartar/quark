@@ -105,6 +105,56 @@ void world::step(float delta_time)
 }
 
 //------------------------------------------------------------------------------
+std::size_t world::trace(
+    vec2 start,
+    vec2 end,
+    trace_result* results,
+    std::size_t max_results) const
+{
+    bounds trace_bounds = bounds::from_points({start, end});
+    std::size_t num_results = 0;
+
+    // TODO: spatial acceleration
+    for (std::size_t ii = 0; ii < _bodies.size(); ++ii) {
+        if (!trace_bounds.intersects(_bodies[ii]->get_bounds())) {
+            continue;
+        }
+
+        auto tr = physics::trace(_bodies[ii], start, end);
+        if (tr.get_fraction() == 1.f) {
+            continue;
+        }
+
+        // insertion sort
+        std::size_t jj = 0;
+        for (; jj < num_results; ++jj) {
+            if (tr.get_fraction() < results[jj].fraction) {
+                break;
+            }
+        }
+
+        if (jj >= max_results) {
+            continue;
+        }
+
+        if (num_results < max_results) {
+            results[num_results].c = tr.get_contact();
+            results[num_results].fraction = tr.get_fraction();
+            results[num_results].body = _bodies[ii];
+            std::rotate(results + jj, results + num_results, results + num_results + 1);
+            ++num_results;
+        } else {
+            std::rotate(results + jj, results + max_results - 1, results + max_results);
+            results[jj].c = tr.get_contact();
+            results[jj].fraction = tr.get_fraction();
+            results[jj].body = _bodies[ii];
+        }
+    }
+
+    return num_results;
+}
+
+//------------------------------------------------------------------------------
 vec2 world::collision_impulse(
     physics::rigid_body const* body_a,
     physics::rigid_body const* body_b,
