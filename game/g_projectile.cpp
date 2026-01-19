@@ -36,8 +36,6 @@ projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 
 //------------------------------------------------------------------------------
 projectile::~projectile()
 {
-    get_world()->remove_body(&_rigid_body);
-
     if (_channel) {
         _channel->stop();
         pSound->free_channel(_channel);
@@ -48,8 +46,6 @@ projectile::~projectile()
 void projectile::spawn()
 {
     object::spawn();
-
-    get_world()->add_body(this, &_rigid_body);
 }
 
 //------------------------------------------------------------------------------
@@ -60,7 +56,20 @@ void projectile::think()
 
     ballistics::step(new_position, new_velocity, 2e-6f, FRAMETIME);
 
-    set_linear_velocity((new_position.to_vec2() - get_position()) / FRAMETIME.to_seconds());
+    // Assume projectiles never hit anything on their way up
+    if (new_velocity.z < 0.f && new_position.z < 12.f) {
+        physics::contact c;
+        game::object* obj = get_world()->trace(c, _position.to_vec2(), new_position.to_vec2());
+
+        if (obj) {
+            physics::collision collision(c);
+            touch(obj, &collision);
+        }
+    }
+
+    // rigid body position and velocity is used for rendering
+    set_position(new_position.to_vec2());
+    set_linear_velocity((new_position - _position).to_vec2() / FRAMETIME.to_seconds());
 
     _position = new_position;
     _velocity = new_velocity;
@@ -85,9 +94,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
     }
 
     // TODO: need to intersect with ship components in 3d space
-    if (_position.z > 12.f) {
-        return false;
-    }
+    // ...
 
     // calculate impact time
     {

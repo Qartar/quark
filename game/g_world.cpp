@@ -378,10 +378,10 @@ void world::run_frame()
             continue;
         }
 
-        _objects[ii]->think();
-
         _objects[ii]->_old_position = _objects[ii]->get_position();
         _objects[ii]->_old_rotation = _objects[ii]->get_rotation();
+
+        _objects[ii]->think();
     }
 
     _physics.step(FRAMETIME.to_seconds());
