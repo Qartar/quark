@@ -20,43 +20,7 @@ class subsystem;
 
 class faction;
 
-//------------------------------------------------------------------------------
-struct turret_info
-{
-    vec2 position; //!< Position of the turret on the ship
-    float radius; //!< Radius of the turret ring
-    float orientation; //!< Default orientation, in radians from ship ahead
-    vec2 traverse; //!< Minimum and maximum traverse angle, in radians from default orientation
-    float traverse_speed; //!< Angular speed in radians/sec
-    vec2 elevation; //!< Minimum and maximum elevation angle, in radians from level
-    float elevation_speed; //!< Angular speed in radians/sec
-
-    time_delta reload_time;
-
-    int num_guns; //!< Number of gun barrels
-    float spacing; //!< Spacing between each gun barrel
-    float caliber; //!< Internal diameter of gun barrels
-    float length; //!< Length of gun barrels
-
-    float shell_mass; //!< Mass of shell
-    float shell_velocity; //!< Muzzle velocity of shell
-};
-
-//------------------------------------------------------------------------------
-struct ship_info
-{
-    string::buffer name;
-
-    float length;
-    float beam;
-
-    float displacement;
-
-    physics::compound_shape shape;
-    std::vector<vec2> outline;
-
-    std::vector<turret_info> turrets;
-};
+struct ship_design;
 
 //------------------------------------------------------------------------------
 class ship : public object
@@ -104,7 +68,7 @@ protected:
 
     handle<game::faction> _faction;
 
-    ship_info const* _info;
+    ship_design const* _design;
 
     struct turret_state {
         float traverse; //!< Current traverse angle in radians, relative to default orientation

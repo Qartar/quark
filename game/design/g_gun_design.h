@@ -1,0 +1,32 @@
+// g_gun_design.h
+//
+
+#pragma once
+
+#include "cm_string.h"
+
+////////////////////////////////////////////////////////////////////////////////
+namespace game {
+
+//------------------------------------------------------------------------------
+struct gun_design
+{
+    string::buffer name;
+
+    float caliber; //!< Internal diameter of gun barrels
+    float length; //!< Length of gun barrels
+
+    float shell_mass; //!< Mass of projectile
+    float shell_velocity; //!< Muzzle velocity of projectile
+
+    float shell_coefficient; //!< Ballistic coefficient of projectile
+};
+
+extern const gun_design gun_46cm_45_Type_94;
+extern const gun_design gun_16in_50_caliber_Mark_7;
+extern const gun_design gun_BL_14_inch_Mk_VII;
+extern const gun_design gun_28cm_SK_C_28;
+extern const gun_design gun_BL_6_inch_Mk_XXIII;
+extern const gun_design gun_QF_4_7_inch_Mark_IX;
+
+} // namespace game

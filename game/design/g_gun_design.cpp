@@ -1,0 +1,72 @@
+// g_gun_design.cpp
+//
+
+#include "precompiled.h"
+#pragma hdrstop
+
+#include "design/g_gun_design.h"
+
+////////////////////////////////////////////////////////////////////////////////
+namespace game {
+
+const gun_design gun_46cm_45_Type_94 =
+{
+    /* name */              string::buffer("46 cm/45 Type 94"),
+    /* caliber */           0.46f,
+    /* length */            20.7f,
+    /* shell_mass */        1460.f,
+    /* shell_velocity */    780.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_16in_50_caliber_Mark_7 =
+{
+    /* name */              string::buffer("16\"/50 caliber Mark 7"),
+    /* caliber */           .406f,
+    /* length */            20.f,
+    /* shell_mass */        1225.f,
+    /* shell_velocity */    762.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_BL_14_inch_Mk_VII =
+{
+    /* name */              string::buffer("BL 14-inch Mk VII"),
+    /* caliber */           .3556f,
+    /* length */            16.f,
+    /* shell_mass */        721.2f,
+    /* shell_velocity */    757.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_28cm_SK_C_28 =
+{
+    /* name */              string::buffer("28 cm SK C/28"),
+    /* caliber */           .283f,
+    /* length */            14.815f,
+    /* shell_mass */        300.f,
+    /* shell_velocity */    910.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_BL_6_inch_Mk_XXIII =
+{
+    /* name */              string::buffer("BL 6-inch Mk XIII"),
+    /* caliber */           .1524f,
+    /* length */            7.6f,
+    /* shell_mass */        51.f,
+    /* shell_velocity */    840.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_QF_4_7_inch_Mark_IX =
+{
+    /* name */              string::buffer("QF 4.7-inch Mk IX"),
+    /* caliber */           .12f,
+    /* length */            5.4f,
+    /* shell_mass */        22.7f,
+    /* shell_velocity */    810.f,
+    /* shell_coefficient */ 0.f,
+};
+
+} // namespace game
