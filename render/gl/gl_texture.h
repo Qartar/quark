@@ -25,6 +25,11 @@ public:
 
     void bind(GLuint textureunit = 0) const;
 
+    void parameter(GLenum pname, GLfloat param);
+    void parameter(GLenum pname, GLfloat const* params);
+    void parameter(GLenum pname, GLint param);
+    void parameter(GLenum pname, GLint const* params);
+
 protected:
     GLuint _name;
     GLenum _target;
@@ -52,12 +57,20 @@ protected:
     using PFNGLBINDTEXTUREUNIT = void (APIENTRY*)(GLuint unit, GLuint texture);
     using PFNGLTEXTURESTORAGE2D = void (APIENTRY*)(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
     using PFNGLTEXTURESTORAGE2DMULTISAMPLE = void (APIENTRY*)(GLuint texture, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
+    using PFNGLTEXTUREPARAMETERF = void (APIENTRY*)(GLuint texture, GLenum pname, GLfloat param);
+    using PFNGLTEXTUREPARAMETERFV = void (APIENTRY*)(GLuint texture, GLenum pname, GLfloat const* params);
+    using PFNGLTEXTUREPARAMETERI = void (APIENTRY*)(GLuint texture, GLenum pname, GLint param);
+    using PFNGLTEXTUREPARAMETERIV = void (APIENTRY*)(GLuint texture, GLenum pname, GLint const* params);
 
     static PFNGLCREATETEXTURES glCreateTextures;
     static PFNGLTEXTURESUBIMAGE2D glTextureSubImage2D;
     static PFNGLBINDTEXTUREUNIT glBindTextureUnit;
     static PFNGLTEXTURESTORAGE2D glTextureStorage2D;
     static PFNGLTEXTURESTORAGE2DMULTISAMPLE glTextureStorage2DMultisample;
+    static PFNGLTEXTUREPARAMETERF glTextureParameterf;
+    static PFNGLTEXTUREPARAMETERFV glTextureParameterfv;
+    static PFNGLTEXTUREPARAMETERI glTextureParameteri;
+    static PFNGLTEXTUREPARAMETERIV glTextureParameteriv;
 };
 
 //------------------------------------------------------------------------------
