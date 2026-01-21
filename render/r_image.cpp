@@ -159,20 +159,22 @@ bool image::upload(HBITMAP bitmap)
         return false;
     }
 
-    BITMAP bm;
+    BITMAPINFO bmi{sizeof(BITMAPINFOHEADER)};
 
-    if (!GetObjectA(bitmap, sizeof(bm), &bm)) {
+    if (!GetDIBits(GetDC(NULL), bitmap, 0, 0, nullptr, &bmi, DIB_RGB_COLORS)) {
         return false;
     }
 
-    std::vector<uint8_t> buffer(bm.bmWidthBytes * bm.bmHeight);
+    // Row data is DWORD-aligned
+    LONG stride = (((bmi.bmiHeader.biWidth * bmi.bmiHeader.biBitCount) + 31) & ~31) >> 3;
+    std::vector<uint8_t> buffer(stride * abs(bmi.bmiHeader.biHeight));
 
-    if (!GetBitmapBits(bitmap, narrow_cast<LONG>(buffer.size()), buffer.data())) {
+    if (!GetDIBits(GetDC(NULL), bitmap, 0, abs(bmi.bmiHeader.biHeight), buffer.data(), &bmi, DIB_RGB_COLORS)) {
         return false;
     }
 
-    _width = bm.bmWidth;
-    _height = bm.bmHeight;
+    _width = bmi.bmiHeader.biWidth;
+    _height = abs(bmi.bmiHeader.biHeight);
 
     _texture = gl::texture2d(1, GL_RGB8, _width, _height);
     _texture.upload(0, 0, 0, _width, _height, GL_BGR, GL_UNSIGNED_BYTE, buffer.data());
