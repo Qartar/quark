@@ -21,6 +21,26 @@ namespace game {
     vec2(0.3f * L, 0.5f * B),   \
     vec2(0.5f * L, 0.f),
 
+
+#define SHIP_CUBE(L,B)          \
+    vec2(-0.5f * L, 0.f),       \
+    vec2(-0.5f * L, 0.5f * B),  \
+    vec2(-0.25f * L, 0.5f * B), \
+    vec2(-0.1f * L, 0.5f * B),  \
+    vec2(0.1f * L, 0.5f * B),   \
+    vec2(0.25f * L, 0.5f * B),  \
+    vec2(0.3f * L, 0.5f * B),   \
+    vec2(0.5f * L, 0.f),
+
+#define SHIP_CUBE2(L,B)          \
+    vec2(-0.5f * L, 0.f),       \
+    vec2(-0.5f * L, 0.5f * B),  \
+    vec2(-0.25f * L, 0.5f * B), \
+    vec2(0, 0.5f * B),          \
+    vec2(0.25f * L, 0.5f * B),  \
+    vec2(0.3f * L, 0.5f * B),   \
+    vec2(0.5f * L, 0.f),
+
 //------------------------------------------------------------------------------
 ship_editor::ship_editor()
     : _view{}
@@ -37,18 +57,36 @@ ship_editor::ship_editor()
     , _drag_index(0)
     , _image(nullptr)
     , _image_offset(vec2_zero)
-    , _image_scale(1.f/10.f)
+    , _image_scale("image_scale", 1.f/15.175f, 0, "")
 {
     _view.viewport.maxs() = application::singleton()->window()->size();
     _view.size = {64.f, 64.f * float(_view.viewport.maxs().y) / float(_view.viewport.maxs().x)};
 
     _image = application::singleton()->window()->renderer()->load_image(
         //"C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Constellation.bmp"
-        "D:\\Users\\Carter\\Pictures\\Yamato1945.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Yamato1945.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Kongo1944.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Fuso1944.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Iowa_classe_battleships_drawing.bmp"
+        //"D:\\Users\\Carter\\Pictures\\KGV-as-built.bmp"
+        "D:\\Users\\Carter\\Pictures\\3607_Richelieu1941-09BattleofDakar_20231216154932.bmp"
+        //"D:\\Users\\Carter\\Pictures\\6474_Bismarck1941-05-271_20240302131526.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Littorio_class_battleship-drawing-2views.bmp"
     );
 
-    _deck_vertices = { SHIP(263.f, 39.f) };
+    _deck_vertices = { SHIP(219.61f, 33.1f) };
     _deck_segments = { quad, quad };
+
+    //_deck_vertices = { SHIP_CUBE(219.61f, 28.04f) }; // Kongo
+    //_deck_vertices = { SHIP_CUBE(210.f, 33.1f) }; // Fuso
+    //_deck_vertices = { SHIP_CUBE(270.f, 33.f) }; // Iowa
+    //_deck_vertices = { SHIP_CUBE(227.f, 31.5f) }; // KGV
+    //_deck_segments = { cube, line, cube };
+    _deck_vertices = { SHIP_CUBE2(247.85f, 33.08f) }; // Richelieu (scale 0.1524)
+    //_deck_vertices = { SHIP_CUBE2(241.6f, 36.f) }; // Bismarck (scale 0.144685)
+    _deck_segments = { cube, cube };
+    //_deck_vertices = { SHIP_CUBE(237.76f, 32.82f) }; // Littorio (scale 0.415)
+    //_deck_segments = { cube, line, cube };
 }
 
 //------------------------------------------------------------------------------
@@ -86,7 +124,7 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
 {
     if (_image) {
         renderer->set_view(_view);
-        vec2 image_size = vec2(vec2i(_image->width(), -_image->height())) * _image_scale;
+        vec2 image_size = vec2(vec2i(_image->width(), _image->height())) * _image_scale;
         renderer->draw_image(_image, _image_offset - .5f * image_size, image_size, color4(1,1,1,.5f));
     }
 
@@ -141,11 +179,18 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
                 renderer->draw_box(vertex_size, _deck_vertices[jj + 1], color4(1,0,0,1));
                 jj += 1;
             } else if (_deck_segments[ii] == quad) {
-                draw_bezier(renderer, _deck_vertices[jj + 0], _deck_vertices[jj + 1], _deck_vertices[jj + 2], color4(1,1,1,1));
+                draw_bezier_quad(renderer, _deck_vertices[jj + 0], _deck_vertices[jj + 1], _deck_vertices[jj + 2], color4(1,1,1,1));
                 renderer->draw_box(vertex_size, _deck_vertices[jj + 0], color4(1,0,0,1));
                 renderer->draw_box(vertex_size, _deck_vertices[jj + 1], color4(1,1,0,1));
                 renderer->draw_box(vertex_size, _deck_vertices[jj + 2], color4(1,0,0,1));
                 jj += 2;
+            } else if (_deck_segments[ii] == cube) {
+                draw_bezier_cube(renderer, _deck_vertices[jj + 0], _deck_vertices[jj + 1], _deck_vertices[jj + 2], _deck_vertices[jj + 3], color4(1,1,1,1));
+                renderer->draw_box(vertex_size, _deck_vertices[jj + 0], color4(1,0,0,1));
+                renderer->draw_box(vertex_size, _deck_vertices[jj + 1], color4(1,1,0,1));
+                renderer->draw_box(vertex_size, _deck_vertices[jj + 2], color4(1,1,0,1));
+                renderer->draw_box(vertex_size, _deck_vertices[jj + 3], color4(1,0,0,1));
+                jj += 3;
             }
         }
     }
@@ -192,7 +237,7 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
 }
 
 //------------------------------------------------------------------------------
-void ship_editor::draw_bezier(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const
+void ship_editor::draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const
 {
     vec2 v0 = a;
     for (int ii = 1; ii < 32; ++ii) {
@@ -202,6 +247,22 @@ void ship_editor::draw_bezier(render::system* renderer, vec2 a, vec2 b, vec2 c, 
         v0 = v1;
     }
     renderer->draw_line(v0, c, color, color);
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec2 c, vec2 d, color4 color) const
+{
+    vec2 v0 = a;
+    for (int ii = 1; ii < 32; ++ii) {
+        float t = ii / 32.f;
+        float t2 = t * t;
+        float s = 1.f - t;
+        float s2 = s * s;
+        vec2 v1 = s2 * s * a + 3.f * s2 * t * b + 3.f * s * t2 * c + t * t2 * d;
+        renderer->draw_line(v0, v1, color, color);
+        v0 = v1;
+    }
+    renderer->draw_line(v0, d, color, color);
 }
 
 //------------------------------------------------------------------------------
@@ -294,6 +355,17 @@ float quad_closest_point(vec2 A, vec2 B, vec2 C, vec2 pos)
 }
 
 //------------------------------------------------------------------------------
+float cube_closest_point(vec2 A, vec2 B, vec2 C, vec2 D, vec2 pos)
+{
+    (void)A;
+    (void)B;
+    (void)C;
+    (void)D;
+    (void)pos;
+    return 0.5f;
+}
+
+//------------------------------------------------------------------------------
 vec2 ship_editor::closest_point(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments, vec2 v) const
 {
     std::size_t best_idx = SIZE_MAX;
@@ -322,6 +394,22 @@ vec2 ship_editor::closest_point(std::vector<vec2> const& vertices, std::vector<s
                 best_dsqr = dsqr;
             }
             jj += 2;
+        } else if (segments[ii] == cube) {
+            float t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
+            float s = 1.f - t;
+            float t2 = t * t;
+            float s2 = s * s;
+            vec2 p = s2 * s * vertices[jj + 0]
+                + 3.f * s2 * t * vertices[jj + 1]
+                + 3.f * s * t2 * vertices[jj + 2]
+                + t * t2 * vertices[jj + 3];
+            float dsqr = length_sqr(p - v);
+            if (dsqr < best_dsqr) {
+                best_idx = ii;
+                best_point = p;
+                best_dsqr = dsqr;
+            }
+            jj += 3;
         }
     }
 
@@ -371,6 +459,26 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
                 best_dsqr = dsqr;
             }
             jj += 2;
+        } else if (segments[ii] == cube) {
+            if (length_sqr(v - vertices[jj + 3]) < minimum_vertex_dsqr) {
+                return false;
+            }
+            float t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
+            float s = 1.f - t;
+            float t2 = t * t;
+            float s2 = s * s;
+            vec2 p = s2 * s * vertices[jj + 0]
+                   + 3.f * s2 * t * vertices[jj + 1]
+                   + 3.f * s * t2 * vertices[jj + 2]
+                   + t * t2 * vertices[jj + 3];
+            float dsqr = length_sqr(p - v);
+            if (dsqr < best_dsqr) {
+                best_idx = ii;
+                best_t = t;
+                best_point = p;
+                best_dsqr = dsqr;
+            }
+            jj += 3;
         }
     }
 
@@ -380,7 +488,13 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
 
     for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
         if (ii != best_idx) {
-            jj += segments[ii] == line ? 1 : 2;
+            if (segments[ii] == line) {
+                jj += 1;
+            } else if (segments[ii] == quad) {
+                jj += 2;
+            } else if (segments[ii] == cube) {
+                jj += 3;
+            }
             continue;
         }
 
@@ -400,6 +514,22 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
             vertices[jj + 1] = p12;
             // [a p12 c] -> [a p01 p p12 c]
             vertices.insert(vertices.begin() + jj + 1, {p01, best_point});
+            return true;
+        }
+
+        if (segments[ii] == cube) {
+            // use De Casteljau's algorithm to subdivide the curve at `best_point`
+            segments.insert(segments.begin() + ii, cube);
+            vec2 p01 = (1.f - best_t) * vertices[jj + 0] + best_t * vertices[jj + 1];
+            vec2 p12 = (1.f - best_t) * vertices[jj + 1] + best_t * vertices[jj + 2];
+            vec2 p23 = (1.f - best_t) * vertices[jj + 2] + best_t * vertices[jj + 3];
+            vec2 p012 = (1.f - best_t) * p01 + best_t * p12;
+            vec2 p123 = (1.f - best_t) * p12 + best_t * p23;
+            // [a b c d] -> [a p123 p23 d]
+            vertices[jj + 1] = p123;
+            vertices[jj + 2] = p23;
+            // [a p123 p23 d] -> [a p01 p012 p p123 p23 d]
+            vertices.insert(vertices.begin() + jj + 1, {p01, p012, best_point});
             return true;
         }
     }
@@ -453,6 +583,8 @@ bool ship_editor::remove_vertex(std::vector<vec2>& vertices, std::vector<segment
                 return true;
             }
             jj += 2;
+        } else if (segments[ii] == cube) {
+            jj += 3;
         }
     }
 
@@ -513,6 +645,9 @@ bool ship_editor::key_event(int key, bool down)
 
         case 'l':
             _draw_linearized = !_draw_linearized;
+            if (_draw_linearized) {
+                _deck_linearized = linearize(_deck_vertices, _deck_segments);
+            }
             return true;
 
         case K_F5:
@@ -697,9 +832,26 @@ std::vector<vec2> ship_editor::linearize(std::vector<vec2> const& vertices, std:
             linearized.push_back(vertices[jj + 1]);
             jj += 1;
         } else if (segments[ii] == quad) {
-            // TODO: subdivide bezier curve into multiple line segments based on error
-            linearized.push_back(vertices[jj + 2]);
+            std::vector<vec2> v = subdivide([&](float t){
+                float s = 1.f - t;
+                return s * s * vertices[jj + 0]
+                    + 2.f * s * t * vertices[jj + 1]
+                    + t * t * vertices[jj + 2];
+                }, 0.1f);
+            linearized.insert(linearized.end(), v.begin() + 1, v.end());
             jj += 2;
+        } else if (segments[ii] == cube) {
+            std::vector<vec2> v = subdivide([&](float t){
+                float s = 1.f - t;
+                float t2 = t * t;
+                float s2 = s * s;
+                return s2 * s * vertices[jj + 0]
+                     + 3.f * s2 * t * vertices[jj + 1]
+                     + 3.f * s * t2 * vertices[jj + 2]
+                     + t * t2 * vertices[jj + 3];
+                }, 0.1f);
+            linearized.insert(linearized.end(), v.begin() + 1, v.end());
+            jj += 3;
         }
     }
 
@@ -714,6 +866,63 @@ std::vector<vec2> ship_editor::linearize(std::vector<vec2> const& vertices, std:
     }
 
     return linearized;
+}
+
+//------------------------------------------------------------------------------
+std::vector<vec2> ship_editor::subdivide(std::function<vec2(float)> fn, float error)
+{
+    std::vector<vec2> p;
+    std::vector<float> t;
+    std::vector<float> e;
+
+    p.push_back(fn(0.f));
+    p.push_back(fn(1.f));
+    t.push_back(0.f);
+    t.push_back(1.f);
+    e.push_back(0.f);
+
+    for (std::size_t n = 1; ; ++n) {
+        p.insert(p.end() - 1, vec2_zero);
+        t.insert(t.end() - 1, 0.f);
+        e.push_back(0.f);
+
+        for (std::size_t ii = 1; ii < n + 1; ++ii) {
+            t[ii] = float(ii) / float(n + 1);
+            p[ii] = fn(t[ii]);
+        }
+
+        for (std::size_t jj = 0; jj < 128; ++jj) {
+            float rms = 0.f;
+            float emax = 0.f;
+            for (std::size_t ii = 0; ii < n + 1; ++ii) {
+                float t0 = .5f * (t[ii] + t[ii + 1]);
+                vec2 p0 = fn(t0);
+                vec2 v = p[ii + 1] - p[ii];
+                vec2 r = (p[ii] - p0) - dot(p[ii] - p0, v) * v / length_sqr(v);
+                e[ii] = length(r);
+                emax = max(emax, e[ii]);
+                rms += square(e[ii]);
+            }
+
+            if (emax < error) {
+                return p;
+            }
+
+            rms = sqrt(rms / float(n));
+            if (rms > 8.f * error) {
+                break;
+            }
+
+            e[0] = 1.f / e[0];
+            for (std::size_t ii = 1; ii < n + 1; ++ii) {
+                e[ii] = e[ii - 1] + 1.f / e[ii];
+            }
+            for (std::size_t ii = 1; ii < n + 1; ++ii) {
+                t[ii] = .5f * e[ii - 1] / e.back() + .5f * t[ii];
+                p[ii] = fn(t[ii]);
+            }
+        }
+    }
 }
 
 } // namespace game

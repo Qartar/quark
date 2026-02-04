@@ -28,6 +28,7 @@ protected:
     enum segment_type {
         line,
         quad,
+        cube,
     };
     std::vector<vec2> _deck_vertices;
     std::vector<segment_type> _deck_segments;
@@ -51,7 +52,7 @@ protected:
 
     render::image const* _image;
     vec2 _image_offset;
-    float _image_scale;
+    config::scalar _image_scale;
 
     //! minimum distance between vertices squared
     static constexpr float minimum_vertex_dsqr = 1.f;
@@ -60,7 +61,8 @@ protected:
     vec2 cursor_to_world() const;
     vec2 snap_vertex(vec2 pos) const;
 
-    void draw_bezier(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const;
+    void draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const;
+    void draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec2 c, vec2 d, color4 color) const;
 
     //! Return the closest point on the given curve segments to the given point
     vec2 closest_point(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments, vec2 v) const;
@@ -74,6 +76,8 @@ protected:
 
     //! Convert the given curve segments into a loop of vertices approximating the curve
     static std::vector<vec2> linearize(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments);
+
+    static std::vector<vec2> subdivide(std::function<vec2(float)> fn, float error);
 };
 
 } // namespace game
