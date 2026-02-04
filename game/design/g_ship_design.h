@@ -40,6 +40,9 @@ struct ship_design
 extern const ship_design ship_yamato_battleship;
 extern const ship_design ship_iowa_battleship;
 extern const ship_design ship_king_george_v_battleship;
+extern const ship_design ship_richelieu_battleship;
+extern const ship_design ship_bismarck_battleship;
+extern const ship_design ship_littorio_battleship;
 extern const ship_design ship_deutschland_cruiser;
 extern const ship_design ship_town_cruiser;
 extern const ship_design ship_tribal_destroyer;

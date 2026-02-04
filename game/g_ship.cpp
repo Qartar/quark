@@ -26,9 +26,9 @@ ship_design const* ship_designs[] = {
     &ship_yamato_battleship,
     &ship_iowa_battleship,
     &ship_king_george_v_battleship,
-    &ship_deutschland_cruiser,
-    &ship_town_cruiser,
-    &ship_tribal_destroyer,
+    &ship_richelieu_battleship,
+    &ship_bismarck_battleship,
+    &ship_littorio_battleship,
 };
 
 static int ships_idx = 0;
@@ -110,25 +110,17 @@ void ship::draw(render::system* renderer, time_value time) const
         float radius = turret.design->radius;
 
         // draw turret outline
-        vec2 f1 = vec2(radius, .6f * radius) * turret_tx;
-        vec2 f2 = vec2(radius, -.6f * radius) * turret_tx;
-        vec2 m1 = vec2(.3f * radius, radius) * turret_tx;
-        vec2 m2 = vec2(.3f * radius, -radius) * turret_tx;
-        vec2 m3 = vec2(-.3f * radius, radius) * turret_tx;
-        vec2 m4 = vec2(-.3f * radius, -radius) * turret_tx;
-        vec2 r1 = vec2(-2.f * radius, .8f * radius) * turret_tx;
-        vec2 r2 = vec2(-2.f * radius, -.8f * radius) * turret_tx;
+        {
+            vec2 v0 = turret.design->outline.front() * turret_tx;
+            for (std::size_t kk = 1, sz = turret.design->outline.size(); kk < sz; ++kk) {
+                vec2 v1 = turret.design->outline[kk] * turret_tx;
+                renderer->draw_line(v0, v1, color, color);
+                v0 = v1;
+            }
+            renderer->draw_line(v0, turret.design->outline.front() * turret_tx, color, color);
+        }
 
-        renderer->draw_line(f1, f2, color, color);
-        renderer->draw_line(f1, m1, color, color);
-        renderer->draw_line(f2, m2, color, color);
-        renderer->draw_line(m1, m3, color, color);
-        renderer->draw_line(m2, m4, color, color);
-        renderer->draw_line(m3, r1, color, color);
-        renderer->draw_line(m4, r2, color, color);
-        renderer->draw_line(r1, r2, color, color);
-
-        float l = 0.9f * cos(_turrets[jj].elevation) * turret.design->gun_design->length;
+        float l = 0.7f * cos(_turrets[jj].elevation) * turret.design->gun_design->length;
 
         // draw guns
         for (int ii = 0; ii < turret.design->num_guns; ++ii) {
@@ -138,10 +130,10 @@ void ship::draw(render::system* renderer, time_value time) const
 
             float caliber = turret.design->gun_design->caliber;
             vec2 pts[4] = {
-                (v1 + vec2(0, 1.5f * caliber)) * turret_tx,
+                (v1 + vec2(0, 1.25f * caliber)) * turret_tx,
                 (v1 + vec2(l, .5f * caliber)) * turret_tx,
                 (v1 + vec2(l, -.5f * caliber)) * turret_tx,
-                (v1 + vec2(0, -1.5f * caliber)) * turret_tx
+                (v1 + vec2(0, -1.25f * caliber)) * turret_tx
             };
             renderer->draw_line(pts[0], pts[1], color, color);
             renderer->draw_line(pts[1], pts[2], color, color);

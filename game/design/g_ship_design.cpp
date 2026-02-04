@@ -49,7 +49,27 @@ const vec2 ship_hulls[][32] = {
 };
 
 const vec2 yamato_verts[] = {
-    vec2(131.50f, 0.00f), vec2(126.49f, 6.20f), vec2(52.90f, 17.40f), vec2(23.41f, 19.42f), vec2(-73.95f, 19.60f), vec2(-77.85f, 17.52f), vec2(-99.05f, 17.90f), vec2(-101.14f, 16.36f), vec2(-101.15f, 13.87f), vec2(-128.36f, 4.63f), vec2(-131.50f, 0.00f), vec2(-128.36f, -4.63f), vec2(-101.15f, -13.87f), vec2(-101.14f, -16.36f), vec2(-99.05f, -17.90f), vec2(-77.85f, -17.52f), vec2(-73.95f, -19.60f), vec2(23.41f, -19.42f), vec2(52.90f, -17.40f), vec2(126.49f, -6.20f)
+    vec2(131.50f, 0.00f), vec2(131.15f, 2.51f), vec2(130.22f, 4.27f), vec2(128.72f, 5.48f), vec2(126.49f, 6.20f), vec2(107.26f, 8.54f), vec2(82.73f, 12.28f), vec2(52.90f, 17.40f), vec2(37.10f, 18.66f), vec2(23.41f, 19.42f), vec2(-73.95f, 19.60f), vec2(-77.85f, 17.52f), vec2(-99.05f, 17.90f), vec2(-100.21f, 17.72f), vec2(-100.91f, 17.21f), vec2(-101.14f, 16.36f), vec2(-101.15f, 13.87f), vec2(-108.85f, 11.99f), vec2(-115.95f, 9.82f), vec2(-122.45f, 7.37f), vec2(-128.36f, 4.63f), vec2(-130.11f, 3.14f), vec2(-131.15f, 1.59f), vec2(-131.50f, 0.00f), vec2(-131.15f, -1.59f), vec2(-130.11f, -3.14f), vec2(-128.36f, -4.63f), vec2(-122.45f, -7.37f), vec2(-115.95f, -9.82f), vec2(-108.85f, -11.99f), vec2(-101.15f, -13.87f), vec2(-101.14f, -16.36f), vec2(-100.91f, -17.21f), vec2(-100.21f, -17.72f), vec2(-99.05f, -17.90f), vec2(-77.85f, -17.52f), vec2(-73.95f, -19.60f), vec2(23.41f, -19.42f), vec2(37.10f, -18.66f), vec2(52.90f, -17.40f), vec2(82.73f, -12.28f), vec2(107.26f, -8.54f), vec2(126.49f, -6.20f), vec2(128.72f, -5.48f), vec2(130.22f, -4.27f), vec2(131.15f, -2.51f),
+};
+
+const vec2 iowa_verts[] = {
+    vec2(-135.00f, 0.00f), vec2(-134.55f, 1.82f), vec2(-133.27f, 3.63f), vec2(-131.02f, 5.46f), vec2(-127.63f, 7.31f), vec2(-122.88f, 9.18f), vec2(-116.56f, 11.05f), vec2(-108.49f, 12.85f), vec2(-98.79f, 14.50f), vec2(-88.25f, 15.84f), vec2(-78.88f, 16.67f), vec2(-73.39f, 16.93f), vec2(-46.77f, 17.47f), vec2(-20.31f, 17.61f), vec2(6.00f, 17.35f), vec2(21.45f, 16.83f), vec2(36.77f, 15.59f), vec2(53.70f, 13.45f), vec2(80.47f, 9.09f), vec2(100.61f, 6.02f), vec2(116.13f, 4.29f), vec2(130.97f, 3.33f), vec2(132.64f, 3.47f), vec2(133.92f, 2.87f), vec2(134.79f, 1.60f), vec2(135.00f, 0.00f), vec2(134.79f, -1.60f), vec2(133.92f, -2.87f), vec2(132.64f, -3.47f), vec2(130.97f, -3.33f), vec2(116.13f, -4.29f), vec2(100.61f, -6.02f), vec2(80.47f, -9.09f), vec2(53.70f, -13.45f), vec2(36.77f, -15.59f), vec2(21.45f, -16.83f), vec2(6.00f, -17.35f), vec2(-20.31f, -17.61f), vec2(-46.77f, -17.47f), vec2(-73.39f, -16.93f), vec2(-78.88f, -16.67f), vec2(-88.25f, -15.84f), vec2(-98.79f, -14.50f), vec2(-108.49f, -12.85f), vec2(-116.56f, -11.05f), vec2(-122.88f, -9.18f), vec2(-127.63f, -7.31f), vec2(-131.02f, -5.46f), vec2(-133.27f, -3.63f), vec2(-134.55f, -1.82f),
+};
+
+const vec2 kgv_verts[] = {
+    vec2(-113.00f, 0.00f), vec2(-112.44f, 0.88f), vec2(-110.06f, 2.61f), vec2(-105.43f, 5.03f), vec2(-99.17f, 7.58f), vec2(-92.14f, 9.82f), vec2(-84.97f, 11.51f), vec2(-78.02f, 12.58f), vec2(-60.41f, 14.13f), vec2(-41.40f, 15.12f), vec2(-22.66f, 15.47f), vec2(15.01f, 15.40f), vec2(28.22f, 15.06f), vec2(43.62f, 14.08f), vec2(58.83f, 12.56f), vec2(72.83f, 10.61f), vec2(85.28f, 8.32f), vec2(96.14f, 5.76f), vec2(105.51f, 2.97f), vec2(113.50f, 0.00f), vec2(105.51f, -2.97f), vec2(96.14f, -5.76f), vec2(85.28f, -8.32f), vec2(72.83f, -10.61f), vec2(58.83f, -12.56f), vec2(43.62f, -14.08f), vec2(28.22f, -15.06f), vec2(15.01f, -15.40f), vec2(-22.66f, -15.47f), vec2(-41.40f, -15.12f), vec2(-60.41f, -14.13f), vec2(-78.02f, -12.58f), vec2(-84.97f, -11.51f), vec2(-92.14f, -9.82f), vec2(-99.17f, -7.58f), vec2(-105.43f, -5.03f), vec2(-110.06f, -2.61f), vec2(-112.44f, -0.88f),
+};
+
+const vec2 richelieu_verts[] = {
+    vec2(-123.93f, 0.00f), vec2(-123.55f, 1.85f), vec2(-122.37f, 3.51f), vec2(-120.16f, 5.05f), vec2(-116.55f, 6.49f), vec2(-111.00f, 7.85f), vec2(-102.54f, 9.18f), vec2(-63.15f, 13.34f), vec2(-46.15f, 14.70f), vec2(-27.56f, 15.67f), vec2(-16.00f, 16.00f), vec2(2.73f, 15.66f), vec2(23.66f, 14.63f), vec2(45.46f, 13.03f), vec2(66.80f, 10.97f), vec2(91.99f, 7.68f), vec2(105.11f, 5.66f), vec2(117.80f, 3.48f), vec2(121.46f, 2.48f), vec2(123.03f, 1.67f), vec2(123.72f, 0.88f), vec2(123.93f, 0.00f), vec2(123.72f, -0.88f), vec2(123.03f, -1.67f), vec2(121.46f, -2.48f), vec2(117.80f, -3.48f), vec2(105.11f, -5.66f), vec2(91.99f, -7.68f), vec2(66.80f, -10.97f), vec2(45.46f, -13.03f), vec2(23.66f, -14.63f), vec2(2.73f, -15.66f), vec2(-16.00f, -16.00f), vec2(-27.56f, -15.67f), vec2(-46.15f, -14.70f), vec2(-63.15f, -13.34f), vec2(-102.54f, -9.18f), vec2(-111.00f, -7.85f), vec2(-116.55f, -6.49f), vec2(-120.16f, -5.05f), vec2(-122.37f, -3.51f), vec2(-123.55f, -1.85f),
+};
+
+const vec2 bismarck_verts[] = {
+    vec2(-120.80f, 0.00f), vec2(-120.39f, 0.98f), vec2(-118.95f, 2.14f), vec2(-116.06f, 3.52f), vec2(-111.09f, 5.22f), vec2(-103.08f, 7.34f), vec2(-90.41f, 10.11f), vec2(-80.83f, 11.44f), vec2(-70.46f, 13.15f), vec2(-60.73f, 14.38f), vec2(-36.63f, 16.76f), vec2(-28.54f, 17.23f), vec2(-20.98f, 17.38f), vec2(-5.80f, 17.37f), vec2(12.53f, 17.35f), vec2(27.50f, 16.63f), vec2(41.91f, 15.43f), vec2(58.55f, 13.42f), vec2(81.75f, 9.97f), vec2(90.14f, 8.33f), vec2(107.55f, 4.41f), vec2(118.96f, 1.42f), vec2(120.57f, 0.63f), vec2(120.80f, 0.00f), vec2(120.57f, -0.63f), vec2(118.96f, -1.42f), vec2(107.55f, -4.41f), vec2(90.14f, -8.33f), vec2(81.75f, -9.97f), vec2(58.55f, -13.42f), vec2(41.91f, -15.43f), vec2(27.50f, -16.63f), vec2(12.53f, -17.35f), vec2(-5.80f, -17.37f), vec2(-20.98f, -17.38f), vec2(-28.54f, -17.23f), vec2(-36.63f, -16.76f), vec2(-60.73f, -14.38f), vec2(-70.46f, -13.15f), vec2(-80.83f, -11.44f), vec2(-90.41f, -10.11f), vec2(-103.08f, -7.34f), vec2(-111.09f, -5.22f), vec2(-116.06f, -3.52f), vec2(-118.95f, -2.14f), vec2(-120.39f, -0.98f),
+};
+
+const vec2 littorio_verts[] = {
+    vec2(-118.88f, 0.00f), vec2(-118.50f, 1.12f), vec2(-117.16f, 2.44f), vec2(-114.48f, 3.97f), vec2(-110.10f, 5.68f), vec2(-103.73f, 7.52f), vec2(-95.27f, 9.40f), vec2(-84.76f, 11.22f), vec2(-72.41f, 12.87f), vec2(-58.51f, 14.27f), vec2(-43.42f, 15.35f), vec2(-27.47f, 16.04f), vec2(-11.00f, 16.34f), vec2(7.03f, 16.34f), vec2(20.69f, 16.00f), vec2(36.53f, 15.07f), vec2(53.44f, 13.55f), vec2(70.00f, 11.56f), vec2(84.95f, 9.24f), vec2(97.43f, 6.80f), vec2(107.13f, 4.38f), vec2(114.15f, 2.10f), vec2(118.88f, 0.00f), vec2(114.15f, -2.10f), vec2(107.13f, -4.38f), vec2(97.43f, -6.80f), vec2(84.95f, -9.24f), vec2(70.00f, -11.56f), vec2(53.44f, -13.55f), vec2(36.53f, -15.07f), vec2(20.69f, -16.00f), vec2(7.03f, -16.34f), vec2(-11.00f, -16.34f), vec2(-27.47f, -16.04f), vec2(-43.42f, -15.35f), vec2(-58.51f, -14.27f), vec2(-72.41f, -12.87f), vec2(-84.76f, -11.22f), vec2(-95.27f, -9.40f), vec2(-103.73f, -7.52f), vec2(-110.10f, -5.68f), vec2(-114.48f, -3.97f), vec2(-117.16f, -2.44f), vec2(-118.50f, -1.12f),
 };
 
 #define DEGV(x,y) vec2(math::deg2rad(x), math::deg2rad(y))
@@ -99,27 +119,27 @@ const ship_design ship_iowa_battleship =
     /* turrets */
     {
         {
-            /* position */          vec2(48,0),
+            /* position */          vec2(59,0),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_iowa_16in,
         },
         {
-            /* position */          vec2(24,0),
+            /* position */          vec2(38,0),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_iowa_16in,
         },
         {
-            /* position */          vec2(-48,0),
+            /* position */          vec2(-67,0),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_iowa_16in,
         },
     },
 
-    /* hull_outline */      SHIP(270.f, 33.f),
-    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(ship_hulls[1])}}},
+    /* hull_outline */      {iowa_verts, iowa_verts + countof(iowa_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(iowa_verts)}}},
 };
 
 //------------------------------------------------------------------------------
@@ -133,27 +153,129 @@ const ship_design ship_king_george_v_battleship =
     /* turrets */
     {
         {
-            /* position */          vec2(40,0),
+            /* position */          vec2(49.5f,0),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_kgv_14in_quad,
         },
         {
-            /* position */          vec2(16,0),
+            /* position */          vec2(34.25f,0),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_kgv_14in_twin,
         },
         {
-            /* position */          vec2(-40,0),
+            /* position */          vec2(-62,0),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_kgv_14in_quad,
         },
     },
 
-    /* hull_outline */      SHIP(227.f, 31.5f),
-    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(ship_hulls[2])}}},
+    /* hull_outline */      {kgv_verts, kgv_verts + countof(kgv_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(kgv_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_richelieu_battleship =
+{
+    /* name */              string::buffer("Richelieu"),
+    /* length */            247.85f,
+    /* beam */              33.1f,
+    /* displacement */      0.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec2(51.f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_richelieu_380mm,
+        },
+        {
+            /* position */          vec2(18.f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_richelieu_380mm,
+        },
+    },
+
+    /* hull_outline */      {richelieu_verts, richelieu_verts + countof(richelieu_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(richelieu_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_bismarck_battleship =
+{
+    /* name */              string::buffer("Bismarck"),
+    /* length */            241.6f,
+    /* beam */              36.f,
+    /* displacement */      0.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec2(67.25f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_bismarck_38cm,
+        },
+        {
+            /* position */          vec2(50.f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_bismarck_38cm,
+        },
+        {
+            /* position */          vec2(-57.125f,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_bismarck_38cm,
+        },
+        {
+            /* position */          vec2(-75.125f,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_bismarck_38cm,
+        },
+    },
+
+    /* hull_outline */      {bismarck_verts, bismarck_verts + countof(bismarck_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(bismarck_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_littorio_battleship =
+{
+    /* name */              string::buffer("Littorio"),
+    /* length */            237.76f,
+    /* beam */              32.82f,
+    /* displacement */      0.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec2(56.f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_littorio_381mm,
+        },
+        {
+            /* position */          vec2(34.5f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_littorio_381mm,
+        },
+        {
+            /* position */          vec2(-56.f,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_littorio_381mm,
+        },
+    },
+
+    /* hull_outline */      {littorio_verts, littorio_verts + countof(littorio_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(littorio_verts)}}},
 };
 
 //------------------------------------------------------------------------------

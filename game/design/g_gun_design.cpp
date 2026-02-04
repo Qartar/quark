@@ -39,6 +39,36 @@ const gun_design gun_BL_14_inch_Mk_VII =
     /* shell_coefficient */ 0.f,
 };
 
+const gun_design gun_380mm_45_Modele_1935 =
+{
+    /* name */              string::buffer("380mm/45 Modèle 1935"),
+    /* caliber */           .38f,
+    /* length */            17.257f,
+    /* shell_mass */        884.f,
+    /* shell_velocity */    830.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_38cm_SK_C_34 =
+{
+    /* name */              string::buffer("38 cm SK C/34"),
+    /* caliber */           .38f,
+    /* length */            18.405f,
+    /* shell_mass */        800.f,
+    /* shell_velocity */    820.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_381_50_ansaldo_m1934 =
+{
+    /* name */              string::buffer("Cannone da 381/50 Ansaldo M1934"),
+    /* caliber */           .381f,
+    /* length */            19.05f,
+    /* shell_mass */        885.f,
+    /* shell_velocity */    850.f,
+    /* shell_coefficient */ 0.f,
+};
+
 const gun_design gun_28cm_SK_C_28 =
 {
     /* name */              string::buffer("28 cm SK C/28"),

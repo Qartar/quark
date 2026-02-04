@@ -23,12 +23,17 @@ struct turret_design
     time_delta reload_time; //!< Time to reload all barrels
 
     gun_design const* gun_design;
+
+    std::vector<vec2> outline;
 };
 
 extern const turret_design turret_yamato_46cm;
 extern const turret_design turret_iowa_16in;
 extern const turret_design turret_kgv_14in_quad;
 extern const turret_design turret_kgv_14in_twin;
+extern const turret_design turret_richelieu_380mm;
+extern const turret_design turret_bismarck_38cm;
+extern const turret_design turret_littorio_381mm;
 extern const turret_design turret_deutschland_28cm;
 extern const turret_design turret_town_6in;
 extern const turret_design turret_tribal_4_7in;
