@@ -177,56 +177,69 @@ void ship::think()
         update_targets();
     }
 
-    if (_random.uniform_real() < .01f) {
-        for (std::size_t idx = 0; idx < _turrets.size(); ++idx) {
-            auto const& turret = _design->turrets[idx];
+    bool is_firing = (_random.uniform_real() < .01f);
 
-            if (time < _turrets[idx].refire_time) {
-                continue;
-            }
+    for (std::size_t idx = 0; idx < _turrets.size(); ++idx) {
+        auto const& turret = _design->turrets[idx];
 
-            if (_turrets[idx].traverse != _turrets[idx].traverse_target) {
-                continue;
-            }
-
-            if (_turrets[idx].elevation != _turrets[idx].elevation_target) {
-                continue;
-            }
-
-            projectile_info pinfo = {
-                /* damage */            3e-4f * turret.design->gun_design->shell_mass,
-                /* speed */             turret.design->gun_design->shell_velocity,
-                /* diameter */          turret.design->gun_design->caliber,
-                /* launch_effect */     effect_type::cannon,
-                /* launch_sound */      sound::asset::invalid,
-                /* flight_effect */     effect_type::none,
-                /* flight sound */      sound::asset::invalid,
-                /* impact_effect */     effect_type::cannon_impact,
-                /* impact_sound */      sound::asset::invalid,
-            };
+        // Emit smoke particles after firing
+        constexpr time_delta smoke_delta = time_delta::from_seconds(1.f);
+        if (_turrets[idx].refire_time - time > turret.design->reload_time - smoke_delta) {
+            float t = 1.f - (turret.design->reload_time - (_turrets[idx].refire_time - time)) / smoke_delta;
 
             for (std::size_t ii = 0; ii < _design->turrets[idx].design->num_guns; ++ii) {
                 vec3 position, direction, velocity;
                 get_firing_vectors(idx, ii, position, direction, velocity);
-
-                // add dispersion
-                direction = normalize(direction + vec3(_random.normal_real(1e-3f),
-                                                       _random.normal_real(1e-3f),
-                                                       _random.normal_real(1e-3f)));
-
-                get_world()->spawn<projectile>(
-                    this,
-                    pinfo,
-                    position,
-                    direction * pinfo.speed + velocity);
-
-                if (pinfo.launch_effect != effect_type::none) {
-                    get_world()->add_effect(time, pinfo.launch_effect, position.to_vec2(), direction.to_vec2() * 2);
-                }
+                get_world()->add_effect(time, effect_type::smoke, position.to_vec2(), direction.to_vec2() * 2.f * t, 3.f * square(t), velocity.to_vec2());
             }
-
-            _turrets[idx].refire_time = time + turret.design->reload_time;
         }
+
+        if (!is_firing || time < _turrets[idx].refire_time) {
+            continue;
+        }
+
+        if (_turrets[idx].traverse != _turrets[idx].traverse_target) {
+            continue;
+        }
+
+        if (_turrets[idx].elevation != _turrets[idx].elevation_target) {
+            continue;
+        }
+
+        projectile_info pinfo = {
+            /* damage */            1.5e-4f * turret.design->gun_design->shell_mass,
+            /* speed */             turret.design->gun_design->shell_velocity,
+            /* diameter */          turret.design->gun_design->caliber,
+            /* launch_effect */     effect_type::cannon,
+            /* launch_sound */      sound::asset::invalid,
+            /* flight_effect */     effect_type::none,
+            /* flight sound */      sound::asset::invalid,
+            /* impact_effect */     effect_type::cannon_impact,
+            /* impact_sound */      sound::asset::invalid,
+        };
+
+        for (std::size_t ii = 0; ii < _design->turrets[idx].design->num_guns; ++ii) {
+            vec3 position, direction, velocity;
+            get_firing_vectors(idx, ii, position, direction, velocity);
+
+            // add dispersion
+            direction = normalize(direction + vec3(_random.normal_real(1e-3f),
+                                                   _random.normal_real(1e-3f),
+                                                   _random.normal_real(1e-3f)));
+
+            get_world()->spawn<projectile>(
+                this,
+                pinfo,
+                position,
+                direction * pinfo.speed + velocity);
+
+            if (pinfo.launch_effect != effect_type::none) {
+                float strength = 1.9e-9f * turret.design->gun_design->shell_mass * square(turret.design->gun_design->shell_velocity);
+                get_world()->add_effect(time, pinfo.launch_effect, position.to_vec2(), direction.to_vec2() * 2, strength, velocity.to_vec2());
+            }
+        }
+
+        _turrets[idx].refire_time = time + turret.design->reload_time;
     }
 }
 

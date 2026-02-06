@@ -169,7 +169,7 @@ public:
     void remove(handle<object> object);
 
     void add_sound(sound::asset sound_asset, vec2 position, float volume = 1.0f);
-    void add_effect(time_value time, effect_type type, vec2 position, vec2 direction = vec2(0,0), float strength = 1);
+    void add_effect(time_value time, effect_type type, vec2 position, vec2 direction = vec2(0,0), float strength = 1, vec2 velocity = vec2_zero);
     void add_trail_effect(effect_type type, vec2 position, vec2 old_position, vec2 direction = vec2(0,0), float strength = 1);
 
     void add_body(game::object* owner, physics::rigid_body* body);

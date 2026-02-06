@@ -74,14 +74,15 @@ void projectile::think()
     _position = new_position;
     _velocity = new_velocity;
 
-    if (_position.z < 0.f) {
+    // Use impact time as a proxy for whether we've already hit something this frame
+    if (_position.z < 0.f && _impact_time == time_value::max) {
         // intersect with z=0 plane
         float t = _position.z / _velocity.z;
         vec3 p = _position - _velocity * t;
 
         _impact_time = get_world()->frametime() + (FRAMETIME - time_delta::from_seconds(t));
 
-        get_world()->add_effect(_impact_time, effect_type::splash, p.to_vec2(), vec2_zero, .5f * _info.damage);
+        get_world()->add_effect(_impact_time, effect_type::splash, p.to_vec2(), vec2_zero, std::cbrt(_info.damage));
         get_world()->remove(this);
     }
 }
@@ -107,14 +108,12 @@ bool projectile::touch(object *other, physics::collision const* collision)
         _impact_time = get_world()->frametime() + time_delta::from_seconds(1) * delta_time;
     }
 
-    float factor = (other && other->is_type<shield>()) ? .5f : 1.f;
-
     if (collision) {
-        get_world()->add_sound(_info.impact_sound, collision->point, factor * _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, collision->point, -collision->normal, .5f * factor * _info.damage);
+        get_world()->add_sound(_info.impact_sound, collision->point, _info.damage);
+        get_world()->add_effect(_impact_time, _info.impact_effect, collision->point, collision->normal, std::cbrt(_info.damage));
     } else {
-        get_world()->add_sound(_info.impact_sound, get_position(), factor * _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, get_position(), vec2_zero, .5f * factor * _info.damage);
+        get_world()->add_sound(_info.impact_sound, get_position(), _info.damage);
+        get_world()->add_effect(_impact_time, _info.impact_effect, get_position(), vec2_zero, std::cbrt(_info.damage));
     }
 
     if (other && other->is_type<ship>()) {
