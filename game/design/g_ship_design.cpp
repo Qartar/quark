@@ -65,7 +65,7 @@ const vec2 richelieu_verts[] = {
 };
 
 const vec2 bismarck_verts[] = {
-    vec2(-120.80f, 0.00f), vec2(-120.39f, 0.98f), vec2(-118.95f, 2.14f), vec2(-116.06f, 3.52f), vec2(-111.09f, 5.22f), vec2(-103.08f, 7.34f), vec2(-90.41f, 10.11f), vec2(-80.83f, 11.44f), vec2(-70.46f, 13.15f), vec2(-60.73f, 14.38f), vec2(-36.63f, 16.76f), vec2(-28.54f, 17.23f), vec2(-20.98f, 17.38f), vec2(-5.80f, 17.37f), vec2(12.53f, 17.35f), vec2(27.50f, 16.63f), vec2(41.91f, 15.43f), vec2(58.55f, 13.42f), vec2(81.75f, 9.97f), vec2(90.14f, 8.33f), vec2(107.55f, 4.41f), vec2(118.96f, 1.42f), vec2(120.57f, 0.63f), vec2(120.80f, 0.00f), vec2(120.57f, -0.63f), vec2(118.96f, -1.42f), vec2(107.55f, -4.41f), vec2(90.14f, -8.33f), vec2(81.75f, -9.97f), vec2(58.55f, -13.42f), vec2(41.91f, -15.43f), vec2(27.50f, -16.63f), vec2(12.53f, -17.35f), vec2(-5.80f, -17.37f), vec2(-20.98f, -17.38f), vec2(-28.54f, -17.23f), vec2(-36.63f, -16.76f), vec2(-60.73f, -14.38f), vec2(-70.46f, -13.15f), vec2(-80.83f, -11.44f), vec2(-90.41f, -10.11f), vec2(-103.08f, -7.34f), vec2(-111.09f, -5.22f), vec2(-116.06f, -3.52f), vec2(-118.95f, -2.14f), vec2(-120.39f, -0.98f),
+    vec2(-125.50f, 0.00f), vec2(-125.08f, 1.01f), vec2(-123.48f, 2.28f), vec2(-120.19f, 3.81f), vec2(-114.76f, 5.59f), vec2(-106.93f, 7.58f), vec2(-96.63f, 9.70f), vec2(-84.10f, 11.86f), vec2(-70.05f, 13.91f), vec2(-55.64f, 15.67f), vec2(-42.25f, 16.98f), vec2(-30.99f, 17.76f), vec2(-22.49f, 17.99f), vec2(11.99f, 18.01f), vec2(24.66f, 17.58f), vec2(40.57f, 16.22f), vec2(60.31f, 13.86f), vec2(84.47f, 10.40f), vec2(96.72f, 7.98f), vec2(111.71f, 4.53f), vec2(123.96f, 1.33f), vec2(125.27f, 0.57f), vec2(125.50f, 0.00f), vec2(125.27f, -0.57f), vec2(123.96f, -1.33f), vec2(111.71f, -4.53f), vec2(96.72f, -7.98f), vec2(84.47f, -10.40f), vec2(60.31f, -13.86f), vec2(40.57f, -16.22f), vec2(24.66f, -17.58f), vec2(11.99f, -18.01f), vec2(-22.49f, -17.99f), vec2(-30.99f, -17.76f), vec2(-42.25f, -16.98f), vec2(-55.64f, -15.67f), vec2(-70.05f, -13.91f), vec2(-84.10f, -11.86f), vec2(-96.63f, -9.70f), vec2(-106.93f, -7.58f), vec2(-114.76f, -5.59f), vec2(-120.19f, -3.81f), vec2(-123.48f, -2.28f), vec2(-125.08f, -1.01f),
 };
 
 const vec2 littorio_verts[] = {
@@ -208,32 +208,32 @@ const ship_design ship_richelieu_battleship =
 const ship_design ship_bismarck_battleship =
 {
     /* name */              string::buffer("Bismarck"),
-    /* length */            241.6f,
+    /* length */            251.f,
     /* beam */              36.f,
     /* displacement */      0.f,
 
     /* turrets */
     {
         {
-            /* position */          vec2(67.25f,0),
+            /* position */          vec2(69.75f,0),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
         },
         {
-            /* position */          vec2(50.f,0),
+            /* position */          vec2(52.f,0),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
         },
         {
-            /* position */          vec2(-57.125f,0),
+            /* position */          vec2(-59.5f,0),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
         },
         {
-            /* position */          vec2(-75.125f,0),
+            /* position */          vec2(-78.f,0),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
