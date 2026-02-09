@@ -52,6 +52,9 @@ public:
                       trace_result* results,
                       std::size_t max_results) const;
 
+    //! Returns the rigid body at the given point, if one exists
+    physics::rigid_body* point_query(vec2 point) const;
+
 protected:
     std::vector<physics::rigid_body*> _bodies;
 

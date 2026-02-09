@@ -509,6 +509,16 @@ game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game
 }
 
 //------------------------------------------------------------------------------
+game::object* world::point_query(vec2 point) const
+{
+    physics::rigid_body* body = _physics.point_query(point);
+    if (body) {
+        return handle<object>(body->get_handle_bits()).get();
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
 void world::add_sound(sound::asset sound_asset, vec2 position, float volume)
 {
     write_sound(sound_asset, position, volume);

@@ -176,6 +176,7 @@ public:
     void remove_body(physics::rigid_body* body);
 
     game::object* trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore = nullptr) const;
+    game::object* point_query(vec2 point) const;
 
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }

@@ -33,4 +33,10 @@ bounds motion::get_bounds() const
     return _shape->calculate_bounds(get_transform());
 }
 
+//------------------------------------------------------------------------------
+bool motion::contains_point(vec2 point) const
+{
+    return _shape->contains_point(point * get_inverse_transform());
+}
+
 } // namespace physics

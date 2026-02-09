@@ -155,6 +155,23 @@ std::size_t world::trace(
 }
 
 //------------------------------------------------------------------------------
+physics::rigid_body* world::point_query(vec2 point) const
+{
+    // TODO: spatial acceleration
+    for (std::size_t ii = 0; ii < _bodies.size(); ++ii) {
+        if (!_bodies[ii]->get_bounds().contains(point)) {
+            continue;
+        }
+
+        if (_bodies[ii]->get_motion().contains_point(point)) {
+            return _bodies[ii];
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
 vec2 world::collision_impulse(
     physics::rigid_body const* body_a,
     physics::rigid_body const* body_b,

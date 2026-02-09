@@ -80,6 +80,12 @@ public:
         _angular_velocity = angular_velocity;
     }
 
+    //
+    //  query
+    //
+
+    bool contains_point(vec2 point) const;
+
 protected:
     shape const* _shape;
 
