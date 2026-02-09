@@ -34,6 +34,21 @@ protected:
     std::vector<segment_type> _deck_segments;
     std::vector<vec2> _deck_linearized;
 
+    struct turret {
+        float radius;
+        std::vector<vec2> vertices;
+        std::vector<segment_type> segments;
+        std::vector<vec2> linearized;
+    };
+
+    struct turret_instance {
+        mat3 transform;
+        std::size_t index;
+    };
+
+    std::vector<turret> _turrets;
+    std::vector<turret_instance> _turret_instances;
+
     render::view _view;
     vec2 _cursor;
 
@@ -54,21 +69,46 @@ protected:
     vec2 _image_offset;
     config::scalar _image_scale;
 
+    enum class editor_mode {
+        deck,
+        turret,
+    };
+
+    editor_mode _mode;
+    std::size_t _turret_instance;
+
     //! minimum distance between vertices squared
     static constexpr float minimum_vertex_dsqr = 1.f;
 
 protected:
     vec2 cursor_to_world() const;
     vec2 snap_vertex(vec2 pos) const;
+    float render_vertex_size() const { return _view.size.y * (1.f / 384.f); }
 
     void draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const;
     void draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec2 c, vec2 d, color4 color) const;
 
+    void draw_transformed(render::system* renderer, mat3 transform, std::vector<vec2> const& linearized) const;
+    void draw_transformed(render::system* renderer, mat3 transform, std::vector<vec2> const& vertices, std::vector<segment_type> const& segments) const;
+
+    void draw_highlight(render::system* renderer, mat3 transform, std::vector<vec2> const& vertices, std::vector<segment_type> const& segments) const;
+    void draw_turret_highlight(render::system* renderer, turret_instance const& instance) const;
+
+    //! Return the index of the closest vertex to the given point
+    std::size_t closest_vertex(std::vector<vec2> const& vertices, vec2 v) const;
+    //! Return the index of the closest segment to the given point
+    std::size_t closest_segment(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments, vec2 v) const;
     //! Return the closest point on the given curve segments to the given point
     vec2 closest_point(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments, vec2 v) const;
 
     bool insert_vertex(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v);
     bool remove_vertex(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v);
+
+    bool upconvert_segment(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v);
+    bool downconvert_segment(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v);
+
+    bool insert_turret(vec2 v);
+    bool remove_turret(vec2 v);
 
     void save(string::view filename) const;
     bool load(string::view filename);

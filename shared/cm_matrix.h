@@ -198,8 +198,25 @@ public:
                     lhs[2] * rhs);
     }
 
-    friend bool isnan(mat3 const& m) { return isnan(m[0]) || isnan(m[1]) || isnan(m[2]); }
+    constexpr friend mat3 operator*(mat3 const& lhs, float rhs) {
+        return mat3(lhs[0] * rhs,
+                    lhs[1] * rhs,
+                    lhs[2] * rhs);
+    }
 
+    constexpr mat3 transpose() const {
+        return mat3(_rows[0][0], _rows[1][0], _rows[2][0],
+                    _rows[0][1], _rows[1][1], _rows[2][1],
+                    _rows[0][2], _rows[1][2], _rows[2][2]);
+    }
+
+    constexpr mat3 inverse_transform() const {
+        rot2 rotation(_rows[0][0], _rows[0][1]);
+        vec2 translation = vec2(_rows[2][0], _rows[2][1]);
+        return inverse_transform(translation, rotation);
+    }
+
+    friend bool isnan(mat3 const& m) { return isnan(m[0]) || isnan(m[1]) || isnan(m[2]); }
 protected:
     vec3 _rows[3];
 };
