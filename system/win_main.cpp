@@ -348,12 +348,14 @@ void application::key_event(LPARAM param, bool down)
 //------------------------------------------------------------------------------
 void application::mouse_event(WPARAM mouse_state, vec2i position)
 {
+    constexpr WPARAM button_mask[3] = { MK_LBUTTON, MK_RBUTTON, MK_MBUTTON };
+
     for (int ii = 0; ii < 3; ++ii) {
-        if ((mouse_state & (1LL << ii)) && !(_mouse_state & (1LL << ii))) {
+        if ((mouse_state & button_mask[ii]) && !(_mouse_state & button_mask[ii])) {
             _game.key_event (K_MOUSE1 + ii, true);
         }
 
-        if (!(mouse_state & (1LL << ii)) && (_mouse_state & (1LL << ii))) {
+        if (!(mouse_state & button_mask[ii]) && (_mouse_state & button_mask[ii])) {
             _game.key_event (K_MOUSE1 + ii, false);
         }
     }
