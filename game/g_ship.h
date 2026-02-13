@@ -56,6 +56,8 @@ public:
 
     handle<game::faction> faction() const { return _faction; }
 
+    ship_design const* design() const { return _design; }
+
 protected:
     game::usercmd _usercmd;
 
@@ -87,6 +89,9 @@ protected:
     handle<ship const> _primary_target;
 
     table<float> _primary_gunnery_table;
+
+    vec2 _wake[128];
+    std::size_t _wake_index;
 
     static physics::material _material;
 

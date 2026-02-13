@@ -21,7 +21,17 @@ struct ship_design
 
     float length; //!< Overall length in meters
     float beam; //!< Maximum beam in meters
-    float displacement; //!< Displacement in kilograms
+    float draft; //!< Draft at standard displacement in meters
+    float displacement; //!< Standard displacement in kilograms
+
+    float speed; //!< Maximum speed in meters per second
+    float power; //!< Maximum power output in kilowatts
+
+    float rudder_angle; //!< Maximum rudder angle in radians
+    float rudder_speed; //!< Rudder speed in radians/sec
+
+    float minimum_turning_radius; //!< Tightest possible turning radius in meters
+    float optimal_turning_radius; //!< Fastest possible turning radius in meters
 
     struct turret_instance
     {

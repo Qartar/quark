@@ -38,6 +38,7 @@ ship::ship(handle<game::faction> faction)
     : _usercmd{}
     , _design(ship_designs[ships_idx++ % countof(ship_designs)])
     , _faction(faction)
+    , _wake_index(0)
 {
     _rigid_body = physics::rigid_body(&_design->hull_shape, &_material, 1.f);
 
@@ -68,7 +69,7 @@ void ship::spawn()
     _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 13});
     _subsystems.push_back(_reactor);
 
-    _engines = get_world()->spawn<game::engines>(this, engines_info{16.f, .05f, 8.f, .0625f, .5f, .5f});
+    _engines = get_world()->spawn<game::engines>(this);
     _subsystems.push_back(_engines);
 
     _navigation = get_world()->spawn<game::navigation>(this);
@@ -140,6 +141,18 @@ void ship::draw(render::system* renderer, time_value time) const
             renderer->draw_line(pts[2], pts[3], color, color);
         }
     }
+
+    // draw wake
+    for (std::size_t ii = 0; ii + 1 < _wake_index && ii + 1 < countof(_wake); ++ii) {
+        float a0 = float(countof(_wake) - ii) / float(countof(_wake));
+        float a1 = float(countof(_wake) - ii - 1) / float(countof(_wake));
+        renderer->draw_line(
+            _wake[(_wake_index - ii) % countof(_wake)],
+            _wake[(_wake_index - ii - 1) % countof(_wake)],
+            color4(.8f,.9f,1.f,.5f * a0),
+            color4(.8f,.9f,1.f,.5f * a1));
+
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -152,6 +165,11 @@ bool ship::touch(object* /*other*/, physics::collision const* /*collision*/)
 void ship::think()
 {
     time_value time = get_world()->frametime();
+
+    {
+        _wake_index = std::size_t(time.to_seconds() / 1.f);
+        _wake[_wake_index % countof(_wake)] = get_position() - vec2(.5f * _design->length, 0) * get_rotation();
+    }
 
     for (std::size_t ii = 0, num = _turrets.size(); ii < num; ++ii) {
         update_firing_solution(_primary_target, ii);
@@ -173,7 +191,7 @@ void ship::think()
         }
     }
 
-    if (_random.uniform_real() < .01f) {
+    if (!_primary_target || _random.uniform_real() < .001f) {
         update_targets();
     }
 
@@ -303,6 +321,9 @@ void ship::update_firing_solution(handle<ship const> target, std::size_t turret_
 
     _turrets[turret_index].elevation_target = _primary_gunnery_table.interpolate(
         length(target_pos - turret.position * tx));
+    _turrets[turret_index].elevation_target = clamp(_turrets[turret_index].elevation_target,
+                                                    _design->turrets[turret_index].design->elevation_limit[0],
+                                                    _design->turrets[turret_index].design->elevation_limit[1]);
 }
 
 //------------------------------------------------------------------------------

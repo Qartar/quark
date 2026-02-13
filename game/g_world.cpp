@@ -6,6 +6,7 @@
 
 #include "g_aicontroller.h"
 #include "g_faction.h"
+#include "g_navigation.h"
 #include "g_projectile.h"
 #include "g_ship.h"
 #include "g_player.h"
@@ -279,27 +280,25 @@ void world::reset()
     faction* opfor = spawn<faction>("opfor", color4(1.f, .6f, .6f, 1.f));
 
     for (int ii = 0; ii < 6; ++ii) {
-        float angle = float(ii) * (math::pi * 2.f / 6.f);
+        float angle = float(ii) * (math::pi * 2.f / 6.f) + math::pi / 12.f;
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>(blufor);
         sh->set_position(-dir * 1024.f, true);
-        sh->set_rotation(rot2(angle + math::pi * .75f), true);
+        sh->set_rotation(rot2(math::pi * .5f), true);
 
-        // spawn ai controller to control the ship
-        spawn<aicontroller>(sh);
+        sh->navigation()->set_heading(rot2(0,1));
     }
 
     for (int ii = 0; ii < 6; ++ii) {
-        float angle = float(ii) * (math::pi * 2.f / 6.f);
+        float angle = float(ii) * (math::pi * 2.f / 6.f) + math::pi / 12.f;
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>(opfor);
         sh->set_position(vec2(16384, 0) - dir * 1024.f, true);
-        sh->set_rotation(rot2(angle + math::pi * .75f), true);
+        sh->set_rotation(rot2(math::pi * .5f), true);
 
-        // spawn ai controller to control the ship
-        spawn<aicontroller>(sh);
+        sh->navigation()->set_heading(rot2(0,1));
     }
 }
 

@@ -7,6 +7,8 @@
 #include "g_subsystem.h"
 #include "g_ship.h"
 
+#include "design/g_ship_design.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -85,14 +87,19 @@ void subsystem::decrease_power(int amount)
 const object_type engines::_type(subsystem::_type);
 
 //------------------------------------------------------------------------------
-engines::engines(game::ship* owner, engines_info info)
+engines::engines(game::ship* owner)
     : subsystem(owner, {subsystem_type::engines, 2})
-    , _engines_info(info)
-    , _linear_velocity_target(vec2_zero)
-    , _angular_velocity_target(0)
+    , _rudder_angle(0)
+    , _rudder_target(0)
 {
-    _linear_drag_coefficient = std::exp(-math::ln2 * FRAMETIME.to_seconds() / _engines_info.linear_drag_lambda);
-    _angular_drag_coefficient = std::exp(-math::ln2 * FRAMETIME.to_seconds() / _engines_info.angular_drag_lambda);
+    ship_design const* design = owner->design();
+
+    // Calculate longitudinal drag coefficient by balancing it against maximum power and speed.
+    _linear_drag_coefficient[0] = 1e3f * design->power / cube(design->speed) / design->displacement;
+    // Hand-tuned transverse drag coefficient, could in theory be calculated from slip angle.
+    _linear_drag_coefficient[1] = 1e1f * _linear_drag_coefficient[0] * design->length / design->beam;
+
+    _speed_target = design->speed;
 }
 
 //------------------------------------------------------------------------------
@@ -100,96 +107,46 @@ void engines::think()
 {
     subsystem::think();
 
-    float power = float(current_power()) / float(maximum_power());
-    if (power) {
-        //
-        // update linear velocity
-        //
-        {
-            vec2 current_velocity = _owner->get_linear_velocity();
-            vec2 target_velocity = _linear_velocity_target;
-            vec2 maximum_velocity = target_velocity.normalize() * _engines_info.maximum_linear_speed * power;
-            // check if target velocity exceeds maximum velocity
-            if (target_velocity.dot(target_velocity - maximum_velocity) > 0.f) {
-                target_velocity = maximum_velocity;
-            }
+    ship_design const* design = _owner->cast<ship>()->design();
 
-            vec2 delta_velocity = target_velocity - current_velocity;
-            vec2 maximum_acceleration = delta_velocity.normalize() * _engines_info.maximum_linear_accel * power;
-            // check if change in velocity exceeds maximum acceleration
-            if (delta_velocity.dot(delta_velocity - maximum_acceleration * FRAMETIME.to_seconds()) > 0.f) {
-                current_velocity += maximum_acceleration * FRAMETIME.to_seconds();
-            } else {
-                current_velocity = target_velocity;
+    // update linear velocity
+    {
+        vec2 current_velocity = _owner->get_linear_velocity();
+        vec2 current_direction = vec2(1,0) * _owner->get_rotation();
+        // Orthogonal velocity components
+        vec2 vx = current_direction * dot(current_direction, current_velocity);
+        vec2 vy = current_velocity - vx;
+        // Apply drag along longitudinal and transverse axes
+        vec2 drag_force = _linear_drag_coefficient[0] * vx * length(vx)
+                        + _linear_drag_coefficient[1] * vy * length(vy);
+        current_velocity -= drag_force * FRAMETIME.to_seconds();
+
+        // Apply power
+        float current_speed = current_velocity.length();
+        if (current_speed < _speed_target) {
+            float speed_delta = 1e3f * design->power / (design->speed * design->displacement) * FRAMETIME.to_seconds();
+            if (current_speed + speed_delta > _speed_target) {
+                speed_delta = _speed_target - current_speed;
             }
-            _owner->set_linear_velocity(current_velocity);
+            current_velocity += current_direction * speed_delta;
         }
-        //
-        // update angular velocity
-        //
-        {
-            float current_velocity = _owner->get_angular_velocity();
-            float target_velocity = _angular_velocity_target;
-            float maximum_velocity = std::copysign(_engines_info.maximum_angular_speed * power, target_velocity);
-            // check if target velocity exceeds maximum velocity
-            if (target_velocity * (target_velocity - maximum_velocity) > 0.f) {
-                target_velocity = maximum_velocity;
-            }
 
-            float delta_velocity = target_velocity - current_velocity;
-            float maximum_acceleration = std::copysign(_engines_info.maximum_angular_accel * power, delta_velocity);
-            // check if change in velocity exceeds maximum acceleration
-            if (delta_velocity * (delta_velocity - maximum_acceleration * FRAMETIME.to_seconds()) > 0.f) {
-                current_velocity += maximum_acceleration * FRAMETIME.to_seconds();
-            } else {
-                current_velocity = target_velocity;
-            }
-            _owner->set_angular_velocity(current_velocity);
+        _owner->set_linear_velocity(current_velocity);
+    }
+
+    // update angular velocity
+    {
+        float rudder_delta = _rudder_target - _rudder_angle;
+        if (abs(rudder_delta) > design->rudder_speed * FRAMETIME.to_seconds()) {
+            rudder_delta = std::copysign(design->rudder_speed * FRAMETIME.to_seconds(), rudder_delta);
         }
+        _rudder_angle += rudder_delta;
+
+        float k = _rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
+        // FIXME: doesn't respect current angular velocity (e.g. in a collision)
+        // Need a function for angular acceleration based on rudder angle, etc.
+        _owner->set_angular_velocity(_owner->get_linear_velocity().length() * k);
     }
-
-    if (_owner->get_linear_velocity().length_sqr() > square(_engines_info.maximum_linear_speed * power)) {
-        _owner->set_linear_velocity(_owner->get_linear_velocity() * _linear_drag_coefficient);
-    }
-
-    if (std::abs(_owner->get_angular_velocity()) > _engines_info.maximum_angular_speed * power) {
-        _owner->set_angular_velocity(_owner->get_angular_velocity() * _angular_drag_coefficient);
-    }
-}
-
-//------------------------------------------------------------------------------
-void engines::set_target_velocity(vec2 linear_velocity, float angular_velocity)
-{
-    set_target_linear_velocity(linear_velocity);
-    set_target_angular_velocity(angular_velocity);
-}
-
-//------------------------------------------------------------------------------
-void engines::set_target_linear_velocity(vec2 linear_velocity)
-{
-    assert(!isnan(linear_velocity));
-    _linear_velocity_target = linear_velocity;
-}
-
-//------------------------------------------------------------------------------
-void engines::set_target_angular_velocity(float angular_velocity)
-{
-    assert(!isnan(angular_velocity));
-    _angular_velocity_target = angular_velocity;
-}
-
-//------------------------------------------------------------------------------
-float engines::maximum_linear_speed() const
-{
-    float power = float(current_power()) / float(maximum_power());
-    return _engines_info.maximum_linear_speed * power;
-}
-
-//------------------------------------------------------------------------------
-float engines::maximum_angular_speed() const
-{
-    float power = float(current_power()) / float(maximum_power());
-    return _engines_info.maximum_angular_speed * power;
 }
 
 } // namespace game

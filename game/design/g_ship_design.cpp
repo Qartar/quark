@@ -72,7 +72,10 @@ const vec2 littorio_verts[] = {
     vec2(-118.88f, 0.00f), vec2(-118.50f, 1.12f), vec2(-117.16f, 2.44f), vec2(-114.48f, 3.97f), vec2(-110.10f, 5.68f), vec2(-103.73f, 7.52f), vec2(-95.27f, 9.40f), vec2(-84.76f, 11.22f), vec2(-72.41f, 12.87f), vec2(-58.51f, 14.27f), vec2(-43.42f, 15.35f), vec2(-27.47f, 16.04f), vec2(-11.00f, 16.34f), vec2(7.03f, 16.34f), vec2(20.69f, 16.00f), vec2(36.53f, 15.07f), vec2(53.44f, 13.55f), vec2(70.00f, 11.56f), vec2(84.95f, 9.24f), vec2(97.43f, 6.80f), vec2(107.13f, 4.38f), vec2(114.15f, 2.10f), vec2(118.88f, 0.00f), vec2(114.15f, -2.10f), vec2(107.13f, -4.38f), vec2(97.43f, -6.80f), vec2(84.95f, -9.24f), vec2(70.00f, -11.56f), vec2(53.44f, -13.55f), vec2(36.53f, -15.07f), vec2(20.69f, -16.00f), vec2(7.03f, -16.34f), vec2(-11.00f, -16.34f), vec2(-27.47f, -16.04f), vec2(-43.42f, -15.35f), vec2(-58.51f, -14.27f), vec2(-72.41f, -12.87f), vec2(-84.76f, -11.22f), vec2(-95.27f, -9.40f), vec2(-103.73f, -7.52f), vec2(-110.10f, -5.68f), vec2(-114.48f, -3.97f), vec2(-117.16f, -2.44f), vec2(-118.50f, -1.12f),
 };
 
+#define DEG(a) math::deg2rad(a)
 #define DEGV(x,y) vec2(math::deg2rad(x), math::deg2rad(y))
+#define KNOTS(kn) (kn * 0.5144447f)
+#define SHP(shp) (shp * 0.7456999f)
 
 //------------------------------------------------------------------------------
 const ship_design ship_yamato_battleship =
@@ -80,7 +83,17 @@ const ship_design ship_yamato_battleship =
     /* name */              string::buffer("Yamato"),
     /* length */            263.f,
     /* beam */              39.f,
-    /* displacement */      0.f,
+    /* draft */             10.4f,
+    /* displacement */      65027000.f,
+
+    /* speed */             KNOTS(27.f),
+    /* power */             SHP(150000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
 
     /* turrets */
     {
@@ -114,7 +127,17 @@ const ship_design ship_iowa_battleship =
     /* name */              string::buffer("Iowa"),
     /* length */            270.f,
     /* beam */              33.f,
-    /* displacement */      0.f,
+    /* draft */             11.33f,
+    /* displacement */      48880000.f,
+
+    /* speed */             KNOTS(33.f),
+    /* power */             SHP(212000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
 
     /* turrets */
     {
@@ -148,7 +171,17 @@ const ship_design ship_king_george_v_battleship =
     /* name */              string::buffer("King George V"),
     /* length */            227.f,
     /* beam */              31.5f,
-    /* displacement */      0.f,
+    /* draft */             10.2f,
+    /* displacement */      37316000.f,
+
+    /* speed */             KNOTS(28.f),
+    /* power */             SHP(110000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
 
     /* turrets */
     {
@@ -182,7 +215,17 @@ const ship_design ship_richelieu_battleship =
     /* name */              string::buffer("Richelieu"),
     /* length */            247.85f,
     /* beam */              33.1f,
-    /* displacement */      0.f,
+    /* draft */             9.9f,
+    /* displacement */      37850000.f,
+
+    /* speed */             KNOTS(32.f),
+    /* power */             SHP(155000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
 
     /* turrets */
     {
@@ -210,7 +253,17 @@ const ship_design ship_bismarck_battleship =
     /* name */              string::buffer("Bismarck"),
     /* length */            251.f,
     /* beam */              36.f,
-    /* displacement */      0.f,
+    /* draft */             9.3f,
+    /* displacement */      41000000.f,
+
+    /* speed */             KNOTS(30.f),
+    /* power */             SHP(148120),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
 
     /* turrets */
     {
@@ -250,7 +303,17 @@ const ship_design ship_littorio_battleship =
     /* name */              string::buffer("Littorio"),
     /* length */            237.76f,
     /* beam */              32.82f,
-    /* displacement */      0.f,
+    /* draft */             9.6f,
+    /* displacement */      40724000.f,
+
+    /* speed */             KNOTS(30.f),
+    /* power */             SHP(128200),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
 
     /* turrets */
     {
@@ -284,7 +347,17 @@ const ship_design ship_deutschland_cruiser =
     /* name */              string::buffer("Deutschland"),
     /* length */            186.f,
     /* beam */              21.7f,
-    /* displacement */      0.f,
+    /* draft */             7.25f,
+    /* displacement */      10800000.f,
+
+    /* speed */             KNOTS(26.f),
+    /* power */             SHP(53260),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    400.f,
+    /* optimal_turning_radius */    600.f,
 
     /* turrets */
     {
@@ -312,7 +385,17 @@ const ship_design ship_town_cruiser =
     /* name */              string::buffer("Town"),
     /* length */            180.f,
     /* beam */              19.f,
-    /* displacement */      0.f,
+    /* draft */             6.1f,
+    /* displacement */      11730000.f,
+
+    /* speed */             KNOTS(32.f),
+    /* power */             SHP(75000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    350.f,
+    /* optimal_turning_radius */    525.f,
 
     /* turrets */
     {
@@ -352,7 +435,17 @@ const ship_design ship_tribal_destroyer =
     /* name */              string::buffer("Tribal"),
     /* length */            115.f,
     /* beam */              11.f,
-    /* displacement */      0.f,
+    /* draft */             3.43f,
+    /* displacement */      1884000.f,
+
+    /* speed */             KNOTS(36.f),
+    /* power */             SHP(44000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    250.f,
+    /* optimal_turning_radius */    375.f,
 
     /* turrets */
     {

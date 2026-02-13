@@ -7,6 +7,8 @@
 #include "g_navigation.h"
 #include "g_ship.h"
 
+#include "design/g_ship_design.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -15,6 +17,8 @@ const object_type navigation::_type(subsystem::_type);
 //------------------------------------------------------------------------------
 navigation::navigation(game::ship* owner)
     : subsystem(owner, {subsystem_type::navigation, 1})
+    , _target_speed(0)
+    , _target_heading(0)
 {}
 
 //------------------------------------------------------------------------------
@@ -38,54 +42,29 @@ void navigation::think()
     auto ship = _owner->cast<game::ship>();
     auto engines = ship ? ship->engines() : nullptr;
 
-    if (engines)
-    {
-        float linear_speed = engines->maximum_linear_speed();
-        float angular_speed = engines->maximum_angular_speed();
-        vec2 target_position = ship->get_position();
+    if (engines) {
+        vec2 current_position = ship->get_position();
+        rot2 target_heading = _target_heading;
 
-        while (_waypoints.size() && (_waypoints[0] - target_position).length_sqr() < square(32.f)) {
+        float epsilon_sqr = square(2.f * ship->design()->minimum_turning_radius);
+        while (_waypoints.size() && (_waypoints[0] - current_position).length_sqr() < epsilon_sqr) {
             _waypoints.erase(_waypoints.begin());
         }
 
         if (_waypoints.size()) {
-            target_position = _waypoints[0];
+            vec2 direction = normalize(_waypoints[0] - current_position);
+            target_heading = rot2(direction.x, direction.y);
         }
 
-        if (linear_speed && angular_speed && target_position != ship->get_position()) {
-            // Target position in ship-local space
-            vec2 local = target_position * ship->get_inverse_transform();
+        float delta_angle = (target_heading * ship->get_rotation().inverse()).radians();
+        float angular_velocity = ship->get_linear_velocity().length() * engines->get_rudder_angle()
+            / (ship->design()->rudder_angle * ship->design()->minimum_turning_radius);
+        float angular_accel = ship->design()->rudder_speed * angular_velocity;
 
-            // Radius of circle tangent to the current position and velocity
-            // which also contains the target position. This will be infinite
-            // if the ship is pointing directly towards the target position.
-            float target_radius = std::abs((square(local.x) + square(local.y)) / (2.f * local.y));
-
-            // Decrease linear speed if turn radius is too large
-            float turn_radius = linear_speed / angular_speed;
-            //linear_speed *= min(1.f, target_radius / turn_radius);
-
-            // Angle of arc between current and target position on circle
-            float arc_angle = std::atan2(local.x, target_radius - std::abs(local.y));
-            arc_angle = std::fmod(arc_angle + 2.f * math::pi, 2.f * math::pi);
-
-            // Length of the arc between current and target position
-            float arc_length = target_radius * arc_angle;
-            // Ratio of the arc length to straight line distance
-            float arc_ratio = arc_length / local.length();
-
-            // Decrease angular speed if turn radius is too small, unless the
-            // waypoint is far enough away to use a straight-line course.
-            angular_speed *= clamp(turn_radius / target_radius, 1.f - std::exp(100.f * (1.f - arc_ratio)), 1.f);
-        }
-
-        if (target_position == ship->get_position()) {
-            engines->set_target_velocity(vec2_zero, 0);
+        if (.5f * square(angular_velocity) / abs(angular_accel) > abs(delta_angle)) {
+            engines->set_rudder_target(0);
         } else {
-            vec2 delta_move = target_position * ship->get_inverse_transform();
-            vec2 move_target = vec2(linear_speed,0) * ship->get_rotation();
-
-            engines->set_target_velocity(move_target, std::copysign(angular_speed, delta_move.y));
+            engines->set_rudder_target(std::copysign(ship->design()->rudder_angle, delta_angle));
         }
     }
 }

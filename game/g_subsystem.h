@@ -106,45 +106,33 @@ protected:
 };
 
 //------------------------------------------------------------------------------
-struct engines_info
-{
-    float maximum_linear_speed;
-    float maximum_angular_speed;
-    float maximum_linear_accel;
-    float maximum_angular_accel;
-    float linear_drag_lambda; //! half-life of linear velocity
-    float angular_drag_lambda; //! half-life of angular velocity
-};
-
-//------------------------------------------------------------------------------
 class engines : public subsystem
 {
 public:
     static const object_type _type;
 
 public:
-    engines(game::ship* owner, engines_info info);
+    engines(game::ship* owner);
 
     virtual object_type const& type() const override { return _type; }
     virtual void think() override;
 
-    void set_target_velocity(vec2 linear_velocity, float angular_velocity);
-    void set_target_linear_velocity(vec2 linear_velocity);
-    void set_target_angular_velocity(float angular_velocity);
+    void set_rudder_target(float rudder_target) { _rudder_target = rudder_target; }
+    float get_rudder_target() const { return _rudder_target; }
+    float get_rudder_angle() const { return _rudder_angle; }
 
-    vec2 target_linear_velocity() const { return _linear_velocity_target; }
-    float target_angular_velocity() const { return _angular_velocity_target; }
-
-    float maximum_linear_speed() const;
-    float maximum_angular_speed() const;
+    void set_speed_target(float speed_target) { _speed_target = speed_target; }
+    float get_speed_target() const { return _speed_target; }
 
 protected:
-    engines_info _engines_info;
-    float _linear_drag_coefficient;
-    float _angular_drag_coefficient;
+    //! Linear drag coefficients along longitudinal and transverse axes. These values
+    //! also include density and cross-sectional area terms since they are constant.
+    float _linear_drag_coefficient[2];
 
-    vec2 _linear_velocity_target;
-    float _angular_velocity_target;
+    float _rudder_angle;
+    float _rudder_target;
+
+    float _speed_target;
 };
 
 } // namespace game

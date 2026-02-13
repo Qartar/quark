@@ -64,6 +64,7 @@ template<typename T> constexpr T rad2deg(T value) { return value * T(180.0 / pi)
 } // namespace math
 
 template<typename T> constexpr T square(T value) { return value * value; }
+template<typename T> constexpr T cube(T value) { return value * value * value; }
 
 template<typename T, typename Y> constexpr T clamp(Y value, T min, T max) { return (value < min) ? min : (value > max) ? max : T(value); }
 

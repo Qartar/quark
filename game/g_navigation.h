@@ -26,6 +26,13 @@ public:
     virtual void read_snapshot(network::message const& message) override;
     virtual void write_snapshot(network::message& message) const override;
 
+    void set_speed(float speed) { _target_speed = speed; }
+
+    void set_heading(rot2 heading) {
+        _target_heading = heading;
+        _waypoints.resize(0);
+    }
+
     std::vector<vec2> const& waypoints() const { return _waypoints; }
 
     void set_waypoint(vec2 point) {
@@ -37,6 +44,8 @@ public:
     }
 
 protected:
+    float _target_speed;
+    rot2 _target_heading;
     std::vector<vec2> _waypoints;
 };
 
