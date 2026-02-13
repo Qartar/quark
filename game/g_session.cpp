@@ -668,12 +668,13 @@ void session::draw_console()
         color4(.1f,.1f,.1f,.8f));
 
     int ystep = int(_renderer->monospace_size(" ").y);
+    yoffset -= ystep * 3 / 4; // vertical margin
 
     // draw build string
     {
         string::literal build(BUILD_STRING);
         vec2 size = _renderer->monospace_size(build);
-        _renderer->draw_monospace(build, vec2(vec2i(width - int(size.x) - 4, yoffset - 8)), menu::colors[1]);
+        _renderer->draw_monospace(build, vec2(vec2i(width - int(size.x) - 4, yoffset)), menu::colors[1]);
     }
 
     // draw input text
@@ -681,19 +682,19 @@ void session::draw_console()
         char buf[260] = "]";
         console_input const& input = _console.input();
         strzcpy(buf + 1, string::view(input.begin(), input.end()), countof(buf) - 1);
-        _renderer->draw_monospace(buf, vec2(vec2i(4, yoffset - 8)), menu::colors[6]);
+        _renderer->draw_monospace(buf, vec2(vec2i(4, yoffset)), menu::colors[6]);
         // draw input cursor
         if ((int)(_frametime.to_seconds() * 2.5f) % 2 == 0) {
             buf[input.cursor() - input.begin() + 1] = '_';
             buf[input.cursor() - input.begin() + 2] = '\0';
-            _renderer->draw_monospace(buf, vec2(vec2i(4, yoffset - 8)), menu::colors[6]);
+            _renderer->draw_monospace(buf, vec2(vec2i(4, yoffset)), menu::colors[6]);
         }
     }
 
     // draw console rows
     std::size_t num_rows = _console.num_rows();
     for (std::size_t ii = 0; ii + _console.scroll() < num_rows; ++ii) {
-        int y = yoffset - narrow_cast<int>(ii + 1) * ystep - 8;
+        int y = yoffset - narrow_cast<int>(ii + 1) * ystep;
         if (y < 0) {
             break;
         }
