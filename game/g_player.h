@@ -46,6 +46,13 @@ protected:
     player_view _view;
     usercmd _usercmd;
     time_value _usercmd_time;
+
+    handle<ship> _hover;
+    handle<ship> _selection;
+    handle<ship> _follow;
+
+protected:
+    handle<ship> hover_target(vec2 cursor) const;
 };
 
 } // namespace game
