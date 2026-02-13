@@ -58,6 +58,60 @@ const turret_design turret_yamato_46cm =
     }
 };
 
+const turret_design turret_fuso_36cm =
+{
+    /* radius */            4.75f,
+    /* train_speed */       DEG(2.f),
+    /* elevation_speed */   DEG(10.f),
+    /* elevation_limit */   DEGV(-3.f, 43.f),
+    /* num_guns */          2,
+    /* spacing */           2.0f,
+    /* reload_time */       time_delta::from_seconds(30.f),
+    /* gun_design */        &gun_36cm_41st_Year_Type,
+    /* outline */           {
+        vec2(4.75f, 1.5f),
+        vec2(3.f, 3.4f),
+        vec2(-1.f, 4.4f),
+        vec2(-6.25f, 3.4f),
+        vec2(-7.f, 1.5f),
+        vec2(-7.f, -1.5f),
+        vec2(-6.25f, -3.4f),
+        vec2(-1.f, -4.4f),
+        vec2(3.f, -3.4f),
+        vec2(4.75f, -1.5f)
+    }
+};
+
+const turret_design turret_fuso_36cm_rf =
+{
+    /* radius */            4.75f,
+    /* train_speed */       DEG(2.f),
+    /* elevation_speed */   DEG(10.f),
+    /* elevation_limit */   DEGV(-3.f, 43.f),
+    /* num_guns */          2,
+    /* spacing */           2.0f,
+    /* reload_time */       time_delta::from_seconds(30.f),
+    /* gun_design */        &gun_36cm_41st_Year_Type,
+    /* outline */           {
+        vec2(4.75f, 1.5f),
+        vec2(3.f, 3.4f),
+        vec2(-1.f, 4.4f),
+        vec2(-4.75f, 3.75f),
+        vec2(-4.75f, 4.75f),
+        vec2(-6.6f, 4.75f),
+        vec2(-6.6f, 2.5f),
+        vec2(-7.f, 1.5f),
+        vec2(-7.f, -1.5f),
+        vec2(-6.6f, -2.5f),
+        vec2(-6.6f, -4.75f),
+        vec2(-4.75f, -4.75f),
+        vec2(-4.75f, -3.75f),
+        vec2(-1.f, -4.4f),
+        vec2(3.f, -3.4f),
+        vec2(4.75f, -1.5f)
+    }
+};
+
 const turret_design turret_iowa_16in =
 {
     /* radius */            6.5f,

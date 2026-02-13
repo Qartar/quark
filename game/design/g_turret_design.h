@@ -28,6 +28,8 @@ struct turret_design
 };
 
 extern const turret_design turret_yamato_46cm;
+extern const turret_design turret_fuso_36cm;
+extern const turret_design turret_fuso_36cm_rf;
 extern const turret_design turret_iowa_16in;
 extern const turret_design turret_kgv_14in_quad;
 extern const turret_design turret_kgv_14in_twin;

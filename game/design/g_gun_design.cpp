@@ -19,6 +19,16 @@ const gun_design gun_46cm_45_Type_94 =
     /* shell_coefficient */ 0.f,
 };
 
+const gun_design gun_36cm_41st_Year_Type =
+{
+    /* name */              string::buffer("36 cm 41st Year Type"),
+    /* caliber */           0.36f,
+    /* length */            16.f,
+    /* shell_mass */        673.5f,
+    /* shell_velocity */    775.f,
+    /* shell_coefficient */ 0.f,
+};
+
 const gun_design gun_16in_50_caliber_Mark_7 =
 {
     /* name */              string::buffer("16\"/50 caliber Mark 7"),

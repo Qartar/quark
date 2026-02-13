@@ -23,6 +23,7 @@ struct gun_design
 };
 
 extern const gun_design gun_46cm_45_Type_94;
+extern const gun_design gun_36cm_41st_Year_Type;
 extern const gun_design gun_16in_50_caliber_Mark_7;
 extern const gun_design gun_BL_14_inch_Mk_VII;
 extern const gun_design gun_380mm_45_Modele_1935;

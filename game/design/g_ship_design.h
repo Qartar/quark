@@ -48,6 +48,7 @@ struct ship_design
 };
 
 extern const ship_design ship_yamato_battleship;
+extern const ship_design ship_fuso_battleship;
 extern const ship_design ship_iowa_battleship;
 extern const ship_design ship_king_george_v_battleship;
 extern const ship_design ship_richelieu_battleship;

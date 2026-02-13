@@ -52,6 +52,10 @@ const vec2 yamato_verts[] = {
     vec2(131.50f, 0.00f), vec2(131.15f, 2.51f), vec2(130.22f, 4.27f), vec2(128.72f, 5.48f), vec2(126.49f, 6.20f), vec2(107.26f, 8.54f), vec2(82.73f, 12.28f), vec2(52.90f, 17.40f), vec2(37.10f, 18.66f), vec2(23.41f, 19.42f), vec2(-73.95f, 19.60f), vec2(-77.85f, 17.52f), vec2(-99.05f, 17.90f), vec2(-100.21f, 17.72f), vec2(-100.91f, 17.21f), vec2(-101.14f, 16.36f), vec2(-101.15f, 13.87f), vec2(-108.85f, 11.99f), vec2(-115.95f, 9.82f), vec2(-122.45f, 7.37f), vec2(-128.36f, 4.63f), vec2(-130.11f, 3.14f), vec2(-131.15f, 1.59f), vec2(-131.50f, 0.00f), vec2(-131.15f, -1.59f), vec2(-130.11f, -3.14f), vec2(-128.36f, -4.63f), vec2(-122.45f, -7.37f), vec2(-115.95f, -9.82f), vec2(-108.85f, -11.99f), vec2(-101.15f, -13.87f), vec2(-101.14f, -16.36f), vec2(-100.91f, -17.21f), vec2(-100.21f, -17.72f), vec2(-99.05f, -17.90f), vec2(-77.85f, -17.52f), vec2(-73.95f, -19.60f), vec2(23.41f, -19.42f), vec2(37.10f, -18.66f), vec2(52.90f, -17.40f), vec2(82.73f, -12.28f), vec2(107.26f, -8.54f), vec2(126.49f, -6.20f), vec2(128.72f, -5.48f), vec2(130.22f, -4.27f), vec2(131.15f, -2.51f),
 };
 
+const vec2 fuso_verts[] = {
+    vec2(-105.00f, 0.00f), vec2(-104.59f, 0.94f), vec2(-103.07f, 2.10f), vec2(-99.98f, 3.54f), vec2(-94.86f, 5.25f), vec2(-87.51f, 7.17f), vec2(-78.36f, 9.12f), vec2(-68.77f, 10.78f), vec2(-67.68f, 11.34f), vec2(-63.28f, 12.24f), vec2(-54.38f, 13.40f), vec2(-41.88f, 14.60f), vec2(-30.03f, 15.43f), vec2(-23.10f, 15.64f), vec2(12.72f, 15.61f), vec2(23.41f, 15.18f), vec2(32.76f, 14.38f), vec2(42.12f, 13.08f), vec2(62.25f, 9.22f), vec2(68.65f, 8.47f), vec2(75.04f, 8.19f), vec2(79.61f, 7.85f), vec2(85.95f, 6.72f), vec2(93.42f, 4.81f), vec2(100.07f, 2.60f), vec2(103.90f, 0.89f), vec2(105.00f, 0.00f), vec2(103.90f, -0.89f), vec2(100.07f, -2.60f), vec2(93.42f, -4.81f), vec2(85.95f, -6.72f), vec2(79.61f, -7.85f), vec2(75.04f, -8.19f), vec2(68.65f, -8.47f), vec2(62.25f, -9.22f), vec2(42.12f, -13.08f), vec2(32.76f, -14.38f), vec2(23.41f, -15.18f), vec2(12.72f, -15.61f), vec2(-23.10f, -15.64f), vec2(-30.03f, -15.43f), vec2(-41.88f, -14.60f), vec2(-54.38f, -13.40f), vec2(-63.28f, -12.24f), vec2(-67.68f, -11.34f), vec2(-68.77f, -10.78f), vec2(-78.36f, -9.12f), vec2(-87.51f, -7.17f), vec2(-94.86f, -5.25f), vec2(-99.98f, -3.54f), vec2(-103.07f, -2.10f), vec2(-104.59f, -0.94f),
+};
+
 const vec2 iowa_verts[] = {
     vec2(-135.00f, 0.00f), vec2(-134.55f, 1.82f), vec2(-133.27f, 3.63f), vec2(-131.02f, 5.46f), vec2(-127.63f, 7.31f), vec2(-122.88f, 9.18f), vec2(-116.56f, 11.05f), vec2(-108.49f, 12.85f), vec2(-98.79f, 14.50f), vec2(-88.25f, 15.84f), vec2(-78.88f, 16.67f), vec2(-73.39f, 16.93f), vec2(-46.77f, 17.47f), vec2(-20.31f, 17.61f), vec2(6.00f, 17.35f), vec2(21.45f, 16.83f), vec2(36.77f, 15.59f), vec2(53.70f, 13.45f), vec2(80.47f, 9.09f), vec2(100.61f, 6.02f), vec2(116.13f, 4.29f), vec2(130.97f, 3.33f), vec2(132.64f, 3.47f), vec2(133.92f, 2.87f), vec2(134.79f, 1.60f), vec2(135.00f, 0.00f), vec2(134.79f, -1.60f), vec2(133.92f, -2.87f), vec2(132.64f, -3.47f), vec2(130.97f, -3.33f), vec2(116.13f, -4.29f), vec2(100.61f, -6.02f), vec2(80.47f, -9.09f), vec2(53.70f, -13.45f), vec2(36.77f, -15.59f), vec2(21.45f, -16.83f), vec2(6.00f, -17.35f), vec2(-20.31f, -17.61f), vec2(-46.77f, -17.47f), vec2(-73.39f, -16.93f), vec2(-78.88f, -16.67f), vec2(-88.25f, -15.84f), vec2(-98.79f, -14.50f), vec2(-108.49f, -12.85f), vec2(-116.56f, -11.05f), vec2(-122.88f, -9.18f), vec2(-127.63f, -7.31f), vec2(-131.02f, -5.46f), vec2(-133.27f, -3.63f), vec2(-134.55f, -1.82f),
 };
@@ -119,6 +123,68 @@ const ship_design ship_yamato_battleship =
 
     /* hull_outline */      {yamato_verts, yamato_verts + countof(yamato_verts)},
     /* hull_shape */        {{{std::make_unique<physics::convex_shape>(yamato_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_fuso_battleship =
+{
+    /* name */              string::buffer("Fuso"),
+    /* length */            210.3f,
+    /* beam */              33.1f,
+    /* draft */             8.7f,
+    /* displacement */      29797000.f,
+
+    /* speed */             KNOTS(23.f),
+    /* power */             SHP(40000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec2(56.5f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-150.f, 150.f),
+            /* design */            &turret_fuso_36cm,
+        },
+        {
+            /* position */          vec2(43.5f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-150.f, 150.f),
+            /* design */            &turret_fuso_36cm_rf,
+        },
+        {
+            /* position */          vec2(5.25f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-150.f, 150.f),
+            /* design */            &turret_fuso_36cm_rf,
+        },
+        {
+            /* position */          vec2(-24.25f,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-150.f, 150.f),
+            /* design */            &turret_fuso_36cm_rf,
+        },
+        {
+            /* position */          vec2(-55.f,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-150.f, 150.f),
+            /* design */            &turret_fuso_36cm_rf,
+        },
+        {
+            /* position */          vec2(-67.25f,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-150.f, 150.f),
+            /* design */            &turret_fuso_36cm,
+        },
+    },
+
+    /* hull_outline */      {fuso_verts, fuso_verts + countof(fuso_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(fuso_verts)}}},
 };
 
 //------------------------------------------------------------------------------
