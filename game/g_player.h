@@ -48,11 +48,19 @@ protected:
     time_value _usercmd_time;
 
     handle<ship> _hover;
-    handle<ship> _selection;
     handle<ship> _follow;
 
+    std::vector<handle<ship>> _selection;
+    time_value _selection_time; //!< Last completed selection, used for double-click/follow
+    vec2 _selection_start; //!< Start of drag select rectangle in world space
+    bool _is_selecting; //!< True if currently in a drag select
+
 protected:
+    void draw_selection(render::system* renderer, time_value time, std::vector<handle<ship>> const& selection) const;
+
     handle<ship> hover_target(vec2 cursor) const;
+    std::vector<handle<ship>> selection_target(vec2 cursor) const;
+    void on_select(vec2 cursor);
 };
 
 } // namespace game

@@ -101,7 +101,7 @@ result session::init (string::view cmdline)
         {K_ALT, usercmd::modifier::alternate},
         {K_CTRL, usercmd::modifier::control},
         {K_SHIFT, usercmd::modifier::shift},
-        {K_MOUSE1, usercmd::action::select},
+        {K_MOUSE1, usercmd::button::select},
         {K_MOUSE2, usercmd::action::move},
         {K_MOUSE3, usercmd::button::pan},
         {'1', usercmd::action::weapon_1},

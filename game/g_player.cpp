@@ -21,6 +21,9 @@ player::player()
     : _view({vec2_zero, vec2(640.f, 480.0f)})
     , _usercmd({})
     , _usercmd_time(time_delta::zero)
+    , _selection_start(vec2_zero)
+    , _selection_time(time_delta::zero)
+    , _is_selecting(false)
 {
     _view.origin = vec2_zero;
     _view.size = vec2(640.f, 480.f);
@@ -62,7 +65,6 @@ std::vector<vec2> create_outline(std::vector<vec2> const& v, float d)
 void player::draw(render::system* renderer, time_value time) const
 {
     ship const* target = _hover ? _hover.get()
-                       : _selection ? _selection.get()
                        : _follow.get();
     if (target) {
         float speed_in_knots = target->get_linear_velocity().length() * (1.f / 0.5144447f);
@@ -76,7 +78,7 @@ void player::draw(render::system* renderer, time_value time) const
         renderer->draw_string(va("%.1f kn %d\xb0", speed_in_knots, heading), text_offset - vec2(0,text_size.y), color4(1,1,1,1));
 
         // draw slip angle (debug)
-        if (target == _hover || target == _selection) {
+        if (target == _hover && !_is_selecting) {
             renderer->draw_line(
                 target->get_position(time),
                 target->get_position(time) + target->get_linear_velocity(),
@@ -90,7 +92,7 @@ void player::draw(render::system* renderer, time_value time) const
         }
 
         // draw hull outline
-        if (target == _hover || target == _selection) {
+        if (target == _hover && !_is_selecting) {
             std::vector<vec2> outline = create_outline(target->design()->hull_outline, 1.f);
             mat3 tx = target->get_transform(time);
             vec2 v0 = outline[0] * tx;
@@ -104,27 +106,61 @@ void player::draw(render::system* renderer, time_value time) const
         }
     }
 
-    if (_selection && _selection != target) {
-        // draw hull outline
-        {
-            std::vector<vec2> outline = create_outline(_selection->design()->hull_outline, 1.f);
-            mat3 tx = _selection->get_transform(time);
-            vec2 v0 = outline[0] * tx;
-            for (std::size_t ii = 1; ii < outline.size(); ++ii) {
-                vec2 v1 = outline[ii] * tx;
-                renderer->draw_line(v0, v1, color4(.5f,.5f,.5f,1), color4(.5f,.5f,.5f,1));
-                v0 = v1;
-            }
-            vec2 v1 = outline[0] * tx;
-            renderer->draw_line(v0, v1, color4(.5f,.5f,.5f,1), color4(.5f,.5f,.5f,1));
-        }
+    if (_is_selecting) {
+        std::vector<handle<ship>> selection_preview;
+        selection_preview = selection_target((_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin);
+        draw_selection(renderer, time, selection_preview);
+    } else {
+        draw_selection(renderer, time, _selection);
+    }
+}
+
+//------------------------------------------------------------------------------
+void player::draw_selection(render::system* renderer, time_value time, std::vector<handle<ship>> const& selection) const
+{
+    if (_is_selecting) {
+        vec2 cursor = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
+        bounds b = bounds::from_points({_selection_start, cursor});
+        vec2 p[4] = {
+            {b[0][0], b[0][1]},
+            {b[1][0], b[0][1]},
+            {b[1][0], b[1][1]},
+            {b[0][0], b[1][1]},
+        };
+        renderer->draw_line(p[0], p[1], color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_line(p[1], p[2], color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_line(p[2], p[3], color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_line(p[3], p[0], color4(1,1,1,1), color4(1,1,1,1));
     }
 
-    if (_selection) {
+    if (!selection.size()) {
+        return;
+    }
+
+    // draw selection outlines
+    for (auto&& ship : selection) {
+        std::vector<vec2> outline = create_outline(ship->design()->hull_outline, 1.f);
+        mat3 tx = ship->get_transform(time);
+        vec2 v0 = outline[0] * tx;
+        for (std::size_t ii = 1; ii < outline.size(); ++ii) {
+            vec2 v1 = outline[ii] * tx;
+            renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+            v0 = v1;
+        }
+        vec2 v1 = outline[0] * tx;
+        renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+    }
+
+    // draw order preview
+    if (!_is_selecting) {
+        vec2 origin = vec2_zero;
+        for (auto&& ship : selection) {
+            origin += ship->get_position(time);
+        }
+        origin /= float(selection.size());
         vec2 cursor = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
-        vec2 origin = _selection->get_position(time);
-        if (target && target != _selection) {
-            cursor = target->get_position(time);
+        if (_hover) {
+            cursor = _hover->get_position(time);
         }
 
         renderer->draw_line(origin, cursor, color4(1,1,1,1), color4(1,1,1,1));
@@ -185,6 +221,15 @@ void player::update_usercmd(usercmd cmd, time_value time)
 
     float delta_time = (time - _usercmd_time).to_seconds();
 
+    if (!!(cmd.buttons & usercmd::button::select)
+        && !(_usercmd.buttons & usercmd::button::select)) {
+        _is_selecting = true;
+        _selection_start = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
+    } else if (!(cmd.buttons & usercmd::button::select)
+        && !!(_usercmd.buttons & usercmd::button::select)) {
+        on_select((_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin);
+    }
+
     if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
         _view.origin.y += scroll_speed * _view.size.x * delta_time;
         _follow = nullptr;
@@ -226,17 +271,18 @@ void player::update_usercmd(usercmd cmd, time_value time)
         _view.size *= (1.f / zoom_speed);
     } else if (_usercmd.action == usercmd::action::zoom_out) {
         _view.size *= zoom_speed;
-    } else if (_usercmd.action == usercmd::action::select) {
-        if (_selection == _hover) {
-            _follow = _hover;
-        } else {
-            _selection = _hover;
-        }
     } else if (_usercmd.action == usercmd::action::move) {
-        if (_selection) {
-            vec2 direction = normalize(cursor - _selection->get_position(time));
+        if (_selection.size()) {
+            vec2 origin = vec2_zero;
+            for (auto&& ship : _selection) {
+                origin += ship->get_position(time);
+            }
+            origin /= float(_selection.size());
+            vec2 direction = normalize(cursor - origin);
             float heading = std::round(math::rad2deg(rot2(direction.x, direction.y).radians()));
-            _selection->navigation()->set_heading(rot2(math::deg2rad(heading)));
+            for (auto&& ship : _selection) {
+                ship->navigation()->set_heading(rot2(math::deg2rad(heading)));
+            }
         }
     }
 }
@@ -246,6 +292,39 @@ handle<ship> player::hover_target(vec2 cursor) const
 {
     game::object* obj = get_world()->point_query(cursor);
     return obj ? obj->cast<ship>() : nullptr;
+}
+
+//------------------------------------------------------------------------------
+std::vector<handle<ship>> player::selection_target(vec2 cursor) const
+{
+    game::object* objects[256];
+    bounds b = bounds::from_points({_selection_start, cursor});
+    std::size_t num_objects = get_world()->bounds_query(b, objects);
+    std::vector<handle<ship>> selection;
+    selection.reserve(num_objects);
+    for (std::size_t ii = 0; ii < num_objects; ++ii) {
+        if (objects[ii]->is_type<ship>()) {
+            selection.push_back(objects[ii]->cast<ship>());
+        }
+    }
+    return selection;
+}
+
+//------------------------------------------------------------------------------
+void player::on_select(vec2 cursor)
+{
+    std::vector<handle<ship>> selection = selection_target(cursor);
+    // Check for double-click to set follow target
+    if (_usercmd_time - _selection_time < time_delta::from_milliseconds(400)) {
+        if (selection.size()) {
+            _follow = selection.front();
+        }
+        _selection.resize(0);
+    } else {
+        std::swap(_selection, selection);
+        _selection_time = _usercmd_time;
+    }
+    _is_selecting = false;
 }
 
 } // namespace game
