@@ -54,6 +54,8 @@ public:
 
     //! Returns the rigid body at the given point, if one exists
     physics::rigid_body* point_query(vec2 point) const;
+    //! Returns rigid bodies intersecting the given bounds
+    std::size_t bounds_query(bounds b, physics::rigid_body** bodies, std::size_t max_bodies) const;
 
 protected:
     std::vector<physics::rigid_body*> _bodies;

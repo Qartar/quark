@@ -177,6 +177,12 @@ public:
 
     game::object* trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore = nullptr) const;
     game::object* point_query(vec2 point) const;
+    std::size_t bounds_query(bounds b, game::object** objects, std::size_t max_objects) const;
+
+    template<std::size_t max_objects>
+    std::size_t bounds_query(bounds b, game::object* (&objects)[max_objects]) const {
+        return bounds_query(b, objects, max_objects);
+    }
 
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
