@@ -64,7 +64,7 @@ void navigation::think()
         if (.5f * square(angular_velocity) / abs(angular_accel) > abs(delta_angle)) {
             engines->set_rudder_target(0);
         } else {
-            engines->set_rudder_target(std::copysign(ship->design()->rudder_angle, delta_angle));
+            engines->set_rudder_target(std::copysign(ship->design()->rudder_angle, -delta_angle));
         }
     }
 }

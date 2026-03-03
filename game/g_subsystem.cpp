@@ -95,9 +95,16 @@ engines::engines(game::ship* owner)
     ship_design const* design = owner->design();
 
     // Calculate longitudinal drag coefficient by balancing it against maximum power and speed.
-    _linear_drag_coefficient[0] = 1e3f * design->power / cube(design->speed) / design->displacement;
+    _linear_drag_coefficient[0] = 1e3f * design->power / cube(design->speed);
     // Hand-tuned transverse drag coefficient, could in theory be calculated from slip angle.
     _linear_drag_coefficient[1] = 1e1f * _linear_drag_coefficient[0] * design->length / design->beam;
+    // Torque per angular velocity squared due to drag, calculated by hand so
+    // there is a 90% chance it is 100% wrong.
+    _angular_drag_coefficient = (1.f / 32.f) * pow(design->length, 4.f) * _linear_drag_coefficient[1];
+    // Using moment of inertia of a solid ellipsoid as an approximation, could
+    // use rigid body inertia instead but that would also be an approximation
+    // since it also assumes uniform mass distribution.
+    _inverse_inertia = 5.f / ((square(design->length) + square(design->beam)) * design->displacement);
 
     _speed_target = design->speed;
 }
@@ -109,17 +116,45 @@ void engines::think()
 
     ship_design const* design = _owner->cast<ship>()->design();
 
-    // update linear velocity
+    // Update rudder angle
+    {
+        float rudder_delta = _rudder_target - _rudder_angle;
+        if (abs(rudder_delta) > design->rudder_speed * FRAMETIME.to_seconds()) {
+            rudder_delta = std::copysign(design->rudder_speed * FRAMETIME.to_seconds(), rudder_delta);
+        }
+        _rudder_angle += rudder_delta;
+    }
+
+    // Update velocity
     {
         vec2 current_velocity = _owner->get_linear_velocity();
         vec2 current_direction = vec2(1,0) * _owner->get_rotation();
         // Orthogonal velocity components
         vec2 vx = current_direction * dot(current_direction, current_velocity);
         vec2 vy = current_velocity - vx;
-        // Apply drag along longitudinal and transverse axes
-        vec2 drag_force = _linear_drag_coefficient[0] * vx * length(vx)
-                        + _linear_drag_coefficient[1] * vy * length(vy);
-        current_velocity -= drag_force * FRAMETIME.to_seconds();
+        // Calculate drag from linear velocity of ship hull
+        vec2 drag_force = -_linear_drag_coefficient[0] * vx * length(vx)
+                          -_linear_drag_coefficient[1] * vy * length(vy);
+        // Calculate drag from angular velocity of ship hull
+        float drag_torque = _angular_drag_coefficient * std::copysign(square(_owner->get_angular_velocity()), _owner->get_angular_velocity());
+
+        // Simplified rudder model: Calculate torque required to match drag torque
+        // at target angular velocity and apply directly to forehead.
+        float target_curvature = -_rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
+        float target_angular_velocity = dot(current_velocity, current_direction) * target_curvature;
+        float rudder_torque = _angular_drag_coefficient * std::copysign(square(target_angular_velocity), target_angular_velocity);
+
+        float torque = rudder_torque - drag_torque;
+
+        vec2 rudder_offset = current_direction * design->length * -0.45f; // FIXME: add to design
+        vec2 rudder_direction = current_direction * rot2(_rudder_angle);
+        vec2 rudder_normal = rudder_direction.cross(1.f);
+
+        // Calculate force imparted by rudder
+        vec2 rudder_force = rudder_normal * torque / (rudder_offset.length() * cos(_rudder_angle));
+
+        // Apply drag
+        current_velocity += (rudder_force + drag_force) / design->displacement * FRAMETIME.to_seconds();
 
         // Apply power
         float current_speed = current_velocity.length();
@@ -131,21 +166,10 @@ void engines::think()
             current_velocity += current_direction * speed_delta;
         }
 
+        float angular_velocity = _owner->get_angular_velocity();
+        angular_velocity += torque * _inverse_inertia * FRAMETIME.to_seconds();
         _owner->set_linear_velocity(current_velocity);
-    }
-
-    // update angular velocity
-    {
-        float rudder_delta = _rudder_target - _rudder_angle;
-        if (abs(rudder_delta) > design->rudder_speed * FRAMETIME.to_seconds()) {
-            rudder_delta = std::copysign(design->rudder_speed * FRAMETIME.to_seconds(), rudder_delta);
-        }
-        _rudder_angle += rudder_delta;
-
-        float k = _rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
-        // FIXME: doesn't respect current angular velocity (e.g. in a collision)
-        // Need a function for angular acceleration based on rudder angle, etc.
-        _owner->set_angular_velocity(_owner->get_linear_velocity().length() * k);
+        _owner->set_angular_velocity(angular_velocity);
     }
 }
 

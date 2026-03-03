@@ -76,6 +76,10 @@ void player::draw(render::system* renderer, time_value time) const
         vec2 text_offset = _view.origin + .49f * _view.size - text_size;
         renderer->draw_string(va("%s-class", target->design()->name.c_str()), text_offset, color4(1,1,1,1));
         renderer->draw_string(va("%.1f kn %d\xb0", speed_in_knots, heading), text_offset - vec2(0,text_size.y), color4(1,1,1,1));
+        int rudder = int(std::round(math::rad2deg(target->engines()->get_rudder_angle())));
+        renderer->draw_string(va("%d\xb0 rudder", rudder), text_offset - vec2(0,text_size.y*2), color4(1,1,1,1));
+        int avelocity = int(std::round(math::rad2deg(target->get_angular_velocity()*60.f)));
+        renderer->draw_string(va("%d\xb0/min", avelocity), text_offset - vec2(0,text_size.y*3), color4(1,1,1,1));
 
         // draw slip angle (debug)
         if (target == _hover && !_is_selecting) {

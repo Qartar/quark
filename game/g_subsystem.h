@@ -128,6 +128,10 @@ protected:
     //! Linear drag coefficients along longitudinal and transverse axes. These values
     //! also include density and cross-sectional area terms since they are constant.
     float _linear_drag_coefficient[2];
+    //! Torque per angular velocity squared due to drag
+    float _angular_drag_coefficient;
+    //! Inverse moment of inertia
+    float _inverse_inertia;
 
     float _rudder_angle;
     float _rudder_target;

@@ -103,6 +103,15 @@ void ship::draw(render::system* renderer, time_value time) const
         renderer->draw_line(v0, v1, color, color);
     }
 
+    // draw rudder
+    {
+        vec2 v0 = vec2(_design->length * -.45f, 0) * tx;
+        vec2 vx = vec2(_design->length,0) * get_rotation(time) * rot2(_engines->get_rudder_angle());
+        vec2 v1 = v0 - vx * .025f;
+        vec2 v2 = v0 + vx * .025f;
+        renderer->draw_line(v1, v2, color, color);
+    }
+
     // draw turrets
     for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
         auto const& turret = _design->turrets[jj];
