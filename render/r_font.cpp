@@ -239,6 +239,59 @@ void generate_bitmap_r10g10b10a2(glyph const& glyph, mat3 image_to_glyph, std::s
             data[yy * row_stride + xx] = pack_r10g10b10a2(color4(c));
         }
     }
+
+    // postprocess pixels to eliminate interpolation artifacts
+    for (std::size_t yy = 0; yy + 1 < height; ++yy) {
+        for (std::size_t xx = 0; xx + 1 < width; ++xx) {
+            // gather 2x2 grid of pixels starting at (xx,yy)
+            uint32_t px[4] = {
+                data[(yy + 0) * row_stride + xx + 0],
+                data[(yy + 0) * row_stride + xx + 1],
+                data[(yy + 1) * row_stride + xx + 0],
+                data[(yy + 1) * row_stride + xx + 1],
+            };
+
+            // check for discontinuities in the 2x2 grid of pixels
+            int mask = 0;
+            for (std::size_t ii = 0; ii < 3; ++ii) {
+                uint32_t c[4] = {
+                    px[0] & 0x3ff,
+                    px[1] & 0x3ff,
+                    px[2] & 0x3ff,
+                    px[3] & 0x3ff,
+                };
+
+                if ((c[0] > 0x380 && c[1] < 0x080) || (c[0] < 0x080 && c[1] > 0x380)
+                 || (c[2] > 0x380 && c[3] < 0x080) || (c[2] < 0x080 && c[3] > 0x380)
+                 || (c[0] > 0x380 && c[2] < 0x080) || (c[0] < 0x080 && c[2] > 0x380)
+                 || (c[1] > 0x380 && c[3] < 0x080) || (c[1] < 0x080 && c[3] > 0x380)) {
+                    mask |= (1 << ii);
+                }
+
+                px[0] >>= 10;
+                px[1] >>= 10;
+                px[2] >>= 10;
+                px[3] >>= 10;
+            }
+
+            // interpolation artifacts occur if more than two channels have
+            // discontinuities so replace all channels with the median
+            if (__popcnt(mask) > 1) {
+                for (std::size_t iy = 0; iy < 1; ++iy) {
+                    for (std::size_t ix = 0; ix < 1; ++ix) {
+                        uint32_t ca = (data[(yy + iy) * row_stride + xx + ix] >>  0) & 0x3ff;
+                        uint32_t cb = (data[(yy + iy) * row_stride + xx + ix] >> 10) & 0x3ff;
+                        uint32_t cc = (data[(yy + iy) * row_stride + xx + ix] >> 20) & 0x3ff;
+                        uint32_t median = (ca > cb) ^ (ca > cc) ? ca
+                                        : (cb < ca) ^ (cb < cc) ? cb
+                                        : cc;
+                        data[(yy + iy) * row_stride + xx + ix] &= 0xc0000000; // mask out colors, keep alpha
+                        data[(yy + iy) * row_stride + xx + ix] |= (median << 20) | (median << 10) | median;
+                    }
+                }
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
