@@ -557,7 +557,7 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
         // Convert codepoints to character indices
         while (cursor < next && instances.size() < max_instances) {
-            int glyph_index = _sdf->codepoint_to_glyph_index(*cursor++);
+            int glyph_index = _sdf->codepoint_to_glyph_index((unsigned char)*cursor++);
             instances.push_back({
                     vec2(float(xoffs), 0),
                     glyph_index,
