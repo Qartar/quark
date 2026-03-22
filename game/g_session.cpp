@@ -685,9 +685,10 @@ void session::draw_console()
         _renderer->draw_monospace(buf, vec2(vec2i(4, yoffset)), menu::colors[6]);
         // draw input cursor
         if ((int)(_frametime.to_seconds() * 2.5f) % 2 == 0) {
-            buf[input.cursor() - input.begin() + 1] = '_';
-            buf[input.cursor() - input.begin() + 2] = '\0';
-            _renderer->draw_monospace(buf, vec2(vec2i(4, yoffset)), menu::colors[6]);
+            constexpr string::literal cursor_str("_");
+            string::view prefix_str(buf, buf + 1 + (input.cursor() - input.begin()));
+            vec2 cursor_offset = vec2(_renderer->monospace_size(prefix_str).x, 0);
+            _renderer->draw_monospace(cursor_str, cursor_offset + vec2(vec2i(4, yoffset)), menu::colors[6]);
         }
     }
 
