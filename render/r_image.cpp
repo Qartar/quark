@@ -96,7 +96,7 @@ image::image(string::view name)
     : _width(0)
     , _height(0)
 {
-    if (succeeded(load_file(name))) {
+    if (name.has_extension(".dds") && succeeded(load_file(name))) {
         return;
     }
 

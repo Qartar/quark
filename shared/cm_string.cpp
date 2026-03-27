@@ -47,6 +47,14 @@ bool view::starts_with(string::view prefix) const
 }
 
 //------------------------------------------------------------------------------
+bool view::has_extension(string::view extension) const
+{
+    assert(extension.length() && extension[0] == '.');
+    return length() >= extension.length()
+        && stricmp(skip(length() - extension.length()), extension) == 0;
+}
+
+//------------------------------------------------------------------------------
 buffer::buffer(char const* c_str)
     : _begin(nullptr)
     , _end(nullptr)
