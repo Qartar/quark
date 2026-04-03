@@ -446,37 +446,38 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
             p->position = position;
             p->velocity = vec2_zero;
 
-            p->color = color4(0.8f,0.9f,1.0f,0.5f);
-            p->color_velocity = color4(0,0,0,-.05f / std::sqrt(scale));
+            p->color = color4(0.8f,0.9f,1.0f,0.25f);
+            p->color_velocity = color4(0,0,0,-.1f / std::sqrt(scale));
             p->size = 16.0f * scale;
             p->size_velocity = 1.0f;
-            p->flags = render::particle::invert;
-#if 0
-            // fire
+
+            // splash
 
             for (int ii = 0; ii < 64 * scale; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
+                float time_offset = (.2f + _random.normal_real(.0625f, .25f)) * scale;
+                if ( (p = add_particle(time + time_delta::from_seconds(time_offset))) == NULL )
                     return;
 
                 r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(8.f * scale);
+                d = _random.uniform_real(4.f * scale);
 
                 p->position = position + vec2(cos(r),sin(r))*d;
 
                 r = _random.uniform_real(2.f * math::pi);
-                d = sqrt(_random.uniform_real()) * 128.f * strength;
+                d = _random.uniform_real() * 32.f * strength;
 
                 p->velocity = vec2(cos(r),sin(r))*d;
                 p->velocity += direction * d * 0.5f;
 
-                p->color = color4(1.0f,_random.uniform_real(),0.0f,0.1f);
-                p->color_velocity = color4(0,0,0,-p->color.a/(0.5f+square(_random.uniform_real())*2.5f));
-                p->size = _random.uniform_real(8.f, 24.f) * scale;
+                p->color = color4(0.8f,0.9f,1.0f,0.25f);
+                p->color_velocity = color4(0,0,0,-p->color.a/((5.f+square(_random.uniform_real())*3.f)) * scale);
+                p->size = _random.uniform_real(.5f, 6.f) * scale;
                 p->size_velocity = 1.0f * strength;
 
                 p->drag = _random.uniform_real(2.f, 4.f) * scale;
             }
 
+#if 0
             // debris
 
             for (int ii = 0; ii < 32 * scale; ++ii) {
