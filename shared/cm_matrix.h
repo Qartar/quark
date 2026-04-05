@@ -217,6 +217,7 @@ public:
     }
 
     friend bool isnan(mat3 const& m) { return isnan(m[0]) || isnan(m[1]) || isnan(m[2]); }
+
 protected:
     vec3 _rows[3];
 };
