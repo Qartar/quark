@@ -77,6 +77,7 @@ public:
     friend vec2 normalize(vec2 const& v) { return v.normalize(); }
     constexpr friend float dot(vec2 const& lhs, vec2 const& rhs) { return lhs.dot(rhs); }
     constexpr friend float cross(vec2 const& lhs, vec2 const& rhs) { return lhs.cross(rhs); }
+    friend bool isnan(vec2 const& v) { return isnan(v[0]) || isnan(v[1]); }
 };
 
 //------------------------------------------------------------------------------
@@ -146,6 +147,7 @@ public:
     friend vec3 normalize(vec3 const& v) { return v.normalize(); }
     constexpr friend float dot(vec3 const& lhs, vec3 const& rhs) { return lhs.dot(rhs); }
     constexpr friend vec3 cross(vec3 const& lhs, vec3 const& rhs) { return lhs.cross(rhs); }
+    friend bool isnan(vec3 const& v) { return isnan(v[0]) || isnan(v[1]) || isnan(v[2]); }
 };
 
 //------------------------------------------------------------------------------
@@ -216,6 +218,7 @@ public:
     friend vec4 normalize(vec4 const& v) { return v.normalize(); }
     constexpr friend float dot(vec4 const& lhs, vec4 const& rhs) { return lhs.dot(rhs); }
     constexpr friend vec4 cross(vec4 const& lhs, vec4 const& rhs) { return lhs.cross(rhs); }
+    friend bool isnan(vec4 const& v) { return isnan(v[0]) || isnan(v[1]) || isnan(v[2]) || isnan(v[3]); }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -293,7 +296,7 @@ public:
 // constructors
 
     rect() = default;
-    constexpr rect(int X, int Y, int W, int H) : _mins(X, Y), _maxs(W, H) {}
+    constexpr rect(int X, int Y, int W, int H) : _mins(X, Y), _maxs(X + W, Y + H) {}
     constexpr rect(vec2i mins, vec2i maxs) : _mins(mins), _maxs(maxs) {}
 
     bool operator==(rect const& R) const { return _mins == R._mins && _maxs == R._maxs; }
@@ -372,21 +375,3 @@ protected:
 constexpr vec2 vec2_zero = vec2(0,0);
 constexpr vec3 vec3_zero = vec3(0,0,0);
 constexpr vec4 vec4_zero = vec4(0,0,0,0);
-
-//------------------------------------------------------------------------------
-template<> inline bool isnan<vec2>(vec2 v)
-{
-    return isnan(v[0]) || isnan(v[1]);
-}
-
-//------------------------------------------------------------------------------
-template<> inline bool isnan<vec3>(vec3 v)
-{
-    return isnan(v[0]) || isnan(v[1]) || isnan(v[2]);
-}
-
-//------------------------------------------------------------------------------
-template<> inline bool isnan<vec4>(vec4 v)
-{
-    return isnan(v[0]) || isnan(v[1]) || isnan(v[2]) || isnan(v[3]);
-}
