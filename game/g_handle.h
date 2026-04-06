@@ -86,6 +86,16 @@ public:
     //! get the unique sequence number for the referenced object
     uint64_t get_sequence() const { return (_value & sequence_mask) >> sequence_shift; }
 
+    //! equality comparison operators for handles and pointers
+    template<typename Ty> friend bool operator==(handle<T> const& lhs, handle<Ty> const& rhs) { return lhs.get() == rhs.get(); }
+    template <typename Ty> friend bool operator==(handle<T> const& lhs, Ty const* rhs) { return lhs.get() == rhs; }
+    template <typename Tx> friend bool operator==(Tx const* lhs, handle<T> const& rhs) { return lhs == rhs.get(); }
+
+    //! inequality comparison operators for handles and pointers
+    template<typename Ty> friend bool operator!=(handle<T> const& lhs, handle<Ty> const& rhs) { return lhs.get() != rhs.get(); }
+    template <typename Ty> friend bool operator!=(handle<T> const& lhs, Ty const* rhs) { return lhs.get() != rhs; }
+    template <typename Tx> friend bool operator!=(Tx const* lhs, handle<T> const& rhs) { return lhs != rhs.get(); }
+
 protected:
     friend game::world;
     template<typename> friend class handle;
@@ -126,31 +136,6 @@ protected:
 
     uint64_t get_world_index() const { return (_value & system_mask) >> system_shift; }
 };
-
-template<typename Tx, typename Ty> bool operator==(handle<Tx> const& lhs, handle<Ty> const& rhs)
-{
-    return lhs.get() == rhs.get();
-}
-
-template <typename Tx, typename Ty> bool operator==(handle<Tx> const& lhs, Ty const* rhs)
-{
-    return lhs.get() == rhs;
-}
-
-template <typename Tx, typename Ty> bool operator==(Tx const* lhs, handle<Ty> const& rhs)
-{
-    return lhs == rhs.get();
-}
-
-template <typename Tx, typename Ty> bool operator!=(handle<Tx> const& lhs, Ty const* rhs)
-{
-    return lhs.get() != rhs;
-}
-
-template <typename Tx, typename Ty> bool operator!=(Tx const* lhs, handle<Ty> const& rhs)
-{
-    return lhs != rhs.get();
-}
 
 //------------------------------------------------------------------------------
 /*
