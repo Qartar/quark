@@ -621,7 +621,7 @@ vec2 font::size(string::view string, vec2 scale) const
         }
 
         while (cursor < next) {
-            int glyph_index = _sdf->codepoint_to_glyph_index(*cursor++);
+            int glyph_index = _sdf->codepoint_to_glyph_index((unsigned char)*cursor++);
             size.x += int(_sdf->glyphs[glyph_index].advance.x);
         }
 
