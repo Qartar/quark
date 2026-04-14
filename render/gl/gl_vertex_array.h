@@ -101,6 +101,18 @@ protected:
     void bind_vertex_buffer(buffer const& b, GLuint bindindex, GLintptr offset, GLsizei stride);
 
 protected:
+    // OpenGL 1.5
+    using PFNGLBINDBUFFER = void (APIENTRY*)(GLenum target, GLuint buffer);
+
+    static PFNGLBINDBUFFER glBindBuffer;
+
+    // OpenGL 2.0
+    using PFNGLDISABLEVERTEXATTRIBARRAY = void (APIENTRY*)(GLuint index);
+    using PFNGLENABLEVERTEXATTRIBARRAY = void (APIENTRY*)(GLuint index);
+
+    static PFNGLDISABLEVERTEXATTRIBARRAY glDisableVertexAttribArray;
+    static PFNGLENABLEVERTEXATTRIBARRAY glEnableVertexAttribArray;
+
     // OpenGL 3.0
     using PFNGLBINDVERTEXARRAY = void (APIENTRY*)(GLuint array);
     using PFNGLDELETEVERTEXARRAYS = void (APIENTRY*)(GLsizei n, GLuint const* arrays);
@@ -110,8 +122,20 @@ protected:
     static PFNGLDELETEVERTEXARRAYS glDeleteVertexArrays;
     static PFNGLGENVERTEXARRAYS glGenVertexArrays;
 
-    // OpenGL 4.3
-    // ...
+    // GL_ARB_vertex_attrib_binding
+    using PFNGLBINDVERTEXBUFFER = void (APIENTRY*)(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
+    using PFNGLVERTEXATTRIBFORMAT = void (APIENTRY*)(GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset);
+    using PFNGLVERTEXATTRIBIFORMAT = void (APIENTRY*)(GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
+    using PFNGLVERTEXATTRIBLFORMAT = void (APIENTRY*)(GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
+    using PFNGLVERTEXATTRIBBINDING = void (APIENTRY*)(GLuint attribindex, GLuint bindingindex);
+    using PFNGLVERTEXBINDINGDIVISOR = void (APIENTRY*)(GLuint bindingindex, GLuint divisor);
+
+    static PFNGLBINDVERTEXBUFFER glBindVertexBuffer;
+    static PFNGLVERTEXATTRIBFORMAT glVertexAttribFormat;
+    static PFNGLVERTEXATTRIBIFORMAT glVertexAttribIFormat;
+    static PFNGLVERTEXATTRIBLFORMAT glVertexAttribLFormat;
+    static PFNGLVERTEXATTRIBBINDING glVertexAttribBinding;
+    static PFNGLVERTEXBINDINGDIVISOR glVertexBindingDivisor;
 
     // GL_ARB_direct_state_access
     using PFNGLCREATEVERTEXARRAYS = void (APIENTRY*)(GLsizei n, GLuint* arrays);
