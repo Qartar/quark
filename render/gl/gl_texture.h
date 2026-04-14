@@ -36,6 +36,8 @@ protected:
     GLsizei _levels;
 
 protected:
+    //! Create a default texture object for the given texture target
+    explicit texture(GLenum target);
     texture(GLenum target, GLsizei levels);
 
 protected:
@@ -77,8 +79,7 @@ protected:
 class texture2d : public texture
 {
 public:
-    texture2d()
-        : texture() {}
+    texture2d();
     texture2d(GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 
     void upload(GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, void const* pixels);
@@ -88,8 +89,7 @@ public:
 class texture2dmultisample : public texture
 {
 public:
-    texture2dmultisample()
-        : texture() {}
+    texture2dmultisample();
     texture2dmultisample(GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 };
 

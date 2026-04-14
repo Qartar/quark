@@ -52,6 +52,13 @@ texture::texture()
 {}
 
 //------------------------------------------------------------------------------
+texture::texture(GLenum target)
+    : _name(0)
+    , _target(target)
+    , _levels(0)
+{}
+
+//------------------------------------------------------------------------------
 texture::texture(GLenum target, GLsizei levels)
     : _name(0)
     , _target(target)
@@ -149,6 +156,11 @@ void texture::parameter(GLenum pname, GLint const* params)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+texture2d::texture2d()
+    : texture(GL_TEXTURE_2D)
+{}
+
+//------------------------------------------------------------------------------
 texture2d::texture2d(GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
     : texture(GL_TEXTURE_2D, levels)
 {
@@ -171,6 +183,11 @@ void texture2d::upload(GLint level, GLint xoffset, GLint yoffset, GLsizei width,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+texture2dmultisample::texture2dmultisample()
+    : texture(GL_TEXTURE_2D_MULTISAMPLE)
+{}
+
+//------------------------------------------------------------------------------
 texture2dmultisample::texture2dmultisample(GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations)
     : texture(GL_TEXTURE_2D_MULTISAMPLE, 1)
 {
