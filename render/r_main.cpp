@@ -19,6 +19,33 @@
 namespace render {
 
 //------------------------------------------------------------------------------
+void APIENTRY gl_debug_message_callback(
+    GLenum source,
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei length,
+    GLchar const* message,
+    GLvoid const* userParam)
+{
+    (void)source;
+    (void)type;
+    (void)length;
+    (void)userParam;
+    switch (severity) {
+        case GL_DEBUG_SEVERITY_HIGH_ARB:
+            log::message("GL[^f00High^xxx]: (%d) %s\n", id, message);
+            break;
+        case GL_DEBUG_SEVERITY_MEDIUM_ARB:
+            log::message("GL[^ff0Medium^xxx]: (%d) %s\n", id, message);
+            break;
+        case GL_DEBUG_SEVERITY_LOW_ARB:
+            log::message("GL[^fffLow^xxx]: (%d) %s\n", id, message);
+            break;
+    }
+}
+
+//------------------------------------------------------------------------------
 system::system(render::window* window)
     : _command_list_shaders("listShaders", this, &system::command_list_shaders)
     , _command_reload_shaders("reloadShaders", this, &system::command_reload_shaders)
@@ -26,6 +53,8 @@ system::system(render::window* window)
     , _framebuffer_height("r_height", 0, config::archive, "framebuffer height, or 0 to use window height")
     , _framebuffer_scale("r_scale", 1, config::archive, "framebuffer scale if using window dimensions")
     , _framebuffer_samples("r_samples", -1, config::archive, "framebuffer samples, or -1 to use maximum supported")
+    , _debug("r_debug", false, config::archive, "enable API debug messages")
+    , _debug_synchronous("r_debug_synchronous", false, config::archive, "enable synchronous API debug messages; requires r_debug")
     , _window(window)
     , _view{}
     , _view_bounds{}
@@ -44,6 +73,14 @@ result system::init()
     random r;
 
     glBlendColor = (PFNGLBLENDCOLOR )wglGetProcAddress("glBlendColor");
+
+    // ARB_debug_output
+    glDebugMessageControlARB = (PFNGLDEBUGMESSAGECONTROLARB)wglGetProcAddress("glDebugMessageControlARB");
+    glDebugMessageInsertARB = (PFNGLDEBUGMESSAGEINSERTARB)wglGetProcAddress("glDebugMessageInsertARB");
+    glDebugMessageCallbackARB = (PFNGLDEBUGMESSAGECALLBACKARB)wglGetProcAddress("glDebugMessageCallbackARB");
+    glGetDebugMessageLogARB = (PFNGLGETDEBUGMESSAGELOGARB)wglGetProcAddress("glGetDebugMessageLogARB");
+
+    set_debug_state();
 
     gl::buffer::init();
     gl::framebuffer::init();
@@ -128,6 +165,10 @@ void system::end_frame()
             || _framebuffer_samples.modified()
             || _framebuffer_scale.modified()) {
         resize(_window->size());
+    }
+
+    if (_debug.modified() || _debug_synchronous.modified()) {
+        set_debug_state();
     }
 }
 
@@ -244,6 +285,30 @@ void system::set_default_state()
     glTranslatef(_view.origin.x, _view.origin.y, 0);
     glRotatef(math::rad2deg(_view.angle), 0, 0, -1);
     glTranslatef(-_view.origin.x, -_view.origin.y, 0);
+}
+
+//------------------------------------------------------------------------------
+void system::set_debug_state()
+{
+    if (glDebugMessageControlARB) {
+        assert(glDebugMessageCallbackARB);
+        if (_debug) {
+            glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+            glDebugMessageCallbackARB(gl_debug_message_callback, nullptr);
+        } else if (!_debug) {
+            glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+            glDebugMessageCallbackARB(nullptr, nullptr);
+        }
+    }
+
+    if (_debug_synchronous) {
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+    } else {
+        glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+    }
+
+    _debug.reset();
+    _debug_synchronous.reset();
 }
 
 //------------------------------------------------------------------------------

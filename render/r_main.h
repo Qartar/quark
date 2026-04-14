@@ -76,6 +76,9 @@ public:
 
     void set_view(render::view const& view);
 
+    //! Returns true if API debugging is enabled
+    bool is_debug_enabled() const { return _debug; }
+
 private:
 
     // More font stuff (r_font.cpp)
@@ -107,6 +110,11 @@ private:
     config::integer _framebuffer_samples;
 
     gl::framebuffer _framebuffer;
+
+    config::boolean _debug; //!< enable API debug messages
+    config::boolean _debug_synchronous; //!< enable synchronous API debug messages
+
+    void set_debug_state();
 
     render::window* _window;
 
@@ -143,6 +151,18 @@ private:
     using PFNGLBLENDCOLOR = void (APIENTRY*)(GLfloat red, GLfloat greed, GLfloat blue, GLfloat alpha);
 
     PFNGLBLENDCOLOR glBlendColor = NULL;
+
+    // ARB_debug_output
+    using GLDEBUGPROCARB = void (APIENTRY*)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, GLvoid const* userParam);
+    using PFNGLDEBUGMESSAGECONTROLARB = void (APIENTRY*)(GLenum source, GLenum type, GLenum severity, GLsizei count, GLuint const* ids, GLboolean enabled);
+    using PFNGLDEBUGMESSAGEINSERTARB = void (APIENTRY*)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* buf);
+    using PFNGLDEBUGMESSAGECALLBACKARB = void (APIENTRY*)(GLDEBUGPROCARB callback, void const* userParam);
+    using PFNGLGETDEBUGMESSAGELOGARB = void (APIENTRY*)(GLuint count, GLsizei bufSize, GLenum* types, GLuint* ids, GLenum* severities, GLsizei* lengths, GLchar* messageLog);
+
+    PFNGLDEBUGMESSAGECONTROLARB glDebugMessageControlARB = nullptr;
+    PFNGLDEBUGMESSAGEINSERTARB glDebugMessageInsertARB = nullptr;
+    PFNGLDEBUGMESSAGECALLBACKARB glDebugMessageCallbackARB = nullptr;
+    PFNGLGETDEBUGMESSAGELOGARB glGetDebugMessageLogARB = nullptr;
 };
 
 } // namespace render

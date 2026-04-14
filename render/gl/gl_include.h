@@ -108,6 +108,58 @@
 #define GL_MAX_RENDERBUFFER_SIZE        0x84E8
 
 //------------------------------------------------------------------------------
+// ARB_debug_output
+
+// Tokens accepted by the <target> parameters of Enable, Disable,
+// and IsEnabled:
+
+#define GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB                     0x8242
+
+// Tokens accepted by the <value> parameters of GetBooleanv,
+// GetIntegerv, GetFloatv, and GetDoublev:
+
+#define GL_MAX_DEBUG_MESSAGE_LENGTH_ARB                     0x9143
+#define GL_MAX_DEBUG_LOGGED_MESSAGES_ARB                    0x9144
+#define GL_DEBUG_LOGGED_MESSAGES_ARB                        0x9145
+#define GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH_ARB             0x8243
+
+// Tokens accepted by the <pname> parameter of GetPointerv:
+
+#define GL_DEBUG_CALLBACK_FUNCTION_ARB                      0x8244
+#define GL_DEBUG_CALLBACK_USER_PARAM_ARB                    0x8245
+
+// Tokens accepted or provided by the <source> parameters of
+// DebugMessageControlARB, DebugMessageInsertARB and DEBUGPROCARB,
+// and the <sources> parameter of GetDebugMessageLogARB:
+
+#define GL_DEBUG_SOURCE_API_ARB                             0x8246
+#define GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB                   0x8247
+#define GL_DEBUG_SOURCE_SHADER_COMPILER_ARB                 0x8248
+#define GL_DEBUG_SOURCE_THIRD_PARTY_ARB                     0x8249
+#define GL_DEBUG_SOURCE_APPLICATION_ARB                     0x824A
+#define GL_DEBUG_SOURCE_OTHER_ARB                           0x824B
+
+// Tokens accepted or provided by the <type> parameters of
+// DebugMessageControlARB, DebugMessageInsertARB and DEBUGPROCARB,
+// and the <types> parameter of GetDebugMessageLogARB:
+
+#define GL_DEBUG_TYPE_ERROR_ARB                             0x824C
+#define GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB               0x824D
+#define GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB                0x824E
+#define GL_DEBUG_TYPE_PORTABILITY_ARB                       0x824F
+#define GL_DEBUG_TYPE_PERFORMANCE_ARB                       0x8250
+#define GL_DEBUG_TYPE_OTHER_ARB                             0x8251
+
+// Tokens accepted or provided by the <severity> parameters of
+// DebugMessageControlARB, DebugMessageInsertARB and DEBUGPROCARB
+// callback functions, and the <severities> parameter of
+// GetDebugMessageLogARB:
+
+#define GL_DEBUG_SEVERITY_HIGH_ARB                          0x9146
+#define GL_DEBUG_SEVERITY_MEDIUM_ARB                        0x9147
+#define GL_DEBUG_SEVERITY_LOW_ARB                           0x9148
+
+//------------------------------------------------------------------------------
 // ARB_texture_multisample
 
 // Accepted by the <target> parameter of BindTexture and
@@ -123,3 +175,31 @@
 // GetBufferPointerv:
 
 #define GL_SHADER_STORAGE_BUFFER                        0x90D2
+
+//------------------------------------------------------------------------------
+// WGL_ARB_create_context
+
+// Accepted as an attribute name in <*attribList>:
+
+#define WGL_CONTEXT_MAJOR_VERSION_ARB               0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB               0x2092
+#define WGL_CONTEXT_LAYER_PLANE_ARB                 0x2093
+#define WGL_CONTEXT_FLAGS_ARB                       0x2094
+#define WGL_CONTEXT_PROFILE_MASK_ARB                0x9126
+
+// Accepted as bits in the attribute value for WGL_CONTEXT_FLAGS in
+// <*attribList>:
+
+#define WGL_CONTEXT_DEBUG_BIT_ARB                   0x0001
+#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB      0x0002
+
+// Accepted as bits in the attribute value for
+// WGL_CONTEXT_PROFILE_MASK_ARB in <*attribList>:
+
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB            0x00000001
+#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB   0x00000002
+
+// New errors returned by GetLastError:
+
+#define GL_ERROR_INVALID_VERSION_ARB                0x2095
+#define GL_ERROR_INVALID_PROFILE_ARB                0x2096

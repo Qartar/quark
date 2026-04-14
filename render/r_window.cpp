@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "resource.h"
+#include "gl/gl_include.h"
 
 #include <ShellScalingApi.h>
 
@@ -16,6 +17,9 @@ using PFNWGLGETSWAPINTERVALEXT = int (APIENTRY*)();
 
 static PFNWGLSWAPINTERVALEXT wglSwapIntervalEXT = NULL;
 static PFNWGLGETSWAPINTERVALEXT wglGetSwapIntervalEXT = NULL;
+
+// WGL_ARB_create_context
+using PFNWGLCREATECONTEXTATTRIBSARB = HGLRC(APIENTRY*)(HDC hDC, HGLRC hShareContext, int const* attribList);
 
 } // anonymous namespace
 
@@ -210,6 +214,8 @@ result window::create(int xpos, int ypos, int width, int height, bool fullscreen
 //------------------------------------------------------------------------------
 result window::init_opengl()
 {
+    log::message("------ initializing opengl ------\n");
+
     int     pixelformat;
     PIXELFORMATDESCRIPTOR pfd = 
     {
@@ -260,6 +266,32 @@ result window::init_opengl()
         shutdown_opengl();
         return result::failure;
     }
+
+    // Replace rendering context with a debug context if debugging is enabled
+    if (_renderer.is_debug_enabled()) {
+        auto wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARB)wglGetProcAddress("wglCreateContextAttribsARB");
+        if (wglCreateContextAttribsARB) {
+            constexpr int attribs[] = {
+                WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+                WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+                0
+            };
+            HGLRC hrc = wglCreateContextAttribsARB(_hdc, NULL, attribs);
+            if (hrc) {
+                wglMakeCurrent(_hdc, hrc);
+                wglDeleteContext(_hrc);
+                _hrc = hrc;
+            } else {
+                log::warning("wglCreateContextAttribsARB failed to create debug context\n");
+            }
+        } else {
+            log::warning("failed to acquire wglCreateContextAttribsARB function pointer, unable to create debug context\n");
+        }
+    }
+
+    log::message("Vendor  : %s\n", glGetString(GL_VENDOR));
+    log::message("Renderer: %s\n", glGetString(GL_RENDERER));
+    log::message("Version : %s\n", glGetString(GL_VERSION));
 
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXT )wglGetProcAddress("wglSwapIntervalEXT");
     wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXT )wglGetProcAddress("wglGetSwapIntervalEXT");
