@@ -11,6 +11,9 @@
 
 #include "cm_filesystem.h"
 
+#define NOMINMAX
+#include <Windows.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -61,34 +64,7 @@ ship_editor::ship_editor()
     , _mode(editor_mode::deck)
     , _turret_instance(0)
 {
-    _view.viewport.maxs() = application::singleton()->window()->size();
-    _view.size = {64.f, 64.f * float(_view.viewport.maxs().y) / float(_view.viewport.maxs().x)};
-
-    _image = application::singleton()->window()->renderer()->load_image(
-        //"C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Constellation.bmp"
-        //"D:\\Users\\Carter\\Pictures\\Yamato1945.bmp"
-        //"D:\\Users\\Carter\\Pictures\\Kongo1944.bmp"
-        //"D:\\Users\\Carter\\Pictures\\Fuso1944.bmp"
-        //"D:\\Users\\Carter\\Pictures\\Iowa_classe_battleships_drawing.bmp"
-        //"D:\\Users\\Carter\\Pictures\\KGV-as-built.bmp"
-        //"D:\\Users\\Carter\\Pictures\\3607_Richelieu1941-09BattleofDakar_20231216154932.bmp"
-        "D:\\Users\\Carter\\Pictures\\6474_Bismarck1941-05-271_20240302131526.bmp"
-        //"D:\\Users\\Carter\\Pictures\\Littorio_class_battleship-drawing-2views.bmp"
-    );
-
-    _deck_vertices = { SHIP(219.61f, 33.1f) };
-    _deck_segments = { quad, quad };
-
-    //_deck_vertices = { SHIP_CUBE(219.61f, 28.04f) }; // Kongo
-    //_deck_vertices = { SHIP_CUBE(210.f, 33.1f) }; // Fuso
-    //_deck_vertices = { SHIP_CUBE(270.f, 33.f) }; // Iowa
-    //_deck_vertices = { SHIP_CUBE(227.f, 31.5f) }; // KGV
-    //_deck_segments = { cube, line, cube };
-    //_deck_vertices = { SHIP_CUBE2(247.85f, 33.08f) }; // Richelieu (scale 0.1524)
-    _deck_vertices = { SHIP_CUBE2(251.f, 36.f) }; // Bismarck (scale 0.1503)
-    _deck_segments = { cube, cube };
-    //_deck_vertices = { SHIP_CUBE(237.76f, 32.82f) }; // Littorio (scale 0.415)
-    //_deck_segments = { cube, line, cube };
+    clear();
 }
 
 //------------------------------------------------------------------------------
@@ -213,11 +189,13 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
     }
     {
         vec2 size = renderer->monospace_size("foo");
-        renderer->draw_monospace("(s) snap to grid", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*1.f), color4(1,1,1, _snap_to_grid ? .6f : .3f));
-        renderer->draw_monospace("( ) snap to edge", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*2.f), color4(1,1,1, _snap_to_edge ? .6f : .3f));
+        renderer->draw_monospace(_filename, _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*1.f), color4(1,1,1,1));
 
-        renderer->draw_monospace("(d) deck mode", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*4.f), color4(1,1,1, _mode == editor_mode::deck ? .6f : .3f));
-        renderer->draw_monospace("(t) turret mode", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*5.f), color4(1,1,1, _mode == editor_mode::turret ? .6f : .3f));
+        renderer->draw_monospace("(s) snap to grid", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*3.f), color4(1,1,1, _snap_to_grid ? .6f : .3f));
+        renderer->draw_monospace("( ) snap to edge", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*4.f), color4(1,1,1, _snap_to_edge ? .6f : .3f));
+
+        renderer->draw_monospace("(d) deck mode", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*6.f), color4(1,1,1, _mode == editor_mode::deck ? .6f : .3f));
+        renderer->draw_monospace("(t) turret mode", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*7.f), color4(1,1,1, _mode == editor_mode::turret ? .6f : .3f));
     }
 }
 
@@ -908,9 +886,42 @@ bool ship_editor::key_event(int key, bool down)
             _draw_grid = !_draw_grid;
             return true;
 
+        case 'i':
+            if (_control) {
+                string::buffer filename;
+                if (get_image_filename(filename)) {
+                    _image = application::singleton()->window()->renderer()->load_image(filename);
+                }
+                _control = false; // file dialog eats the control up key event
+                return true;
+            }
+            break;
+
+        case 'o':
+            if (_control) {
+                string::buffer filename;
+                if (get_load_filename(filename) && load(filename)) {
+                    _filename = filename;
+                }
+                _control = false; // file dialog eats the control up key event
+                return true;
+            }
+            break;
+
         case 's':
-            _snap_to_grid = !_snap_to_grid;
-            return true;
+            if (_control) {
+                string::buffer filename;
+                if (_filename.length() && save(_filename)) {
+                    // no-op
+                } else if (get_save_filename(filename) && save(filename)) {
+                    _filename = filename;
+                }
+                _control = false; // file dialog eats the control up key event
+                return true;
+            } else {
+                _snap_to_grid = !_snap_to_grid;
+                return true;
+            }
 
         case 't':
             _mode = editor_mode::turret;
@@ -927,11 +938,11 @@ bool ship_editor::key_event(int key, bool down)
             return true;
 
         case K_F5:
-            save("editor.dat");
+            save("assets/ref/design/quicksave.design");
             return true;
 
         case K_F8:
-            load("editor.dat");
+            load("assets/ref/design/quicksave.design");
             return true;
 
         case K_F9:
@@ -1054,6 +1065,180 @@ void ship_editor::cursor_event(vec2 position)
 }
 
 //------------------------------------------------------------------------------
+bool ship_editor::get_save_filename(string::buffer& filename) const
+{
+    OPENFILENAMEW ofn = {};
+    WCHAR buffer[1024] = {};
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFile = buffer;
+    ofn.nMaxFile = narrow_cast<int>(countof(buffer));
+    MultiByteToWideChar(
+        CP_UTF8,
+        0,
+        _filename.begin(),
+        narrow_cast<int>(_filename.length()),
+        buffer,
+        narrow_cast<int>(countof(buffer)));
+    ofn.lpstrFilter = L"Design Files (*.design)\0*.design\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 0;
+    ofn.lpstrDefExt = L"design";
+    ofn.Flags = OFN_NOCHANGEDIR;
+
+    if (GetSaveFileNameW(&ofn) == TRUE) {
+        // Get length of filename as UTF8, including null terminator
+        int len = WideCharToMultiByte(
+            CP_UTF8,
+            WC_NO_BEST_FIT_CHARS,
+            buffer,
+            -1,
+            0,
+            0,
+            NULL,
+            NULL);
+
+        filename.resize(len - 1);
+        WideCharToMultiByte(CP_UTF8,
+            WC_NO_BEST_FIT_CHARS,
+            buffer,
+            -1,
+            filename.data(),
+            len,
+            NULL,
+            NULL);
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool ship_editor::get_load_filename(string::buffer& filename) const
+{
+    OPENFILENAMEW ofn = {};
+    WCHAR buffer[1024] = {};
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFile = buffer;
+    ofn.nMaxFile = narrow_cast<int>(countof(buffer));
+    ofn.lpstrFilter = L"Design Files (*.design)\0*.design\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 0;
+    ofn.Flags = OFN_NOCHANGEDIR|OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileNameW(&ofn) == TRUE) {
+        // Get length of filename as UTF8, including null terminator
+        int len = WideCharToMultiByte(
+            CP_UTF8,
+            WC_NO_BEST_FIT_CHARS,
+            buffer,
+            -1,
+            0,
+            0,
+            NULL,
+            NULL);
+
+        filename.resize(len - 1);
+        WideCharToMultiByte(
+            CP_UTF8,
+            WC_NO_BEST_FIT_CHARS,
+            buffer,
+            -1,
+            filename.data(),
+            len,
+            NULL,
+            NULL);
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+bool ship_editor::get_image_filename(string::buffer& filename) const
+{
+    OPENFILENAMEW ofn = {};
+    WCHAR buffer[1024] = {};
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFile = buffer;
+    ofn.nMaxFile = narrow_cast<int>(countof(buffer));
+    ofn.lpstrFilter = L"Bitmap Files (*.bmp)\0*.bmp\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 0;
+    ofn.Flags = OFN_NOCHANGEDIR|OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileNameW(&ofn) == TRUE) {
+        // Get length of filename as UTF8, including null terminator
+        int len = WideCharToMultiByte(
+            CP_UTF8,
+            WC_NO_BEST_FIT_CHARS,
+            buffer,
+            -1,
+            0,
+            0,
+            NULL,
+            NULL);
+
+        filename.resize(len - 1);
+        WideCharToMultiByte(
+            CP_UTF8,
+            WC_NO_BEST_FIT_CHARS,
+            buffer,
+            -1,
+            filename.data(),
+            len,
+            NULL,
+            NULL);
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::clear()
+{
+    _filename.clear();
+
+    _view.viewport.maxs() = application::singleton()->window()->size();
+    _view.size = {64.f, 64.f * float(_view.viewport.maxs().y) / float(_view.viewport.maxs().x)};
+
+    _image = application::singleton()->window()->renderer()->load_image(
+        //"C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Constellation.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Yamato1945.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Kongo1944.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Fuso1944.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Iowa_classe_battleships_drawing.bmp"
+        //"D:\\Users\\Carter\\Pictures\\KGV-as-built.bmp"
+        //"D:\\Users\\Carter\\Pictures\\3607_Richelieu1941-09BattleofDakar_20231216154932.bmp"
+        "D:\\Users\\Carter\\Pictures\\6474_Bismarck1941-05-271_20240302131526.bmp"
+        //"D:\\Users\\Carter\\Pictures\\Littorio_class_battleship-drawing-2views.bmp"
+    );
+
+    _deck_vertices = { SHIP(219.61f, 33.1f) };
+    _deck_segments = { quad, quad };
+
+    //_deck_vertices = { SHIP_CUBE(219.61f, 28.04f) }; // Kongo
+    //_deck_vertices = { SHIP_CUBE(210.f, 33.1f) }; // Fuso
+    //_deck_vertices = { SHIP_CUBE(270.f, 33.f) }; // Iowa
+    //_deck_vertices = { SHIP_CUBE(227.f, 31.5f) }; // KGV
+    //_deck_segments = { cube, line, cube };
+    //_deck_vertices = { SHIP_CUBE2(247.85f, 33.08f) }; // Richelieu (scale 0.1524)
+    _deck_vertices = { SHIP_CUBE2(251.f, 36.f) }; // Bismarck (scale 0.1503)
+    _deck_segments = { cube, cube };
+    //_deck_vertices = { SHIP_CUBE(237.76f, 32.82f) }; // Littorio (scale 0.415)
+    //_deck_segments = { cube, line, cube };
+
+    _deck_linearized.clear();
+
+    _turrets.clear();
+    _turret_instances.clear();
+    _turret_instance = 0;
+}
+
+//------------------------------------------------------------------------------
 struct file_header
 {
     std::size_t header_size;
@@ -1068,13 +1253,13 @@ struct file_header
 };
 
 //------------------------------------------------------------------------------
-void ship_editor::save(string::view filename) const
+bool ship_editor::save(string::view filename) const
 {
     g_Game->message("saving '%s'...\n", filename.c_str());
 
     file::stream s = file::open(filename, file::mode::write);
     if (!s) {
-        return;
+        return false;
     }
 
     file_header h;
@@ -1105,6 +1290,7 @@ void ship_editor::save(string::view filename) const
     s.write((file::byte const*)&h, h.header_size);
 
     s.close();
+    return true;
 }
 
 //------------------------------------------------------------------------------

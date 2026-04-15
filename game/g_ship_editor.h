@@ -65,6 +65,8 @@ protected:
     bool _is_dragging;
     std::size_t _drag_index;
 
+    string::buffer _filename;
+
     render::image const* _image;
     vec2 _image_offset;
     config::scalar _image_scale;
@@ -110,7 +112,12 @@ protected:
     bool insert_turret(vec2 v);
     bool remove_turret(vec2 v);
 
-    void save(string::view filename) const;
+    bool get_save_filename(string::buffer& filename) const;
+    bool get_load_filename(string::buffer& filename) const;
+    bool get_image_filename(string::buffer& filename) const;
+
+    void clear();
+    bool save(string::view filename) const;
     bool load(string::view filename);
     void export_verts(string::view filename) const;
 
