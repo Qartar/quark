@@ -1250,12 +1250,28 @@ struct file_header
     std::size_t deck_vertices_offset;
     std::size_t deck_segments_size;
     std::size_t deck_segments_offset;
+    // turrets
+    std::size_t turrets_size;
+    std::size_t turrets_offset;
+    // turret instances
+    std::size_t turret_instances_size;
+    std::size_t turret_instances_offset;
+};
+
+//------------------------------------------------------------------------------
+struct turret_header
+{
+    float radius;
+    std::size_t vertices_size;
+    std::size_t vertices_offset;
+    std::size_t segments_size;
+    std::size_t segments_offset;
 };
 
 //------------------------------------------------------------------------------
 bool ship_editor::save(string::view filename) const
 {
-    g_Game->message("saving '%s'...\n", filename.c_str());
+    g_Game->message("saving '%s'...", filename.c_str());
 
     file::stream s = file::open(filename, file::mode::write);
     if (!s) {
@@ -1273,6 +1289,10 @@ bool ship_editor::save(string::view filename) const
     h.deck_vertices_offset = 0;
     h.deck_segments_size = _deck_segments.size() * sizeof(_deck_segments[0]);
     h.deck_segments_offset = 0;
+    h.turrets_size = _turrets.size() * sizeof(turret_header);
+    h.turrets_offset = 0;
+    h.turret_instances_size = _turret_instances.size() * sizeof(_turret_instances[0]);
+    h.turret_instances_offset = 0;
 
     // write header placeholder
     s.write((file::byte const*)&h, h.header_size);
@@ -1285,6 +1305,25 @@ bool ship_editor::save(string::view filename) const
     // write deck segments
     h.deck_segments_offset = s.tell();
     s.write((file::byte const*)_deck_segments.data(), h.deck_segments_size);
+    // write turrets
+    turret_header th[128];
+    for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
+        assert(ii < countof(th));
+        th[ii].radius = _turrets[ii].radius;
+        th[ii].vertices_size = _turrets[ii].vertices.size() * sizeof(_turrets[ii].vertices[0]);
+        th[ii].segments_size = _turrets[ii].segments.size() * sizeof(_turrets[ii].segments[0]);
+        // write turret vertices
+        th[ii].vertices_offset = s.tell();
+        s.write((file::byte const*)_turrets[ii].vertices.data(), th[ii].vertices_size);
+        // write turret segments
+        th[ii].segments_offset = s.tell();
+        s.write((file::byte const*)_turrets[ii].segments.data(), th[ii].segments_size);
+    }
+    h.turrets_offset = s.tell();
+    s.write((file::byte const*)th, h.turrets_size);
+    // write turret instances
+    h.turret_instances_offset = s.tell();
+    s.write((file::byte const*)_turret_instances.data(), h.turret_instances_size);
     // rewrite the file header with populated offset fields
     s.seek(0, file::seek::set);
     s.write((file::byte const*)&h, h.header_size);
@@ -1296,7 +1335,7 @@ bool ship_editor::save(string::view filename) const
 //------------------------------------------------------------------------------
 bool ship_editor::load(string::view filename)
 {
-    g_Game->message("loading '%s'...\n", filename.c_str());
+    g_Game->message("loading '%s'...", filename.c_str());
 
     file::buffer b = file::read(filename);
     if (!b.size()) {
@@ -1319,7 +1358,30 @@ bool ship_editor::load(string::view filename)
     _deck_segments.resize(h->deck_segments_size / sizeof(_deck_segments[0]));
     memcpy(_deck_segments.data(), b.data() + h->deck_segments_offset, h->deck_segments_size);
 
+    if (h->header_size >= 104) {
+        _turrets.resize(h->turrets_size / sizeof(turret_header));
+        turret_header const* th = reinterpret_cast<turret_header const*>(b.data() + h->turrets_offset);
+        for (std::size_t ii = 0; ii < _turrets.size(); ++ii, ++th) {
+            _turrets[ii].radius = th->radius;
+
+            _turrets[ii].vertices.resize(th->vertices_size / sizeof(_turrets[ii].vertices[0]));
+            memcpy(_turrets[ii].vertices.data(), b.data() + th->vertices_offset, th->vertices_size);
+
+            _turrets[ii].segments.resize(th->segments_size / sizeof(_turrets[ii].segments[0]));
+            memcpy(_turrets[ii].segments.data(), b.data() + th->segments_offset, th->segments_size);
+        }
+
+        _turret_instances.resize(h->turret_instances_size / sizeof(_turret_instances[0]));
+        memcpy(_turret_instances.data(), b.data() + h->turret_instances_offset, h->turret_instances_size);
+    } else {
+        _turrets.resize(0);
+        _turret_instances.resize(0);
+    }
+
     _deck_linearized = linearize(_deck_vertices, _deck_segments);
+    for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
+        _turrets[ii].linearized = linearize(_turrets[ii].vertices, _turrets[ii].segments);
+    }
 
     return true;
 }
@@ -1327,7 +1389,7 @@ bool ship_editor::load(string::view filename)
 //------------------------------------------------------------------------------
 void ship_editor::export_verts(string::view filename) const
 {
-    g_Game->message("exporting '%s'...\n", filename.c_str());
+    g_Game->message("exporting '%s'...", filename.c_str());
 
     file::stream s = file::open(filename, file::mode::write);
     if (!s) {
