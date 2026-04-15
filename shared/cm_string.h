@@ -152,6 +152,9 @@ public:
     //! including null terminator.
     void resize(std::size_t size);
 
+    //! Releases internal string data
+    void clear();
+
 protected:
     char* _begin;
     char* _end;

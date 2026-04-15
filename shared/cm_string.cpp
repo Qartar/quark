@@ -127,6 +127,17 @@ buffer::~buffer()
 }
 
 //------------------------------------------------------------------------------
+void buffer::clear()
+{
+    if (_begin) {
+        delete [] _begin;
+    }
+    _begin = nullptr;
+    _end = nullptr;
+    _capacity = nullptr;
+}
+
+//------------------------------------------------------------------------------
 void buffer::resize(std::size_t length)
 {
     reserve(length + 1);
