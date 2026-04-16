@@ -69,6 +69,16 @@ const gun_design gun_38cm_SK_C_34 =
     /* shell_coefficient */ 0.f,
 };
 
+const gun_design gun_15cm_SK_C_28 =
+{
+    /* name */              string::buffer("15 cm SK C/28"),
+    /* caliber */           .15f,
+    /* length */            7.815f,
+    /* shell_mass */        45.3f,
+    /* shell_velocity */    875.f,
+    /* shell_coefficient */ 0.f,
+};
+
 const gun_design gun_381_50_ansaldo_m1934 =
 {
     /* name */              string::buffer("Cannone da 381/50 Ansaldo M1934"),

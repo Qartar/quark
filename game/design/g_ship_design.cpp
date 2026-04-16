@@ -333,6 +333,7 @@ const ship_design ship_bismarck_battleship =
 
     /* turrets */
     {
+        // main battery
         {
             /* position */          vec2(69.75f,0),
             /* orientation */       0,
@@ -356,6 +357,43 @@ const ship_design ship_bismarck_battleship =
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
+        },
+        // secondary battery
+        {
+            /* position */          vec2(27.85f, 9.6f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 135.f),
+            /* design */            &turret_bismarck_15cm,
+        },
+        {
+            /* position */          vec2(27.85f, -9.6f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 0.f),
+            /* design */            &turret_bismarck_15cm,
+        },
+        {
+            /* position */          vec2(8.3f, 14.5f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_bismarck_15cm_rf,
+        },
+        {
+            /* position */          vec2(8.3f, -14.5f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_bismarck_15cm_rf,
+        },
+        {
+            /* position */          vec2(-24.7f, 14.15f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 0.f),
+            /* design */            &turret_bismarck_15cm,
+        },
+        {
+            /* position */          vec2(-24.7f, -14.15f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(0.f, 135.f),
+            /* design */            &turret_bismarck_15cm,
         },
     },
 
