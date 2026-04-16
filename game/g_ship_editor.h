@@ -62,8 +62,19 @@ protected:
     bool _is_panning_image;
     bool _control;
 
-    bool _is_dragging;
+    enum class feature {
+        none,
+        vertex,
+        turret,
+        turret_radius,
+        turret_rotation,
+    };
+
+    feature _drag_feature;
     std::size_t _drag_index;
+
+    feature _highlight_feature;
+    std::size_t _highlight_index;
 
     string::buffer _filename;
 
@@ -84,17 +95,18 @@ protected:
 
 protected:
     vec2 cursor_to_world() const;
+    float snap_radius(float r) const;
     vec2 snap_vertex(vec2 pos) const;
+
     float render_vertex_size() const { return _view.size.y * (1.f / 384.f); }
+
+    void update_highlight();
 
     void draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const;
     void draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec2 c, vec2 d, color4 color) const;
 
     void draw_transformed(render::system* renderer, mat3 transform, std::vector<vec2> const& linearized) const;
     void draw_transformed(render::system* renderer, mat3 transform, std::vector<vec2> const& vertices, std::vector<segment_type> const& segments) const;
-
-    void draw_highlight(render::system* renderer, mat3 transform, std::vector<vec2> const& vertices, std::vector<segment_type> const& segments) const;
-    void draw_turret_highlight(render::system* renderer, turret_instance const& instance) const;
 
     //! Return the index of the closest vertex to the given point
     std::size_t closest_vertex(std::vector<vec2> const& vertices, vec2 v) const;

@@ -56,11 +56,13 @@ ship_editor::ship_editor()
     , _is_panning(false)
     , _is_panning_image(false)
     , _control(false)
-    , _is_dragging(false)
+    , _drag_feature(feature::none)
     , _drag_index(0)
     , _image(nullptr)
     , _image_offset(vec2_zero)
     , _image_scale("image_scale", 1.f/15.175f, 0, "")
+    , _highlight_feature(feature::none)
+    , _highlight_index(0)
     , _mode(editor_mode::deck)
     , _turret_instance(0)
 {
@@ -81,18 +83,24 @@ vec2 ship_editor::cursor_to_world() const
 }
 
 //------------------------------------------------------------------------------
+float ship_editor::snap_radius(float r) const
+{
+    float snap_distance = _snap_to_grid ? _snap_distance : .01f;
+    return std::floor(r / snap_distance + .5f) * snap_distance;
+}
+
+//------------------------------------------------------------------------------
 vec2 ship_editor::snap_vertex(vec2 pos) const
 {
     vec2 out = pos;
+    float snap_distance = _snap_to_grid ? _snap_distance : .01f;
 
     vec2 grid_snap = {
-        std::floor(pos.x / _snap_distance + .5f) * _snap_distance,
-        std::floor(pos.y / _snap_distance + .5f) * _snap_distance,
+        std::floor(pos.x / snap_distance + .5f) * snap_distance,
+        std::floor(pos.y / snap_distance + .5f) * snap_distance,
     };
 
-    if (_snap_to_grid) {
-        out = grid_snap;
-    }
+    out = grid_snap;
 
     return out;
 }
@@ -154,15 +162,30 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
             draw_transformed(renderer, i.transform, _turrets[i.index].vertices, _turrets[i.index].segments);
             vec2 center = vec2_zero * i.transform;
             float offset = render_vertex_size() * 2.f;
-            renderer->draw_line(center - vec2(0,offset), center + vec2(0,offset), color4(0,1,1,1), color4(0,1,1,1));
-            renderer->draw_line(center - vec2(offset,0), center + vec2(offset,0), color4(0,1,1,1), color4(0,1,1,1));
+
+            if ((_highlight_feature == feature::turret || _drag_feature == feature::turret) && ii == _turret_instance) {
+                renderer->draw_line(center - vec2(0,offset), center + vec2(0,offset), color4(0,1,0,1), color4(0,1,0,1));
+                renderer->draw_line(center - vec2(offset,0), center + vec2(offset,0), color4(0,1,0,1), color4(0,1,0,1));
+            } else {
+                renderer->draw_line(center - vec2(0,offset), center + vec2(0,offset), color4(1,0,0,1), color4(1,0,0,1));
+                renderer->draw_line(center - vec2(offset,0), center + vec2(offset,0), color4(1,0,0,1), color4(1,0,0,1));
+            }
 
             if (_mode == editor_mode::turret && ii == _turret_instance) {
-                renderer->draw_arc(center, _turrets[i.index].radius, 0, 0, 2.f * math::pi, color4(0,1,1,1));
+                if ((_highlight_feature == feature::turret_radius || _drag_feature == feature::turret_radius) && _highlight_index == i.index) {
+                    renderer->draw_arc(center, _turrets[i.index].radius, 0, 0, 2.f * math::pi, color4(0,1,0,1));
+                } else {
+                    renderer->draw_arc(center, _turrets[i.index].radius, 0, 0, 2.f * math::pi, color4(0,1,1,1));
+                }
 
-                vec2 orientation = vec2(_turrets[i.index].radius + offset, 0) * i.transform;
-                renderer->draw_line(center, orientation, color4(0,1,1,1), color4(0,1,1,1));
-                renderer->draw_arc(orientation, offset, 0.f, 0, 2.f * math::pi, color4(0,1,1,1));
+                vec2 v0 = vec2(_turrets[i.index].radius, 0) * i.transform;
+                vec2 v1 = vec2(_turrets[i.index].radius + 1.f, 0) * i.transform;
+                renderer->draw_line(v0, v1, color4(0,1,1,1), color4(0,1,1,1));
+                if ((_highlight_feature == feature::turret_rotation || _drag_feature == feature::turret_rotation) && _highlight_index == _turret_instance) {
+                    renderer->draw_box(vec2(render_vertex_size()), v1, color4(0,1,0,1));
+                } else {
+                    renderer->draw_box(vec2(render_vertex_size()), v1, color4(1,0,0,1));
+                }
             }
         }
     }
@@ -172,20 +195,72 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
     //
 
     if (_mode == editor_mode::deck) {
-        draw_highlight(renderer, mat3_identity, _deck_vertices, _deck_segments);
-    } else if (_mode == editor_mode::turret) {
-        if (_turret_instance < _turret_instances.size()) {
-            std::size_t index = _turret_instances[_turret_instance].index;
-            draw_highlight(renderer, _turret_instances[_turret_instance].transform, _turrets[index].vertices, _turrets[index].segments);
+        if (_drag_feature == feature::vertex) {
+            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_drag_index], color4(0,1,0,1));
+        } else if (_highlight_feature == feature::vertex) {
+            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_highlight_index], color4(0,1,0,1));
+        }
+    } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
+        auto const& instance = _turret_instances[_turret_instance];
+        auto const& turret = _turrets[instance.index];
+        if (_drag_feature == feature::vertex) {
+            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_drag_index] * instance.transform, color4(0,1,0,1));
+        } else if (_highlight_feature == feature::vertex) {
+            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_highlight_index] * instance.transform, color4(0,1,0,1));
         }
     }
 
     vec2 world_pos = snap_vertex(cursor_to_world());
 
     {
-        string::view s = va("(%g, %g)", world_pos.x, world_pos.y);
+        feature f = _drag_feature != feature::none ? _drag_feature : _highlight_feature;
+        std::size_t idx = _drag_feature != feature::none ? _drag_index : _highlight_index;
+        vec2 crosshair = world_pos;
+
+        string::view s = "";
+        if (f == feature::turret_radius) {
+            // draw turret radius
+            assert(_turret_instance < _turret_instances.size());
+            s = va("(%g)", _turrets[_turret_instances[_turret_instance].index].radius);
+        } else if (f == feature::turret_rotation) {
+            // draw turret rotation
+            assert(_turret_instance < _turret_instances.size());
+            auto& instance = _turret_instances[_turret_instance];
+            int angle = int(std::round(math::rad2deg(std::atan2(instance.transform[0][1], instance.transform[0][0]))));
+            s = va("(%d\xb0)", angle);
+        } else if (f == feature::turret) {
+            // draw turret origin in world space
+            assert(_turret_instance < _turret_instances.size());
+            s = va("(%g, %g)", _turret_instances[_turret_instance].transform[2][0], _turret_instances[_turret_instance].transform[2][1]);
+            crosshair = vec2(_turret_instances[_turret_instance].transform[2][0], _turret_instances[_turret_instance].transform[2][1]);
+        } else if (f == feature::vertex) {
+            if (_mode == editor_mode::deck) {
+                // draw vertex position in world space
+                s = va("(%g, %g)", _deck_vertices[idx].x, _deck_vertices[idx].y);
+                crosshair = _deck_vertices[idx];
+            } else if (_mode == editor_mode::turret) {
+                // draw vertex position in turret-local space
+                assert(_turret_instance < _turret_instances.size());
+                vec2 v = _turrets[_turret_instances[_turret_instance].index].vertices[idx];
+                s = va("(%g, %g)", v.x, v.y);
+                crosshair = v * _turret_instances[_turret_instance].transform;
+            }
+        } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
+            // draw cursor position in turret-local space
+            vec2 local_pos = snap_vertex(cursor_to_world() * _turret_instances[_turret_instance].transform.inverse_transform());
+            s = va("(%g, %g)", local_pos.x, local_pos.y);
+            crosshair = local_pos * _turret_instances[_turret_instance].transform;
+        } else {
+            // draw cursor position in world space
+            s = va("(%g, %g)", world_pos.x, world_pos.y);
+        }
         vec2 size = renderer->string_size(s);
-        renderer->draw_string(s, _view.origin + _view.size * .5f - size, color4(1,1,1,.5f));
+        renderer->draw_string(s, _view.origin + _view.size * .49f - size, color4(1,1,1,.5f));
+        // draw crosshair
+        if (f != feature::turret_radius && f != feature::turret_rotation) {
+            renderer->draw_line(vec2(crosshair.x, vmin.y), vec2(crosshair.x, vmax.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
+            renderer->draw_line(vec2(vmin.x, crosshair.y), vec2(vmax.x, crosshair.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
+        }
     }
     {
         vec2 size = renderer->monospace_size("foo");
@@ -284,73 +359,6 @@ void ship_editor::draw_transformed(render::system* renderer, mat3 transform, std
             jj += 3;
         }
     }
-}
-
-//------------------------------------------------------------------------------
-void ship_editor::draw_highlight(render::system* renderer, mat3 transform, std::vector<vec2> const& vertices, std::vector<segment_type> const& segments) const
-{
-    vec2 vertex_size = vec2(render_vertex_size());
-
-    vec2 vmin = _view.origin - .5f * _view.size;
-    vec2 vmax = _view.origin + .5f * _view.size;
-
-    std::size_t best_idx = SIZE_MAX;
-    float best_dsqr = 1.f;
-    vec2 p = cursor_to_world() * transform.inverse_transform();
-    for (std::size_t ii = 0; ii < vertices.size(); ++ii) {
-        float dsqr = length_sqr(vertices[ii] - p);
-        if (dsqr < best_dsqr) {
-            best_idx = ii;
-            best_dsqr = dsqr;
-        }
-    }
-    if (best_idx != SIZE_MAX) {
-        vec2 v = vertices[best_idx] * transform;
-        renderer->draw_box(vertex_size, v, color4(0,1,0,1));
-        renderer->draw_line(vec2(v.x, vmin.y), vec2(v.x, vmax.y), color4(0,1,0,.2f), color4(0,1,0,.2f));
-        renderer->draw_line(vec2(vmin.x, v.y), vec2(vmax.x, v.y), color4(0,1,0,.2f), color4(0,1,0,.2f));
-    } else {
-        vec2 v = closest_point(vertices, segments, p) * transform;
-        renderer->draw_box(vertex_size, v, color4(0,1,1,1));
-        renderer->draw_line(vec2(v.x, vmin.y), vec2(v.x, vmax.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
-        renderer->draw_line(vec2(vmin.x, v.y), vec2(vmax.x, v.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
-    }
-}
-
-//------------------------------------------------------------------------------
-void ship_editor::draw_turret_highlight(render::system* renderer, turret_instance const& instance) const
-{
-#if 1
-    (void)renderer;
-    (void)instance;
-#else
-    vec2 vertex_size = vec2(render_vertex_size());
-
-    vec2 vmin = _view.origin - .5f * _view.size;
-    vec2 vmax = _view.origin + .5f * _view.size;
-
-    std::size_t best_idx = SIZE_MAX;
-    float best_dsqr = 1.f;
-    vec2 p = cursor_to_world() * transform.inverse_transform();
-    for (std::size_t ii = 0; ii < vertices.size(); ++ii) {
-        float dsqr = length_sqr(vertices[ii] - p);
-        if (dsqr < best_dsqr) {
-            best_idx = ii;
-            best_dsqr = dsqr;
-        }
-    }
-    if (best_idx != SIZE_MAX) {
-        vec2 v = vertices[best_idx] * transform;
-        renderer->draw_box(vertex_size, v, color4(0,1,0,1));
-        renderer->draw_line(vec2(v.x, vmin.y), vec2(v.x, vmax.y), color4(0,1,0,.2f), color4(0,1,0,.2f));
-        renderer->draw_line(vec2(vmin.x, v.y), vec2(vmax.x, v.y), color4(0,1,0,.2f), color4(0,1,0,.2f));
-    } else {
-        vec2 v = closest_point(vertices, segments, p) * transform;
-        renderer->draw_box(vertex_size, v, color4(0,1,1,1));
-        renderer->draw_line(vec2(v.x, vmin.y), vec2(v.x, vmax.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
-        renderer->draw_line(vec2(vmin.x, v.y), vec2(vmax.x, v.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
-    }
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -632,7 +640,7 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
         }
     }
 
-    if (best_idx == SIZE_MAX) {
+    if (best_idx == SIZE_MAX || best_dsqr > minimum_vertex_dsqr) {
         return false;
     }
 
@@ -701,7 +709,7 @@ bool ship_editor::remove_vertex(std::vector<vec2>& vertices, std::vector<segment
         }
     }
 
-    if (best_dsqr > 1.f) {
+    if (best_dsqr > minimum_vertex_dsqr) {
         return false;
     }
 
@@ -734,8 +742,14 @@ bool ship_editor::remove_vertex(std::vector<vec2>& vertices, std::vector<segment
             }
             jj += 2;
         } else if (segments[ii] == cube) {
-            // deleting cubic bezier control point, turn into a quadratic bezier curve
-            if (best_idx == jj + 1 || best_idx == jj + 2) {
+            // deleting first point of a cubic bezier curve
+            if (best_idx == jj + 0) {
+                vertices.erase(vertices.begin() + best_idx, vertices.begin() + best_idx + 3);
+                segments.erase(segments.begin() + ii);
+                return true;
+
+                // deleting cubic bezier control point, turn into a quadratic bezier curve
+            } else if (best_idx == jj + 1 || best_idx == jj + 2) {
                 segments[ii] = quad;
                 vertices.erase(vertices.begin() + best_idx);
                 return true;
@@ -818,20 +832,49 @@ bool ship_editor::insert_turret(vec2 v)
             return true;
         }
     }
-    _turret_instances.push_back({mat3::transform(v, rot2_identity), 0});
-    if (!_turrets.size()) {
+
+    if (!_turrets.size() || _control) {
         _turrets.push_back({5.25f});
         _turrets.back().vertices = {vec2(-5,0), vec2(0,5), vec2(5,0)};
         _turrets.back().segments = {line, line};
     }
+
+    _turret_instances.push_back({mat3::transform(v, rot2_identity), _turrets.size() - 1});
+    _turret_instance = _turret_instances.size() - 1;
+
     return true;
 }
 
 //------------------------------------------------------------------------------
 bool ship_editor::remove_turret(vec2 v)
 {
-    (void)v;
-    return false;
+    if (_turret_instance < _turret_instances.size()) {
+        std::size_t index = _turret_instances[_turret_instance].index;
+        if (remove_vertex(_turrets[index].vertices,
+                          _turrets[index].segments,
+                          v * _turret_instances[_turret_instance].transform.inverse_transform())) {
+            return true;
+        }
+    }
+    std::size_t best_instance = SIZE_MAX;
+    float best_dsqr = FLT_MAX;
+    for (std::size_t ii = 0; ii < _turret_instances.size(); ++ii) {
+        float dsqr = length_sqr(v * _turret_instances[ii].transform.inverse_transform());
+        if (dsqr < best_dsqr) {
+            best_dsqr = dsqr;
+            best_instance = ii;
+        }
+    }
+
+    if (best_dsqr > minimum_vertex_dsqr) {
+        return false;
+    }
+
+    if (_turret_instance == best_instance) {
+        _turret_instance = SIZE_MAX;
+    }
+    _turret_instances.erase(_turret_instances.begin() + best_instance);
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -861,7 +904,7 @@ bool ship_editor::key_event(int key, bool down)
         if (key == K_CTRL) {
             _control = false;
         } else if (key == K_MOUSE1) {
-            _is_dragging = false;
+            _drag_feature = feature::none;
         }
     }
 
@@ -950,31 +993,10 @@ bool ship_editor::key_event(int key, bool down)
             return true;
 
         case K_MOUSE1: {
-            if (_mode == editor_mode::deck) {
-                vec2 p = cursor_to_world();
-                std::size_t best_idx = closest_vertex(_deck_vertices, p);
-                if (best_idx < _deck_vertices.size() && length_sqr(_deck_vertices[best_idx] - p) < minimum_vertex_dsqr) {
-                    _is_dragging = true;
-                    _drag_index = best_idx;
-                    return true;
-                }
-            } else if (_mode == editor_mode::turret) {
-                if (_turret_instance < _turret_instances.size()) {
-                    vec2 p = cursor_to_world() * _turret_instances[_turret_instance].transform.inverse_transform();
-                    std::vector<vec2> const& v = _turrets[_turret_instances[_turret_instance].index].vertices;
-                    std::size_t best_idx = closest_vertex(v, p);
-                    float best_dsqr = best_idx < v.size() ? length_sqr(v[best_idx] - p) : FLT_MAX;
-                    float center_dsqr = p.length_sqr();
-                    if (center_dsqr < best_dsqr && center_dsqr < minimum_vertex_dsqr) {
-                        _is_dragging = true;
-                        _drag_index = SIZE_MAX;
-                        return true;
-                    } else if (best_dsqr < minimum_vertex_dsqr) {
-                        _is_dragging = true;
-                        _drag_index = best_idx;
-                        return true;
-                    }
-                }
+            if (_highlight_feature != feature::none) {
+                _drag_feature = _highlight_feature;
+                _drag_index = _highlight_index;
+                return true;
             }
             break;
         }
@@ -996,6 +1018,7 @@ bool ship_editor::key_event(int key, bool down)
             } else if (_mode == editor_mode::turret) {
                 insert_turret(cursor_to_world());
             }
+            update_highlight();
             return true;
 
         case K_DEL:
@@ -1004,6 +1027,7 @@ bool ship_editor::key_event(int key, bool down)
             } else if (_mode == editor_mode::turret) {
                 remove_turret(cursor_to_world());
             }
+            update_highlight();
             return true;
 
         case K_PGUP:
@@ -1032,6 +1056,37 @@ bool ship_editor::key_event(int key, bool down)
             }
             break;
 
+        case K_KP_PLUS:
+            if (_mode == editor_mode::turret) {
+                if (_control && _turret_instance < _turret_instances.size()) {
+                    if (_turret_instances[_turret_instance].index + 1 < _turrets.size()) {
+                        ++_turret_instances[_turret_instance].index;
+                        return true;
+                    }
+                } else if (!_control) {
+                    if (_turret_instance + 1 < _turret_instances.size()) {
+                        ++_turret_instance;
+                        return true;
+                    }
+                }
+            }
+            break;
+
+        case K_KP_MINUS:
+            if (_mode == editor_mode::turret) {
+                if (_control && _turret_instance < _turret_instances.size()) {
+                    if (_turret_instances[_turret_instance].index > 0) {
+                        --_turret_instances[_turret_instance].index;
+                        return true;
+                    }
+                } else if (!_control) {
+                    if (_turret_instance > 0) {
+                        --_turret_instance;
+                        return true;
+                    }
+                }
+            }
+            break;
     }
 
     return false;
@@ -1044,24 +1099,98 @@ void ship_editor::cursor_event(vec2 position)
         _view.origin -= (position - _cursor) * _view.size;
     } else if (_is_panning_image) {
         _image_offset = (position - _cursor) * _view.size + _image_offset;
-    } else if (_is_dragging) {
+    } else if (_drag_feature == feature::vertex) {
         if (_mode == editor_mode::deck) {
-            _deck_vertices[_drag_index] += (position - _cursor) * _view.size;
+            _deck_vertices[_drag_index] = snap_vertex(_view.origin + _view.size * position);
         } else if (_mode == editor_mode::turret) {
             if (_turret_instance < _turret_instances.size()) {
-                vec2 delta = (vec3((position - _cursor) * _view.size) * _turret_instances[_turret_instance].transform.inverse_transform()).to_vec2();
-                if (_drag_index < _turrets[_turret_instances[_turret_instance].index].vertices.size()) {
-                    _turrets[_turret_instances[_turret_instance].index].vertices[_drag_index] += delta;
-                } else {
-                    vec2 pos = vec2_zero * _turret_instances[_turret_instance].transform;
-                    pos += (position - _cursor) * _view.size;
-                    _turret_instances[_turret_instance].transform[2][0] = pos.x;
-                    _turret_instances[_turret_instance].transform[2][1] = pos.y;
+                auto& instance = _turret_instances[_turret_instance];
+                auto& turret = _turrets[instance.index];
+                if (_drag_index < turret.vertices.size()) {
+                    vec2 pos = snap_vertex((_view.origin + _view.size * position) * instance.transform.inverse_transform());
+                    turret.vertices[_drag_index] = pos;
                 }
             }
         }
+    } else if (_drag_feature == feature::turret) {
+        auto& instance = _turret_instances[_turret_instance];
+        vec2 pos = snap_vertex(_view.origin + _view.size * position);
+        instance.transform[2][0] = pos.x;
+        instance.transform[2][1] = pos.y;
+    } else if (_drag_feature == feature::turret_radius) {
+        auto& instance = _turret_instances[_turret_instance];
+        auto& turret = _turrets[instance.index];
+        vec2 pos = _view.origin + _view.size * position;
+        turret.radius = snap_radius(length(pos - vec2(instance.transform[2][0], instance.transform[2][1])));
+    } else if (_drag_feature == feature::turret_rotation) {
+        auto& instance = _turret_instances[_turret_instance];
+        vec2 dir = (_view.origin + _view.size * position) - vec2(instance.transform[2][0], instance.transform[2][1]);
+        // round to nearest degree
+        float angle = math::deg2rad(std::round(math::rad2deg(std::atan2(dir.y, dir.x))));
+        float c = cos(angle);
+        float s = sin(angle);
+        instance.transform[0][0] = c;
+        instance.transform[0][1] = s;
+        instance.transform[1][0] = -s;
+        instance.transform[1][1] = c;
     }
     _cursor = position;
+
+    update_highlight();
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::update_highlight()
+{
+    feature best_feature = feature::none;
+    std::size_t best_index = 0;
+    float best_dsqr = FLT_MAX;
+
+    if (_mode == editor_mode::deck) {
+        // check nearest vertex
+        best_feature = feature::vertex;
+        best_index = closest_vertex(_deck_vertices, cursor_to_world());
+        best_dsqr = length_sqr(_deck_vertices[best_index] - cursor_to_world());
+    } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
+        auto& instance = _turret_instances[_turret_instance];
+        auto& turret = _turrets[instance.index];
+        vec2 cursor_local = cursor_to_world() * instance.transform.inverse_transform();
+        // check nearest vertex
+        best_feature = feature::vertex;
+        best_index = closest_vertex(turret.vertices, cursor_local);
+        best_dsqr = length_sqr(turret.vertices[best_index] - cursor_local);
+        // check translation widget
+        float origin_dsqr = length_sqr(cursor_local);
+        if (origin_dsqr < best_dsqr) {
+            best_feature = feature::turret;
+            best_index = _turret_instance;
+            best_dsqr = origin_dsqr;
+        }
+        // check radius widget
+        float radius_dsqr = square(length(cursor_local) - turret.radius);
+        if (radius_dsqr < best_dsqr) {
+            best_feature = feature::turret_radius;
+            best_index = instance.index;
+            best_dsqr = radius_dsqr;
+        }
+        // check rotation widget
+        vec2 rotation_pos = vec2(turret.radius + 1.f, 0) * instance.transform;
+        float rotation_dsqr = length_sqr(rotation_pos - cursor_to_world());
+        if (rotation_dsqr < best_dsqr) {
+            best_feature = feature::turret_rotation;
+            best_index = _turret_instance;
+            best_dsqr = rotation_dsqr;
+        }
+    }
+
+    float minimum_dsqr = length_sqr(.01f * _view.size);
+    if (best_dsqr < minimum_dsqr) {
+        _highlight_index = best_index;
+        _highlight_feature = best_feature;
+    } else {
+        _highlight_index = 0;
+        _highlight_feature = feature::none;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1446,6 +1575,10 @@ std::vector<vec2> ship_editor::linearize(std::vector<vec2> const& vertices, std:
     }
 
     // duplicate vertices along the bottom half
+    if (linearized.back().y) {
+        linearized.push_back(vec2(linearized.back().x, -linearized.back().y));
+    }
+
     for (std::size_t ii = linearized.size() - 2; ii > 0; --ii) {
         linearized.push_back(vec2(linearized[ii].x, -linearized[ii].y));
     }
