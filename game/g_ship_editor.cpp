@@ -1194,6 +1194,54 @@ void ship_editor::update_highlight()
 }
 
 //------------------------------------------------------------------------------
+string::buffer normalize_path(WCHAR const* path)
+{
+    string::buffer out;
+
+    // Strip current working directory if path is in a subdirectory
+    WCHAR cwd[1024] = {};
+    DWORD cwd_len = GetCurrentDirectoryW(narrow_cast<DWORD>(countof(cwd)), cwd);
+
+    if (_wcsnicmp(path, cwd, cwd_len) == 0) {
+        path += cwd_len;
+        if (*path == '\\') {
+            ++path;
+        }
+    }
+
+    // Get length of path as UTF8, including null terminator
+    int len = WideCharToMultiByte(
+        CP_UTF8,
+        WC_NO_BEST_FIT_CHARS,
+        path,
+        -1,
+        0,
+        0,
+        NULL,
+        NULL);
+
+    // Convert in-place into output string buffer
+    out.resize(len - 1);
+    WideCharToMultiByte(CP_UTF8,
+        WC_NO_BEST_FIT_CHARS,
+        path,
+        -1,
+        out.data(),
+        len,
+        NULL,
+        NULL);
+
+    // Replace backslashes with forward slashes
+    for (std::size_t ii = 0; ii < out.length(); ++ii) {
+        if (out[ii] == '\\') {
+            out[ii] = '/';
+        }
+    }
+
+    return out;
+}
+
+//------------------------------------------------------------------------------
 bool ship_editor::get_save_filename(string::buffer& filename) const
 {
     OPENFILENAMEW ofn = {};
@@ -1215,27 +1263,7 @@ bool ship_editor::get_save_filename(string::buffer& filename) const
     ofn.Flags = OFN_NOCHANGEDIR;
 
     if (GetSaveFileNameW(&ofn) == TRUE) {
-        // Get length of filename as UTF8, including null terminator
-        int len = WideCharToMultiByte(
-            CP_UTF8,
-            WC_NO_BEST_FIT_CHARS,
-            buffer,
-            -1,
-            0,
-            0,
-            NULL,
-            NULL);
-
-        filename.resize(len - 1);
-        WideCharToMultiByte(CP_UTF8,
-            WC_NO_BEST_FIT_CHARS,
-            buffer,
-            -1,
-            filename.data(),
-            len,
-            NULL,
-            NULL);
-
+        filename = normalize_path(buffer);
         return true;
     }
 
@@ -1256,28 +1284,7 @@ bool ship_editor::get_load_filename(string::buffer& filename) const
     ofn.Flags = OFN_NOCHANGEDIR|OFN_FILEMUSTEXIST;
 
     if (GetOpenFileNameW(&ofn) == TRUE) {
-        // Get length of filename as UTF8, including null terminator
-        int len = WideCharToMultiByte(
-            CP_UTF8,
-            WC_NO_BEST_FIT_CHARS,
-            buffer,
-            -1,
-            0,
-            0,
-            NULL,
-            NULL);
-
-        filename.resize(len - 1);
-        WideCharToMultiByte(
-            CP_UTF8,
-            WC_NO_BEST_FIT_CHARS,
-            buffer,
-            -1,
-            filename.data(),
-            len,
-            NULL,
-            NULL);
-
+        filename = normalize_path(buffer);
         return true;
     }
 
@@ -1298,28 +1305,7 @@ bool ship_editor::get_image_filename(string::buffer& filename) const
     ofn.Flags = OFN_NOCHANGEDIR|OFN_FILEMUSTEXIST;
 
     if (GetOpenFileNameW(&ofn) == TRUE) {
-        // Get length of filename as UTF8, including null terminator
-        int len = WideCharToMultiByte(
-            CP_UTF8,
-            WC_NO_BEST_FIT_CHARS,
-            buffer,
-            -1,
-            0,
-            0,
-            NULL,
-            NULL);
-
-        filename.resize(len - 1);
-        WideCharToMultiByte(
-            CP_UTF8,
-            WC_NO_BEST_FIT_CHARS,
-            buffer,
-            -1,
-            filename.data(),
-            len,
-            NULL,
-            NULL);
-
+        filename = normalize_path(buffer);
         return true;
     }
 
