@@ -137,6 +137,9 @@ public:
     std::size_t length() const { return _end - _begin; }
 
     //! Returns the character at the given index
+    char& operator[](std::size_t index) { return _begin[index]; }
+
+    //! Returns the character at the given index
     char operator[](std::size_t index) const { return _begin[index]; }
 
     //! Returns the last character in the string
