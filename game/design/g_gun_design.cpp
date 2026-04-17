@@ -59,6 +59,16 @@ const gun_design gun_380mm_45_Modele_1935 =
     /* shell_coefficient */ 0.f,
 };
 
+const gun_design gun_152mm_55_Modele_1930 =
+{
+    /* name */              string::buffer("152mm/55 Modèle 1930"),
+    /* caliber */           .152f,
+    /* length */            8.39f,
+    /* shell_mass */        56.f,
+    /* shell_velocity */    870.f,
+    /* shell_coefficient */ 0.f,
+};
+
 const gun_design gun_38cm_SK_C_34 =
 {
     /* name */              string::buffer("38 cm SK C/34"),

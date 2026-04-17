@@ -232,6 +232,40 @@ const turret_design turret_richelieu_380mm =
     }
 };
 
+const turret_design turret_richelieu_152mm =
+{
+    /* radius */            3.2f,
+    /* train_speed */       DEG(8.f),
+    /* elevation_speed */   DEG(8.f),
+    /* elevation_limit */   DEGV(-10.f, 85.f),
+    /* num_guns */          3,
+    /* spacing */           1.85f,//1.6667f,
+    /* reload_time */       time_delta::from_seconds(12.f),
+    /* gun_design */        &gun_152mm_55_Modele_1930,
+    /* outline */           {
+        vec2(-4.70f, 0.00f),
+        vec2(-4.63f, 1.60f),
+        vec2(-4.40f, 2.89f),
+        vec2(-3.95f, 3.06f),
+        vec2(-3.95f, 4.59f),
+        vec2(-3.50f, 4.59f),
+        vec2(-3.49f, 3.19f),
+        vec2(-1.58f, 3.35f),
+        vec2(0.68f, 3.37f),
+        vec2(3.20f, 2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(0.68f, -3.37f),
+        vec2(-1.58f, -3.35f),
+        vec2(-3.49f, -3.19f),
+        vec2(-3.50f, -4.59f),
+        vec2(-3.95f, -4.59f),
+        vec2(-3.95f, -3.06f),
+        vec2(-4.40f, -2.89f),
+        vec2(-4.63f, -1.60f),
+    }
+};
+
 const turret_design turret_bismarck_38cm =
 {
     /* radius */            5.15f,

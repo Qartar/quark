@@ -295,6 +295,7 @@ const ship_design ship_richelieu_battleship =
 
     /* turrets */
     {
+        // main battery
         {
             /* position */          vec2(51.f,0),
             /* orientation */       0,
@@ -306,6 +307,25 @@ const ship_design ship_richelieu_battleship =
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_richelieu_380mm,
+        },
+        // secondary battery
+        {
+            /* position */          vec2(-53.f,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-155.f, 155.f),
+            /* design */            &turret_richelieu_152mm,
+        },
+        {
+            /* position */          vec2(-67.6f, -8.55f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(0.f, 170.f),
+            /* design */            &turret_richelieu_152mm,
+        },
+        {
+            /* position */          vec2(-67.6f, 8.55f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-170.f, 0.f),
+            /* design */            &turret_richelieu_152mm,
         },
     },
 
