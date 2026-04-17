@@ -199,6 +199,10 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
             renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_drag_index], color4(0,1,0,1));
         } else if (_highlight_feature == feature::vertex) {
             renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_highlight_index], color4(0,1,0,1));
+        } else if (_drag_feature == feature::vertex_mirror) {
+            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_drag_index] * vec2(1,-1), color4(0,1,0,1));
+        } else if (_highlight_feature == feature::vertex_mirror) {
+            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_highlight_index] * vec2(1,-1), color4(0,1,0,1));
         }
     } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
         auto const& instance = _turret_instances[_turret_instance];
@@ -207,6 +211,10 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
             renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_drag_index] * instance.transform, color4(0,1,0,1));
         } else if (_highlight_feature == feature::vertex) {
             renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_highlight_index] * instance.transform, color4(0,1,0,1));
+        } else if (_drag_feature == feature::vertex_mirror) {
+            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_drag_index] * vec2(1,-1) * instance.transform, color4(0,1,0,1));
+        } else if (_highlight_feature == feature::vertex_mirror) {
+            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_highlight_index] * vec2(1,-1) * instance.transform, color4(0,1,0,1));
         }
     }
 
@@ -242,6 +250,18 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
                 // draw vertex position in turret-local space
                 assert(_turret_instance < _turret_instances.size());
                 vec2 v = _turrets[_turret_instances[_turret_instance].index].vertices[idx];
+                s = va("(%g, %g)", v.x, v.y);
+                crosshair = v * _turret_instances[_turret_instance].transform;
+            }
+        } else if (f == feature::vertex_mirror) {
+            if (_mode == editor_mode::deck) {
+                // draw vertex position in world space
+                s = va("(%g, %g)", _deck_vertices[idx].x, -_deck_vertices[idx].y);
+                crosshair = _deck_vertices[idx] * vec2(1,-1);
+            } else if (_mode == editor_mode::turret) {
+                // draw vertex position in turret-local space
+                assert(_turret_instance < _turret_instances.size());
+                vec2 v = _turrets[_turret_instances[_turret_instance].index].vertices[idx] * vec2(1,-1);
                 s = va("(%g, %g)", v.x, v.y);
                 crosshair = v * _turret_instances[_turret_instance].transform;
             }
@@ -351,6 +371,51 @@ void ship_editor::draw_transformed(render::system* renderer, mat3 transform, std
             vec2 b = vertices[jj + 1] * transform;
             vec2 c = vertices[jj + 2] * transform;
             vec2 d = vertices[jj + 3] * transform;
+            draw_bezier_cube(renderer, a, b, c, d, color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, c, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, d, color4(1,0,0,1));
+            jj += 3;
+        }
+    }
+
+    mat3 mirrored = mat3(1,0,0,0,-1,0,0,0,1) * transform;
+
+    if (vertices.front().y) {
+        vec2 a = vertices.front() * transform;
+        vec2 b = vertices.front() * mirrored;
+        renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
+    }
+
+    if (vertices.back().y) {
+        vec2 a = vertices.back() * transform;
+        vec2 b = vertices.back() * mirrored;
+        renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
+    }
+
+    for (size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
+        if (segments[ii] == line) {
+            vec2 a = vertices[jj + 0] * mirrored;
+            vec2 b = vertices[jj + 1] * mirrored;
+            renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,0,0,1));
+            jj += 1;
+        } else if (segments[ii] == quad) {
+            vec2 a = vertices[jj + 0] * mirrored;
+            vec2 b = vertices[jj + 1] * mirrored;
+            vec2 c = vertices[jj + 2] * mirrored;
+            draw_bezier_quad(renderer, a, b, c, color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, c, color4(1,0,0,1));
+            jj += 2;
+        } else if (segments[ii] == cube) {
+            vec2 a = vertices[jj + 0] * mirrored;
+            vec2 b = vertices[jj + 1] * mirrored;
+            vec2 c = vertices[jj + 2] * mirrored;
+            vec2 d = vertices[jj + 3] * mirrored;
             draw_bezier_cube(renderer, a, b, c, d, color4(1,1,1,1));
             renderer->draw_box(vertex_size, a, color4(1,0,0,1));
             renderer->draw_box(vertex_size, b, color4(1,1,0,1));
@@ -1112,6 +1177,19 @@ void ship_editor::cursor_event(vec2 position)
                 }
             }
         }
+    } else if (_drag_feature == feature::vertex_mirror) {
+        if (_mode == editor_mode::deck) {
+            _deck_vertices[_drag_index] = snap_vertex(_view.origin + _view.size * position) * vec2(1,-1);
+        } else if (_mode == editor_mode::turret) {
+            if (_turret_instance < _turret_instances.size()) {
+                auto& instance = _turret_instances[_turret_instance];
+                auto& turret = _turrets[instance.index];
+                if (_drag_index < turret.vertices.size()) {
+                    vec2 pos = snap_vertex((_view.origin + _view.size * position) * instance.transform.inverse_transform()) * vec2(1,-1);
+                    turret.vertices[_drag_index] = pos;
+                }
+            }
+        }
     } else if (_drag_feature == feature::turret) {
         auto& instance = _turret_instances[_turret_instance];
         vec2 pos = snap_vertex(_view.origin + _view.size * position);
@@ -1151,6 +1229,14 @@ void ship_editor::update_highlight()
         best_feature = feature::vertex;
         best_index = closest_vertex(_deck_vertices, cursor_to_world());
         best_dsqr = length_sqr(_deck_vertices[best_index] - cursor_to_world());
+        // check nearest vertex mirror
+        std::size_t mirror_index = closest_vertex(_deck_vertices, cursor_to_world() * vec2(1,-1));
+        float mirror_dsqr = length_sqr(_deck_vertices[mirror_index] - cursor_to_world() * vec2(1,-1));
+        if (mirror_dsqr < best_dsqr) {
+            best_feature = feature::vertex_mirror;
+            best_index = mirror_index;
+            best_dsqr = mirror_dsqr;
+        }
     } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
         auto& instance = _turret_instances[_turret_instance];
         auto& turret = _turrets[instance.index];
@@ -1159,6 +1245,14 @@ void ship_editor::update_highlight()
         best_feature = feature::vertex;
         best_index = closest_vertex(turret.vertices, cursor_local);
         best_dsqr = length_sqr(turret.vertices[best_index] - cursor_local);
+        // check nearest vertex mirror
+        std::size_t mirror_index = closest_vertex(turret.vertices, cursor_local * vec2(1,-1));
+        float mirror_dsqr = length_sqr(turret.vertices[mirror_index] - cursor_local * vec2(1,-1));
+        if (mirror_dsqr < best_dsqr) {
+            best_feature = feature::vertex_mirror;
+            best_index = mirror_index;
+            best_dsqr = mirror_dsqr;
+        }
         // check translation widget
         float origin_dsqr = length_sqr(cursor_local);
         if (origin_dsqr < best_dsqr) {

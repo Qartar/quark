@@ -65,6 +65,7 @@ protected:
     enum class feature {
         none,
         vertex,
+        vertex_mirror,
         turret,
         turret_radius,
         turret_rotation,
