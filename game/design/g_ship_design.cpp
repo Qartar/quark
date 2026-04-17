@@ -388,6 +388,7 @@ const ship_design ship_king_george_v_battleship =
 
     /* turrets */
     {
+        // main battery
         {
             /* position */          vec2(49.5f,0),
             /* orientation */       0,
@@ -405,6 +406,56 @@ const ship_design ship_king_george_v_battleship =
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_kgv_14in_quad,
+        },
+        // secondary battery starboard
+        {
+            /* position */          vec2(11.5f, -13.f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-150.f, 0.f),
+            /* design */            &turret_kgv_5_25in,
+        },
+        {
+            /* position */          vec2(.25f, -13.25f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_kgv_5_25in,
+        },
+        {
+            /* position */          vec2(-24.f, -13.f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_kgv_5_25in,
+        },
+        {
+            /* position */          vec2(-34.5f, -12.25f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(0.f, 150.f),
+            /* design */            &turret_kgv_5_25in,
+        },
+        // secondary battery port
+        {
+            /* position */          vec2(11.5f, 13.f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 150.f),
+            /* design */            &turret_kgv_5_25in,
+        },
+        {
+            /* position */          vec2(.25f, 13.25f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_kgv_5_25in,
+        },
+        {
+            /* position */          vec2(-24.f, 13.f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_kgv_5_25in,
+        },
+        {
+            /* position */          vec2(-34.5f, 12.25f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-150.f, 0.f),
+            /* design */            &turret_kgv_5_25in,
         },
     },
 

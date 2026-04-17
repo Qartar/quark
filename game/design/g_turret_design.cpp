@@ -286,6 +286,37 @@ const turret_design turret_kgv_14in_twin =
     }
 };
 
+const turret_design turret_kgv_5_25in =
+{
+    /* radius */            1.f,
+    /* train_speed */       DEG(10.f),
+    /* elevation_speed */   DEG(10.f),
+    /* elevation_limit */   DEGV(-5.f, 70.f),
+    /* num_guns */          2,
+    /* spacing */           2.5f,
+    /* reload_time */       time_delta::from_seconds(7.5f),
+    /* gun_design */        &gun_QF_5_25_inch_Mk_I,
+    /* outline */           {
+        vec2(-2.00f, 0.50f),
+        vec2(-1.75f, 1.25f),
+        vec2(-1.25f, 1.75f),
+        vec2(-0.50f, 2.00f),
+        vec2(0.75f, 2.00f),
+        vec2(1.00f, 1.75f),
+        vec2(1.00f, 1.00f),
+        //vec2(2.25f, 1.00f),
+        //vec2(2.25f, 0.00f),
+        //vec2(2.25f, -1.00f),
+        vec2(1.00f, -1.00f),
+        vec2(1.00f, -1.75f),
+        vec2(0.75f, -2.00f),
+        vec2(-0.50f, -2.00f),
+        vec2(-1.25f, -1.75f),
+        vec2(-1.75f, -1.25f),
+        vec2(-2.00f, -0.50f),
+    }
+};
+
 const turret_design turret_richelieu_380mm =
 {
     /* radius */            5.f,

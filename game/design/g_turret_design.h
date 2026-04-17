@@ -36,6 +36,7 @@ extern const turret_design turret_north_carolina_16in;
 extern const turret_design turret_north_carolina_5in;
 extern const turret_design turret_kgv_14in_quad;
 extern const turret_design turret_kgv_14in_twin;
+extern const turret_design turret_kgv_5_25in;
 extern const turret_design turret_richelieu_380mm;
 extern const turret_design turret_richelieu_152mm;
 extern const turret_design turret_bismarck_38cm;

@@ -79,6 +79,16 @@ const gun_design gun_BL_14_inch_Mk_VII =
     /* shell_coefficient */ 0.f,
 };
 
+const gun_design gun_QF_5_25_inch_Mk_I =
+{
+    /* name */              string::buffer("QF 5.25-inch Mk I"),
+    /* caliber */           .133f,
+    /* length */            6.67f,
+    /* shell_mass */        36.3f,
+    /* shell_velocity */    814.f,
+    /* shell_coefficient */ 0.f,
+};
+
 const gun_design gun_380mm_45_Modele_1935 =
 {
     /* name */              string::buffer("380mm/45 Modèle 1935"),
