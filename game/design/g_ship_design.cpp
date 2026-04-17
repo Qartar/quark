@@ -101,6 +101,7 @@ const ship_design ship_yamato_battleship =
 
     /* turrets */
     {
+        // main battery
         {
             /* position */          vec2(52,0),
             /* orientation */       0,
@@ -118,6 +119,31 @@ const ship_design ship_yamato_battleship =
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_yamato_46cm,
+        },
+        // secondary battery
+        {
+            /* position */          vec2(12.5f, 0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_yamato_15_5cm,
+        },
+        {
+            /* position */          vec2(-19.8f, -13.1f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_yamato_15_5cm,
+        },
+        {
+            /* position */          vec2(-19.8f, 13.1f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_yamato_15_5cm,
+        },
+        {
+            /* position */          vec2(-49, 0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_yamato_15_5cm,
         },
     },
 

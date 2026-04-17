@@ -58,6 +58,34 @@ const turret_design turret_yamato_46cm =
     }
 };
 
+const turret_design turret_yamato_15_5cm =
+{
+    /* radius */            2.9f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(10.f),
+    /* elevation_limit */   DEGV(-7.f, 55.f),
+    /* num_guns */          3,
+    /* spacing */           1.5f,
+    /* reload_time */       time_delta::from_seconds(12.f),
+    /* gun_design */        &gun_15_5cm_60_3rd_Year_Type,
+    /* outline */           {
+        vec2(-4.45f, 0.00f),
+        vec2(-4.01f, 1.89f),
+        vec2(-3.45f, 2.70f),
+        vec2(-3.45f, 4.40f),
+        vec2(-1.65f, 4.40f),
+        vec2(-1.65f, 2.70f),
+        vec2(2.93f, 2.70f),
+        vec2(2.93f, -2.70f),
+        vec2(2.93f, -2.70f),
+        vec2(-1.65f, -2.70f),
+        vec2(-1.65f, -4.40f),
+        vec2(-3.45f, -4.40f),
+        vec2(-3.45f, -2.70f),
+        vec2(-4.01f, -1.89f),
+    }
+};
+
 const turret_design turret_fuso_36cm =
 {
     /* radius */            4.75f,
