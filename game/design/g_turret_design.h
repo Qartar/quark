@@ -32,6 +32,8 @@ extern const turret_design turret_yamato_15_5cm;
 extern const turret_design turret_fuso_36cm;
 extern const turret_design turret_fuso_36cm_rf;
 extern const turret_design turret_iowa_16in;
+extern const turret_design turret_north_carolina_16in;
+extern const turret_design turret_north_carolina_5in;
 extern const turret_design turret_kgv_14in_quad;
 extern const turret_design turret_kgv_14in_twin;
 extern const turret_design turret_richelieu_380mm;

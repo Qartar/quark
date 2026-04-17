@@ -49,6 +49,26 @@ const gun_design gun_16in_50_caliber_Mark_7 =
     /* shell_coefficient */ 0.f,
 };
 
+const gun_design gun_16in_45_caliber_Mark_6 =
+{
+    /* name */              string::buffer("16\"/45 caliber Mark 6"),
+    /* caliber */           .406f,
+    /* length */            18.f,
+    /* shell_mass */        1225.f,
+    /* shell_velocity */    701.f,
+    /* shell_coefficient */ 0.f,
+};
+
+const gun_design gun_5in_38_caliber_Mark_12 =
+{
+    /* name */              string::buffer("5\"/38 caliber Mark 12"),
+    /* caliber */           .127f,
+    /* length */            4.83f,
+    /* shell_mass */        25.f,
+    /* shell_velocity */    790.f,
+    /* shell_coefficient */ 0.f,
+};
+
 const gun_design gun_BL_14_inch_Mk_VII =
 {
     /* name */              string::buffer("BL 14-inch Mk VII"),

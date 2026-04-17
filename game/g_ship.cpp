@@ -24,7 +24,7 @@ physics::material ship::_material(0.5f, 1.0f, 5.0f);
 
 ship_design const* ship_designs[] = {
     &ship_yamato_battleship,
-    &ship_iowa_battleship,
+    &ship_north_carolina_battleship,
     &ship_king_george_v_battleship,
     &ship_richelieu_battleship,
     &ship_bismarck_battleship,

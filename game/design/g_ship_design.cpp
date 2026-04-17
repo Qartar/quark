@@ -60,6 +60,10 @@ const vec2 iowa_verts[] = {
     vec2(-135.00f, 0.00f), vec2(-134.55f, 1.82f), vec2(-133.27f, 3.63f), vec2(-131.02f, 5.46f), vec2(-127.63f, 7.31f), vec2(-122.88f, 9.18f), vec2(-116.56f, 11.05f), vec2(-108.49f, 12.85f), vec2(-98.79f, 14.50f), vec2(-88.25f, 15.84f), vec2(-78.88f, 16.67f), vec2(-73.39f, 16.93f), vec2(-46.77f, 17.47f), vec2(-20.31f, 17.61f), vec2(6.00f, 17.35f), vec2(21.45f, 16.83f), vec2(36.77f, 15.59f), vec2(53.70f, 13.45f), vec2(80.47f, 9.09f), vec2(100.61f, 6.02f), vec2(116.13f, 4.29f), vec2(130.97f, 3.33f), vec2(132.64f, 3.47f), vec2(133.92f, 2.87f), vec2(134.79f, 1.60f), vec2(135.00f, 0.00f), vec2(134.79f, -1.60f), vec2(133.92f, -2.87f), vec2(132.64f, -3.47f), vec2(130.97f, -3.33f), vec2(116.13f, -4.29f), vec2(100.61f, -6.02f), vec2(80.47f, -9.09f), vec2(53.70f, -13.45f), vec2(36.77f, -15.59f), vec2(21.45f, -16.83f), vec2(6.00f, -17.35f), vec2(-20.31f, -17.61f), vec2(-46.77f, -17.47f), vec2(-73.39f, -16.93f), vec2(-78.88f, -16.67f), vec2(-88.25f, -15.84f), vec2(-98.79f, -14.50f), vec2(-108.49f, -12.85f), vec2(-116.56f, -11.05f), vec2(-122.88f, -9.18f), vec2(-127.63f, -7.31f), vec2(-131.02f, -5.46f), vec2(-133.27f, -3.63f), vec2(-134.55f, -1.82f),
 };
 
+const vec2 north_carolina_verts[] = {
+    vec2(-111.00f, 0.00f), vec2(-110.63f, 1.66f), vec2(-109.45f, 3.32f), vec2(-107.32f, 4.99f), vec2(-104.02f, 6.69f), vec2(-99.35f, 8.38f), vec2(-93.06f, 10.05f), vec2(-84.97f, 11.63f), vec2(-75.02f, 13.08f), vec2(-63.37f, 14.31f), vec2(-50.55f, 15.24f), vec2(-37.61f, 15.82f), vec2(-26.00f, 16.00f), vec2(-5.00f, 16.00f), vec2(11.97f, 15.64f), vec2(26.50f, 14.63f), vec2(40.28f, 13.05f), vec2(55.00f, 11.00f), vec2(62.85f, 9.99f), vec2(93.14f, 6.64f), vec2(100.30f, 5.43f), vec2(104.95f, 4.28f), vec2(107.98f, 3.16f), vec2(109.80f, 2.07f), vec2(110.72f, 1.03f), vec2(111.00f, 0.00f), vec2(110.72f, -1.03f), vec2(109.80f, -2.07f), vec2(107.98f, -3.16f), vec2(104.95f, -4.28f), vec2(100.30f, -5.43f), vec2(93.14f, -6.64f), vec2(62.85f, -9.99f), vec2(55.00f, -11.00f), vec2(40.28f, -13.05f), vec2(26.50f, -14.63f), vec2(11.97f, -15.64f), vec2(-5.00f, -16.00f), vec2(-26.00f, -16.00f), vec2(-37.61f, -15.82f), vec2(-50.55f, -15.24f), vec2(-63.37f, -14.31f), vec2(-75.02f, -13.08f), vec2(-84.97f, -11.63f), vec2(-93.06f, -10.05f), vec2(-99.35f, -8.38f), vec2(-104.02f, -6.69f), vec2(-107.32f, -4.99f), vec2(-109.45f, -3.32f), vec2(-110.63f, -1.66f),
+};
+
 const vec2 kgv_verts[] = {
     vec2(-113.00f, 0.00f), vec2(-112.44f, 0.88f), vec2(-110.06f, 2.61f), vec2(-105.43f, 5.03f), vec2(-99.17f, 7.58f), vec2(-92.14f, 9.82f), vec2(-84.97f, 11.51f), vec2(-78.02f, 12.58f), vec2(-60.41f, 14.13f), vec2(-41.40f, 15.12f), vec2(-22.66f, 15.47f), vec2(15.01f, 15.40f), vec2(28.22f, 15.06f), vec2(43.62f, 14.08f), vec2(58.83f, 12.56f), vec2(72.83f, 10.61f), vec2(85.28f, 8.32f), vec2(96.14f, 5.76f), vec2(105.51f, 2.97f), vec2(113.50f, 0.00f), vec2(105.51f, -2.97f), vec2(96.14f, -5.76f), vec2(85.28f, -8.32f), vec2(72.83f, -10.61f), vec2(58.83f, -12.56f), vec2(43.62f, -14.08f), vec2(28.22f, -15.06f), vec2(15.01f, -15.40f), vec2(-22.66f, -15.47f), vec2(-41.40f, -15.12f), vec2(-60.41f, -14.13f), vec2(-78.02f, -12.58f), vec2(-84.97f, -11.51f), vec2(-92.14f, -9.82f), vec2(-99.17f, -7.58f), vec2(-105.43f, -5.03f), vec2(-110.06f, -2.61f), vec2(-112.44f, -0.88f),
 };
@@ -255,6 +259,113 @@ const ship_design ship_iowa_battleship =
 
     /* hull_outline */      {iowa_verts, iowa_verts + countof(iowa_verts)},
     /* hull_shape */        {{{std::make_unique<physics::convex_shape>(iowa_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_north_carolina_battleship =
+{
+    /* name */              string::buffer("North Carolina"),
+    /* length */            222.f,
+    /* beam */              33.f,
+    /* draft */             10.82f,
+    /* displacement */      37187000.f,
+
+    /* speed */             KNOTS(28.f),
+    /* power */             SHP(90000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(1.f),
+
+    /* minimum_turning_radius */    500.f,
+    /* optimal_turning_radius */    750.f,
+
+    /* turrets */
+    {
+        // main battery
+        {
+            /* position */          vec2(51,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_north_carolina_16in,
+        },
+        {
+            /* position */          vec2(30.5f,0),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_north_carolina_16in,
+        },
+        {
+            /* position */          vec2(-62,0),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_north_carolina_16in,
+        },
+        // secondary battery starboard
+        {
+            /* position */          vec2(0,-10),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-7,-14),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-16,-10),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-23.5f,-14),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-32,-10),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        // secondary battery port
+        {
+            /* position */          vec2(0,10),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-7,14),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-16,10),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 180.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-23.5f,14),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+        {
+            /* position */          vec2(-32,10),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-180.f, 0.f),
+            /* design */            &turret_north_carolina_5in,
+        },
+    },
+
+    /* hull_outline */      {north_carolina_verts, north_carolina_verts + countof(north_carolina_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(north_carolina_verts)}}},
 };
 
 //------------------------------------------------------------------------------

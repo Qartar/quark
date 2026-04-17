@@ -169,6 +169,60 @@ const turret_design turret_iowa_16in =
     }
 };
 
+const turret_design turret_north_carolina_16in =
+{
+    /* radius */            5.f,
+    /* train_speed */       DEG(4.f),
+    /* elevation_speed */   DEG(12.f),
+    /* elevation_limit */   DEGV(-2.f, 45.f),
+    /* num_guns */          3,
+    /* spacing */           3.f,
+    /* reload_time */       time_delta::from_seconds(30.f),
+    /* gun_design */        &gun_16in_45_caliber_Mark_6,
+    /* outline */           {
+        vec2(-8.00f, 0.00f),
+        vec2(-7.75f, 2.45f),
+        vec2(-7.00f, 4.50f),
+        vec2(-7.00f, 7.00f),
+        vec2(-5.00f, 7.00f),
+        vec2(-5.00f, 5.00f),
+        vec2(2.00f, 5.50f),
+        vec2(5.00f, 4.50f),
+        vec2(5.00f, -4.50f),
+        vec2(5.00f, -4.50f),
+        vec2(2.00f, -5.50f),
+        vec2(-5.00f, -5.00f),
+        vec2(-5.00f, -7.00f),
+        vec2(-7.00f, -7.00f),
+        vec2(-7.00f, -4.50f),
+        vec2(-7.75f, -2.45f),
+    }
+};
+
+const turret_design turret_north_carolina_5in =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(10.f),
+    /* elevation_speed */   DEG(12.f),
+    /* elevation_limit */   DEGV(-15.f, 85.f),
+    /* num_guns */          2,
+    /* spacing */           2.5f,
+    /* reload_time */       time_delta::from_seconds(4.f),
+    /* gun_design */        &gun_5in_38_caliber_Mark_12,
+    /* outline */           {
+        vec2(-3.00f, 0.00f),
+        vec2(-2.78f, 1.11f),
+        vec2(-2.11f, 1.78f),
+        vec2(-1.00f, 2.00f),
+        vec2(2.00f, 2.00f),
+        vec2(2.00f, -2.00f),
+        vec2(2.00f, -2.00f),
+        vec2(-1.00f, -2.00f),
+        vec2(-2.11f, -1.78f),
+        vec2(-2.78f, -1.11f),
+    }
+};
+
 const turret_design turret_kgv_14in_quad =
 {
     /* radius */            4.75f,
