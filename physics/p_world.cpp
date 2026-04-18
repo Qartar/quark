@@ -82,6 +82,7 @@ void world::step(float delta_time)
 
             physics::collision c = physics::collision(candidate.contact);
             c.impulse = collision_impulse(_bodies[ii], _bodies[jj], c);
+            assert(!isnan(c.impulse));
 
             // check collision callback
             if (_collision_callback && !_collision_callback(_bodies[ii], _bodies[jj], c)) {

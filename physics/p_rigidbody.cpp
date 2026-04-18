@@ -27,6 +27,7 @@ float rigid_body::get_kinetic_energy() const
 //------------------------------------------------------------------------------
 void rigid_body::apply_impulse(vec2 impulse)
 {
+    assert(!isnan(impulse));
     vec2 linear = _motion.get_linear_velocity();
     linear += impulse * _inverse_mass;
     _motion.set_linear_velocity(linear);
@@ -35,6 +36,7 @@ void rigid_body::apply_impulse(vec2 impulse)
 //------------------------------------------------------------------------------
 void rigid_body::apply_impulse(vec2 impulse, vec2 position)
 {
+    assert(!isnan(impulse));
     vec2 linear = _motion.get_linear_velocity();
     linear += impulse * _inverse_mass;
     _motion.set_linear_velocity(linear);

@@ -7,6 +7,8 @@
 #include "cm_vector.h"
 #include "cm_matrix.h"
 
+#include <cassert>
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace physics {
 
@@ -69,6 +71,7 @@ public:
     vec2 get_linear_velocity(vec2 position) const;
 
     void set_linear_velocity(vec2 linear_velocity) {
+        assert(!isnan(linear_velocity));
         _linear_velocity = linear_velocity;
     }
 
@@ -77,6 +80,7 @@ public:
     }
 
     void set_angular_velocity(float angular_velocity) {
+        assert(!isnan(angular_velocity));
         _angular_velocity = angular_velocity;
     }
 
