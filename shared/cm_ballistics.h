@@ -7,7 +7,14 @@
 #include "cm_vector.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+namespace parser {
+class text;
+} // namespace parser
+
+////////////////////////////////////////////////////////////////////////////////
 namespace ballistics {
+
+void solve_ballistic_coefficient_cmd(parser::text const& args);
 
 //------------------------------------------------------------------------------
 enum class curve {
