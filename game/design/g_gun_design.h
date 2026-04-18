@@ -35,6 +35,7 @@ extern const gun_design gun_152mm_55_Modele_1930;
 extern const gun_design gun_38cm_SK_C_34;
 extern const gun_design gun_15cm_SK_C_28;
 extern const gun_design gun_381_50_ansaldo_m1934;
+extern const gun_design gun_152_55_ansaldo_m1934;
 extern const gun_design gun_28cm_SK_C_28;
 extern const gun_design gun_BL_6_inch_Mk_XXIII;
 extern const gun_design gun_QF_4_7_inch_Mark_IX;

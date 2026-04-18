@@ -43,6 +43,7 @@ extern const turret_design turret_bismarck_38cm;
 extern const turret_design turret_bismarck_15cm_rf;
 extern const turret_design turret_bismarck_15cm;
 extern const turret_design turret_littorio_381mm;
+extern const turret_design turret_littorio_152mm;
 extern const turret_design turret_deutschland_28cm;
 extern const turret_design turret_town_6in;
 extern const turret_design turret_tribal_4_7in;

@@ -629,6 +629,7 @@ const ship_design ship_littorio_battleship =
 
     /* turrets */
     {
+        // main battery
         {
             /* position */          vec2(56.f,0),
             /* orientation */       0,
@@ -644,8 +645,33 @@ const ship_design ship_littorio_battleship =
         {
             /* position */          vec2(-56.f,0),
             /* orientation */       math::pi,
-            /* train_limit */       DEGV(-135.f, 135.f),
+            /* train_limit */       DEGV(-155.f, 155.f),
             /* design */            &turret_littorio_381mm,
+        },
+        // secondary battery
+        {
+            /* position */          vec2(26.5f, 9.6f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(0.f, 160.f),
+            /* design */            &turret_littorio_152mm,
+        },
+        {
+            /* position */          vec2(26.5f, -9.6f),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-160.f, 0.f),
+            /* design */            &turret_littorio_152mm,
+        },
+        {
+            /* position */          vec2(-48.f, 9.6f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-170.f, 0.f),
+            /* design */            &turret_littorio_152mm,
+        },
+        {
+            /* position */          vec2(-48.f, -9.6f),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(0.f, 170.f),
+            /* design */            &turret_littorio_152mm,
         },
     },
 

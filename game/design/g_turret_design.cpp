@@ -500,6 +500,39 @@ const turret_design turret_littorio_381mm =
     }
 };
 
+const turret_design turret_littorio_152mm =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(8.f),
+    /* elevation_speed */   DEG(10.f),
+    /* elevation_limit */   DEGV(-5.f, 35.f),
+    /* num_guns */          3,
+    /* spacing */           1.5f,
+    /* reload_time */       time_delta::from_seconds(6.f),
+    /* gun_design */        &gun_152_55_ansaldo_m1934,
+    /* outline */           {
+        // Don't have a good reference for Littorio so use Bismarck vertices
+        vec2(-4.23f, 0.00f),
+        vec2(-4.16f, 1.08f),
+        vec2(-3.94f, 1.95f),
+        vec2(-3.50f, 2.04f),
+        vec2(-3.48f, 3.61f),
+        vec2(-2.14f, 3.62f),
+        vec2(-2.14f, 2.18f),
+        vec2(-1.31f, 2.25f),
+        vec2(2.00f, 2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(-1.31f, -2.25f),
+        vec2(-2.14f, -2.18f),
+        vec2(-2.14f, -3.62f),
+        vec2(-3.48f, -3.61f),
+        vec2(-3.50f, -2.04f),
+        vec2(-3.94f, -1.95f),
+        vec2(-4.16f, -1.08f),
+    }
+};
+
 const turret_design turret_deutschland_28cm =
 {
     /* radius */            5.5f,
