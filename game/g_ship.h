@@ -6,7 +6,6 @@
 #include "g_object.h"
 #include "p_compound.h"
 #include "cm_string.h"
-#include "cm_table.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -17,6 +16,7 @@ class shield;
 class weapon;
 class navigation;
 class subsystem;
+class fire_director;
 
 class faction;
 
@@ -68,6 +68,8 @@ protected:
     handle<game::engines> _engines;
     handle<game::navigation> _navigation;
 
+    std::vector<handle<game::fire_director>> _fire_directors;
+
     handle<game::faction> _faction;
 
     ship_design const* _design;
@@ -79,16 +81,14 @@ protected:
         float traverse_target;
         float elevation_target;
 
-        time_delta time_of_flight;
-
         time_value refire_time;
+
+        handle<game::fire_director> fire_director;
     };
 
     std::vector<turret_state> _turrets;
 
     handle<ship const> _primary_target;
-
-    table<float> _primary_gunnery_table;
 
     vec2 _wake[128];
     std::size_t _wake_index;
@@ -97,13 +97,10 @@ protected:
 
 protected:
     void update_targets();
-    void update_firing_solution(handle<ship const> target, std::size_t turret_index);
+    void update_firing_solution(std::size_t turret_index);
 
     //! Return the position, direction, and inertial velocity (i.e. inherited velocity) of the given turret/gun
     void get_firing_vectors(std::size_t turret_index, std::size_t gun_index, vec3& position, vec3& direction, vec3& inertial_velocity) const;
-
-    //! Populate range/elevation tables, this should eventually be moved to the gun info
-    void populate_gunnery_tables();
 };
 
 } // namespace game

@@ -7,13 +7,12 @@
 #include "g_ship.h"
 #include "g_character.h"
 #include "g_faction.h"
+#include "g_fire_director.h"
 #include "g_navigation.h"
 #include "g_shield.h"
 #include "g_weapon.h"
 #include "g_subsystem.h"
 #include "r_model.h"
-#include "cm_ballistics.h"
-
 #include "design/g_ship_design.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,8 +44,6 @@ ship::ship(handle<game::faction> faction)
     _turrets.resize(_design->turrets.size(), {});
 
     _model = &ship_model;
-
-    populate_gunnery_tables();
 }
 
 //------------------------------------------------------------------------------
@@ -74,6 +71,20 @@ void ship::spawn()
 
     _navigation = get_world()->spawn<game::navigation>(this);
     _subsystems.push_back(_navigation);
+
+    // add a fire director for each unique gun design
+    {
+        gun_design const* gun = nullptr;
+        for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
+            // assume all similar gun turrets are contiguous in ship design
+            if (_design->turrets[ii].design->gun_design != gun) {
+                gun = _design->turrets[ii].design->gun_design;
+                _fire_directors.push_back(get_world()->spawn<game::fire_director>(this, gun));
+                _subsystems.push_back(_fire_directors.back());
+            }
+            _turrets[ii].fire_director = _fire_directors.back();
+        }
+    }
 
     std::vector<handle<subsystem>> assignments(_subsystems.begin(), _subsystems.end());
     for (auto& ch : _crew) {
@@ -181,7 +192,7 @@ void ship::think()
     }
 
     for (std::size_t ii = 0, num = _turrets.size(); ii < num; ++ii) {
-        update_firing_solution(_primary_target, ii);
+        update_firing_solution(ii);
 
         float traverse_target = clamp(
             _turrets[ii].traverse_target,
@@ -230,6 +241,10 @@ void ship::think()
         }
 
         if (!is_firing || time < _turrets[idx].refire_time) {
+            continue;
+        }
+
+        if (!_turrets[idx].fire_director || !_turrets[idx].fire_director->has_solution()) {
             continue;
         }
 
@@ -315,27 +330,26 @@ void ship::update_targets()
 
     if (targets.size()) {
         _primary_target = targets[_random.uniform_int(targets.size())];
+        for (std::size_t ii = 0; ii < _fire_directors.size(); ++ii) {
+            _fire_directors[ii]->set_target(_primary_target);
+        }
     }
 }
 
 //------------------------------------------------------------------------------
-void ship::update_firing_solution(handle<ship const> target, std::size_t turret_index)
+void ship::update_firing_solution(std::size_t turret_index)
 {
-    vec2 target_pos = target ? target->get_position() : vec2_zero;
+    float bearing, elevation;
 
-    // TODO: target prediction
-
-    auto tx = get_transform();
-    auto const& turret = _design->turrets[turret_index];
-    vec2 dir = normalize(target_pos - turret.position * tx);
-
-    float angle = atan2f(dir.y, dir.x) - get_rotation().radians() - _design->turrets[turret_index].orientation;
-    angle -= math::twopi * std::round(angle / math::twopi); // normalize to [-pi,pi)
-
-    _turrets[turret_index].traverse_target = angle;
-
-    _turrets[turret_index].elevation_target = _primary_gunnery_table.interpolate(
-        length(target_pos - turret.position * tx));
+    if (_turrets[turret_index].fire_director) {
+        _turrets[turret_index].fire_director->get_solution(bearing, elevation);
+        // Get bearing relative to turret orientation, normalize to [-pi,pi)
+        bearing -= _design->turrets[turret_index].orientation;
+        bearing -= math::twopi * std::round(bearing / math::twopi);
+        // TODO: parallax corrections
+        _turrets[turret_index].traverse_target = bearing;
+        _turrets[turret_index].elevation_target = elevation;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -356,52 +370,6 @@ void ship::get_firing_vectors(std::size_t turret_index, std::size_t gun_index, v
                      sin(_turrets[turret_index].elevation));
 
     velocity = vec3(get_linear_velocity() + (position.to_vec2() - get_position()).cross(get_angular_velocity()), 0);
-}
-
-//------------------------------------------------------------------------------
-void ship::populate_gunnery_tables()
-{
-    float range[256];
-
-    vec2 elevation = _design->turrets[0].design->elevation_limit;
-
-    for (std::size_t ii = 0; ii < countof(range); ++ii) {
-        float x = elevation[0] + (elevation[1] - elevation[0]) * ii / (countof(range) - 1);
-
-        vec3 pos = vec3(0, 0, 8.f); // TODO: turret height
-        vec3 vel = vec3(cos(x), 0, sin(x)) * _design->turrets[0].design->gun_design->shell_velocity;
-
-        //ballistics::simulate(pos, vel, 2e-5f, time_delta::from_seconds(1));
-        ballistics::simulate(pos, vel, ballistics::curve::G1, _design->turrets[0].design->gun_design->shell_coefficient, FRAMETIME);
-
-        range[ii] = pos.x;
-    }
-
-    table<float> range_from_elevation((elevation[1] - elevation[0]) / (countof(range) - 1), elevation[0], range);
-
-    float x[44];
-
-    for (std::size_t ii = 1; ii < countof(x); ++ii) {
-        float r = ii * 1000.f;
-
-        float lo = 0.f, hi = 1.f, t = .5f;
-
-        float r0 = r;
-        for (std::size_t jj = 0; jj < 32; ++jj) {
-            float elev = elevation[0] + (elevation[1] - elevation[0]) * t;
-            r0 = range_from_elevation.interpolate(elev);
-            if (r0 > r) {
-                hi = t;
-            } else {
-                lo = t;
-            }
-            t = .5f * (lo + hi);
-        }
-
-        x[ii - 1] = elevation[0] + (elevation[1] - elevation[0]) * t;
-    }
-
-    _primary_gunnery_table = table(1000.f, 1000.f, x);
 }
 
 } // namespace game

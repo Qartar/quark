@@ -59,6 +59,8 @@ set(QUARK_SOURCES
     game/g_client.cpp
     game/g_faction.cpp
     game/g_faction.h
+    game/g_fire_director.cpp
+    game/g_fire_director.h
     game/g_handle.h
     game/g_handle.natvis
     game/g_menu.cpp
