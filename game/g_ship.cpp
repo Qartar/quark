@@ -183,20 +183,28 @@ void ship::think()
     for (std::size_t ii = 0, num = _turrets.size(); ii < num; ++ii) {
         update_firing_solution(_primary_target, ii);
 
-        float traverse_delta = _turrets[ii].traverse_target - _turrets[ii].traverse;
+        float traverse_target = clamp(
+            _turrets[ii].traverse_target,
+            _design->turrets[ii].train_limit[0],
+            _design->turrets[ii].train_limit[1]);
+        float traverse_delta = traverse_target - _turrets[ii].traverse;
         float traverse_max = _design->turrets[ii].design->train_speed * FRAMETIME.to_seconds();
         if (abs(traverse_delta) > traverse_max) {
             _turrets[ii].traverse += std::copysign(traverse_max, traverse_delta);
         } else {
-            _turrets[ii].traverse = _turrets[ii].traverse_target;
+            _turrets[ii].traverse = traverse_target;
         }
 
-        float elevation_delta = _turrets[ii].elevation_target - _turrets[ii].elevation;
+        float elevation_target = clamp(
+            _turrets[ii].elevation_target,
+            _design->turrets[ii].design->elevation_limit[0],
+            _design->turrets[ii].design->elevation_limit[1]);
+        float elevation_delta = elevation_target - _turrets[ii].elevation;
         float elevation_max = _design->turrets[ii].design->elevation_speed * FRAMETIME.to_seconds();
         if (abs(elevation_delta) > elevation_max) {
             _turrets[ii].elevation += std::copysign(elevation_max, elevation_delta);
         } else {
-            _turrets[ii].elevation = _turrets[ii].elevation_target;
+            _turrets[ii].elevation = elevation_target;
         }
     }
 
@@ -323,17 +331,11 @@ void ship::update_firing_solution(handle<ship const> target, std::size_t turret_
 
     float angle = atan2f(dir.y, dir.x) - get_rotation().radians() - _design->turrets[turret_index].orientation;
     angle -= math::twopi * std::round(angle / math::twopi); // normalize to [-pi,pi)
-    angle = clamp(angle, _design->turrets[turret_index].train_limit[0], _design->turrets[turret_index].train_limit[1]);
 
     _turrets[turret_index].traverse_target = angle;
 
-    // TODO: elevation target
-
     _turrets[turret_index].elevation_target = _primary_gunnery_table.interpolate(
         length(target_pos - turret.position * tx));
-    _turrets[turret_index].elevation_target = clamp(_turrets[turret_index].elevation_target,
-                                                    _design->turrets[turret_index].design->elevation_limit[0],
-                                                    _design->turrets[turret_index].design->elevation_limit[1]);
 }
 
 //------------------------------------------------------------------------------
