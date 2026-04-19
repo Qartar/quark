@@ -3,6 +3,9 @@
 
 #include "cm_ballistics.h"
 #include "cm_shared.h"
+#include "cm_string.h"
+
+#include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ballistics {
@@ -16,7 +19,15 @@ struct ballistic_data
     float time;
     float impact_angle;
     float impact_velocity;
-    float radius;
+};
+
+//------------------------------------------------------------------------------
+struct ballistic_dataset
+{
+    string::literal name;
+    float caliber;
+    float mass;
+    std::vector<ballistic_data> data;
 };
 
 //------------------------------------------------------------------------------
@@ -129,90 +140,264 @@ void solve_ballistic_coefficient(ballistic_data const* b, std::size_t n, ballist
 }
 
 //------------------------------------------------------------------------------
-void solve_ballistic_coefficient_cmd(parser::text const& args)
+void solve_ballistic_coefficient_cmd(parser::text const& /*args*/)
 {
-    (void)args;
-#if 0
-    {
-        ballistic_data const data[] = {
-            { 780.f, 10.f, 16830.f, 26.05f },
-            { 780.f, 20.f, 27920.f, 49.21f },
-            { 780.f, 30.f, 35830.f, 70.27f },
-            { 780.f, 40.f, 40700.f, 89.42f },
-            { 780.f, 45.f, 42030.f, 98.6f },
-        };
-    }
-#endif
-    {
-        ballistic_data const data[] = {
-            // 46 cm/45 Type 94 naval gun (Yamato)
-            { 780.f,  2.4f,  5000.f, 0.f,  3.3f, 690, .46f },
-            { 780.f,  5.4f, 10000.f, 0.f,  7.2f, 620, .46f },
-            { 780.f,  8.6f, 15000.f, 0.f, 11.5f, 562, .46f },
-            { 780.f, 12.6f, 20000.f, 0.f, 16.5f, 521, .46f },
-            { 780.f, 17.2f, 25000.f, 0.f, 23.0f, 490, .46f },
-            { 780.f, 23.2f, 30000.f, 0.f, 31.4f, 475, .46f },
-            // 14-inch (35.6 cm) Mark VII (King George V)
-            { 732.f,  2.5f,   4570.f,  6.59f,  2.8f, 658, .356f },
-            { 732.f,  5.5f,   9140.f, 14.06f,  6.5f, 587, .356f },
-            { 732.f,  9.25f, 13720.f, 22.57f, 11.5f, 526, .356f },
-            { 732.f, 13.75f, 18290.f, 32.41f, 18.2f, 476, .356f },
-            { 732.f, 19.25f, 22400.f, 43.86f, 26.4f, 445, .356f },
-            { 732.f, 26.2f,  27430.f, 57.43f, 35.6f, 436, .356f },
-            { 732.f, 36.0f,  32000.f, 74.97f, 46.1f, 452, .356f },
-            { 732.f, 40.7f,  33380.f, 82.42f, 50.3f, 464, .356f },
-            // 28 cm SK C/28 naval gun (Deutschland)
-            { 910.f,  1.9f,  5000.f, 0.f,  2.4f, 752, .28f },
-            { 910.f,  4.5f, 10000.f, 0.f,  6.0f, 611, .28f },
-            { 910.f,  8.0f, 15000.f, 0.f, 11.8f, 493, .28f },
-            { 910.f, 12.5f, 20000.f, 0.f, 21.4f, 407, .28f },
-            { 910.f, 18.6f, 25000.f, 0.f, 34.2f, 360, .28f },
-            { 910.f, 26.3f, 30000.f, 0.f, 46.4f, 353, .28f },
-            { 910.f, 36.4f, 35000.f, 0.f, 56.0f, 380, .28f },
-            // 6"/50 (15.2 cm) BL Mark XXIII (Town)
-            { 823.f,  2.3f,  4570.f,  6.6f,  3.0f, 591, .152f },
-            { 823.f,  6.2f,  9140.f, 15.9f, 10.0f, 418, .152f },
-            { 823.f, 13.1f, 13720.f, 29.4f, 23.6f, 335, .152f },
-            { 823.f, 24.1f, 18290.f, 47.2f, 39.9f, 331, .152f },
-            { 823.f, 41.1f, 22400.f, 71.4f, 56.5f, 353, .152f },
-        };
-
-        const char* curves[] = { "G1", "G2", "G5", "G6", "G7", "G8" };
-
-        for (std::size_t ii = 0, jj = 0; jj < countof(data); ++ii) {
-            while (jj < countof(data) && data[ii].initial_velocity == data[jj].initial_velocity) {
-                ++jj;
+    ballistic_dataset const sets[] = {
+        {
+            "46 cm/45 Type 94 (Yamato)",
+            .46f,
+            1460.f,
+            {
+                { 780.f,  2.4f,  5000.f, 0.f,  3.3f, 690.f },
+                { 780.f,  5.4f, 10000.f, 0.f,  7.2f, 620.f },
+                { 780.f,  8.6f, 15000.f, 0.f, 11.5f, 562.f },
+                { 780.f, 12.6f, 20000.f, 0.f, 16.5f, 521.f },
+                { 780.f, 17.2f, 25000.f, 0.f, 23.0f, 490.f },
+                { 780.f, 23.2f, 30000.f, 0.f, 31.4f, 475.f },
             }
-
-            float best_bc = 0.f, best_rms = FLT_MAX;
-            ballistics::curve best_curve = ballistics::curve::G1;
-            for (std::size_t kk = 0; kk < 6; ++kk) {
-                float bc, rms;
-                ballistics::curve c = static_cast<ballistics::curve>(static_cast<std::size_t>(ballistics::curve::G1) + kk);
-                solve_ballistic_coefficient(data + ii, jj - ii, c, time_delta::from_hertz(20.f), bc, rms);
-                log::message(" %s %.16f %.16f %.16f\n", curves[static_cast<std::size_t>(c)], rms, bc, bc / data[ii].radius);
-                if (rms < best_rms) {
-                    best_bc = bc;
-                    best_rms = rms;
-                    best_curve = c;
-                }
+        },
+        {
+            "16-inch/50 Mark 7 (Iowa)",
+            .406f,
+            1225.f,
+            {
+                { 762.f,  2.36f,  4572.f,  6.29f,  2.50f, 695.f },
+                { 762.f,  5.05f,  9140.f, 13.24f,  5.01f, 632.f },
+                { 762.f,  8.16f, 13716.f, 20.98f,  9.78f, 577.f },
+                { 762.f, 11.77f, 18290.f, 29.59f, 14.92f, 530.f },
+                { 762.f, 16.03f, 22860.f, 39.30f, 21.12f, 497.f },
+                { 762.f, 21.11f, 27430.f, 50.32f, 28.25f, 478.f },
+                { 762.f, 27.37f, 32000.f, 63.22f, 36.27f, 474.f },
+                { 762.f, 36.08f, 36580.f, 79.92f, 47.73f, 490.f },
+                { 762.f, 45.08f, 38720.f, 95.32f, 51.23f, 514.f },
             }
-            log::message("%zu-%zu %.16f %.16f %s %.16f\n", ii, jj - 1, best_rms, best_bc, curves[static_cast<std::size_t>(best_curve)], best_bc / data[ii].radius);
-
-            for (std::size_t kk = ii; kk < jj; ++kk) {
-                ballistic_data d = data[kk];
-                simulate_ballistic_coefficient(d, best_curve, time_delta::from_hertz(20.f), best_bc);
-
-                log::message(" %zu %.16f %.1fs (%g vs %g m) (%g vs %g m/s) (%2.1f vs %2.1f)\n", kk, best_bc,
-                    d.time,
-                    d.range, data[kk].range,
-                    d.impact_velocity, data[kk].impact_velocity,
-                    d.impact_angle, data[kk].impact_angle);
+        },
+        {
+            "16-inch/45 Mark 6 (North Carolina)",
+            .406f,
+            1225.f,
+            {
+                { 701.f,  2.79f,  4572.f,  6.83f,  2.93f, 637.f },
+                { 701.f,  5.99f,  9140.f, 14.45f,  6.80f, 579.f },
+                { 701.f,  9.73f, 13716.f, 22.94f, 11.72f, 528.f },
+                { 701.f, 14.16f, 18290.f, 32.55f, 17.93f, 489.f },
+                { 701.f, 19.50f, 22860.f, 43.61f, 25.38f, 463.f },
+                { 701.f, 26.23f, 27430.f, 56.64f, 34.07f, 454.f },
+                { 701.f, 36.18f, 32000.f, 74.42f, 44.88f, 466.f },
             }
-            log::message("\n");
+        },
+        {
+            "38 cm SK C/34 (Bismarck)",
+            .38f,
+            800.f,
+            {
+                { 820.f,  2.2f,  5000.f,  6.5f,  2.4f, 727.f },
+                { 820.f,  4.9f, 10000.f, 13.9f,  5.8f, 641.f },
+                { 820.f,  8.1f, 15000.f, 22.3f, 10.4f, 568.f },
+                { 820.f, 12.1f, 20000.f, 32.0f, 16.4f, 511.f },
+                { 820.f, 16.8f, 25000.f, 43.0f, 23.8f, 473.f },
+                { 820.f, 22.4f, 30000.f, 55.5f, 31.9f, 457.f },
+                { 820.f, 29.1f, 35000.f, 69.9f, 40.3f, 462.f },
+            }
+        },
+        {
+            "380 mm/45 Model 1935 (Richelieu)",
+            .38f,
+            884.f,
+            {
+                { 830.f,  4.4f, 10000.f, 0.f,  5.2f, 675.f },
+                { 830.f,  7.4f, 15000.f, 0.f,  9.0f, 608.f },
+                { 830.f, 10.9f, 20000.f, 0.f, 14.0f, 544.f },
+                { 830.f, 14.9f, 25000.f, 0.f, 20.2f, 514.f },
+                { 830.f, 19.8f, 30000.f, 0.f, 27.2f, 490.f },
+                { 830.f, 25.5f, 35000.f, 0.f, 40.3f, 479.f },
+            }
+        },
+        {
+            "381 mm/50 Model 1934 (Littorio)",
+            .381f,
+            884.8f,
+            {
+                { 850.f,  4.3f, 10000.f, 0.f,  5.0f, 687.f },
+                { 850.f,  7.2f, 15000.f, 0.f,  8.7f, 620.f },
+                { 850.f, 10.6f, 20000.f, 0.f, 13.4f, 563.f },
+                { 850.f, 14.5f, 25000.f, 0.f, 19.3f, 524.f },
+                { 850.f, 19.2f, 30000.f, 0.f, 26.1f, 498.f },
+                { 850.f, 24.7f, 35000.f, 0.f, 37.6f, 483.f },
+            }
+        },
+        {
+            "36 cm 41st Year Type (Fuso)",
+            .356f,
+            635.f,
+            {
+                { 775.f,  2.6f,  5000.f, 0.f,  3.5f, 670.f },
+                { 775.f,  6.1f, 10000.f, 0.f,  7.5f, 576.f },
+                { 775.f,  9.9f, 15000.f, 0.f, 12.4f, 510.f },
+                { 775.f, 14.4f, 20000.f, 0.f, 18.9f, 459.f },
+                { 775.f, 20.0f, 25000.f, 0.f, 27.5f, 420.f },
+                { 775.f, 28.7f, 30000.f, 0.f, 35.9f, 414.f },
+            }
+        },
+        {
+            "14-inch BL Mark VII (King George V)",
+            .3556f,
+            721.2f,
+            {
+                { 732.f,  2.5f,   4570.f,  6.59f,  2.8f, 658.f },
+                { 732.f,  5.5f,   9140.f, 14.06f,  6.5f, 587.f },
+                { 732.f,  9.25f, 13720.f, 22.57f, 11.5f, 526.f },
+                { 732.f, 13.75f, 18290.f, 32.41f, 18.2f, 476.f },
+                { 732.f, 19.25f, 22400.f, 43.86f, 26.4f, 445.f },
+                { 732.f, 26.2f,  27430.f, 57.43f, 35.6f, 436.f },
+                { 732.f, 36.0f,  32000.f, 74.97f, 46.1f, 452.f },
+                { 732.f, 40.7f,  33380.f, 82.42f, 50.3f, 464.f },
+            }
+        },
+        {
+            "28 cm/52 SK C/28 (Deutschland)",
+            .283f,
+            300.f,
+            {
+                { 910.f,  1.9f,  5000.f, 0.f,  2.4f, 752.f },
+                { 910.f,  4.5f, 10000.f, 0.f,  6.0f, 611.f },
+                { 910.f,  8.0f, 15000.f, 0.f, 11.8f, 493.f },
+                { 910.f, 12.5f, 20000.f, 0.f, 21.4f, 407.f },
+                { 910.f, 18.6f, 25000.f, 0.f, 34.2f, 360.f },
+                { 910.f, 26.3f, 30000.f, 0.f, 46.4f, 353.f },
+                { 910.f, 36.4f, 35000.f, 0.f, 56.0f, 380.f },
+            }
+        },
+        {
+            "15.5 cm/60 Type 3rd Year Type (Yamato)",
+            .155f,
+            55.87f,
+            {
+                { 925.f,  2.3f,  5000.f, 0.f,  3.0f, 663.f },
+                { 925.f,  5.4f, 10000.f, 0.f,  7.7f, 465.f },
+                { 925.f, 11.2f, 15000.f, 0.f, 16.5f, 340.f },
+                { 925.f, 20.0f, 20000.f, 0.f, 33.0f, 320.f },
+                { 925.f, 35.0f, 25000.f, 0.f, 56.0f, 350.f },
+            }
+        },
+        {
+            "152 mm/55 Model 1934 (Littorio)",
+            .152f,
+            49.6f,
+            {
+                { 910.f,  45.f, 25740.f,  0.f,  0.f, 0.f },
+            }
+        },
+        {
+            "152 mm/55 Model 1930 (Richelieu)",
+            .152f,
+            54.5f,
+            {
+                { 870.f,  45.f, 26474.f,  0.f,  0.f, 0.f },
+            }
+        },
+        {
+            "15 cm/55 SK C/28 (Bismarck)",
+            .15f,
+            45.3f,
+            {
+                { 875.f,  35.f, 22000.f,  0.f,  0.f, 0.f },
+                { 875.f,  40.f, 23000.f,  0.f,  0.f, 0.f },
+            }
+        },
+        {
+            "QF 5.25-inch Mark 1 (King George V)",
+            .133f,
+            36.3f,
+            {
+                { 814.f,  45.f, 21397.f,  0.f,  0.f, 0.f },
+            }
+        },
+        {
+            "5-inch/38 Mark 12 (North Carolina)",
+            .127f,
+            25.f,
+            {
+                { 792.f,  0.44f,  1829.f,  2.55f,  0.93f, 653.f },
+                { 792.f,  2.18f,  3658.f,  5.71f,  2.85f, 526.f },
+                { 792.f,  3.89f,  5486.f,  9.67f,  5.97f, 418.f },
+                { 792.f,  6.34f,  7315.f, 14.73f, 11.10f, 344.f },
+                { 792.f,  9.79f,  9114.f, 20.81f, 18.33f, 306.f },
+                { 792.f, 14.33f, 10972.f, 27.78f, 26.63f, 290.f },
+                { 792.f, 20.06f, 12802.f, 35.81f, 35.38f, 287.f },
+                { 792.f, 27.47f, 14630.f, 45.44f, 44.60f, 294.f },
+                { 792.f, 43.30f, 16642.f, 64.40f, 59.37f, 314.f },
+                { 792.f, 64.23f, 12802.f, 84.20f, 73.40f, 352.f },
+            }
+        },
+        {
+            "6-inch/50 BL Mark XXIII (Town)",
+            .152f,
+            45.36f,
+            {
+                { 823.f,  2.3f,  4570.f,  6.6f,  3.0f, 591.f },
+                { 823.f,  6.2f,  9140.f, 15.9f, 10.0f, 418.f },
+                { 823.f, 13.1f, 13720.f, 29.4f, 23.6f, 335.f },
+                { 823.f, 24.1f, 18290.f, 47.2f, 39.9f, 331.f },
+                { 823.f, 41.1f, 22400.f, 71.4f, 56.5f, 353.f },
+            }
+        },
+        {
+            "QF 4.7-inch Mk IX (Tribal)",
+            .12f,
+            22.68f,
+            {
+                { 808.f,  30.f, 14450.f,  0.f,  0.f, 0.f },
+                { 808.f,  40.f, 15545.f,  0.f,  0.f, 0.f },
+            }
+        },
+    };
 
-            ii = jj - 1;
+    const char* curves[] = { "G1", "G2", "G5", "G6", "G7", "G8" };
+
+    for (auto const& s : sets) {
+        log::message("%s\n", s.name.c_str());
+
+        float best_bc = 0.f, best_rms = FLT_MAX;
+        ballistics::curve best_curve = ballistics::curve::G1;
+
+        float bc[6];
+        float rms[6];
+
+        for (std::size_t kk = 0; kk < 6; ++kk) {
+            ballistics::curve c = static_cast<ballistics::curve>(static_cast<std::size_t>(ballistics::curve::G1) + kk);
+            solve_ballistic_coefficient(s.data.data(), s.data.size(), c, time_delta::from_hertz(20.f), bc[kk], rms[kk]);
+            if (rms[kk] < best_rms) {
+                best_bc = bc[kk];
+                best_rms = rms[kk];
+                best_curve = c;
+            }
         }
+
+        for (std::size_t kk = 0; kk < 6; ++kk) {
+            ballistics::curve c = static_cast<ballistics::curve>(static_cast<std::size_t>(ballistics::curve::G1) + kk);
+            if (c == best_curve) {
+                log::message("^fff %s %.16f %.16f %.16f^xxx\n",
+                    curves[static_cast<std::size_t>(c)],
+                    rms[kk], bc[kk], bc[kk] / s.caliber);
+            } else {
+                log::message(" %s %.16f %.16f %.16f\n",
+                    curves[static_cast<std::size_t>(c)],
+                    rms[kk], bc[kk], bc[kk] / s.caliber);
+            }
+        }
+
+        for (std::size_t kk = 0; kk < s.data.size(); ++kk) {
+            ballistic_data d = s.data[kk];
+            simulate_ballistic_coefficient(d, best_curve, time_delta::from_hertz(20.f), best_bc);
+
+            log::message(" %zu %.16f %.1fs (%g vs %g m) (%g vs %g m/s) (%2.1f vs %2.1f)\n", kk, best_bc,
+                d.time,
+                d.range, s.data[kk].range,
+                d.impact_velocity, s.data[kk].impact_velocity,
+                d.impact_angle, s.data[kk].impact_angle);
+        }
+        log::message("\n");
     }
 }
 
