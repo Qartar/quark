@@ -15,44 +15,22 @@ namespace game {
 const object_type subsystem::_type(object::_type);
 
 //------------------------------------------------------------------------------
-subsystem::subsystem(game::ship* owner, subsystem_info info)
+subsystem::subsystem(game::ship* owner)
     : object(owner)
-    , _subsystem_info(info)
     , _damage(0)
     , _damage_time(time_value::zero)
-    , _current_power(static_cast<float>(info.maximum_power))
-    , _desired_power(info.maximum_power)
 {}
 
 //------------------------------------------------------------------------------
 void subsystem::think()
 {
-    if (_subsystem_info.type == subsystem_type::reactor) {
-        ship const* owner = static_cast<ship const*>(_owner.get());
-        _current_power = 0.f;
-        _desired_power = 0;
-        for (auto const& subsystem : owner->subsystems()) {
-            if (subsystem->info().type != subsystem_type::reactor) {
-                _current_power += subsystem->_current_power;
-                _desired_power += subsystem->_desired_power;
-            }
-        }
-
-        if (_current_power > _subsystem_info.maximum_power - _damage) {
-            float overload = _current_power - (_subsystem_info.maximum_power - _damage);
-            damage(this, overload * overload_damage * FRAMETIME.to_seconds());
-        }
-    } else {
-        float decay_coeff = -std::expm1(-math::ln2 * FRAMETIME.to_seconds() / power_lambda);
-        _current_power += (_desired_power - _damage - _current_power) * decay_coeff;
-    }
 }
 
 //------------------------------------------------------------------------------
 void subsystem::damage(object* /*inflictor*/, float amount)
 {
     _damage_time = get_world()->frametime();
-    _damage = std::min(_damage + amount, static_cast<float>(_subsystem_info.maximum_power));
+    _damage += amount;
 }
 
 //------------------------------------------------------------------------------
@@ -65,30 +43,12 @@ void subsystem::repair(float damage_per_second)
     }
 }
 
-//------------------------------------------------------------------------------
-int subsystem::current_power() const
-{
-    return static_cast<int>(_current_power + power_epsilon);
-}
-
-//------------------------------------------------------------------------------
-void subsystem::increase_power(int amount)
-{
-    _desired_power += amount;
-}
-
-//------------------------------------------------------------------------------
-void subsystem::decrease_power(int amount)
-{
-    _desired_power -= amount;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 const object_type engines::_type(subsystem::_type);
 
 //------------------------------------------------------------------------------
 engines::engines(game::ship* owner)
-    : subsystem(owner, {subsystem_type::engines, 2})
+    : subsystem(owner)
     , _rudder_angle(0)
     , _rudder_target(0)
 {

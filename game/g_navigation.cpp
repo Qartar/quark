@@ -16,7 +16,7 @@ const object_type navigation::_type(subsystem::_type);
 
 //------------------------------------------------------------------------------
 navigation::navigation(game::ship* owner)
-    : subsystem(owner, {subsystem_type::navigation, 1})
+    : subsystem(owner)
     , _target_speed(0)
     , _target_heading(0)
 {}
@@ -34,10 +34,6 @@ void navigation::spawn()
 void navigation::think()
 {
     subsystem::think();
-
-    if (!current_power()) {
-        return;
-    }
 
     auto ship = _owner->cast<game::ship>();
     auto engines = ship ? ship->engines() : nullptr;

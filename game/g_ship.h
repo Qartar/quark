@@ -10,10 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-class character;
 class engines;
-class shield;
-class weapon;
 class navigation;
 class subsystem;
 class fire_director;
@@ -48,7 +45,6 @@ public:
     std::vector<unique_handle<subsystem>>& subsystems() { return _subsystems; }
     std::vector<unique_handle<subsystem>> const& subsystems() const { return _subsystems; }
 
-    handle<subsystem> reactor() { return _reactor; }
     handle<game::engines> engines() { return _engines; }
     handle<game::engines const> engines() const { return _engines; }
     handle<game::navigation> navigation() { return _navigation; }
@@ -61,7 +57,6 @@ public:
 protected:
     game::usercmd _usercmd;
 
-    std::vector<unique_handle<character>> _crew;
     std::vector<unique_handle<subsystem>> _subsystems;
 
     handle<subsystem> _reactor;

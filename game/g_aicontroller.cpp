@@ -7,8 +7,6 @@
 #include "g_aicontroller.h"
 #include "g_navigation.h"
 #include "g_ship.h"
-#include "g_subsystem.h"
-#include "g_weapon.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -40,51 +38,11 @@ void aicontroller::think()
     }
 
     //
-    // update subsystem power
-    //
-
-    if (_ship->reactor()) {
-        float maximum_power = _ship->reactor()->maximum_power() - _ship->reactor()->damage();
-        float current_power = static_cast<float>(_ship->reactor()->current_power());
-        float overload = current_power - maximum_power;
-
-        // Deactivate subsystems if reactor is overloaded
-        for (std::size_t ii = _ship->subsystems().size(); ii > 0 && overload > 0.f; --ii) {
-            auto& subsystem = _ship->subsystems()[ii - 1];
-            if (subsystem->info().type == subsystem_type::reactor) {
-                continue;
-            }
-            while (subsystem->desired_power() && overload > 0.f) {
-                subsystem->decrease_power(1);
-                overload -= 1.f;
-            }
-        }
-
-        // Reactivate subsystems if reactor is underloaded
-        for (std::size_t ii = 0; ii < _ship->subsystems().size() && overload < -1.f; ++ii) {
-            auto& subsystem = _ship->subsystems()[ii];
-            if (subsystem->info().type == subsystem_type::reactor) {
-                continue;
-            }
-            while (subsystem->desired_power() < subsystem->maximum_power() && overload < -1.f) {
-                subsystem->increase_power(1);
-                overload += 1.f;
-            }
-        }
-    }
-
-    //
     // update navigation
     //
 
     {
-#if 0
-        constexpr float radius = 128.f;
-        vec2 target = vec2(radius, -radius) * _ship->get_transform();
-        _ship->navigation()->set_waypoint(target);
-#else
         _ship->navigation()->set_waypoint(vec2(8192.f, 32768.f));
-#endif
     }
 }
 

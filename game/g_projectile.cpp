@@ -7,7 +7,6 @@
 #include "cm_ballistics.h"
 #include "g_projectile.h"
 #include "g_ship.h"
-#include "g_shield.h"
 #include "p_collide.h"
 
 ////////////////////////////////////////////////////////////////////////////////

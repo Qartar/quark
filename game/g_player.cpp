@@ -6,7 +6,6 @@
 
 #include "g_player.h"
 #include "g_navigation.h"
-#include "g_shield.h"
 #include "g_ship.h"
 
 #include "design/g_ship_design.h"

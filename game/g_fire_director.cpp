@@ -16,7 +16,7 @@ const object_type fire_director::_type(subsystem::_type);
 
 //------------------------------------------------------------------------------
 fire_director::fire_director(game::ship* owner, gun_design const* gun)
-    : subsystem(owner, {})
+    : subsystem(owner)
     , _gun(gun)
     , _bearing(0)
     , _elevation(0)

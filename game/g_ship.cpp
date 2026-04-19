@@ -5,12 +5,10 @@
 #pragma hdrstop
 
 #include "g_ship.h"
-#include "g_character.h"
 #include "g_faction.h"
 #include "g_fire_director.h"
 #include "g_navigation.h"
-#include "g_shield.h"
-#include "g_weapon.h"
+#include "g_projectile.h"
 #include "g_subsystem.h"
 #include "r_model.h"
 #include "design/g_ship_design.h"
@@ -59,13 +57,6 @@ void ship::spawn()
 
     get_world()->add_body(this, &_rigid_body);
 
-    for (int ii = 0; ii < 3; ++ii) {
-        _crew.push_back(get_world()->spawn<character>());
-    }
-
-    _reactor = get_world()->spawn<subsystem>(this, subsystem_info{subsystem_type::reactor, 13});
-    _subsystems.push_back(_reactor);
-
     _engines = get_world()->spawn<game::engines>(this);
     _subsystems.push_back(_engines);
 
@@ -83,15 +74,6 @@ void ship::spawn()
                 _subsystems.push_back(_fire_directors.back());
             }
             _turrets[ii].fire_director = _fire_directors.back();
-        }
-    }
-
-    std::vector<handle<subsystem>> assignments(_subsystems.begin(), _subsystems.end());
-    for (auto& ch : _crew) {
-        if (assignments.size()) {
-            std::size_t index = _random.uniform_int(assignments.size());
-            ch->assign(assignments[index]);
-            assignments.erase(assignments.begin() + index);
         }
     }
 }

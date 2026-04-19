@@ -4,8 +4,6 @@
 #pragma once
 
 #include "cm_string.h"
-#include "g_projectile.h"
-#include "g_weapon.h"
 
 #include <functional>
 #include <memory>
