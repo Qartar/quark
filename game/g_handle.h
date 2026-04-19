@@ -33,6 +33,7 @@ public:
         : _value(other._value)
     {
         static_assert(std::is_base_of<T, Y>::value, "cannot implicitly convert handle to unrelated type");
+        static_assert(std::is_const<T>::value || !std::is_const<Y>::value, "cannot convert const handle to non-const");
     }
 
     //! copy-assignment from raw object pointer
@@ -48,6 +49,7 @@ public:
     //! copy-assignment from handle to related type
     template<typename Y> handle& operator=(handle<Y> const& other) {
         static_assert(std::is_base_of<T, Y>::value, "cannot implicitly convert handle to unrelated type");
+        static_assert(std::is_const<T>::value || !std::is_const<Y>::value, "cannot convert const handle to non-const");
         _value = other._value;
     }
 
