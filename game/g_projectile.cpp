@@ -54,7 +54,7 @@ void projectile::think()
     vec3 new_position = _position;
     vec3 new_velocity = _velocity;
 
-    ballistics::step(new_position, new_velocity, 2e-6f, FRAMETIME);
+    ballistics::step(new_position, new_velocity, ballistics::curve::G1, _info.ballistic_coefficient, FRAMETIME);
 
     // Assume projectiles never hit anything on their way up
     if (new_velocity.z < 0.f && new_position.z < 12.f) {

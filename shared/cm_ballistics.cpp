@@ -939,35 +939,6 @@ float normalized_atmospheric_density(float altitude)
 }
 
 //------------------------------------------------------------------------------
-void step(vec3& position, vec3& velocity, float mu, time_delta dt)
-{
-    constexpr vec3 gravity(0, 0, -9.80665f);
-
-    // normalized atmospheric density
-    float rho = exp(-position.z * (1.f / 10400.f));
-    vec3 acceleration = gravity - mu * rho * length(velocity) * velocity;
-
-    position += (velocity + .5f * acceleration * dt.to_seconds()) * dt.to_seconds();
-    velocity += acceleration * dt.to_seconds();
-}
-
-//------------------------------------------------------------------------------
-time_delta simulate(vec3& position, vec3& velocity, float mu, time_delta timestep)
-{
-    time_delta dt = time_delta::zero;
-
-    do {
-        dt += timestep;
-        step(position, velocity, mu, timestep);
-    } while (position.z > 0.f);
-
-    // backstep to impact
-    float t = position.z / velocity.z;
-    position -= velocity * t;
-    return dt - time_delta::from_seconds(t);
-}
-
-//------------------------------------------------------------------------------
 void step(vec3& position, vec3& velocity, ballistics::curve curve, float ballistic_coefficient, time_delta dt)
 {
     // Gravity varies with altitude by less than a percent at relevant altitudes.

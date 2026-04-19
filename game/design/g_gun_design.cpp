@@ -16,7 +16,7 @@ const gun_design gun_46cm_45_Type_94 =
     /* length */            20.7f,
     /* shell_mass */        1460.f,
     /* shell_velocity */    780.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 13500.f,
 };
 
 const gun_design gun_15_5cm_60_3rd_Year_Type =
@@ -26,17 +26,17 @@ const gun_design gun_15_5cm_60_3rd_Year_Type =
     /* length */            9.3f,
     /* shell_mass */        55.9f,
     /* shell_velocity */    925.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 4170.f,
 };
 
 const gun_design gun_36cm_41st_Year_Type =
 {
     /* name */              string::buffer("36 cm 41st Year Type"),
-    /* caliber */           0.36f,
+    /* caliber */           0.356f,
     /* length */            16.f,
     /* shell_mass */        673.5f,
     /* shell_velocity */    775.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 9270.f,
 };
 
 const gun_design gun_16in_50_caliber_Mark_7 =
@@ -46,7 +46,7 @@ const gun_design gun_16in_50_caliber_Mark_7 =
     /* length */            20.f,
     /* shell_mass */        1225.f,
     /* shell_velocity */    762.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 14000.f,
 };
 
 const gun_design gun_16in_45_caliber_Mark_6 =
@@ -56,7 +56,7 @@ const gun_design gun_16in_45_caliber_Mark_6 =
     /* length */            18.f,
     /* shell_mass */        1225.f,
     /* shell_velocity */    701.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 14200.f,
 };
 
 const gun_design gun_5in_38_caliber_Mark_12 =
@@ -66,7 +66,7 @@ const gun_design gun_5in_38_caliber_Mark_12 =
     /* length */            4.83f,
     /* shell_mass */        25.f,
     /* shell_velocity */    790.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 3270.f,
 };
 
 const gun_design gun_BL_14_inch_Mk_VII =
@@ -76,7 +76,7 @@ const gun_design gun_BL_14_inch_Mk_VII =
     /* length */            16.f,
     /* shell_mass */        721.2f,
     /* shell_velocity */    757.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 12000.f,
 };
 
 const gun_design gun_QF_5_25_inch_Mk_I =
@@ -86,7 +86,7 @@ const gun_design gun_QF_5_25_inch_Mk_I =
     /* length */            6.67f,
     /* shell_mass */        36.3f,
     /* shell_velocity */    814.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 3610.f,
 };
 
 const gun_design gun_380mm_45_Modele_1935 =
@@ -96,7 +96,7 @@ const gun_design gun_380mm_45_Modele_1935 =
     /* length */            17.257f,
     /* shell_mass */        884.f,
     /* shell_velocity */    830.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 12700.f,
 };
 
 const gun_design gun_152mm_55_Modele_1930 =
@@ -106,7 +106,7 @@ const gun_design gun_152mm_55_Modele_1930 =
     /* length */            8.39f,
     /* shell_mass */        56.f,
     /* shell_velocity */    870.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 4580.f,
 };
 
 const gun_design gun_38cm_SK_C_34 =
@@ -116,7 +116,7 @@ const gun_design gun_38cm_SK_C_34 =
     /* length */            18.405f,
     /* shell_mass */        800.f,
     /* shell_velocity */    820.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 11500.f,
 };
 
 const gun_design gun_15cm_SK_C_28 =
@@ -126,7 +126,7 @@ const gun_design gun_15cm_SK_C_28 =
     /* length */            7.815f,
     /* shell_mass */        45.3f,
     /* shell_velocity */    875.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 3710.f,
 };
 
 const gun_design gun_381_50_ansaldo_m1934 =
@@ -136,7 +136,7 @@ const gun_design gun_381_50_ansaldo_m1934 =
     /* length */            19.05f,
     /* shell_mass */        885.f,
     /* shell_velocity */    850.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 12600.f,
 };
 
 const gun_design gun_152_55_ansaldo_m1934 =
@@ -146,7 +146,7 @@ const gun_design gun_152_55_ansaldo_m1934 =
     /* length */            8.38f,
     /* shell_mass */        50.f,
     /* shell_velocity */    910.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 4030.f,
 };
 
 const gun_design gun_28cm_SK_C_28 =
@@ -156,7 +156,7 @@ const gun_design gun_28cm_SK_C_28 =
     /* length */            14.815f,
     /* shell_mass */        300.f,
     /* shell_velocity */    910.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 5510.f,
 };
 
 const gun_design gun_BL_6_inch_Mk_XXIII =
@@ -166,7 +166,7 @@ const gun_design gun_BL_6_inch_Mk_XXIII =
     /* length */            7.6f,
     /* shell_mass */        51.f,
     /* shell_velocity */    840.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 4210.f,
 };
 
 const gun_design gun_QF_4_7_inch_Mark_IX =
@@ -176,7 +176,7 @@ const gun_design gun_QF_4_7_inch_Mark_IX =
     /* length */            5.4f,
     /* shell_mass */        22.7f,
     /* shell_velocity */    810.f,
-    /* shell_coefficient */ 0.f,
+    /* shell_coefficient */ 2150.f,
 };
 
 } // namespace game

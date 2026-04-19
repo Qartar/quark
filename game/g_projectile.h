@@ -14,6 +14,7 @@ struct projectile_info
     float damage; //!< damage of the projectile
     float speed; //!< launch speed of the projectile
     float diameter; //!< 
+    float ballistic_coefficient;
 
     effect_type launch_effect;
     sound::asset launch_sound;

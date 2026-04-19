@@ -237,6 +237,7 @@ void ship::think()
             /* damage */            1.5e-4f * turret.design->gun_design->shell_mass,
             /* speed */             turret.design->gun_design->shell_velocity,
             /* diameter */          turret.design->gun_design->caliber,
+            /* ballistic_coefficient */ turret.design->gun_design->shell_coefficient,
             /* launch_effect */     effect_type::cannon,
             /* launch_sound */      sound::asset::invalid,
             /* flight_effect */     effect_type::none,
@@ -369,7 +370,7 @@ void ship::populate_gunnery_tables()
         vec3 vel = vec3(cos(x), 0, sin(x)) * _design->turrets[0].design->gun_design->shell_velocity;
 
         //ballistics::simulate(pos, vel, 2e-5f, time_delta::from_seconds(1));
-        ballistics::simulate(pos, vel, 2e-6f, FRAMETIME);
+        ballistics::simulate(pos, vel, ballistics::curve::G1, _design->turrets[0].design->gun_design->shell_coefficient, FRAMETIME);
 
         range[ii] = pos.x;
     }
