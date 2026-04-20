@@ -51,7 +51,7 @@ world::~world()
 //------------------------------------------------------------------------------
 void world::init()
 {
-    reset();
+    clear();
 }
 
 //------------------------------------------------------------------------------
@@ -64,9 +64,6 @@ void world::shutdown()
 void world::reset()
 {
     clear();
-
-    _sequence = 0;
-    _framenum = 0;
 
     faction* blufor = spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
     faction* opfor = spawn<faction>("opfor", color4(1.f, .6f, .6f, 1.f));
@@ -102,6 +99,9 @@ void world::clear()
     _removed = std::queue<handle<game::object>>{};
 
     _particles.clear();
+
+    _sequence = 0;
+    _framenum = 0;
 }
 
 //------------------------------------------------------------------------------
