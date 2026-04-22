@@ -27,6 +27,7 @@ public:
     struct poly {
         int start; //!< First vertex of polygon
         int count; //!< Number of vertices in polygon
+        int flags;
     };
 
 public:

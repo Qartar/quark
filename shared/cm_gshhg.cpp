@@ -74,7 +74,7 @@ bool gshhg::load(resolution res)
         GSHHG const* end = reinterpret_cast<GSHHG const*>(f.data() + f.size());
         while(ptr < end) {
             GSHHG_POINT const* pts = reinterpret_cast<GSHHG_POINT const*>(ptr + 1);
-            _polygons.push_back(poly{narrow_cast<int>(_vertices.size()), ptr->n});
+            _polygons.push_back(poly{narrow_cast<int>(_vertices.size()), ptr->n, ptr->flag});
             for (int ii = 0; ii < ptr->n; ++ii) {
                 float cy = float(cos(double(pts[ii].x) * (math::pi / 180000000.0)));
                 float sy = float(sin(double(pts[ii].x) * (math::pi / 180000000.0)));

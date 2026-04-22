@@ -3,11 +3,12 @@
 
 #pragma once
 
-#include "cm_gtopo30.h"
-#include "cm_color.h"
 #include "cm_time.h"
 #include "cm_vector.h"
 #include "cm_gshhg.h"
+
+#include "render/gl/gl_buffer.h"
+#include "render/gl/gl_vertex_array.h"
 
 namespace render {
 class system;
@@ -31,28 +32,16 @@ public:
 protected:
     gshhg _gshhg;
 
-#if 0
-    gtopo30 _topo;
-#endif
-
-    std::vector<vec2> _vertices;
-    std::vector<color4> _colors;
-    std::vector<int> _indices;
+    render::gl::vertex_buffer<vec3> _vbo;
+    render::gl::vertex_array _vao;
 
     float _longitude;
     float _latitude;
 
     float _zoom;
 
-    bool _is_dirty;
     bool _is_dragging;
     vec2 _cursor;
-
-    static constexpr int X = 64 * 4;
-    static constexpr int Y = 36 * 4;
-
-protected:
-    void resample();
 };
 
 } // namespace game

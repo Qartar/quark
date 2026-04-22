@@ -7,6 +7,8 @@
 #include "g_globe.h"
 #include "cm_keys.h"
 
+#include "render/gl/gl_include.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -15,56 +17,31 @@ globe::globe()
     : _longitude(0)
     , _latitude(0)
     , _zoom(1e-2f)
-    , _is_dirty(false)
     , _is_dragging(false)
     , _cursor(vec2_zero)
 {
-#if 0
-    _vertices.resize(X * Y);
-    _colors.resize(X * Y);
-    _indices.resize((X - 1) * (Y - 1) * 6);
-
-    for (int jj = 0; jj < Y; ++jj) {
-        for (int ii = 0; ii < X; ++ii) {
-            _vertices[jj * X + ii] = vec2((ii - X / 2) * (640.f / X), (Y / 2 - jj) * (360.f / Y));
-            _colors[jj * X + ii] = color4(1,1,1,1);
-        }
-    }
-
-    int* idx = _indices.data();
-    for (int jj = 0; jj + 1 < Y; ++jj) {
-        for (int ii = 0; ii + 1 < X; ++ii) {
-            *idx++ = (jj + 0) * X + (ii + 0);
-            *idx++ = (jj + 1) * X + (ii + 0);
-            *idx++ = (jj + 0) * X + (ii + 1);
-            *idx++ = (jj + 1) * X + (ii + 0);
-            *idx++ = (jj + 0) * X + (ii + 1);
-            *idx++ = (jj + 1) * X + (ii + 1);
-        }
-    }
-
-    resample();
-#else
-    _gshhg.load(gshhg::resolution::intermediate);
-#endif
+    _gshhg.load(gshhg::resolution::full);
 }
 
 //------------------------------------------------------------------------------
 void globe::draw(render::system* renderer, time_value /*time*/)
 {
     render::view view{};
-    view.size = vec2(640, 360);
+    view.size = vec2(640, 360) * _zoom;
 
-    if (_is_dirty) {
-        resample();
+    if (!_vbo.name()) {
+        _vbo = render::gl::vertex_buffer<vec3>(
+            render::gl::buffer_usage::static_,
+            render::gl::buffer_access::draw,
+            _gshhg.vertices().size(),
+            _gshhg.vertices().data());
+        _vao = render::gl::vertex_array({
+            render::gl::vertex_array_attrib{3, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
+        _vao.bind_buffer(_vbo, 0);
     }
 
-#if 0
     renderer->set_view(view);
-    renderer->draw_triangles(_vertices.data(), _colors.data(), _indices.data(), _indices.size());
-#else
-    view.size = vec2(640, 360) * _zoom;
-    renderer->set_view(view);
+    renderer->draw_arc(vec2_zero, 1.f, 0, 0, math::twopi, color4(1,1,1,.5f));
 
     float cp = cos(_latitude);
     float sp = sin(_latitude);
@@ -72,25 +49,31 @@ void globe::draw(render::system* renderer, time_value /*time*/)
     vec3 r = vec3(-sin(_longitude), cos(_longitude), 0);
     vec3 u = cross(v, r);
 
-    mat3 tx = mat3(r, u, v).transpose();
+    GLfloat mm[16] = {
+        r.x, u.x, v.x, 0,
+        r.y, u.y, v.y, 0,
+        r.z, u.z, v.z, 0,
+        0, 0, 0, 1
+    };
 
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glMultMatrixf(mm);
+
+    _vao.bind();
+    glColor4f(1,1,1,.5f);
     for (std::size_t ii = 0; ii < _gshhg.polygons().size(); ++ii) {
-        std::size_t start = _gshhg.polygons()[ii].start;
-        std::size_t count = _gshhg.polygons()[ii].count;
-        for (std::size_t jj = 1; jj < count; ++jj) {
-            renderer->draw_line(
-                (_gshhg.vertices()[start + jj - 1] * tx).to_vec2(),
-                (_gshhg.vertices()[start + jj    ] * tx).to_vec2(),
-                color4(1,1,1,.5f),
-                color4(1,1,1,.5f));
+        // Skip everything except islands/continents (1) and Antarctic ice-front (5)
+        if ((_gshhg.polygons()[ii].flags & 255) != 1 && (_gshhg.polygons()[ii].flags & 255) != 5) {
+            continue;
         }
-        renderer->draw_line(
-            (_gshhg.vertices()[start + count - 1] * tx).to_vec2(),
-            (_gshhg.vertices()[start            ] * tx).to_vec2(),
-            color4(1,1,1,.5f),
-            color4(1,1,1,.5f));
+        glDrawArrays(
+            GL_LINE_LOOP,
+            _gshhg.polygons()[ii].start,
+            _gshhg.polygons()[ii].count);
     }
-#endif
+    glPopMatrix();
+    render::gl::vertex_array().bind();
 }
 
 //------------------------------------------------------------------------------
@@ -101,10 +84,8 @@ bool globe::key_event(int key, bool down)
         return true;
     } else if (down && key == K_MWHEELDOWN) {
         _zoom *= 1.2f;
-        _is_dirty = true;
     } else if (down && key == K_MWHEELUP) {
         _zoom *= (1.f / 1.2f);
-        _is_dirty = true;
     }
     return false;
 }
@@ -116,63 +97,9 @@ void globe::cursor_event(vec2 position)
         vec2 delta = position - _cursor;
         _longitude -= delta.x * _zoom;
         _latitude = clamp(_latitude + delta.y * _zoom, -.5f * math::pi, .5f * math::pi);
-        _is_dirty = true;
     }
 
     _cursor = position;
-}
-
-//------------------------------------------------------------------------------
-bool intersect_unit_sphere(vec3 p, vec3 v, vec3& i)
-{
-    float a = dot(v, v);
-    float b = 2.f * dot(p, v);
-    float c = dot(p, p) - 1.f;
-    float d = b * b - 4.f * a * c;
-
-    if (d < 0.f) {
-        return false;
-    } else if (d == 0.f) {
-        i = p + v * -.5f * b / a;
-        return true;
-    } else {
-        float q = -.5f * (b + std::copysign(std::sqrt(d), b));
-        i = p + v * std::min(q / a, c / q);
-        return true;
-    }
-}
-
-//------------------------------------------------------------------------------
-void globe::resample()
-{
-#if 0
-    float cp = cos(_latitude);
-    float sp = sin(_latitude);
-    vec3 v = vec3(cos(_longitude) * cp, sin(_longitude) * cp, sp);
-    vec3 r = vec3(-sin(_longitude), cos(_longitude), 0) * _zoom;
-    vec3 u = cross(v, r);
-
-    for (int jj = 0; jj < Y; ++jj) {
-        float dy = float(jj - Y / 2) * (320.f / float(Y));
-        for (int ii = 0; ii < X; ++ii) {
-            float dx = float(ii - X / 2) * (320.f / float(Y));
-
-            vec3 p = v + r * dx - u * dy, i;
-            if (!intersect_unit_sphere(p, -v, i)) {
-                _colors[jj * X + ii] = color4(0,0,0,1);
-            } else {
-                float h = _topo.height(i);
-                if (h > 0.f) {
-                    _colors[jj * X + ii] = color4(.1f,.2f,.1f,1);
-                } else {
-                    _colors[jj * X + ii] = color4(.05f,.1f,.2f,1);
-                }
-            }
-        }
-    }
-
-    _is_dirty = false;
-#endif
 }
 
 } // namespace game
