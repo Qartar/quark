@@ -19,6 +19,7 @@ globe::globe()
     , _is_dragging(false)
     , _cursor(vec2_zero)
 {
+#if 0
     _vertices.resize(X * Y);
     _colors.resize(X * Y);
     _indices.resize((X - 1) * (Y - 1) * 6);
@@ -43,6 +44,9 @@ globe::globe()
     }
 
     resample();
+#else
+    _gshhg.load(gshhg::resolution::intermediate);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -55,8 +59,38 @@ void globe::draw(render::system* renderer, time_value /*time*/)
         resample();
     }
 
+#if 0
     renderer->set_view(view);
     renderer->draw_triangles(_vertices.data(), _colors.data(), _indices.data(), _indices.size());
+#else
+    view.size = vec2(640, 360) * _zoom;
+    renderer->set_view(view);
+
+    float cp = cos(_latitude);
+    float sp = sin(_latitude);
+    vec3 v = vec3(cos(_longitude) * cp, sin(_longitude) * cp, sp);
+    vec3 r = vec3(-sin(_longitude), cos(_longitude), 0);
+    vec3 u = cross(v, r);
+
+    mat3 tx = mat3(r, u, v).transpose();
+
+    for (std::size_t ii = 0; ii < _gshhg.polygons().size(); ++ii) {
+        std::size_t start = _gshhg.polygons()[ii].start;
+        std::size_t count = _gshhg.polygons()[ii].count;
+        for (std::size_t jj = 1; jj < count; ++jj) {
+            renderer->draw_line(
+                (_gshhg.vertices()[start + jj - 1] * tx).to_vec2(),
+                (_gshhg.vertices()[start + jj    ] * tx).to_vec2(),
+                color4(1,1,1,.5f),
+                color4(1,1,1,.5f));
+        }
+        renderer->draw_line(
+            (_gshhg.vertices()[start + count - 1] * tx).to_vec2(),
+            (_gshhg.vertices()[start            ] * tx).to_vec2(),
+            color4(1,1,1,.5f),
+            color4(1,1,1,.5f));
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -111,6 +145,7 @@ bool intersect_unit_sphere(vec3 p, vec3 v, vec3& i)
 //------------------------------------------------------------------------------
 void globe::resample()
 {
+#if 0
     float cp = cos(_latitude);
     float sp = sin(_latitude);
     vec3 v = vec3(cos(_longitude) * cp, sin(_longitude) * cp, sp);
@@ -137,6 +172,7 @@ void globe::resample()
     }
 
     _is_dirty = false;
+#endif
 }
 
 } // namespace game

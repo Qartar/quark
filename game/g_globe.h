@@ -7,6 +7,7 @@
 #include "cm_color.h"
 #include "cm_time.h"
 #include "cm_vector.h"
+#include "cm_gshhg.h"
 
 namespace render {
 class system;
@@ -28,7 +29,11 @@ public:
     void cursor_event(vec2 position);
 
 protected:
+    gshhg _gshhg;
+
+#if 0
     gtopo30 _topo;
+#endif
 
     std::vector<vec2> _vertices;
     std::vector<color4> _colors;

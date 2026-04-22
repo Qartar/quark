@@ -12,6 +12,8 @@ set(SHARED_SOURCES
     cm_filesystem.cpp
     cm_filesystem.h
     cm_geometry.h
+    cm_gshhg.cpp
+    cm_gshhg.h
     cm_gtopo30.cpp
     cm_gtopo30.h
     cm_keys.h
