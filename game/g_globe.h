@@ -30,10 +30,12 @@ public:
     void cursor_event(vec2 position);
 
 protected:
-    gshhg _gshhg;
+    gshhg _gshhg[5];
 
-    render::gl::vertex_buffer<vec3> _vbo;
-    render::gl::vertex_array _vao;
+    render::gl::vertex_buffer<vec3> _vbo[5];
+    render::gl::vertex_array _vao[5];
+
+    int _resolution;
 
     float _longitude;
     float _latitude;
