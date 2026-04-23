@@ -60,6 +60,10 @@ void globe::draw(render::system* renderer, time_value /*time*/)
     glPushMatrix();
     glMultMatrixf(mm);
 
+    glClearDepth(.5);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+
     _vao.bind();
     glColor4f(1,1,1,.5f);
     for (std::size_t ii = 0; ii < _gshhg.polygons().size(); ++ii) {
@@ -72,6 +76,7 @@ void globe::draw(render::system* renderer, time_value /*time*/)
             _gshhg.polygons()[ii].start,
             _gshhg.polygons()[ii].count);
     }
+    glDisable(GL_DEPTH_TEST);
     glPopMatrix();
     render::gl::vertex_array().bind();
 }
