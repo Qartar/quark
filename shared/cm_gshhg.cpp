@@ -34,6 +34,43 @@ struct GSHHG_POINT {    /* Each lon, lat pair is stored in micro-degrees in 4-by
 };
 
 //------------------------------------------------------------------------------
+// Converts geocentric polar coordinates to geocentric cartesian coordinates
+vec3 geocentric_to_cartesian(GSHHG_POINT const& p)
+{
+    constexpr float R = 6371008.8f;
+
+    // Note that the 23-bit mantisaa of single-precision fp is insufficient
+    // to represent the ~28 bits used for encoding lon/lat in micro-degrees.
+    double lon = double(p.x) * (math::pi / 180000000.0);
+    double lat = double(p.y) * (math::pi / 180000000.0);
+
+    float cl = float(cos(lon)), sl = float(sin(lon));
+    float cp = float(cos(lat)), sp = float(sin(lat));
+
+    return R * vec3(cl * cp, sl * cp, sp);
+}
+
+//------------------------------------------------------------------------------
+// Converts WGS 84 geodetic coordinates to geocentric cartesian coordinates
+vec3 wgs84_to_cartesian(GSHHG_POINT const& p)
+{
+    constexpr float A = 6378137.0f; //! Semi-major axis (equitorial radius)
+    constexpr float B = 6356752.314245f; //! Semi-minor axis (polar radius)
+
+    // Note that the 23-bit mantisaa of single-precision fp is insufficient
+    // to represent the ~28 bits used for encoding lon/lat in micro-degrees.
+    double lon = double(p.x) * (math::pi / 180000000.0);
+    double lat = double(p.y) * (math::pi / 180000000.0);
+
+    float cl = float(cos(lon)), sl = float(sin(lon));
+    float cp = float(cos(lat)), sp = float(sin(lat));
+
+    // Prime vertical radius of curvature
+    float N = (A * A) / sqrt((A * A) * cp * cp + (B * B) * sp * sp);
+    return vec3(N * cl * cp, N * sl * cp, (B * B / (A * A)) * N * sp);
+}
+
+//------------------------------------------------------------------------------
 gshhg::gshhg()
 {
 }
@@ -76,11 +113,7 @@ bool gshhg::load(resolution res)
             GSHHG_POINT const* pts = reinterpret_cast<GSHHG_POINT const*>(ptr + 1);
             _polygons.push_back(poly{narrow_cast<int>(_vertices.size()), ptr->n, ptr->flag});
             for (int ii = 0; ii < ptr->n; ++ii) {
-                float cy = float(cos(double(pts[ii].x) * (math::pi / 180000000.0)));
-                float sy = float(sin(double(pts[ii].x) * (math::pi / 180000000.0)));
-                float cp = float(cos(double(pts[ii].y) * (math::pi / 180000000.0)));
-                float sp = float(sin(double(pts[ii].y) * (math::pi / 180000000.0)));
-                _vertices.push_back(vec3(cy * cp, sy * cp, sp));
+                _vertices.push_back(wgs84_to_cartesian(pts[ii]) * (1.f / 6371008.8f));
             }
             ptr = reinterpret_cast<GSHHG const*>(pts + ptr->n);
         }
