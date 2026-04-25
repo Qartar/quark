@@ -113,6 +113,23 @@ public:
     constexpr mat3(vec3 r1, vec3 r2, vec3 r3)
         : _rows{r1, r2, r3}
     {}
+    explicit constexpr mat3(rot3 r)
+        : _rows{}
+    {
+        float xx = 2.f * r.x * r.x;
+        float yy = 2.f * r.y * r.y;
+        float zz = 2.f * r.z * r.z;
+        float xy = 2.f * r.x * r.y;
+        float xz = 2.f * r.x * r.z;
+        float yz = 2.f * r.y * r.z;
+        float wx = 2.f * r.w * r.x;
+        float wy = 2.f * r.w * r.y;
+        float wz = 2.f * r.w * r.z;
+
+        _rows[0] = {1.f - (yy + zz), xy - wz, xz + wy};
+        _rows[1] = {xy + wz, 1.f - (xx + zz), yz - wx};
+        _rows[2] = {xz - wy, yz + wx, 1.f - (xx + yy)};
+    }
 
     bool operator==(mat3 const& M) const { return _rows[0] == M[0] && _rows[1] == M[1] && _rows[2] == M[2]; }
     bool operator!=(mat3 const& M) const { return _rows[0] != M[0] || _rows[1] != M[1] || _rows[2] != M[2]; }
@@ -149,6 +166,43 @@ public:
         return mat3(rows[i0][i0], rows[i0][i1], rows[i0][i2],
                     rows[i1][i0], rows[i1][i1], rows[i1][i2],
                     rows[i2][i0], rows[i2][i1], rows[i2][i2]);
+    }
+
+    constexpr rot3 to_rotation() const {
+        float tr = _rows[0][0] + _rows[1][1] + _rows[2][2];
+        if (tr > 0.f) {
+            float t = 1.f + tr;
+            float s = .5f / std::sqrt(t);
+            return rot3(
+                s * (_rows[2][1] - _rows[1][2]),
+                s * (_rows[0][2] - _rows[2][0]),
+                s * (_rows[1][0] - _rows[0][1]),
+                s * t);
+        } else if (_rows[0][0] > _rows[1][1] && _rows[0][0] > _rows[2][2]) {
+            float t = 1.f + (_rows[0][0] - (_rows[1][1] + _rows[2][2]));
+            float s = .5f / std::sqrt(t);
+            return rot3(
+                s * t,
+                s * (_rows[0][1] + _rows[1][0]),
+                s * (_rows[0][2] + _rows[2][0]),
+                s * (_rows[2][1] - _rows[1][2]));
+        } else if (_rows[1][1] > _rows[2][2]) {
+            float t = 1.f + (_rows[1][1] - (_rows[2][2] + _rows[0][0]));
+            float s = .5f / std::sqrt(t);
+            return rot3(
+                s * (_rows[0][1] + _rows[1][0]),
+                s * t,
+                s * (_rows[1][2] + _rows[2][1]),
+                s * (_rows[0][2] - _rows[2][0]));
+        } else {
+            float t = 1.f + (_rows[2][2] - (_rows[0][0] + _rows[1][1]));
+            float s = .5f / std::sqrt(t);
+            return rot3(
+                s * (_rows[0][2] + _rows[2][0]),
+                s * (_rows[1][2] + _rows[2][1]),
+                s * t,
+                s * (_rows[1][0] - _rows[0][1]));
+        }
     }
 
 // scale
