@@ -35,7 +35,7 @@ struct GSHHG_POINT {    /* Each lon, lat pair is stored in micro-degrees in 4-by
 
 //------------------------------------------------------------------------------
 // Converts geocentric polar coordinates to geocentric cartesian coordinates
-vec3 geocentric_to_cartesian(GSHHG_POINT const& p)
+gshhg::point geocentric_to_cartesian(GSHHG_POINT const& p)
 {
     constexpr float R = 6371008.8f;
 
@@ -47,12 +47,12 @@ vec3 geocentric_to_cartesian(GSHHG_POINT const& p)
     float cl = float(cos(lon)), sl = float(sin(lon));
     float cp = float(cos(lat)), sp = float(sin(lat));
 
-    return R * vec3(cl * cp, sl * cp, sp);
+    return {R * cl * cp, R * sl * cp, R * sp};
 }
 
 //------------------------------------------------------------------------------
 // Converts WGS 84 geodetic coordinates to geocentric cartesian coordinates
-vec3 wgs84_to_cartesian(GSHHG_POINT const& p)
+gshhg::point wgs84_to_cartesian(GSHHG_POINT const& p)
 {
     constexpr float A = 6378137.0f; //! Semi-major axis (equitorial radius)
     constexpr float B = 6356752.314245f; //! Semi-minor axis (polar radius)
@@ -67,7 +67,7 @@ vec3 wgs84_to_cartesian(GSHHG_POINT const& p)
 
     // Prime vertical radius of curvature
     float N = (A * A) / sqrt((A * A) * cp * cp + (B * B) * sp * sp);
-    return vec3(N * cl * cp, N * sl * cp, (B * B / (A * A)) * N * sp);
+    return {N * cl * cp, N * sl * cp, (B * B / (A * A)) * N * sp};
 }
 
 //------------------------------------------------------------------------------
@@ -113,7 +113,8 @@ bool gshhg::load(resolution res)
             GSHHG_POINT const* pts = reinterpret_cast<GSHHG_POINT const*>(ptr + 1);
             _polygons.push_back(poly{narrow_cast<int>(_vertices.size()), ptr->n, ptr->flag});
             for (int ii = 0; ii < ptr->n; ++ii) {
-                _vertices.push_back(wgs84_to_cartesian(pts[ii]) * (1.f / 6371008.8f));
+                point p = wgs84_to_cartesian(pts[ii]);
+                _vertices.push_back({p.x * (1.f / 6371008.8f), p.y * (1.f / 6371008.8f), p.z * (1.f / 6371008.8f)});
             }
             ptr = reinterpret_cast<GSHHG const*>(pts + ptr->n);
         }

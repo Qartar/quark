@@ -36,13 +36,13 @@ void globe::draw(render::system* renderer, time_value /*time*/)
 
     if (!_vbo[0].name()) {
         for (int ii = 0; ii < 5; ++ii ) {
-            _vbo[ii] = render::gl::vertex_buffer<vec3>(
+            _vbo[ii] = render::gl::vertex_buffer<gshhg::point>(
                 render::gl::buffer_usage::static_,
                 render::gl::buffer_access::draw,
                 _gshhg[ii].vertices().size(),
                 _gshhg[ii].vertices().data());
             _vao[ii] = render::gl::vertex_array({
-                render::gl::vertex_array_attrib{3, GL_DOUBLE, render::gl::vertex_attrib_type::double_, 0}});
+                render::gl::vertex_array_attrib{3, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
             _vao[ii].bind_buffer(_vbo[ii], 0);
         }
     }
