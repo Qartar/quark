@@ -15,7 +15,7 @@ class material;
 class rigid_body
 {
 public:
-    rigid_body(shape const* shape, material const* material, float mass)
+    rigid_body(shape const* shape, material const* material, double mass)
         : _motion(shape)
         , _inverse_mass(0)
         , _inverse_inertia(0)
@@ -78,15 +78,15 @@ public:
         _motion.set_linear_velocity(linear_velocity);
     }
 
-    float get_angular_velocity() const {
+    double get_angular_velocity() const {
         return _motion.get_angular_velocity();
     }
 
-    void set_angular_velocity(float angular_velocity) {
+    void set_angular_velocity(double angular_velocity) {
         _motion.set_angular_velocity(angular_velocity);
     }
 
-    float get_kinetic_energy() const;
+    double get_kinetic_energy() const;
 
     //
     //  dynamics
@@ -100,17 +100,17 @@ public:
     //  properties
     //
 
-    float get_mass() const {
+    double get_mass() const {
         return _inverse_mass ? 1.0f / _inverse_mass : 0.0f;
     }
 
-    void set_mass(float mass);
+    void set_mass(double mass);
 
-    float get_inverse_mass() const {
+    double get_inverse_mass() const {
         return _inverse_mass;
     }
 
-    float get_inverse_inertia() const {
+    double get_inverse_inertia() const {
         return _inverse_inertia;
     }
 
@@ -137,8 +137,8 @@ public:
 protected:
     motion _motion;
 
-    float _inverse_mass;
-    float _inverse_inertia;
+    double _inverse_mass;
+    double _inverse_inertia;
     vec2 _center_of_mass;
 
     material const* _material;

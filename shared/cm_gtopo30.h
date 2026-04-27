@@ -20,7 +20,7 @@ class gtopo30
 public:
     gtopo30();
 
-    float height(vec3 v) const;
+    double height(vec3 v) const;
 
 private:
     struct tile {

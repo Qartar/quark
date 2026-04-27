@@ -230,8 +230,8 @@ void message::write_float(float f)
 //------------------------------------------------------------------------------
 void message::write_vector(vec2 v)
 {
-    write_float(v.x);
-    write_float(v.y);
+    write_float(float(v.x));
+    write_float(float(v.y));
 }
 
 //------------------------------------------------------------------------------

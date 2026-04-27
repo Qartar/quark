@@ -26,11 +26,11 @@ void world::free_particle (render::particle *p) const
 void world::draw_particles(render::system* renderer, time_value time) const
 {
     for (std::size_t ii = 0; ii < _particles.size(); ++ii) {
-        float ptime = (time - _particles[ii].time).to_seconds();
-        if (_particles[ii].color.a + _particles[ii].color_velocity.a * ptime < 0.0f) {
+        double ptime = (time - _particles[ii].time).to_seconds();
+        if (_particles[ii].color.a + _particles[ii].color_velocity.a * ptime < 0.0) {
             free_particle(&_particles[ii]);
             --ii;
-        } else if (_particles[ii].size + _particles[ii].size_velocity * ptime < 0.0f) {
+        } else if (_particles[ii].size + _particles[ii].size_velocity * ptime < 0.0) {
             free_particle(&_particles[ii]);
             --ii;
         }

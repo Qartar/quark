@@ -85,10 +85,10 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
 
     // Scaling factor for circle tessellation
     vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
-    const float view_scale = sqrtf(framebuffer_size.length_sqr() / _view.size.length_sqr());
+    const double view_scale = sqrt(framebuffer_size.length_sqr() / _view.size.length_sqr());
 
     // Number of circle segments, approximation for pi / acos(1 - 1/2x)
-    int n = 1 + static_cast<int>(0.5f * (max_angle - min_angle) * sqrtf(max(0.f, radius * view_scale - 0.25f)));
+    int n = 1 + static_cast<int>(0.5 * (max_angle - min_angle) * sqrt(max(0.0, radius * view_scale - 0.25)));
     float step = (max_angle - min_angle) / n;
 
     glColor4fv(color);
@@ -100,7 +100,7 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
                 float s = sinf(a);
                 float c = cosf(a);
 
-                glVertex2fv(center + vec2(c, s) * radius);
+                glVertex2dv(center + vec2(c, s) * radius);
             }
         glEnd();
     } else {
@@ -110,8 +110,8 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
                 float s = sinf(a);
                 float c = cosf(a);
 
-                glVertex2fv(center + vec2(c, s) * (radius + width * .5f));
-                glVertex2fv(center + vec2(c, s) * (radius - width * .5f));
+                glVertex2dv(center + vec2(c, s) * (radius + width * 0.5));
+                glVertex2dv(center + vec2(c, s) * (radius - width * 0.5));
             }
         glEnd();
     }
@@ -120,7 +120,7 @@ void system::draw_arc(vec2 center, float radius, float width, float min_angle, f
 //------------------------------------------------------------------------------
 void system::draw_box(vec2 size, vec2 position, color4 color)
 {
-    float   xl, xh, yl, yh;
+    double xl, xh, yl, yh;
 
     glColor4fv(color);
 
@@ -130,10 +130,10 @@ void system::draw_box(vec2 size, vec2 position, color4 color)
     yh = position.y + size.y / 2;
 
     glBegin(GL_QUADS);
-        glVertex2f(xl, yl);
-        glVertex2f(xh, yl);
-        glVertex2f(xh, yh);
-        glVertex2f(xl, yh);
+        glVertex2d(xl, yl);
+        glVertex2d(xh, yl);
+        glVertex2d(xh, yh);
+        glVertex2d(xl, yh);
     glEnd();
 }
 
@@ -147,7 +147,7 @@ void system::draw_triangles(vec2 const* position, color4 const* color, int const
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
 
-    glVertexPointer(2, GL_FLOAT, 0, position);
+    glVertexPointer(2, GL_DOUBLE, 0, position);
     glColorPointer(4, GL_FLOAT, 0, color);
 
     glDrawElements(GL_TRIANGLES, (GLsizei)num_indices, GL_UNSIGNED_INT, indices);
@@ -165,23 +165,23 @@ void system::draw_particles(time_value time, render::particle const* particles, 
 {
     // Scaling factor for particle tessellation
     vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
-    const float view_scale = sqrtf(framebuffer_size.length_sqr() / _view.size.length_sqr());
+    const double view_scale = sqrt(framebuffer_size.length_sqr() / _view.size.length_sqr());
 
     render::particle const* end = particles + num_particles;
     for (render::particle const*p = particles; p < end; ++p) {
-        float ptime = (time - p->time).to_seconds();
+        double ptime = (time - p->time).to_seconds();
 
         if (ptime < 0) {
             continue;
         }
 
-        float vtime = p->drag ? tanhf(p->drag * ptime) / p->drag : ptime;
+        double vtime = p->drag ? tanh(p->drag * ptime) / p->drag : ptime;
 
-        float radius = p->size + p->size_velocity * ptime;
-        color4 color = p->color + p->color_velocity * ptime;
+        double radius = p->size + p->size_velocity * ptime;
+        color4 color = p->color + p->color_velocity * float(ptime);
         vec2 position = p->position
                       + p->velocity * vtime
-                      + p->acceleration * 0.5f * vtime * vtime;
+                      + p->acceleration * 0.5 * vtime * vtime;
 
         color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
         color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
@@ -189,33 +189,33 @@ void system::draw_particles(time_value time, render::particle const* particles, 
         glBegin(GL_TRIANGLE_FAN);
 
         // Number of circle segments, approximation for pi / acos(1 - 1/2x)
-        int n = 1 + static_cast<int>(math::pi * sqrtf(max(0.f, radius * view_scale - 0.25f)));
+        int n = 1 + static_cast<int>(math::pi * sqrt(max(0.0, radius * view_scale - 0.25)));
         int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
 
         glColor4fv(color_in);
-        glVertex2fv(position);
+        glVertex2dv(position);
 
         if (!(p->flags & render::particle::tail)) {
             // draw circle outline
             glColor4fv(color_out);
             for (int ii = 0; ii < countof(_costbl); ii += k) {
                 vec2 vertex = position + vec2(_costbl[ii], _sintbl[ii]) * radius;
-                glVertex2fv(vertex);
+                glVertex2dv(vertex);
             }
-            glVertex2f(position.x + radius, position.y);
+            glVertex2d(position.x + radius, position.y);
         } else {
-            float tail_time = std::max<float>(0.0f, (time - p->time - FRAMETIME).to_seconds());
-            float tail_vtime = p->drag ? tanhf(p->drag * tail_time) / p->drag : tail_time;
+            double tail_time = std::max(0.0, (time - p->time - FRAMETIME).to_seconds());
+            double tail_vtime = p->drag ? tanh(p->drag * tail_time) / p->drag : tail_time;
 
             vec2 tail_position = p->position
                                + p->velocity * tail_vtime
-                               + p->acceleration * 0.5f * tail_vtime * tail_vtime;
+                               + p->acceleration * 0.5 * tail_vtime * tail_vtime;
 
             // calculate forward and tangent vectors
             vec2 normal = position - tail_position;
-            float distance = normal.length();
+            double distance = normal.length();
             normal /= distance;
-            distance = std::max<float>(distance, radius);
+            distance = std::max<double>(distance, radius);
             vec2 tangent = vec2(-normal.y, normal.x);
 
             // particle needs at least 4 verts to look reasonable
@@ -227,7 +227,7 @@ void system::draw_particles(time_value time, render::particle const* particles, 
                 if (ii < countof(_costbl) / 2) {
                     // draw forward-facing half-circle
                     vec2 vertex = position + (tangent * _costbl[ii] + normal * _sintbl[ii]) * radius;
-                    glVertex2fv(vertex);
+                    glVertex2dv(vertex);
                 } else {
                     // draw backward-facing elliptical tail
                     float alpha = -_sintbl[ii];
@@ -235,11 +235,11 @@ void system::draw_particles(time_value time, render::particle const* particles, 
                     vec2 vertex = position + tangent * _costbl[ii] * radius + normal * _sintbl[ii] * distance;
 
                     glColor4fv(vcolor);
-                    glVertex2fv(vertex);
+                    glVertex2dv(vertex);
                 }
             }
             glColor4fv(color_in);
-            glVertex2f(position.x + tangent.x * radius, position.y + tangent.y * radius);
+            glVertex2d(position.x + tangent.x * radius, position.y + tangent.y * radius);
         }
 
         glEnd();
@@ -251,9 +251,9 @@ void system::draw_line(vec2 start, vec2 end, color4 start_color, color4 end_colo
 {
     glBegin(GL_LINES);
         glColor4fv(start_color);
-        glVertex2fv(start);
+        glVertex2dv(start);
         glColor4fv(end_color);
-        glVertex2fv(end);
+        glVertex2dv(end);
     glEnd();
 }
 
@@ -307,30 +307,30 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
 {
     // Scaling factor for particle tessellation
     vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
-    const float view_scale = sqrtf(framebuffer_size.length_sqr() / _view.size.length_sqr());
+    const double view_scale = sqrt(framebuffer_size.length_sqr() / _view.size.length_sqr());
 
-    vec2 direction = (end - start).normalize() * .5f * width;
-    vec2 normal = direction.cross(1.f);
+    vec2 direction = (end - start).normalize() * 0.5 * width;
+    vec2 normal = direction.cross(1.0);
 
     glBegin(GL_TRIANGLE_STRIP);
         glColor4fv(start_edge_color);
-        glVertex2fv(start - normal);
+        glVertex2dv(start - normal);
         glColor4fv(end_edge_color);
-        glVertex2fv(end - normal);
+        glVertex2dv(end - normal);
 
         glColor4fv(start_color);
-        glVertex2fv(start);
+        glVertex2dv(start);
         glColor4fv(end_color);
-        glVertex2fv(end);
+        glVertex2dv(end);
 
         glColor4fv(start_edge_color);
-        glVertex2fv(start + normal);
+        glVertex2dv(start + normal);
         glColor4fv(end_edge_color);
-        glVertex2fv(end + normal);
+        glVertex2dv(end + normal);
     glEnd();
 
     // Number of circle segments, approximation for pi / acos(1 - 1/2x)
-    int n = 1 + static_cast<int>(math::pi * sqrtf(max(0.f, width * view_scale - 0.25f)));
+    int n = 1 + static_cast<int>(math::pi * sqrt(max(0.0, width * view_scale - 0.25)));
     int k = std::max<int>(4, 360 / n);
 
     // Draw half-circle at start
@@ -338,14 +338,14 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
             && _view_bounds.intersects_circle(start, width * .5f)) {
         glBegin(GL_TRIANGLE_FAN);
             glColor4fv(start_color);
-            glVertex2fv(start);
+            glVertex2dv(start);
             glColor4fv(start_edge_color);
-            glVertex2fv(start + normal);
+            glVertex2dv(start + normal);
             for (int ii = k; ii < 180 ; ii += k) {
                 vec2 vertex = start + normal * _costbl[ii] - direction * _sintbl[ii];
-                glVertex2fv(vertex);
+                glVertex2dv(vertex);
             }
-            glVertex2fv(start - normal);
+            glVertex2dv(start - normal);
         glEnd();
     }
 
@@ -354,14 +354,14 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
             && _view_bounds.intersects_circle(end, width * .5f)) {
         glBegin(GL_TRIANGLE_FAN);
             glColor4fv(end_color);
-            glVertex2fv(end);
+            glVertex2dv(end);
             glColor4fv(end_edge_color);
-            glVertex2fv(end - normal);
+            glVertex2dv(end - normal);
             for (int ii = k; ii < 180 ; ii += k) {
                 vec2 vertex = end - normal * _costbl[ii] + direction * _sintbl[ii];
-                glVertex2fv(vertex);
+                glVertex2dv(vertex);
             }
-            glVertex2fv(end + normal);
+            glVertex2dv(end + normal);
         glEnd();
     }
 
@@ -382,64 +382,64 @@ void system::draw_starfield(vec2 streak_vector)
     glPointSize(0.1f);
     glBlendFunc(GL_CONSTANT_COLOR, GL_ONE);
 
-    float s = std::log2(_view.size.x);
-    float i = std::exp2(std::floor(s));
-    float scale[5] = {
-        i * .5f,
+    double s = std::log2(_view.size.x);
+    double i = std::exp2(std::floor(s));
+    double scale[5] = {
+        i * 0.5,
         i,
-        i * 2.f,
-        i * 4.f,
-        i * 8.f,
+        i * 2.0,
+        i * 4.0,
+        i * 8.0,
     };
 
     for (int ii = 0; ii < 5; ++ii) {
-        float r = (std::floor(s) + ii) * 145.f;
+        double r = (std::floor(s) + ii) * 145.0;
 
         vec2 p = _view.origin * mat2::rotate(rot2(math::deg2rad(-r)));
 
-        float tx = -p.x / scale[ii];
-        float ty = -p.y / scale[ii];
+        double tx = -p.x / scale[ii];
+        double ty = -p.y / scale[ii];
 
-        float ix = std::floor(tx);
-        float iy = std::floor(ty);
+        double ix = std::floor(tx);
+        double iy = std::floor(ty);
 
-        float a = ii == 0 ? square(std::ceil(s) - s)
-                : ii == 4 ? square(s - std::floor(s)) : 1.f;
+        double a = ii == 0 ? square(std::ceil(s) - s)
+                 : ii == 4 ? square(s - std::floor(s)) : 1.0;
 
-        glBlendColor(a, a, a, 1.f);
+        glBlendColor(GLfloat(a), GLfloat(a), GLfloat(a), 1.f);
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
         if (streak_vector != vec2_zero) {
             vec2 u = streak_vector;
-            vec2 v = u * -.5f;
+            vec2 v = u * -0.5;
 
-            float shear[16] = {
-                1.f, 0.f, 0.f, 0.f,
-                0.f, 1.f, 0.f, 0.f,
-                u.x, u.y, 1.f, 0.f,
-                v.x, v.y, 0.f, 1.f,
+            double shear[16] = {
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                u.x, u.y, 1.0, 0.0,
+                v.x, v.y, 0.0, 1.0,
             };
-            glMultMatrixf(shear);
+            glMultMatrixd(shear);
         }
 
-        glTranslatef(_view.origin.x, _view.origin.y, 0);
-        glScalef(scale[ii], scale[ii], 1);
-        glRotatef(r, 0, 0, 1);
+        glTranslated(_view.origin.x, _view.origin.y, 0);
+        glScaled(scale[ii], scale[ii], 1);
+        glRotated(r, 0, 0, 1);
 
         for (int xx = 0; xx < 3; ++xx) {
             for (int yy = 0; yy < 3; ++yy) {
                 glPushMatrix();
-                glTranslatef(tx - ix + xx - 2, ty - iy + yy - 2, 0);
+                glTranslated(tx - ix + xx - 2, ty - iy + yy - 2, 0);
 
                 if (streak_vector != vec2_zero) {
-                    glVertexPointer(3, GL_FLOAT, 0, _starfield_points.data());
+                    glVertexPointer(3, GL_DOUBLE, 0, _starfield_points.data());
                     glColorPointer(3, GL_FLOAT, 0, _starfield_colors.data());
                     glDrawArrays(GL_LINES, 0, (GLsizei)_starfield_points.size());
                 }
 
-                glVertexPointer(3, GL_FLOAT, sizeof(vec3) * 2, _starfield_points.data());
+                glVertexPointer(3, GL_DOUBLE, sizeof(vec3) * 2, _starfield_points.data());
                 glColorPointer(3, GL_FLOAT, sizeof(color3) * 2, _starfield_colors.data());
                 glDrawArrays(GL_POINTS, 0, (GLsizei)_starfield_points.size() / 2);
 

@@ -27,17 +27,17 @@ trace::trace(rigid_body const* body, vec2 start, vec2 end)
         end - start
     };
 
-    _fraction = dispatch(_contact, body_motion, point_motion, 1.f);
+    _fraction = dispatch(_contact, body_motion, point_motion, 1.0);
 }
 
 //------------------------------------------------------------------------------
-trace::trace(rigid_body const* body_a, rigid_body const* body_b, float delta_time)
+trace::trace(rigid_body const* body_a, rigid_body const* body_b, double delta_time)
 {
     _fraction = dispatch(_contact, body_a->get_motion(), body_b->get_motion(), delta_time);
 }
 
 //------------------------------------------------------------------------------
-float trace::dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time)
+double trace::dispatch(contact& contact, motion motion_a, motion motion_b, double delta_time)
 {
     auto fn = &convex_convex_dispatch;
 
@@ -73,13 +73,13 @@ float trace::dispatch(contact& contact, motion motion_a, motion motion_b, float 
 }
 
 //------------------------------------------------------------------------------
-float trace::compound_compound_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time)
+double trace::compound_compound_dispatch(contact& contact, motion motion_a, motion motion_b, double delta_time)
 {
     assert(motion_a.get_shape()->type() == shape_type::compound);
     assert(motion_b.get_shape()->type() == shape_type::compound);
 
     physics::contact c;
-    float f, fraction = 1.f;
+    double f, fraction = 1.0;
 
     mat3 transform = motion_b.get_transform();
 
@@ -107,13 +107,13 @@ float trace::compound_compound_dispatch(contact& contact, motion motion_a, motio
 }
 
 //------------------------------------------------------------------------------
-float trace::compound_convex_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time)
+double trace::compound_convex_dispatch(contact& contact, motion motion_a, motion motion_b, double delta_time)
 {
     assert(motion_a.get_shape()->type() == shape_type::compound);
     assert(motion_b.get_shape()->type() != shape_type::compound);
 
     physics::contact c;
-    float f, fraction = 1.f;
+    double f, fraction = 1.0;
 
     mat3 transform = motion_a.get_transform();
 
@@ -141,19 +141,19 @@ float trace::compound_convex_dispatch(contact& contact, motion motion_a, motion 
 }
 
 //------------------------------------------------------------------------------
-float trace::convex_compound_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time)
+double trace::convex_compound_dispatch(contact& contact, motion motion_a, motion motion_b, double delta_time)
 {
     assert(motion_a.get_shape()->type() != shape_type::compound);
     assert(motion_b.get_shape()->type() == shape_type::compound);
 
-    float fraction = compound_convex_dispatch(contact, motion_b, motion_a, delta_time);
+    double fraction = compound_convex_dispatch(contact, motion_b, motion_a, delta_time);
     contact.point += contact.normal * contact.distance;
-    contact.normal *= -1.f;
+    contact.normal *= -1.0;
     return fraction;
 }
 
 //------------------------------------------------------------------------------
-float trace::convex_convex_dispatch(contact& contact, motion motion_a, motion motion_b, float delta_time)
+double trace::convex_convex_dispatch(contact& contact, motion motion_a, motion motion_b, double delta_time)
 {
     assert(motion_a.get_shape()->type() != shape_type::compound);
     assert(motion_b.get_shape()->type() != shape_type::compound);
@@ -165,8 +165,8 @@ float trace::convex_convex_dispatch(contact& contact, motion motion_a, motion mo
 
     vec2 dp_a = motion_a.get_linear_velocity() * delta_time;
     vec2 dp_b = motion_b.get_linear_velocity() * delta_time;
-    float dr_a = motion_a.get_angular_velocity() * delta_time;
-    float dr_b = motion_b.get_angular_velocity() * delta_time;
+    double dr_a = motion_a.get_angular_velocity() * delta_time;
+    double dr_b = motion_b.get_angular_velocity() * delta_time;
 
     // todo: include rotation
     bounds bounds_a = bounds::from_translation(motion_a.get_bounds(), dp_a);
@@ -174,17 +174,17 @@ float trace::convex_convex_dispatch(contact& contact, motion motion_a, motion mo
 
     // bodies do not overlap during this time step
     if (!bounds_a.intersects(bounds_b)) {
-        return 1.0f;
+        return 1.0;
     }
 
     vec2 direction = dp_b - dp_a;
-    float fraction = 0.f;
+    double fraction = 0.0;
 
     if (direction == vec2_zero) {
-        return 1.0f;
+        return 1.0;
     }
 
-    for (int num_iterations = 0; num_iterations < max_iterations && fraction < 1.0f; ++num_iterations) {
+    for (int num_iterations = 0; num_iterations < max_iterations && fraction < 1.0; ++num_iterations) {
         motion_a.set_position(p0_a + dp_a * fraction);
         motion_a.set_rotation(r0_a * rot2(dr_a * fraction));
         motion_b.set_position(p0_b + dp_b * fraction);
@@ -195,8 +195,8 @@ float trace::convex_convex_dispatch(contact& contact, motion motion_a, motion mo
         direction = motion_b.get_linear_velocity(contact.point)
                   - motion_a.get_linear_velocity(contact.point);
 
-        if (contact.normal.dot(direction) >= 0.0f) {
-            return 1.f;
+        if (contact.normal.dot(direction) >= 0.0) {
+            return 1.0;
         }
 
         if (contact.distance < epsilon) {
@@ -208,7 +208,7 @@ float trace::convex_convex_dispatch(contact& contact, motion motion_a, motion mo
     }
 
     assert(!isnan(fraction));
-    return fraction > 1.0f ? 1.0f : fraction;
+    return fraction > 1.0 ? 1.0 : fraction;
 }
 
 } // namespace physics

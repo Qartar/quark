@@ -22,7 +22,7 @@ public:
                     vec2 position = vec2_zero,
                     rot2 rotation = rot2_identity,
                     vec2 linear_velocity = vec2_zero,
-                    float angular_velocity = 0)
+                    double angular_velocity = 0)
         : _shape(shape)
         , _position(position)
         , _rotation(rotation)
@@ -75,11 +75,11 @@ public:
         _linear_velocity = linear_velocity;
     }
 
-    float get_angular_velocity() const {
+    double get_angular_velocity() const {
         return _angular_velocity;
     }
 
-    void set_angular_velocity(float angular_velocity) {
+    void set_angular_velocity(double angular_velocity) {
         assert(!isnan(angular_velocity));
         _angular_velocity = angular_velocity;
     }
@@ -97,7 +97,7 @@ protected:
     rot2 _rotation;
 
     vec2 _linear_velocity;
-    float _angular_velocity;
+    double _angular_velocity;
 };
 
 } // namespace physics

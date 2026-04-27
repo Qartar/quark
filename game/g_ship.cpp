@@ -123,20 +123,20 @@ void ship::draw(render::system* renderer, time_value time) const
             renderer->draw_line(v0, turret.design->outline.front() * turret_tx, color, color);
         }
 
-        float l = 0.7f * cos(_turrets[jj].elevation) * turret.design->gun_design->length;
+        double l = 0.7 * cos(_turrets[jj].elevation) * turret.design->gun_design->length;
 
         // draw guns
         for (int ii = 0; ii < turret.design->num_guns; ++ii) {
-            float x = radius;
-            float y = turret.design->spacing * (ii - .5f * (turret.design->num_guns - 1));
+            double x = radius;
+            double y = turret.design->spacing * (ii - .5f * (turret.design->num_guns - 1));
             vec2 v1 = vec2(x, y);
 
-            float caliber = turret.design->gun_design->caliber;
+            double caliber = turret.design->gun_design->caliber;
             vec2 pts[4] = {
-                (v1 + vec2(0, 1.25f * caliber)) * turret_tx,
-                (v1 + vec2(l, .5f * caliber)) * turret_tx,
-                (v1 + vec2(l, -.5f * caliber)) * turret_tx,
-                (v1 + vec2(0, -1.25f * caliber)) * turret_tx
+                (v1 + vec2(0, 1.25 * caliber)) * turret_tx,
+                (v1 + vec2(l, 0.5 * caliber)) * turret_tx,
+                (v1 + vec2(l, -0.5 * caliber)) * turret_tx,
+                (v1 + vec2(0, -1.25 * caliber)) * turret_tx
             };
             renderer->draw_line(pts[0], pts[1], color, color);
             renderer->draw_line(pts[1], pts[2], color, color);
@@ -176,24 +176,24 @@ void ship::think()
     for (std::size_t ii = 0, num = _turrets.size(); ii < num; ++ii) {
         update_firing_solution(ii);
 
-        float traverse_target = clamp(
+        double traverse_target = clamp(
             _turrets[ii].traverse_target,
             _design->turrets[ii].train_limit[0],
             _design->turrets[ii].train_limit[1]);
-        float traverse_delta = traverse_target - _turrets[ii].traverse;
-        float traverse_max = _design->turrets[ii].design->train_speed * FRAMETIME.to_seconds();
+        double traverse_delta = traverse_target - _turrets[ii].traverse;
+        double traverse_max = _design->turrets[ii].design->train_speed * FRAMETIME.to_seconds();
         if (abs(traverse_delta) > traverse_max) {
             _turrets[ii].traverse += std::copysign(traverse_max, traverse_delta);
         } else {
             _turrets[ii].traverse = traverse_target;
         }
 
-        float elevation_target = clamp(
+        double elevation_target = clamp(
             _turrets[ii].elevation_target,
             _design->turrets[ii].design->elevation_limit[0],
             _design->turrets[ii].design->elevation_limit[1]);
-        float elevation_delta = elevation_target - _turrets[ii].elevation;
-        float elevation_max = _design->turrets[ii].design->elevation_speed * FRAMETIME.to_seconds();
+        double elevation_delta = elevation_target - _turrets[ii].elevation;
+        double elevation_max = _design->turrets[ii].design->elevation_speed * FRAMETIME.to_seconds();
         if (abs(elevation_delta) > elevation_max) {
             _turrets[ii].elevation += std::copysign(elevation_max, elevation_delta);
         } else {
@@ -213,12 +213,12 @@ void ship::think()
         // Emit smoke particles after firing
         constexpr time_delta smoke_delta = time_delta::from_seconds(1.f);
         if (_turrets[idx].refire_time - time > turret.design->reload_time - smoke_delta) {
-            float t = 1.f - (turret.design->reload_time - (_turrets[idx].refire_time - time)) / smoke_delta;
+            double t = 1.0 - (turret.design->reload_time - (_turrets[idx].refire_time - time)) / smoke_delta;
 
             for (std::size_t ii = 0; ii < _design->turrets[idx].design->num_guns; ++ii) {
                 vec3 position, direction, velocity;
                 get_firing_vectors(idx, ii, position, direction, velocity);
-                get_world()->add_effect(time, effect_type::smoke, position.to_vec2(), direction.to_vec2() * 2.f * t, 3.f * square(t), velocity.to_vec2());
+                get_world()->add_effect(time, effect_type::smoke, position.to_vec2(), direction.to_vec2() * 2.0 * t, float(3.0 * square(t)), velocity.to_vec2());
             }
         }
 
@@ -321,7 +321,7 @@ void ship::update_targets()
 //------------------------------------------------------------------------------
 void ship::update_firing_solution(std::size_t turret_index)
 {
-    float bearing, elevation;
+    double bearing, elevation;
 
     if (_turrets[turret_index].fire_director) {
         _turrets[turret_index].fire_director->get_solution(bearing, elevation);

@@ -20,7 +20,7 @@ public:
 
     color3() = default;
     constexpr color3(float R, float G, float B) : r(R), g(G), b(B) {}
-    constexpr explicit color3(vec3 const& V) : r(V.x), g(V.y), b(V.z) {}
+    constexpr explicit color3(vec3 const& V) : r(float(V.x)), g(float(V.y)), b(float(V.z)) {}
 
     bool operator==(color3 const& C) const {return r == C.r && g == C.g && b == C.b; }
     bool operator!=(color3 const& C) const {return r != C.r || g != C.g || b != C.b; }
@@ -67,7 +67,7 @@ public:
     color4() = default;
     constexpr color4(float X, float Y, float Z, float W = 1) : r(X), g(Y), b(Z), a(W) {}
     constexpr explicit color4(color3 const& C, float A = 1) : r(C.r), g(C.g), b(C.b), a(A) {}
-    constexpr explicit color4(vec4 const& V) : r(V.x), g(V.y), b(V.z), a(V.w) {}
+    constexpr explicit color4(vec4 const& V) : r(float(V.x)), g(float(V.y)), b(float(V.z)), a(float(V.w)) {}
 
     bool operator==(color4 const& C) const { return r==C.r && g==C.g && b==C.b && a==C.a; }
     bool operator!=(color4 const& C) const { return r!=C.r || g!=C.g || b!=C.b || a!=C.a; }

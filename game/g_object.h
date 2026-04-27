@@ -123,14 +123,14 @@ public:
     void set_position(vec2 position, bool teleport = false);
     void set_rotation(rot2 rotation, bool teleport = false);
     void set_linear_velocity(vec2 linear_velocity) { _rigid_body.set_linear_velocity(linear_velocity); }
-    void set_angular_velocity(float angular_velocity) { _rigid_body.set_angular_velocity(angular_velocity); }
+    void set_angular_velocity(double angular_velocity) { _rigid_body.set_angular_velocity(angular_velocity); }
 
     vec2 get_position() const { return _rigid_body.get_position(); }
     rot2 get_rotation() const { return _rigid_body.get_rotation(); }
     mat3 get_transform() const { return _rigid_body.get_transform(); }
     mat3 get_inverse_transform() const { return _rigid_body.get_inverse_transform(); }
     vec2 get_linear_velocity() const { return _rigid_body.get_linear_velocity(); }
-    float get_angular_velocity() const { return _rigid_body.get_angular_velocity(); }
+    double get_angular_velocity() const { return _rigid_body.get_angular_velocity(); }
 
     void apply_impulse(vec2 impulse) { _rigid_body.apply_impulse(impulse); }
     void apply_impulse(vec2 impulse, vec2 position) { _rigid_body.apply_impulse(impulse, position); }

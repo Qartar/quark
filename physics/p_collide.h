@@ -14,7 +14,7 @@ class shape;
 //------------------------------------------------------------------------------
 struct contact
 {
-    float distance; //!< Contact distance, negative for penetration
+    double distance; //!< Contact distance, negative for penetration
     vec2 point; //!< Contact point in world space
     vec2 normal; //!< Contact normal in world space
 };
@@ -49,7 +49,7 @@ protected:
 
     constexpr static int max_iterations = 64;
     constexpr static int max_vertices = 64;
-    constexpr static float epsilon = 1e-12f;
+    constexpr static double epsilon = 1e-12;
 
     struct support_vertex
     {
@@ -62,7 +62,7 @@ protected:
     //  GJK
     //
 
-    float minimum_distance(vec3& point, vec3& direction) const;
+    double minimum_distance(vec3& point, vec3& direction) const;
 
     support_vertex supporting_vertex(vec3 direction) const;
 
@@ -78,7 +78,7 @@ protected:
     //  EPA
     //
 
-    float penetration_distance(support_vertex a, support_vertex b, support_vertex c, vec3& point, vec3& direction) const;
+    double penetration_distance(support_vertex a, support_vertex b, support_vertex c, vec3& point, vec3& direction) const;
 
     std::size_t nearest_edge_index(vec3 normal, support_vertex const* vertices, std::size_t num_vertices, vec3& direction) const;
 

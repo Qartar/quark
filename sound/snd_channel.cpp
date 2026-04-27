@@ -145,15 +145,15 @@ void cSoundChannel::_mix_stereo16(void* buffer, float rate, int volume, int num_
 #undef SAMPLE
 
 //------------------------------------------------------------------------------
-#define ATTN_LEN        1000.0f
+#define ATTN_LEN        1000.0
 
 void cSoundChannel::_spatialize_mono(int in, int *out)
 {
     if (_attenuation == ATTN_STATIC) {
         out[0] = in;
     } else {
-        float dist = (_origin - _sound->_origin).length();
-        float attn = clamp(powf(ATTN_LEN / dist, _attenuation), 0.0f, 1.0f);
+        double dist = (_origin - _sound->_origin).length();
+        double attn = clamp(pow(ATTN_LEN / dist, _attenuation), 0.0, 1.0);
 
         out[0] = static_cast<int>(in * attn);
     }
@@ -163,16 +163,16 @@ void cSoundChannel::_spatialize_mono(int in, int *out)
 void cSoundChannel::_spatialize_stereo(int in, int out[2])
 {
     vec3 dir = _origin - _sound->_origin;
-    float dist = dir.normalize_length();
-    float dp = dir.dot(_sound->_axis[1]);
+    double dist = dir.normalize_length();
+    double dp = dir.dot(_sound->_axis[1]);
 
     if (_attenuation == ATTN_STATIC) {
-        out[0] = static_cast<int>(in * 0.5f * (1.0f - dp));
-        out[1] = static_cast<int>(in * 0.5f * (1.0f + dp));
+        out[0] = static_cast<int>(in * 0.5 * (1.0 - dp));
+        out[1] = static_cast<int>(in * 0.5 * (1.0 + dp));
     } else {
-        float attn = clamp(powf(ATTN_LEN / dist, _attenuation), 0.0f, 1.0f);
+        double attn = clamp(pow(ATTN_LEN / dist, _attenuation), 0.0, 1.0);
 
-        out[0] = static_cast<int>(in * 0.5f * (1 - dp) * attn);
-        out[1] = static_cast<int>(in * 0.5f * (1 + dp) * attn);
+        out[0] = static_cast<int>(in * 0.5 * (1.0 - dp) * attn);
+        out[1] = static_cast<int>(in * 0.5 * (1.0 + dp) * attn);
     }
 }

@@ -38,8 +38,8 @@ void fire_director::think()
 void fire_director::set_target(handle<ship const> target)
 {
     _target = target;
-    _bearing = 0.f;
-    _elevation = 0.f;
+    _bearing = 0;
+    _elevation = 0;
     _time_of_flight = time_delta::zero;
     _is_valid = false;
 
@@ -47,7 +47,7 @@ void fire_director::set_target(handle<ship const> target)
 }
 
 //------------------------------------------------------------------------------
-void fire_director::get_solution(float& bearing, float& elevation) const
+void fire_director::get_solution(double& bearing, double& elevation) const
 {
     // Return the best available solution even if invalid to allow 'pre-aiming'
     bearing = _bearing;
@@ -66,8 +66,8 @@ void fire_director::update_solution()
     // Calculate range and bearing
     vec2 dv = _target->get_linear_velocity() - _owner->get_linear_velocity();
     vec2 dir = _target->get_position() - _owner->get_position() + dv * _time_of_flight.to_seconds();
-    float dist = dir.normalize_length();
-    _bearing = atan2f(dir.y, dir.x) - _owner->get_rotation().radians();
+    double dist = dir.normalize_length();
+    _bearing = atan2(dir.y, dir.x) - _owner->get_rotation().radians();
 
     // Calculate elevation and time of flight
     _is_valid = interpolate_range(dist, r);
@@ -76,7 +76,7 @@ void fire_director::update_solution()
 }
 
 //------------------------------------------------------------------------------
-bool fire_director::interpolate_range(float d, range& r) const
+bool fire_director::interpolate_range(double d, range& r) const
 {
     std::size_t ii = 0, jj = _table_size - 1;
     // Check boundary conditions, return best possible solution
@@ -98,7 +98,7 @@ bool fire_director::interpolate_range(float d, range& r) const
     } while (ii + 1 < jj);
 
     // linear interpolation
-    float t = (d - _table[ii].range) / (_table[jj].range - _table[ii].range);
+    double t = (d - _table[ii].range) / (_table[jj].range - _table[ii].range);
     r.elevation = _table[ii].elevation + (_table[jj].elevation - _table[ii].elevation) * t;
     r.range = d;
     r.time_of_flight = _table[ii].time_of_flight + (_table[jj].time_of_flight - _table[ii].time_of_flight) * t;
@@ -111,7 +111,7 @@ void fire_director::populate_table()
     _table_size = max_table;
 
     for (std::size_t ii = 0; ii < max_table; ++ii) {
-        float elevation = ii * ((max_elevation - min_elevation) * (1.f / float(max_table))) - min_elevation;
+        double elevation = ii * ((max_elevation - min_elevation) * (1.0 / double(max_table))) - min_elevation;
 
         vec3 pos = vec3(0, 0, 1);
         vec3 vel = vec3(cos(elevation), 0, sin(elevation)) * _gun->shell_velocity;

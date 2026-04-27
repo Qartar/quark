@@ -39,9 +39,9 @@ public:
 
     virtual vec2 supporting_vertex(vec2 direction) const override;
 
-    virtual float calculate_area() const override;
+    virtual double calculate_area() const override;
 
-    virtual void calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const override;
+    virtual void calculate_mass_properties(double inverse_mass, vec2& center_of_mass, double& inverse_inertia) const override;
 
     virtual bounds calculate_bounds(mat3 transform) const override;
 

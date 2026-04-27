@@ -52,8 +52,8 @@ result session::init (string::view cmdline)
 {
     _renderer = application::singleton()->window()->renderer();
     {
-        float num = _renderer->view().size.x * ((640.f - 8.f) / 640.f);
-        float den = _renderer->monospace_size(" ").x;
+        double num = _renderer->view().size.x * ((640.0 - 8.0) / 640.0);
+        double den = _renderer->monospace_size(" ").x;
         _console.resize(static_cast<std::size_t>(num / den));
     }
 
@@ -571,17 +571,17 @@ void session::draw_messages()
     constexpr time_delta view_time = time_delta::from_seconds(15);
     constexpr time_delta fade_time = time_delta::from_seconds(3);
 
-    float ypos = _renderer->view().size.y - 36.f;
+    double ypos = _renderer->view().size.y - 36.0;
 
     for (int ii = 0; ii < _num_messages && ii < MAX_MESSAGES; ++ii) {
         message_t const& msg = _messages[(_num_messages - ii - 1) % MAX_MESSAGES];
 
         if (msg.time + view_time > _frametime) {
-            float alpha = (msg.time + (view_time - fade_time) > _frametime ? 1.0f : (msg.time + view_time - _frametime) / fade_time);
+            double alpha = (msg.time + (view_time - fade_time) > _frametime ? 1.0 : (msg.time + view_time - _frametime) / fade_time);
 
-            _renderer->draw_string(msg.string, vec2(8.f,ypos), color4(1,1,1,alpha));
+            _renderer->draw_string(msg.string, vec2(8.0,ypos), color4(1,1,1,float(alpha)));
 
-            ypos -= 12.f;
+            ypos -= 12.0;
         }
     }
 

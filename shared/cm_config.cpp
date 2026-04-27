@@ -84,10 +84,10 @@ void variable_base::set(string_view value)
         }
 
         case value_type::vector: {
-            vec4 v = vec4_zero;
+            float v[4] = {};
             int n = sscanf_s(value.c_str(), "%f %f %f %f", &v[0], &v[1], &v[2], &v[3]);
             if (n >= 2) {
-                set_vector(v);
+                set_vector({v[0], v[1], v[2], v[3]});
             } else {
                 log::message("cannot set variable '^fff%s^xxx' to non-vector value '^fff%s^xxx'\n", name().c_str(), value.c_str());
             }
@@ -180,9 +180,9 @@ float variable_base::get_scalar() const
 //------------------------------------------------------------------------------
 vec4 variable_base::get_vector() const
 {
-    vec4 v;
+    float v[4] = {};
     sscanf_s(_value.c_str(), "%f %f %f %f", &v[0], &v[1], &v[2], &v[3]);
-    return v;
+    return {v[0], v[1], v[2], v[3]};
 }
 
 ////////////////////////////////////////////////////////////////////////////////

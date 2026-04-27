@@ -36,12 +36,12 @@ public:
     void add_body(physics::rigid_body* body);
     void remove_body(physics::rigid_body* body);
 
-    void step(float delta_time);
+    void step(double delta_time);
 
     struct trace_result
     {
         physics::contact c; //!< Trace intersection
-        float fraction; //!< Fraction along trace
+        double fraction; //!< Fraction along trace
         physics::rigid_body* body; //!< Intersected body
     };
 
@@ -72,7 +72,7 @@ protected:
 
     //! Return a lexicographically sorted list of all pairs of bodies which
     //! overlap during the next `delta_time` step, including permutations.
-    std::vector<overlap> generate_overlaps(float delta_time) const;
+    std::vector<overlap> generate_overlaps(double delta_time) const;
 };
 
 } // namespace physics

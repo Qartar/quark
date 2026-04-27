@@ -13,26 +13,26 @@
 //------------------------------------------------------------------------------
 //! Find the intercept time for the given relative position, relative velocity,
 //! and maximum change in velocity of the interceptor. Returns the smallest non-
-//! negative time to intercept or -FLT_MAX if no interception is possible.
-template<typename vec> float intercept_time(
+//! negative time to intercept or -DBL_MAX if no interception is possible.
+template<typename vec> double intercept_time(
     vec relative_position,
     vec relative_velocity,
     float maximum_velocity)
 {
-    float a = relative_velocity.dot(relative_velocity) - square(maximum_velocity);
-    float b = 2.f * relative_velocity.dot(relative_position);
-    float c = (relative_position).dot(relative_position);
-    float d = b * b - 4.f * a * c;
+    double a = relative_velocity.dot(relative_velocity) - maximum_velocity * maximum_velocity;
+    double b = 2.0 * relative_velocity.dot(relative_position);
+    double c = (relative_position).dot(relative_position);
+    double d = b * b - 4.0 * a * c;
 
-    if (d < 0.f) {
-        return -FLT_MAX;
-    } else if (d == 0.f) {
-        float t = -.5f * b / a;
-        return t >= 0.f ? t : -FLT_MAX;
+    if (d < 0.0) {
+        return -DBL_MAX;
+    } else if (d == 0.0) {
+        double t = -0.5 * b / a;
+        return t >= 0.0 ? t : -DBL_MAX;
     } else {
-        float q = -.5f * (b + std::copysign(std::sqrt(d), b));
+        double q = -0.5 * (b + std::copysign(std::sqrt(d), b));
         auto t = std::minmax({q / a, c / q});
-        return t.first >= 0.f ? t.first :
-               t.second >= 0.f ? t.second : -FLT_MAX;
+        return t.first >= 0.0 ? t.first :
+               t.second >= 0.0 ? t.second : -DBL_MAX;
     }
 }

@@ -70,11 +70,11 @@ protected:
     ship_design const* _design;
 
     struct turret_state {
-        float traverse; //!< Current traverse angle in radians, relative to default orientation
-        float elevation; //!< Current elevation angle in radians
+        double traverse; //!< Current traverse angle in radians, relative to default orientation
+        double elevation; //!< Current elevation angle in radians
 
-        float traverse_target;
-        float elevation_target;
+        double traverse_target;
+        double elevation_target;
 
         time_value refire_time;
 

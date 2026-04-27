@@ -169,10 +169,10 @@ glyph glyph::from_hdc(HDC hdc, UINT ch)
 }
 
 //------------------------------------------------------------------------------
-float determinant(vec2 a, vec2 b)
+double determinant(vec2 a, vec2 b)
 {
-    float cd = a.y * b.x;
-    float err = std::fma(-a.y, b.x, cd);
+    double cd = a.y * b.x;
+    double err = std::fma(-a.y, b.x, cd);
     return std::fma(a.x, b.y, -cd) + err;
 }
 
@@ -186,19 +186,19 @@ edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
     vec2 c = a * 2.f;
     vec2 d = A - pos;
 
-    float kk = 1.f / dot(b, b);
-    float kx = kk * dot(a, b);
-    float ky = kk * (2.f * dot(a, a) + dot(d, b)) / 3.f;
-    float kz = kk * dot(d, a);
+    double kk = 1.f / dot(b, b);
+    double kx = kk * dot(a, b);
+    double ky = kk * (2.f * dot(a, a) + dot(d, b)) / 3.f;
+    double kz = kk * dot(d, a);
 
-    float res = 0.f;
-    float sgn = 0.f;
-    float t = 0.f;
+    double res = 0.f;
+    double sgn = 0.f;
+    double t = 0.f;
 
-    float p = ky - kx * kx;
-    float p3 = p * p * p;
-    float q = kx * (2.f * kx * kx - 3.f * ky) + kz;
-    float h = q * q + 4.f * p3;
+    double p = ky - kx * kx;
+    double p3 = p * p * p;
+    double q = kx * (2.f * kx * kx - 3.f * ky) + kz;
+    double h = q * q + 4.f * p3;
 
     if (h >= 0.f) {
         h = std::sqrt(h);
@@ -209,20 +209,20 @@ edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
         res = dot(qx, qx);
         sgn = cross(c + 2.f * b * t, qx);
     } else {
-        float z = std::sqrt(-p);
-        float v = std::acos(q / (p * z * 2.f)) / 3.f;
-        float m = std::cos(v);
-        float n = std::sin(v) * 1.732050808f; // sqrt(3)
+        double z = std::sqrt(-p);
+        double v = std::acos(q / (p * z * 2.f)) / 3.f;
+        double m = std::cos(v);
+        double n = std::sin(v) * 1.732050808f; // sqrt(3)
 
-        float tx = clamp((m + m) * z - kx, 0.f, 1.f);
+        double tx = clamp((m + m) * z - kx, 0.f, 1.f);
         vec2 qx = d + (c + b * tx) * tx;
-        float dx = dot(qx, qx);
-        float sx = cross(c + 2.f * b * tx, qx);
+        double dx = dot(qx, qx);
+        double sx = cross(c + 2.f * b * tx, qx);
 
-        float ty = clamp((-n - m) * z - kx, 0.f, 1.f);
+        double ty = clamp((-n - m) * z - kx, 0.f, 1.f);
         vec2 qy = d + (c + b * ty) * ty;
-        float dy = dot(qy, qy);
-        float sy = cross(c + 2.f * b * ty, qy);
+        double dy = dot(qy, qy);
+        double sy = cross(c + 2.f * b * ty, qy);
 
         // the third root cannot be the closest
         //float tz = clamp((n - m) * z - kx, 0.f, 1.f);
@@ -233,13 +233,13 @@ edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
         t = (dx < dy) ? tx : ty;
     }
 
-    if (t == 0.f) {
-        float den = dot(B - A, B - A);
-        float det = determinant(B - A, pos - A);
+    if (t == 0.0) {
+        double den = dot(B - A, B - A);
+        double det = determinant(B - A, pos - A);
         return {std::copysign(res, -sgn), det * det / den};
-    } else if (t == 1.f) {
-        float den = dot(C - B, C - B);
-        float det = determinant(C - B, pos - C);
+    } else if (t == 1.0) {
+        double den = dot(C - B, C - B);
+        double det = determinant(C - B, pos - C);
         return {std::copysign(res, -sgn), det * det / den};
     } else {
         return {std::copysign(res, -sgn), res};
@@ -249,7 +249,7 @@ edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
 //------------------------------------------------------------------------------
 edge_distance signed_qspline_distance_squared(vec2 const* first, vec2 const* last, vec2 pos)
 {
-    edge_distance sdsqr_min = {FLT_MAX, -FLT_MAX};
+    edge_distance sdsqr_min = {DBL_MAX, -DBL_MAX};
 
     // To ensure C2 continuity the spline is specified as a series of
     // control points corresponding to each curve. The endpoints of
@@ -283,10 +283,10 @@ edge_distance signed_segment_distance_squared(vec2 a, vec2 b, vec2 c)
 {
     vec2 v = b - a;
     vec2 r = c - a;
-    float num = dot(v, r);
-    float den = dot(v, v);
-    float det = determinant(v, r);
-    float ortho = det * det / den;
+    double num = dot(v, r);
+    double den = dot(v, v);
+    double det = determinant(v, r);
+    double ortho = det * det / den;
     if (num >= den) {
         return {std::copysign((c - b).length_sqr(), det), ortho};
     } else if (num < 0.f) {
@@ -301,10 +301,10 @@ edge_distance signed_ray_distance_squared(vec2 a, vec2 b, vec2 c)
 {
     vec2 v = b - a;
     vec2 r = c - a;
-    float num = dot(v, r);
-    float den = dot(v, v);
-    float det = determinant(v, r);
-    float ortho = det * det / den;
+    double num = dot(v, r);
+    double den = dot(v, v);
+    double det = determinant(v, r);
+    double ortho = det * det / den;
     if (num < den) {
         return {std::copysign((c - b).length_sqr(), det), ortho};
     } else {
@@ -317,15 +317,15 @@ int signed_intersect_segments(vec2 a, vec2 b, vec2 c, vec2 d)
 {
     vec2 ab = b - a;
     vec2 cd = d - c;
-    float den = determinant(ab, cd);
+    double den = determinant(ab, cd);
     if (den == 0.f) {
         return 0;
     }
     vec2 ac = c - a;
-    float sgn = den < 0.f ? -1.f : 1.f;
+    double sgn = den < 0.f ? -1.f : 1.f;
     den = std::abs(den);
-    float u = determinant(ac, cd) * sgn;
-    float v = determinant(ac, ab) * sgn;
+    double u = determinant(ac, cd) * sgn;
+    double v = determinant(ac, ab) * sgn;
     if (0.f <= u && u <= den && 0.f <= v && v <= den) {
         return sgn < 0.f ? -1 : 1;
     } else {
@@ -420,14 +420,14 @@ edge_distance glyph::signed_primitive_distance_squared(vec2 p, std::size_t primi
 
         case glyph::primitive_type::cspline:
         default:
-            return {FLT_MAX, -FLT_MAX};
+            return {DBL_MAX, -DBL_MAX};
     }
 }
 
 //------------------------------------------------------------------------------
 edge_distance glyph::signed_edge_distance_squared(vec2 p, std::size_t edge_index) const
 {
-    edge_distance sdsqr_min = {FLT_MAX, -FLT_MAX};
+    edge_distance sdsqr_min = {DBL_MAX, -DBL_MAX};
     if (edge_index >= _edges.size()) {
         return sdsqr_min;
     }
@@ -445,7 +445,7 @@ edge_distance glyph::signed_edge_distance_squared(vec2 p, std::size_t edge_index
 
 //------------------------------------------------------------------------------
 // signed edge distance except the edge segments at endpoints are extruded to infinity
-float glyph::signed_edge_pseudo_distance(vec2 p, std::size_t edge_index) const
+double glyph::signed_edge_pseudo_distance(vec2 p, std::size_t edge_index) const
 {
     edge_distance sdsqr_min = signed_edge_distance_squared(p, edge_index);
 
@@ -508,11 +508,11 @@ bool glyph::point_inside_glyph(vec2 p) const
 //------------------------------------------------------------------------------
 vec3 glyph::signed_edge_distance_channels(vec2 p) const
 {
-    edge_distance dsqr_min[3] = {{FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}};
+    edge_distance dsqr_min[3] = {{DBL_MAX, -DBL_MAX}, {DBL_MAX, -DBL_MAX}, {DBL_MAX, -DBL_MAX}};
     std::size_t emin[3] = {};
 
     if (!_edges.size()) {
-        return vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+        return vec3(DBL_MAX, DBL_MAX, DBL_MAX);
     }
 
     // find closest edge for each channel
@@ -534,13 +534,13 @@ vec3 glyph::signed_edge_distance_channels(vec2 p) const
 }
 
 //------------------------------------------------------------------------------
-float glyph::signed_edge_distance(vec2 p) const
+double glyph::signed_edge_distance(vec2 p) const
 {
-    edge_distance dsqr_min = {FLT_MAX, -FLT_MAX};
+    edge_distance dsqr_min = {DBL_MAX, -DBL_MAX};
     std::size_t emin = {};
 
     if (!_edges.size()) {
-        return FLT_MAX;
+        return DBL_MAX;
     }
 
     // find closest edge
@@ -558,7 +558,7 @@ float glyph::signed_edge_distance(vec2 p) const
 //------------------------------------------------------------------------------
 std::size_t glyph::signed_edge_index(vec2 p) const
 {
-    edge_distance dsqr_min = {FLT_MAX, -FLT_MAX};
+    edge_distance dsqr_min = {DBL_MAX, -DBL_MAX};
     std::size_t emin = {};
 
     // find closest edge

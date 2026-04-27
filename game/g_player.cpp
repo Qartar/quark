@@ -67,13 +67,13 @@ void player::draw(render::system* renderer, time_value time) const
     ship const* target = _hover ? _hover.get()
                        : _follow.get();
     if (target) {
-        float speed_in_knots = target->get_linear_velocity().length() * (1.f / 0.5144447f);
+        double speed_in_knots = target->get_linear_velocity().length() * (1.0 / 0.5144447);
         int heading = int(std::round(90.f - math::rad2deg(target->get_rotation().radians())));
         if (heading < 0) {
             heading += 360;
         }
         vec2 text_size = renderer->string_size(va("%s-class", target->design()->name.c_str()));
-        vec2 text_offset = _view.origin + .49f * _view.size - text_size;
+        vec2 text_offset = _view.origin + 0.49 * _view.size - text_size;
         renderer->draw_string(va("%s-class", target->design()->name.c_str()), text_offset, color4(1,1,1,1));
         renderer->draw_string(va("%.1f kn %d\xb0", speed_in_knots, heading), text_offset - vec2(0,text_size.y), color4(1,1,1,1));
         int rudder = int(std::round(math::rad2deg(target->engines()->get_rudder_angle())));
@@ -264,10 +264,10 @@ void player::set_aspect(float aspect)
 //------------------------------------------------------------------------------
 void player::update_usercmd(usercmd cmd, time_value realtime)
 {
-    constexpr float zoom_speed = 1.f + (1.f / 4.f);
-    constexpr float scroll_speed = 1.f;
+    constexpr double zoom_speed = 1.f + (1.f / 4.f);
+    constexpr double scroll_speed = 1.f;
 
-    float delta_time = (realtime - _usercmd_time).to_seconds();
+    double delta_time = (realtime - _usercmd_time).to_seconds();
 
     if (!!(cmd.buttons & usercmd::button::select)
         && !(_usercmd.buttons & usercmd::button::select)) {
@@ -325,9 +325,9 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
             for (auto&& ship : _selection) {
                 origin += ship->get_position();
             }
-            origin /= float(_selection.size());
+            origin /= double(_selection.size());
             vec2 direction = normalize(cursor - origin);
-            float heading = std::round(math::rad2deg(rot2(direction.x, direction.y).radians()));
+            double heading = std::round(math::rad2deg(rot2(direction.x, direction.y).radians()));
             for (auto&& ship : _selection) {
                 ship->navigation()->set_heading(rot2(math::deg2rad(heading)));
             }

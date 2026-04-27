@@ -76,16 +76,16 @@ void system::draw_image(render::image const* img, vec2 org, vec2 sz, color4 colo
 
     glBegin(GL_TRIANGLE_STRIP);
         glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(org.x, org.y);
+        glVertex2d(org.x, org.y);
 
         glTexCoord2f(1.0f, 0.0f);
-        glVertex2f(org.x + sz.x, org.y);
+        glVertex2d(org.x + sz.x, org.y);
 
         glTexCoord2f(0.0f, 1.0f );
-        glVertex2f(org.x, org.y + sz.y);
+        glVertex2d(org.x, org.y + sz.y);
 
         glTexCoord2f(1.0f, 1.0f );
-        glVertex2f(org.x + sz.x, org.y + sz.y);
+        glVertex2d(org.x + sz.x, org.y + sz.y);
     glEnd();
 
     glDisable(GL_TEXTURE_2D);

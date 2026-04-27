@@ -33,31 +33,31 @@ public:
 
     bounds operator+(vec2 const& V) const { return bounds(_mins+V, _maxs+V); }
     bounds operator-(vec2 const& V) const { return bounds(_mins-V, _maxs-V); }
-    bounds operator*(float S) const { return bounds(_mins*S, _maxs*S); }
-    bounds operator/(float S) const { return bounds(_mins/S, _maxs/S); }
+    bounds operator*(double S) const { return bounds(_mins*S, _maxs*S); }
+    bounds operator/(double S) const { return bounds(_mins/S, _maxs/S); }
 
 // boolean operations
 
     bounds operator|(bounds const& R) const {
-        return bounds(vec2(std::min<float>(_mins.x, R._mins.x),
-                           std::min<float>(_mins.y, R._mins.y)),
-                      vec2(std::max<float>(_maxs.x, R._maxs.x),
-                           std::max<float>(_maxs.y, R._maxs.y)));
+        return bounds(vec2(std::min<double>(_mins.x, R._mins.x),
+                           std::min<double>(_mins.y, R._mins.y)),
+                      vec2(std::max<double>(_maxs.x, R._maxs.x),
+                           std::max<double>(_maxs.y, R._maxs.y)));
     }
 
     bounds operator&(bounds const& R) const {
-        return bounds(vec2(std::max<float>(_mins.x, R._mins.x),
-                           std::max<float>(_mins.y, R._mins.y)),
-                      vec2(std::min<float>(_maxs.x, R._maxs.x),
-                           std::min<float>(_maxs.y, R._maxs.y)));
+        return bounds(vec2(std::max<double>(_mins.x, R._mins.x),
+                           std::max<double>(_mins.y, R._mins.y)),
+                      vec2(std::min<double>(_maxs.x, R._maxs.x),
+                           std::min<double>(_maxs.y, R._maxs.y)));
     }
 
 // algebraic vector assignment operations
 
     bounds& operator+=(vec2 const& V) { _mins += V; _maxs += V; return *this; }
     bounds& operator-=(vec2 const& V) { _mins -= V; _maxs -= V; return *this; }
-    bounds& operator*=(float S) { _mins *= S; _maxs *= S; return *this; }
-    bounds& operator/=(float S) { _mins /= S; _maxs /= S; return *this; }
+    bounds& operator*=(double S) { _mins *= S; _maxs *= S; return *this; }
+    bounds& operator/=(double S) { _mins /= S; _maxs /= S; return *this; }
 
 // boolean assignment operations
 
@@ -68,17 +68,17 @@ public:
 
     vec2 center() const { return (_mins + _maxs) / 2.f; }
     vec2 size() const { return _maxs - _mins; }
-    float area() const { return (_maxs.x - _mins.x) * (_maxs.y - _mins.y); }
+    double area() const { return (_maxs.x - _mins.x) * (_maxs.y - _mins.y); }
 
     bounds& add(vec2 v) {
-        _mins.x = std::min<float>(_mins.x, v.x);
-        _mins.y = std::min<float>(_mins.y, v.y);
-        _maxs.x = std::max<float>(_maxs.x, v.x);
-        _maxs.y = std::max<float>(_maxs.y, v.y);
+        _mins.x = std::min<double>(_mins.x, v.x);
+        _mins.y = std::min<double>(_mins.y, v.y);
+        _maxs.x = std::max<double>(_maxs.x, v.x);
+        _maxs.y = std::max<double>(_maxs.y, v.y);
         return *this;
     }
 
-    bounds expand(float s) const { return bounds(_mins - vec2(s), _maxs + vec2(s)); }
+    bounds expand(double s) const { return bounds(_mins - vec2(s), _maxs + vec2(s)); }
     bounds expand(vec2 v) const { return bounds(_mins - vec2(v), _maxs + vec2(v)); }
 
     bounds transform(mat3 tx) const {
@@ -111,7 +111,7 @@ public:
             && _maxs.y >= b._mins.y;
     }
 
-    bool intersects_circle(vec2 center, float radius) const {
+    bool intersects_circle(vec2 center, double radius) const {
         // Closest point on the bounds to the center of the circle
         vec2 point{
             center.x < _mins.x ? _mins.x : center.x > _maxs.x ? _maxs.x : center.x,

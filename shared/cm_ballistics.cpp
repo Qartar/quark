@@ -13,12 +13,12 @@ namespace ballistics {
 //------------------------------------------------------------------------------
 struct ballistic_data
 {
-    float initial_velocity;
-    float initial_angle;
-    float range;
-    float time;
-    float impact_angle;
-    float impact_velocity;
+    double initial_velocity;
+    double initial_angle;
+    double range;
+    double time;
+    double impact_angle;
+    double impact_velocity;
 };
 
 //------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ struct ballistic_dataset
 };
 
 //------------------------------------------------------------------------------
-void simulate_ballistic_coefficient(ballistic_data& data, ballistics::curve curve, time_delta dt, float bc)
+void simulate_ballistic_coefficient(ballistic_data& data, ballistics::curve curve, time_delta dt, double bc)
 {
     vec3 r = vec3_zero;
     vec3 v = vec3(cos(math::deg2rad(data.initial_angle)),
@@ -40,15 +40,15 @@ void simulate_ballistic_coefficient(ballistic_data& data, ballistics::curve curv
 
     data.time = ballistics::simulate(r, v, curve, bc, dt).to_seconds();
     data.range = r.x;
-    data.impact_angle = math::rad2deg(atan2f(-v.z, v.x));
+    data.impact_angle = math::rad2deg(atan2(-v.z, v.x));
     data.impact_velocity = length(v);
 }
 
 //------------------------------------------------------------------------------
-float compare_ballistic_data(ballistic_data const& b1, ballistic_data const& b2)
+double compare_ballistic_data(ballistic_data const& b1, ballistic_data const& b2)
 {
-    float num = 0.f;
-    float den = 0.f;
+    double num = 0.f;
+    double den = 0.f;
 
     if (b1.range && b2.range) {
         num += square(b1.range - b2.range) / (b1.range * b2.range);
@@ -74,13 +74,13 @@ float compare_ballistic_data(ballistic_data const& b1, ballistic_data const& b2)
 }
 
 //------------------------------------------------------------------------------
-void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, time_delta dt, float& bc, float& rms)
+void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, time_delta dt, double& bc, double& rms)
 {
     ballistic_data d;
 
-    bc = 1e3f;
+    bc = 1e3;
     rms = 0.f;
-    float den = 0.f;
+    double den = 0.f;
 
     if (b.range) {
         for (std::size_t ii = 0; ii < 64; ++ii) {
@@ -128,11 +128,11 @@ void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, t
 }
 
 //------------------------------------------------------------------------------
-void solve_ballistic_coefficient(ballistic_data const* b, std::size_t n, ballistics::curve c, time_delta dt, float& bc, float& rms)
+void solve_ballistic_coefficient(ballistic_data const* b, std::size_t n, ballistics::curve c, time_delta dt, double& bc, double& rms)
 {
     rms = 0.f;
     for (std::size_t ii = 0; ii < n; ++ii) {
-        float tmp = 0.f;
+        double tmp = 0.f;
         solve_ballistic_coefficient(b[ii], c, dt, bc, tmp);
         rms += tmp;
     }
@@ -358,11 +358,11 @@ void solve_ballistic_coefficient_cmd(parser::text const& /*args*/)
     for (auto const& s : sets) {
         log::message("%s\n", s.name.c_str());
 
-        float best_bc = 0.f, best_rms = FLT_MAX;
+        double best_bc = 0.f, best_rms = DBL_MAX;
         ballistics::curve best_curve = ballistics::curve::G1;
 
-        float bc[6];
-        float rms[6];
+        double bc[6];
+        double rms[6];
 
         for (std::size_t kk = 0; kk < 6; ++kk) {
             ballistics::curve c = static_cast<ballistics::curve>(static_cast<std::size_t>(ballistics::curve::G1) + kk);
@@ -909,14 +909,14 @@ constexpr float drag_tables[][170] = {
 };
 
 //------------------------------------------------------------------------------
-template<std::size_t sz> float drag_table_lookup(const float (&table)[sz], float mach_number)
+template<std::size_t sz> double drag_table_lookup(const float (&table)[sz], double mach_number)
 {
     if (mach_number <= table[0]) {
         return table[1];
     }
     for (std::size_t ii = 2; ii < sz; ii += 2) {
         if (table[ii] > mach_number) {
-            float t = (table[ii] - mach_number) / (table[ii] - table[ii - 2]);
+            double t = (table[ii] - mach_number) / (table[ii] - table[ii - 2]);
             return table[ii - 1] * t + table[ii + 1] * (1.f - t);
         }
     }
@@ -925,38 +925,38 @@ template<std::size_t sz> float drag_table_lookup(const float (&table)[sz], float
 }
 
 //------------------------------------------------------------------------------
-float speed_of_sound(float altitude)
+double speed_of_sound(double altitude)
 {
     // Speed of sound decreases nearly linearly up to 11km in altitude
-    return 343.f + altitude * ((295.f - 343.f) / 11000.f);
+    return 343.0 + altitude * ((295.0 - 343.0) / 11000.0);
 }
 
 //------------------------------------------------------------------------------
-float normalized_atmospheric_density(float altitude)
+double normalized_atmospheric_density(double altitude)
 {
     // Typical scale height of 8500m assumes constant temperature
-    return exp(-altitude * (1.f / 10400.f));
+    return exp(-altitude * (1.0 / 10400.0));
 }
 
 //------------------------------------------------------------------------------
-void step(vec3& position, vec3& velocity, ballistics::curve curve, float ballistic_coefficient, time_delta dt)
+void step(vec3& position, vec3& velocity, ballistics::curve curve, double ballistic_coefficient, time_delta dt)
 {
     // Gravity varies with altitude by less than a percent at relevant altitudes.
-    constexpr vec3 gravity(0, 0, -9.80665f);
+    constexpr vec3 gravity(0, 0, -9.80665);
 
-    float rho = normalized_atmospheric_density(position.z);
-    float vlen = length(velocity);
-    float mach = vlen / speed_of_sound(position.z);
-    float Cd = drag_table_lookup(drag_tables[static_cast<int>(curve)], mach);
+    double rho = normalized_atmospheric_density(position.z);
+    double vlen = length(velocity);
+    double mach = vlen / speed_of_sound(position.z);
+    double Cd = drag_table_lookup(drag_tables[static_cast<int>(curve)], mach);
     vec3 vsqr = vlen * velocity;
-    vec3 acceleration = gravity - .5f * Cd * rho * vsqr / ballistic_coefficient;
+    vec3 acceleration = gravity - 0.5 * Cd * rho * vsqr / ballistic_coefficient;
 
     position += velocity * dt.to_seconds();
     velocity += acceleration * dt.to_seconds();
 }
 
 //------------------------------------------------------------------------------
-time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, float ballistic_coefficient, time_delta timestep)
+time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, double ballistic_coefficient, time_delta timestep)
 {
     time_delta dt = time_delta::zero;
 
@@ -966,7 +966,7 @@ time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, flo
     } while (position.z > 0.f);
 
     // backstep to impact
-    float t = position.z / velocity.z;
+    double t = position.z / velocity.z;
     position -= velocity * t;
     return dt - time_delta::from_seconds(t);
 }

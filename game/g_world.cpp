@@ -272,7 +272,7 @@ void world::write_sound(sound::asset sound_asset, vec2 position, float volume)
 void world::write_effect(time_value time, effect_type type, vec2 position, vec2 direction, float strength)
 {
     _message.write_byte(narrow_cast<uint8_t>(message_type::effect));
-    _message.write_float(time.to_seconds());
+    _message.write_float(float(time.to_seconds()));
     _message.write_byte(narrow_cast<uint8_t>(type));
     _message.write_vector(position);
     _message.write_vector(direction);

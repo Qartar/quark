@@ -27,19 +27,19 @@ void subsystem::think()
 }
 
 //------------------------------------------------------------------------------
-void subsystem::damage(object* /*inflictor*/, float amount)
+void subsystem::damage(object* /*inflictor*/, double amount)
 {
     _damage_time = get_world()->frametime();
     _damage += amount;
 }
 
 //------------------------------------------------------------------------------
-void subsystem::repair(float damage_per_second)
+void subsystem::repair(double damage_per_second)
 {
-    assert(damage_per_second >= 0.f);
+    assert(damage_per_second >= 0.0);
     if (get_world()->frametime() - _damage_time > repair_delay) {
-        float delta = damage_per_second * FRAMETIME.to_seconds();
-        _damage = std::max(0.f, _damage - delta);
+        double delta = damage_per_second * FRAMETIME.to_seconds();
+        _damage = std::max(0.0, _damage - delta);
     }
 }
 
@@ -78,7 +78,7 @@ void engines::think()
 
     // Update rudder angle
     {
-        float rudder_delta = _rudder_target - _rudder_angle;
+        double rudder_delta = _rudder_target - _rudder_angle;
         if (abs(rudder_delta) > design->rudder_speed * FRAMETIME.to_seconds()) {
             rudder_delta = std::copysign(design->rudder_speed * FRAMETIME.to_seconds(), rudder_delta);
         }
@@ -96,19 +96,19 @@ void engines::think()
         vec2 drag_force = -_linear_drag_coefficient[0] * vx * length(vx)
                           -_linear_drag_coefficient[1] * vy * length(vy);
         // Calculate drag from angular velocity of ship hull
-        float drag_torque = _angular_drag_coefficient * std::copysign(square(_owner->get_angular_velocity()), _owner->get_angular_velocity());
+        double drag_torque = _angular_drag_coefficient * std::copysign(square(_owner->get_angular_velocity()), _owner->get_angular_velocity());
 
         // Simplified rudder model: Calculate torque required to match drag torque
         // at target angular velocity and apply directly to forehead.
-        float target_curvature = -_rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
-        float target_angular_velocity = dot(current_velocity, current_direction) * target_curvature;
-        float rudder_torque = _angular_drag_coefficient * std::copysign(square(target_angular_velocity), target_angular_velocity);
+        double target_curvature = -_rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
+        double target_angular_velocity = dot(current_velocity, current_direction) * target_curvature;
+        double rudder_torque = _angular_drag_coefficient * std::copysign(square(target_angular_velocity), target_angular_velocity);
 
-        float torque = rudder_torque - drag_torque;
+        double torque = rudder_torque - drag_torque;
 
-        vec2 rudder_offset = current_direction * design->length * -0.45f; // FIXME: add to design
+        vec2 rudder_offset = current_direction * design->length * -0.45; // FIXME: add to design
         vec2 rudder_direction = current_direction * rot2(_rudder_angle);
-        vec2 rudder_normal = rudder_direction.cross(1.f);
+        vec2 rudder_normal = rudder_direction.cross(1.0);
 
         // Calculate force imparted by rudder
         vec2 rudder_force = rudder_normal * torque / (rudder_offset.length() * cos(_rudder_angle));
@@ -117,16 +117,16 @@ void engines::think()
         current_velocity += (rudder_force + drag_force) / design->displacement * FRAMETIME.to_seconds();
 
         // Apply power
-        float current_speed = current_velocity.length();
+        double current_speed = current_velocity.length();
         if (current_speed < _speed_target) {
-            float speed_delta = 1e3f * design->power / (design->speed * design->displacement) * FRAMETIME.to_seconds();
+            double speed_delta = 1e3 * design->power / (design->speed * design->displacement) * FRAMETIME.to_seconds();
             if (current_speed + speed_delta > _speed_target) {
                 speed_delta = _speed_target - current_speed;
             }
             current_velocity += current_direction * speed_delta;
         }
 
-        float angular_velocity = _owner->get_angular_velocity();
+        double angular_velocity = _owner->get_angular_velocity();
         angular_velocity += torque * _inverse_inertia * FRAMETIME.to_seconds();
         _owner->set_linear_velocity(current_velocity);
         _owner->set_angular_velocity(angular_velocity);

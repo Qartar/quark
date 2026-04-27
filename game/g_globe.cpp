@@ -42,7 +42,7 @@ void globe::draw(render::system* renderer, time_value /*time*/)
                 _gshhg[ii].vertices().size(),
                 _gshhg[ii].vertices().data());
             _vao[ii] = render::gl::vertex_array({
-                render::gl::vertex_array_attrib{3, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
+                render::gl::vertex_array_attrib{3, GL_DOUBLE, render::gl::vertex_attrib_type::double_, 0}});
             _vao[ii].bind_buffer(_vbo[ii], 0);
         }
     }
@@ -50,13 +50,13 @@ void globe::draw(render::system* renderer, time_value /*time*/)
     renderer->set_view(view);
     renderer->draw_arc(vec2_zero, 1.f, 0, 0, math::twopi, color4(1,1,1,.5f));
 
-    float cp = cos(_latitude);
-    float sp = sin(_latitude);
+    double cp = cos(_latitude);
+    double sp = sin(_latitude);
     vec3 v = vec3(cos(_longitude) * cp, sin(_longitude) * cp, sp);
     vec3 r = vec3(-sin(_longitude), cos(_longitude), 0);
     vec3 u = cross(v, r);
 
-    GLfloat mm[16] = {
+    GLdouble mm[16] = {
         r.x, u.x, v.x, 0,
         r.y, u.y, v.y, 0,
         r.z, u.z, v.z, 0,
@@ -65,7 +65,7 @@ void globe::draw(render::system* renderer, time_value /*time*/)
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glMultMatrixf(mm);
+    glMultMatrixd(mm);
 
     glClearDepth(.5);
     glClear(GL_DEPTH_BUFFER_BIT);

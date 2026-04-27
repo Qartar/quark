@@ -37,8 +37,8 @@ protected:
 
     int _resolution;
 
-    float _longitude;
-    float _latitude;
+    double _longitude;
+    double _latitude;
 
     float _zoom;
 

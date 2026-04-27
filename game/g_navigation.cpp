@@ -52,12 +52,12 @@ void navigation::think()
             target_heading = rot2(direction.x, direction.y);
         }
 
-        float delta_angle = (target_heading * ship->get_rotation().inverse()).radians();
-        float angular_velocity = ship->get_linear_velocity().length() * engines->get_rudder_angle()
+        double delta_angle = (target_heading * ship->get_rotation().inverse()).radians();
+        double angular_velocity = ship->get_linear_velocity().length() * engines->get_rudder_angle()
             / (ship->design()->rudder_angle * ship->design()->minimum_turning_radius);
-        float angular_accel = ship->design()->rudder_speed * angular_velocity;
+        double angular_accel = ship->design()->rudder_speed * angular_velocity;
 
-        if (.5f * square(angular_velocity) / abs(angular_accel) > abs(delta_angle)) {
+        if (0.5 * square(angular_velocity) / abs(angular_accel) > abs(delta_angle)) {
             engines->set_rudder_target(0);
         } else {
             engines->set_rudder_target(std::copysign(ship->design()->rudder_angle, -delta_angle));

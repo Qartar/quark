@@ -38,11 +38,11 @@ void world::remove_body(physics::rigid_body* body)
 }
 
 //------------------------------------------------------------------------------
-void world::step(float delta_time)
+void world::step(double delta_time)
 {
     struct candidate {
         std::size_t body_b;
-        float fraction;
+        double fraction;
         physics::contact contact;
 
         bool operator<(candidate const& other) const {
@@ -194,7 +194,7 @@ vec2 world::collision_impulse(
 {
     vec3 position = vec3(contact.point);
     vec3 direction = vec3(contact.normal);
-    float distance = contact.distance;
+    double distance = contact.distance;
 
     // Calculate the relative velocity of the bodies at the contact point
     vec3 relative_velocity = vec3(body_b->get_linear_velocity(position.to_vec2()))
@@ -208,40 +208,40 @@ vec2 world::collision_impulse(
     vec3 tangent = (relative_velocity - direction * relative_velocity.dot(direction)).normalize();
 
     // Use the geometric mean of both bodies' coefficient of restitution
-    float restitution = sqrt(body_a->get_material()->restitution()
+    double restitution = sqrt(body_a->get_material()->restitution()
                            * body_b->get_material()->restitution());
 
     // Use the geometric mean of both bodies' coefficient of friction
-    float mu = sqrt(body_a->get_material()->contact_friction()
+    double mu = sqrt(body_a->get_material()->contact_friction()
                   * body_b->get_material()->contact_friction());
 
     // Calculate the inverse reduced mass of both bodies
-    float inverse_reduced_mass = body_a->get_inverse_mass()
+    double inverse_reduced_mass = body_a->get_inverse_mass()
                                + body_b->get_inverse_mass();
 
     vec3 ra = position - vec3(body_a->get_position());
     vec3 rb = position - vec3(body_b->get_position());
 
     // Change in normal velocity per change in momentum along normal
-    float gx = inverse_reduced_mass
+    double gx = inverse_reduced_mass
              + body_a->get_inverse_inertia() * ra.cross(direction).length_sqr()
              + body_b->get_inverse_inertia() * rb.cross(direction).length_sqr();
 
     // Change in tangent velocity per change in momentum along normal
-    float gy = body_a->get_inverse_inertia() * ra.cross(direction).cross(ra).dot(-tangent)
+    double gy = body_a->get_inverse_inertia() * ra.cross(direction).cross(ra).dot(-tangent)
              + body_b->get_inverse_inertia() * rb.cross(direction).cross(rb).dot(-tangent);
 
     // Change in normal velocity per change in momentum along tangent
-    float hx = body_a->get_inverse_inertia() * ra.cross(-tangent).cross(ra).dot(direction)
+    double hx = body_a->get_inverse_inertia() * ra.cross(-tangent).cross(ra).dot(direction)
              + body_b->get_inverse_inertia() * rb.cross(-tangent).cross(rb).dot(direction);
 
     // Change in tangent velocity per change in momentum along tangent
-    float hy = inverse_reduced_mass
+    double hy = inverse_reduced_mass
              + body_a->get_inverse_inertia() * ra.cross(-tangent).length_sqr()
              + body_b->get_inverse_inertia() * rb.cross(-tangent).length_sqr();
 
-    float dvx = -(1.0f + restitution) * relative_velocity.dot(direction);
-    float dvy = -relative_velocity.dot(-tangent);
+    double dvx = -(1.0f + restitution) * relative_velocity.dot(direction);
+    double dvy = -relative_velocity.dot(-tangent);
 
     // Solve the vector equation:
     //
@@ -255,15 +255,15 @@ vec2 world::collision_impulse(
     // M' = ----------- |          |
     //      GxHy - HxGy | -Gy   Gx |
 
-    float inv_det = 1.0f / (gx * hy - hx * gy);
+    double inv_det = 1.0f / (gx * hy - hx * gy);
 
-    float dpx = inv_det * ( hy * dvx - hx * dvy);
-    float dpy = inv_det * (-gy * dvx + gx * dvy);
+    double dpx = inv_det * ( hy * dvx - hx * dvy);
+    double dpy = inv_det * (-gy * dvx + gx * dvy);
 
     // Clamp friction impulse by friction coefficient
     if (std::abs(dpy) > mu * std::abs(dpx)) {
         // Find clamped vy using the original vector equation with dpy := mu * dpx
-        float dvy0 = (gy + mu * hy) / (gx + mu * hx) * dvx;
+        double dvy0 = (gy + mu * hy) / (gx + mu * hx) * dvx;
 
         // Recalculate impulse using clamped friction
         dpx = inv_det * ( hy * dvx - hx * dvy0);
@@ -274,7 +274,7 @@ vec2 world::collision_impulse(
 }
 
 //------------------------------------------------------------------------------
-std::vector<world::overlap> world::generate_overlaps(float delta_time) const
+std::vector<world::overlap> world::generate_overlaps(double delta_time) const
 {
     std::vector<bounds> swept_bounds(_bodies.size());
     for (std::size_t ii = 0, sz = _bodies.size(); ii < sz; ++ii) {

@@ -30,7 +30,7 @@ vec2 collide::closest_point(shape const* shape, vec2 point)
     motion point_motion{&point_shape, point};
 
     if (shape->type() == shape_type::compound) {
-        float best_distance = FLT_MAX;
+        double best_distance = DBL_MAX;
         vec2 best_point = vec2_zero;
         for (auto& child : *static_cast<compound_shape const*>(shape)) {
             motion shape_motion{
@@ -39,7 +39,7 @@ vec2 collide::closest_point(shape const* shape, vec2 point)
                 child.rotation
             };
             collide c(shape_motion, point_motion);
-            float distance = (c.get_contact().point - point).length_sqr();
+            double distance = (c.get_contact().point - point).length_sqr();
             if (distance < best_distance) {
                 best_distance = distance;
                 best_point = c.get_contact().point;
@@ -60,13 +60,13 @@ collide::collide(motion const& motion_a, motion const& motion_b)
     vec3 position = vec3_zero;
     vec3 direction = vec3(_motion[1].get_position() - _motion[0].get_position());
 
-    float distance = minimum_distance(position, direction);
+    double distance = minimum_distance(position, direction);
 
     // Calculate the relative velocity of the bodies at the contact point
     vec3 relative_velocity = vec3(_motion[1].get_linear_velocity(position.to_vec2()))
                            - vec3(_motion[0].get_linear_velocity(position.to_vec2()));
 
-    if (distance < 0.0f && relative_velocity.dot(direction) < 0.f) {
+    if (distance < 0.0 && relative_velocity.dot(direction) < 0.0) {
         _has_contact = true;
     } else {
         _has_contact = false;
@@ -81,14 +81,14 @@ collide::collide(motion const& motion_a, motion const& motion_b)
 }
 
 //------------------------------------------------------------------------------
-float collide::minimum_distance(vec3& point, vec3& direction) const
+double collide::minimum_distance(vec3& point, vec3& direction) const
 {
     support_vertex simplex[2], candidate;
 
     simplex[0] = supporting_vertex(direction);
     simplex[1] = supporting_vertex(-simplex[0].d);
     direction = -nearest_difference(simplex[0], simplex[1]);
-    float distance = direction.length_sqr();
+    double distance = direction.length_sqr();
 
     for (int num_iterations = 0; ; ++num_iterations) {
         candidate = supporting_vertex(direction);
@@ -110,7 +110,7 @@ float collide::minimum_distance(vec3& point, vec3& direction) const
             direction = -d1;
         }
 
-        float d = direction.length_sqr();
+        double d = direction.length_sqr();
 
         // Check progress
         if (std::min(distance - d, d) < epsilon || num_iterations >= max_iterations) {
@@ -142,16 +142,16 @@ vec3 collide::motion_supporting_vertex(motion_data const& motion, vec3 direction
 vec3 collide::nearest_difference(support_vertex a, support_vertex b) const
 {
     vec3 v = b.d - a.d;
-    float num = -a.d.dot(v);
-    float den = v.dot(v);
+    double num = -a.d.dot(v);
+    double den = v.dot(v);
 
     if (num >= den) {
         return b.d;
     } else if (num < 0.0f) {
         return a.d;
     } else {
-        float t = num / den;
-        float s = 1.f - t;
+        double t = num / den;
+        double s = 1.f - t;
         return a.d * s + b.d * t;
     }
 }
@@ -160,16 +160,16 @@ vec3 collide::nearest_difference(support_vertex a, support_vertex b) const
 vec3 collide::nearest_point(support_vertex a, support_vertex b) const
 {
     vec3 v = b.d - a.d;
-    float num = -a.d.dot(v);
-    float den = v.dot(v);
+    double num = -a.d.dot(v);
+    double den = v.dot(v);
 
     if (num >= den) {
         return b.a;
     } else if (num < 0.0f) {
         return a.a;
     } else {
-        float t = num / den;
-        float s = 1.f - t;
+        double t = num / den;
+        double s = 1.f - t;
         return a.a * s + b.a * t;
     }
 }
@@ -200,7 +200,7 @@ bool collide::triangle_contains_origin(vec3 a, vec3 b, vec3 c) const
 }
 
 //------------------------------------------------------------------------------
-float collide::penetration_distance(support_vertex a, support_vertex b, support_vertex c, vec3& point, vec3& direction) const
+double collide::penetration_distance(support_vertex a, support_vertex b, support_vertex c, vec3& point, vec3& direction) const
 {
     std::array<support_vertex, max_vertices> vertices;
     std::size_t num_vertices = 0;
@@ -221,9 +221,9 @@ float collide::penetration_distance(support_vertex a, support_vertex b, support_
         candidate = supporting_vertex(direction);
 
         // Check for termination
-        float edge_distance = vertices[edge_index].d.dot(direction);
-        float point_distance = candidate.d.dot(direction);
-        float delta_sqr = (point_distance - edge_distance) * (point_distance - edge_distance) / direction.length_sqr();
+        double edge_distance = vertices[edge_index].d.dot(direction);
+        double point_distance = candidate.d.dot(direction);
+        double delta_sqr = (point_distance - edge_distance) * (point_distance - edge_distance) / direction.length_sqr();
         if (delta_sqr < epsilon || num_vertices == max_vertices) {
             point = nearest_point(vertices[edge_index], vertices[edge_index-1]);
             return edge_distance / direction.normalize_length();
@@ -240,14 +240,14 @@ float collide::penetration_distance(support_vertex a, support_vertex b, support_
 //------------------------------------------------------------------------------
 std::size_t collide::nearest_edge_index(vec3 normal, support_vertex const* vertices, std::size_t num_vertices, vec3& direction) const
 {
-    float min_dist_sqr = FLT_MAX;
+    double min_dist_sqr = DBL_MAX;
     std::size_t min_index = 1;
 
     for (std::size_t ii = 1; ii < num_vertices; ++ii) {
         vec3 edge_normal = normal.cross(vertices[ii-1].d - vertices[ii].d);
-        float dot_product = edge_normal.dot(vertices[ii].d);
+        double dot_product = edge_normal.dot(vertices[ii].d);
 
-        float dist_sqr = dot_product * dot_product / edge_normal.length_sqr();
+        double dist_sqr = dot_product * dot_product / edge_normal.length_sqr();
 
         if (dist_sqr < min_dist_sqr) {
             min_dist_sqr = dist_sqr;

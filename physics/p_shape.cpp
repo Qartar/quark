@@ -44,11 +44,11 @@ convex_shape::convex_shape(vec2 const* vertices, std::size_t num_vertices)
 
     // calculate center of mass and area
     for (std::size_t ii = 0; ii < _num_vertices; ++ii) {
-        float area = _vertices[ii].cross(_vertices[ii + 1]) * .5f;
+        double area = _vertices[ii].cross(_vertices[ii + 1]) * 0.5;
         _center_of_mass += (_vertices[ii] + _vertices[ii + 1]) * area;
         _area += area;
     }
-    _center_of_mass /= 3.f * _area;
+    _center_of_mass /= 3.0 * _area;
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ bool convex_shape::contains_point(vec2 point) const
     for (std::size_t ii = 0; ii < _num_vertices; ++ii) {
         vec2 va = point - _vertices[ii];
         vec2 vb = point - _vertices[ii + 1];
-        if (va.cross(vb) < 0.f) {
+        if (va.cross(vb) < 0.0) {
             return false;
         }
     }
@@ -68,9 +68,9 @@ bool convex_shape::contains_point(vec2 point) const
 vec2 convex_shape::supporting_vertex(vec2 direction) const
 {
     std::size_t imax = 0;
-    float dmax = direction.dot(_vertices[0] - _center_of_mass);
+    double dmax = direction.dot(_vertices[0] - _center_of_mass);
     for (std::size_t ii = 1; ii < _num_vertices; ++ii) {
-        float d = direction.dot(_vertices[ii] - _center_of_mass);
+        double d = direction.dot(_vertices[ii] - _center_of_mass);
         if (d > dmax) {
             imax = ii;
             dmax = d;
@@ -80,22 +80,22 @@ vec2 convex_shape::supporting_vertex(vec2 direction) const
 }
 
 //------------------------------------------------------------------------------
-void convex_shape::calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const
+void convex_shape::calculate_mass_properties(double inverse_mass, vec2& center_of_mass, double& inverse_inertia) const
 {
     center_of_mass = _center_of_mass;
-    if (inverse_mass > 0.0f) {
-        float numerator = 0.f;
-        float denominator = 0.f;
+    if (inverse_mass > 0.0) {
+        double numerator = 0.0;
+        double denominator = 0.0;
         for (std::size_t ii = 0; ii < _num_vertices; ++ii) {
             vec2 va = _vertices[ii] - _center_of_mass;
             vec2 vb = _vertices[ii + 1] - _center_of_mass;
-            float cross = va.cross(vb);
+            double cross = va.cross(vb);
             numerator += cross * (va.dot(va) + va.dot(vb) + vb.dot(vb));
             denominator += cross;
         }
-        inverse_inertia = 6.f * inverse_mass * denominator / numerator;
+        inverse_inertia = 6.0 * inverse_mass * denominator / numerator;
     } else {
-        inverse_inertia = 0.0f;
+        inverse_inertia = 0.0;
     }
 }
 
@@ -125,7 +125,7 @@ std::size_t convex_shape::_extract_convex_hull(vec2* vertices, std::size_t num_v
     std::sort(vertices, vertices + num_vertices, [pivot](vec2 a, vec2 b) {
         vec2 c = a - pivot;
         vec2 d = b - pivot;
-        float s = c.y * d.x - d.y * c.x;
+        double s = c.y * d.x - d.y * c.x;
 
         if (c.y * d.y < 0.f) {
             return d.y < 0.f;
@@ -178,23 +178,23 @@ convex_shape convex_shape::from_planes(vec3 const* planes, std::size_t num_plane
             vec3 p = planes[ii].cross(planes[jj]);
             if (p.z) {
                 vec2 u = planes[jj].to_vec2();
-                float s = u.dot(v);
-                if (s < 0.f && u.dot(vmin) > -planes[jj].z) {
+                double s = u.dot(v);
+                if (s < 0.0 && u.dot(vmin) > -planes[jj].z) {
                     vmin = vec2(p.x, p.y) / p.z;
                 }
-                if (s > 0.f && u.dot(vmax) > -planes[jj].z) {
+                if (s > 0.0 && u.dot(vmax) > -planes[jj].z) {
                     vmax = vec2(p.x, p.y) / p.z;
                 }
-                if (v.dot(vmax - vmin) < 0.f) {
+                if (v.dot(vmax - vmin) < 0.0) {
                     break;
                 }
             }
         }
-        float d = v.dot(vmax - vmin);
-        if (d > 0.f) {
+        double d = v.dot(vmax - vmin);
+        if (d > 0.0) {
             enumerated[num_enumerated++] = vmin;
             enumerated[num_enumerated++] = vmax;
-        } else if (d == 0.f) {
+        } else if (d == 0.0) {
             enumerated[num_enumerated++] = vmin;
         }
     }
@@ -203,14 +203,14 @@ convex_shape convex_shape::from_planes(vec3 const* planes, std::size_t num_plane
 }
 
 //------------------------------------------------------------------------------
-convex_shape convex_shape::shrink_by_radius(float radius) const
+convex_shape convex_shape::shrink_by_radius(double radius) const
 {
     vec3 planes[kMaxVertices];
 
     // in order to robustly handle self-penetration we calculate the edge planes
     // after shrinking and rebuild the convex hull via vertex enumeration.
     for (std::size_t ii = 0; ii < _num_vertices; ++ii) {
-        vec2 n = (_vertices[ii + 1] - _vertices[ii]).cross(1.f);
+        vec2 n = (_vertices[ii + 1] - _vertices[ii]).cross(1.0);
         planes[ii] = vec3(n.x, n.y, radius * n.length() - n.dot(_vertices[ii]));
     }
 
@@ -218,13 +218,13 @@ convex_shape convex_shape::shrink_by_radius(float radius) const
 }
 
 //------------------------------------------------------------------------------
-convex_shape convex_shape::expand_by_radius(float radius) const
+convex_shape convex_shape::expand_by_radius(double radius) const
 {
     vec2 normals[kMaxVertices + 1];
 
-    normals[0] = (_vertices[0] - _vertices[_num_vertices - 1]).cross(1.f).normalize();
+    normals[0] = (_vertices[0] - _vertices[_num_vertices - 1]).cross(1.0).normalize();
     for (std::size_t ii = 1; ii < _num_vertices; ++ii) {
-        normals[ii] = (_vertices[ii] - _vertices[ii - 1]).cross(1.f).normalize();
+        normals[ii] = (_vertices[ii] - _vertices[ii - 1]).cross(1.0).normalize();
         assert(normals[ii] != normals[ii - 1] && "non-convex (collinear) faces detected");
     }
     normals[_num_vertices] = normals[0];
@@ -248,11 +248,11 @@ convex_shape convex_shape::expand_by_radius(float radius) const
     out._area = 0;
     out._center_of_mass = vec2(0,0);
     for (std::size_t ii = 0; ii < out._num_vertices; ++ii) {
-        float cross = out._vertices[ii].cross(out._vertices[ii + 1]) * .5f;
+        double cross = out._vertices[ii].cross(out._vertices[ii + 1]) * 0.5;
         out._center_of_mass += (out._vertices[ii] + out._vertices[ii + 1]) * cross;
         out._area += cross;
     }
-    out._center_of_mass /= 3.f * out._area;
+    out._center_of_mass /= 3.0 * out._area;
 
     return out;
 }

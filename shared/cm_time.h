@@ -35,8 +35,8 @@ public:
         return T(microseconds);
     }
 
-    constexpr float to_seconds() const {
-        return _value * 1e-6f;
+    constexpr double to_seconds() const {
+        return _value * 1e-6;
     }
 
     constexpr int64_t to_milliseconds() const {

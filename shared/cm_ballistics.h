@@ -27,9 +27,9 @@ enum class curve {
 };
 
 //------------------------------------------------------------------------------
-void step(vec3& position, vec3& velocity, ballistics::curve curve, float ballistic_coefficient, time_delta dt);
+void step(vec3& position, vec3& velocity, ballistics::curve curve, double ballistic_coefficient, time_delta dt);
 
 //------------------------------------------------------------------------------
-time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, float ballistic_coefficient, time_delta timestep);
+time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, double ballistic_coefficient, time_delta timestep);
 
 } // namespace ballistics

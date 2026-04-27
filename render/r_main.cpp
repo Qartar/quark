@@ -282,9 +282,9 @@ void system::set_default_state()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(_view.origin.x, _view.origin.y, 0);
+    glTranslated(_view.origin.x, _view.origin.y, 0);
     glRotatef(math::rad2deg(_view.angle), 0, 0, -1);
-    glTranslatef(-_view.origin.x, -_view.origin.y, 0);
+    glTranslated(-_view.origin.x, -_view.origin.y, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -344,11 +344,11 @@ void system::draw_timers() const
     glPushMatrix();
     glLoadIdentity();
 
-    float dx = time_delta::from_hertz(60).to_seconds() * _timers.size();
-    float dy = time_delta::from_hertz(60).to_seconds();
+    double dx = time_delta::from_hertz(60).to_seconds() * _timers.size();
+    double dy = time_delta::from_hertz(60).to_seconds();
 
     glTranslatef(1.f, -1.f, 0);
-    glScalef(-2.f / dx, (1.f / 6.f) / dy, 1);
+    glScaled(-2.0 / dx, (1.0 / 6.0) / dy, 1);
 
     // red - render time (begin_frame -> end_frame)
     glBegin(GL_LINE_STRIP);
@@ -359,7 +359,7 @@ void system::draw_timers() const
             time_delta ty = _timers[(_timer_index - ii - 1) % sz].end_frame
                             - _timers[(_timer_index - ii - 1) % sz].begin_frame;
 
-            glVertex2f(tx.to_seconds(), ty.to_seconds());
+            glVertex2d(tx.to_seconds(), ty.to_seconds());
         }
     glEnd();
 
@@ -372,7 +372,7 @@ void system::draw_timers() const
             time_delta ty = _timers[(_timer_index - ii - 1) % sz].begin_frame
                             - _timers[(_timer_index - ii - 2) % sz].swap_buffer;
 
-            glVertex2f(tx.to_seconds(), ty.to_seconds());
+            glVertex2d(tx.to_seconds(), ty.to_seconds());
         }
     glEnd();
 
@@ -385,15 +385,15 @@ void system::draw_timers() const
             time_delta ty = _timers[(_timer_index - ii - 1) % sz].swap_buffer
                             - _timers[(_timer_index - ii - 2) % sz].swap_buffer;
 
-            glVertex2f(tx.to_seconds(), ty.to_seconds());
+            glVertex2d(tx.to_seconds(), ty.to_seconds());
         }
     glEnd();
 
     // white - 60 Hz marker
     glBegin(GL_LINES);
         glColor4f(1,1,1,.8f);
-        glVertex2f(0.f, dy);
-        glVertex2f(dx, dy);
+        glVertex2d(0.0, dy);
+        glVertex2d(dx, dy);
     glEnd();
 
     glMatrixMode(GL_PROJECTION);

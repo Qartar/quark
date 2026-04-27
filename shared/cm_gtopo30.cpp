@@ -52,11 +52,11 @@ gtopo30::gtopo30()
 }
 
 //------------------------------------------------------------------------------
-float gtopo30::height(vec3 v) const
+double gtopo30::height(vec3 v) const
 {
     // TODO: use WGS84 to convert to long/lat
-    float longitude = math::rad2deg(atan2f(v.y, v.x));
-    float latitude = math::rad2deg(atan2f(v.z, sqrt(v.x * v.x + v.y * v.y)));
+    double longitude = math::rad2deg(atan2(v.y, v.x));
+    double latitude = math::rad2deg(atan2(v.z, sqrt(v.x * v.x + v.y * v.y)));
 
     vec3 grid[4] = {};
 
@@ -65,36 +65,36 @@ float gtopo30::height(vec3 v) const
         std::size_t y = std::ptrdiff_t((_tiles[ii].ulymap - latitude) / _tiles[ii].ydim);
 
         if (x < _tiles[ii].ncols && y < _tiles[ii].nrows) {
-            grid[0].x = float(_tiles[ii].ulxmap + _tiles[ii].xdim * x);
-            grid[0].y = float(_tiles[ii].ulymap - _tiles[ii].ydim * y);
+            grid[0].x = double(_tiles[ii].ulxmap + _tiles[ii].xdim * x);
+            grid[0].y = double(_tiles[ii].ulymap - _tiles[ii].ydim * y);
             grid[0].z = _tiles[ii].data[y * _tiles[ii].ncols + x];
         }
 
         if ((x + 1) < _tiles[ii].ncols && y < _tiles[ii].nrows) {
-            grid[1].x = float(_tiles[ii].ulxmap + _tiles[ii].xdim * (x + 1));
-            grid[1].y = float(_tiles[ii].ulymap - _tiles[ii].ydim * y);
+            grid[1].x = double(_tiles[ii].ulxmap + _tiles[ii].xdim * (x + 1));
+            grid[1].y = double(_tiles[ii].ulymap - _tiles[ii].ydim * y);
             grid[1].z = _tiles[ii].data[y * _tiles[ii].ncols + x + 1];
         }
 
         if (x < _tiles[ii].ncols && (y + 1) < _tiles[ii].nrows) {
-            grid[2].x = float(_tiles[ii].ulxmap + _tiles[ii].xdim * x);
-            grid[2].y = float(_tiles[ii].ulymap - _tiles[ii].ydim * (y + 1));
+            grid[2].x = double(_tiles[ii].ulxmap + _tiles[ii].xdim * x);
+            grid[2].y = double(_tiles[ii].ulymap - _tiles[ii].ydim * (y + 1));
             grid[2].z = _tiles[ii].data[(y + 1) * _tiles[ii].ncols + x];
         }
 
         if ((x + 1) < _tiles[ii].ncols && (y + 1) < _tiles[ii].nrows) {
-            grid[3].x = float(_tiles[ii].ulxmap + _tiles[ii].xdim * (x + 1));
-            grid[3].y = float(_tiles[ii].ulymap - _tiles[ii].ydim * (y + 1));
+            grid[3].x = double(_tiles[ii].ulxmap + _tiles[ii].xdim * (x + 1));
+            grid[3].y = double(_tiles[ii].ulymap - _tiles[ii].ydim * (y + 1));
             grid[3].z = _tiles[ii].data[(y + 1) * _tiles[ii].ncols + x + 1];
         }
     }
 
     // Bilinear interpolation
-    float s = (longitude - grid[0].x) / (grid[1].x - grid[0].x);
-    float t = (latitude - grid[0].y) / (grid[2].y - grid[0].y);
+    double s = (longitude - grid[0].x) / (grid[1].x - grid[0].x);
+    double t = (latitude - grid[0].y) / (grid[2].y - grid[0].y);
 
-    return (grid[0].z * (1.f - s) + grid[1].z * s) * (1.f - t)
-         + (grid[2].z * (1.f - s) + grid[3].z * s) * t;
+    return (grid[0].z * (1.0 - s) + grid[1].z * s) * (1.0 - t)
+         + (grid[2].z * (1.0 - s) + grid[3].z * s) * t;
 }
 
 //------------------------------------------------------------------------------

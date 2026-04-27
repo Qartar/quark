@@ -26,9 +26,9 @@ vec2 compound_shape::supporting_vertex(vec2 /*direction*/) const
 }
 
 //------------------------------------------------------------------------------
-float compound_shape::calculate_area() const
+double compound_shape::calculate_area() const
 {
-    float area = 0.f;
+    double area = 0.0;
     // Assume subshapes are not overlapping
     for (auto const& child : _children) {
         area += child.shape->calculate_area();
@@ -37,19 +37,19 @@ float compound_shape::calculate_area() const
 }
 
 //------------------------------------------------------------------------------
-void compound_shape::calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const
+void compound_shape::calculate_mass_properties(double inverse_mass, vec2& center_of_mass, double& inverse_inertia) const
 {
     center_of_mass = vec2_zero;
 
-    float inverse_area = 1.f / calculate_area();
-    float inertia = 0.f;
+    double inverse_area = 1.f / calculate_area();
+    double inertia = 0.f;
 
     for (auto const& child : _children) {
         vec2 child_center_of_mass;
-        float child_inverse_inertia;
+        double child_inverse_inertia;
 
-        float child_area = child.shape->calculate_area();
-        float child_mass = inverse_mass ? child_area * inverse_area / inverse_mass : 0.f;
+        double child_area = child.shape->calculate_area();
+        double child_mass = inverse_mass ? child_area * inverse_area / inverse_mass : 0.f;
 
         child.shape->calculate_mass_properties(
             inverse_mass,

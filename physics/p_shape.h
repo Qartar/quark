@@ -31,9 +31,9 @@ public:
 
     virtual vec2 supporting_vertex(vec2 direction) const = 0;
 
-    virtual float calculate_area() const = 0;
+    virtual double calculate_area() const = 0;
 
-    virtual void calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const = 0;
+    virtual void calculate_mass_properties(double inverse_mass, vec2& center_of_mass, double& inverse_inertia) const = 0;
 
     virtual bounds calculate_bounds(mat3 transform) const = 0;
 };
@@ -61,16 +61,16 @@ public:
                                         direction.y < 0.f ? -1.f : 1.f);
     }
 
-    virtual float calculate_area() const override {
-        return 4.f * _half_size.x * _half_size.y;
+    virtual double calculate_area() const override {
+        return 4.0 * _half_size.x * _half_size.y;
     }
 
-    virtual void calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const override {
+    virtual void calculate_mass_properties(double inverse_mass, vec2& center_of_mass, double& inverse_inertia) const override {
         center_of_mass = vec2(0,0);
-        if (inverse_mass > 0.f) {
-            inverse_inertia = 3.0f * inverse_mass / _half_size.dot(_half_size);
+        if (inverse_mass > 0.0) {
+            inverse_inertia = 3.0 * inverse_mass / _half_size.dot(_half_size);
         } else {
-            inverse_inertia = 0.0f;
+            inverse_inertia = 0.0;
         }
     }
 
@@ -107,14 +107,14 @@ public:
         return direction.normalize() * _radius;
     }
 
-    virtual float calculate_area() const override {
+    virtual double calculate_area() const override {
         return math::pi * _radius * _radius;
     }
 
-    virtual void calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const override {
+    virtual void calculate_mass_properties(double inverse_mass, vec2& center_of_mass, double& inverse_inertia) const override {
         center_of_mass = vec2(0,0);
-        if (inverse_mass > 0.0f) {
-            inverse_inertia = 2.0f * inverse_mass / (_radius * _radius);
+        if (inverse_mass > 0.0) {
+            inverse_inertia = 2.0 * inverse_mass / (_radius * _radius);
         } else {
             inverse_inertia = 0.0f;
         }
@@ -148,15 +148,15 @@ public:
 
     virtual vec2 supporting_vertex(vec2 direction) const override;
 
-    virtual float calculate_area() const override { return _area; }
+    virtual double calculate_area() const override { return _area; }
 
-    virtual void calculate_mass_properties(float inverse_mass, vec2& center_of_mass, float& inverse_inertia) const override;
+    virtual void calculate_mass_properties(double inverse_mass, vec2& center_of_mass, double& inverse_inertia) const override;
 
     virtual bounds calculate_bounds(mat3 transform) const override;
 
-    convex_shape shrink_by_radius(float radius) const;
+    convex_shape shrink_by_radius(double radius) const;
 
-    convex_shape expand_by_radius(float radius) const;
+    convex_shape expand_by_radius(double radius) const;
 
     static convex_shape from_planes(vec3 const* planes, std::size_t num_planes);
 
@@ -166,7 +166,7 @@ public:
 protected:
     static constexpr std::size_t kMaxVertices = 64;
     std::size_t _num_vertices;
-    float _area;
+    double _area;
     vec2 _center_of_mass;
     vec2 _vertices[kMaxVertices + 1];
 

@@ -11,8 +11,8 @@ namespace render {
 //------------------------------------------------------------------------------
 struct edge_distance
 {
-    float signed_distance_sqr;
-    float orthogonal_distance;
+    double signed_distance_sqr;
+    double orthogonal_distance;
 
     edge_distance operator-() const {
         return {-signed_distance_sqr, orthogonal_distance};
@@ -39,7 +39,7 @@ public:
     bounds const& bounds() { return _bounds; }
 
     //! Returns the signed distance to the edge nearest to the given point
-    float signed_edge_distance(vec2 point) const;
+    double signed_edge_distance(vec2 point) const;
     //! Returns the signed distance by channel to the edges nearest to the given point
     vec3 signed_edge_distance_channels(vec2 point) const;
     //! Returns the index of the edge nearest to the given point
@@ -102,7 +102,7 @@ protected:
     //! Returns the signed 'pseudo' distance to the edge from the given point.
     //! This treats edges as having rays extending on either end of the segment
     //! or spline in the same direction as the segment or tangent of the spline.
-    float signed_edge_pseudo_distance(vec2 point, std::size_t edge_index) const;
+    double signed_edge_pseudo_distance(vec2 point, std::size_t edge_index) const;
 };
 
 } // namespace render

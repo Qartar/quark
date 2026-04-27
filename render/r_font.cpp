@@ -381,11 +381,19 @@ void generate_sdf(HDC hdc, font_sdf::block const* blocks, std::size_t num_blocks
 
             {
                 font_sdf::glyph_info g;
-                g.size = vec2((cell_size[jj] - vec2i(2)) * scale);
-                g.cell = vec2((cell_offset[jj] + vec2i(1)) * scale);
-                g.offset = vec2(float(glyphs[ii].metrics().gmptGlyphOrigin.x) * scale,
+                vec2 size = vec2((cell_size[jj] - vec2i(2)) * scale);
+                vec2 cell = vec2((cell_offset[jj] + vec2i(1)) * scale);
+                vec2 offset = vec2(float(glyphs[ii].metrics().gmptGlyphOrigin.x) * scale,
                                 float(glyphs[ii].metrics().gmptGlyphOrigin.y - (cell_size[jj].y - margin)) * scale);
-                g.advance = vec2(float(glyphs[ii].metrics().gmCellIncX * scale), 0);
+                vec2 advance = vec2(float(glyphs[ii].metrics().gmCellIncX * scale), 0);
+                g.size[0] = float(size.x);
+                g.size[1] = float(size.y);
+                g.cell[0] = float(cell.x);
+                g.cell[1] = float(cell.y);
+                g.offset[0] = float(offset.x);
+                g.offset[1] = float(offset.y);
+                g.advance[0] = float(advance.x);
+                g.advance[1] = float(advance.y);
                 sdf->glyphs[ii] = std::move(g);
             }
         }
@@ -546,8 +554,8 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glScalef(scale.x, scale.y, 1);
-    glTranslatef(position.x / scale.x, position.y / scale.y, 0);
+    glScaled(scale.x, scale.y, 1);
+    glTranslated(position.x / scale.x, position.y / scale.y, 0);
 
     while (cursor < end) {
         char const* next = find_color(cursor, end);
@@ -561,11 +569,11 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         while (cursor < next && instances.size() + _instance_offset < max_instances) {
             int glyph_index = _sdf->codepoint_to_glyph_index((unsigned char)*cursor++);
             instances.push_back({
-                    vec2(float(xoffs), 0),
+                    {float(xoffs), 0},
                     glyph_index,
                     packed_color,
                 });
-            xoffs += int(_sdf->glyphs[glyph_index].advance.x);
+            xoffs += int(_sdf->glyphs[glyph_index].advance[0]);
         }
 
         // Scan color and potentially continue filling instance data
@@ -627,7 +635,7 @@ vec2 font::size(string::view string, vec2 scale) const
 
         while (cursor < next) {
             int glyph_index = _sdf->codepoint_to_glyph_index((unsigned char)*cursor++);
-            size.x += int(_sdf->glyphs[glyph_index].advance.x);
+            size.x += int(_sdf->glyphs[glyph_index].advance[0]);
         }
 
         if (cursor < end) {

@@ -18,8 +18,8 @@ public:
 // constructors
 
     mat2() = default;
-    constexpr mat2(float in11, float in12,
-                   float in21, float in22)
+    constexpr mat2(double in11, double in12,
+                   double in21, double in22)
         : _rows{vec2{in11, in12},
                 vec2{in21, in22}}
     {}
@@ -39,11 +39,11 @@ public:
 // basic functions
 
     void set_identity() {
-        _rows[0][0] = 1.f; _rows[0][1] = 0.f;
-        _rows[1][0] = 0.f; _rows[1][1] = 1.f;
+        _rows[0][0] = 1.0; _rows[0][1] = 0.0;
+        _rows[1][0] = 0.0; _rows[1][1] = 1.0;
     }
 
-    constexpr float determinant() const {
+    constexpr double determinant() const {
         return cross(_rows[0], _rows[1]);
     }
 
@@ -60,14 +60,14 @@ public:
 // scale
 
     void set_scale(vec2 const& s) {
-        _rows[0][0] = s.x; _rows[0][1] = 0.f;
-        _rows[1][0] = 0.f; _rows[1][1] = s.y;
+        _rows[0][0] = s.x; _rows[0][1] = 0.0;
+        _rows[1][0] = 0.0; _rows[1][1] = s.y;
     }
 
-    void set_scale(float s) { set_scale(vec2(s)); }
+    void set_scale(double s) { set_scale(vec2(s)); }
 
-    constexpr static mat2 scale(float s) { return scale(vec2(s)); }
-    constexpr static mat2 scale(float sx, float sy) { return scale(vec2(sx, sy)); }
+    constexpr static mat2 scale(double s) { return scale(vec2(s)); }
+    constexpr static mat2 scale(double sx, double sy) { return scale(vec2(sx, sy)); }
     constexpr static mat2 scale(vec2 s) { return mat2(s.x, 0, 0, s.y); }
 
 // multiplication
@@ -103,9 +103,9 @@ public:
 // constructors
 
     mat3() = default;
-    constexpr mat3(float in11, float in12, float in13,
-                   float in21, float in22, float in23,
-                   float in31, float in32, float in33)
+    constexpr mat3(double in11, double in12, double in13,
+                   double in21, double in22, double in23,
+                   double in31, double in32, double in33)
         : _rows{vec3{in11, in12, in13},
                 vec3{in21, in22, in23},
                 vec3{in31, in32, in33}}
@@ -116,19 +116,19 @@ public:
     explicit constexpr mat3(rot3 r)
         : _rows{}
     {
-        float xx = 2.f * r.x * r.x;
-        float yy = 2.f * r.y * r.y;
-        float zz = 2.f * r.z * r.z;
-        float xy = 2.f * r.x * r.y;
-        float xz = 2.f * r.x * r.z;
-        float yz = 2.f * r.y * r.z;
-        float wx = 2.f * r.w * r.x;
-        float wy = 2.f * r.w * r.y;
-        float wz = 2.f * r.w * r.z;
+        double xx = 2.0 * r.x * r.x;
+        double yy = 2.0 * r.y * r.y;
+        double zz = 2.0 * r.z * r.z;
+        double xy = 2.0 * r.x * r.y;
+        double xz = 2.0 * r.x * r.z;
+        double yz = 2.0 * r.y * r.z;
+        double wx = 2.0 * r.w * r.x;
+        double wy = 2.0 * r.w * r.y;
+        double wz = 2.0 * r.w * r.z;
 
-        _rows[0] = {1.f - (yy + zz), xy - wz, xz + wy};
-        _rows[1] = {xy + wz, 1.f - (xx + zz), yz - wx};
-        _rows[2] = {xz - wy, yz + wx, 1.f - (xx + yy)};
+        _rows[0] = {1.0 - (yy + zz), xy - wz, xz + wy};
+        _rows[1] = {xy + wz, 1.0 - (xx + zz), yz - wx};
+        _rows[2] = {xz - wy, yz + wx, 1.0 - (xx + yy)};
     }
 
     bool operator==(mat3 const& M) const { return _rows[0] == M[0] && _rows[1] == M[1] && _rows[2] == M[2]; }
@@ -144,7 +144,7 @@ public:
         _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = 1.f;
     }
 
-    constexpr float determinant() const {
+    constexpr double determinant() const {
         return dot(_rows[0], cross(_rows[1], _rows[2]));
     }
 
@@ -157,10 +157,10 @@ public:
     template<int axis> constexpr static mat3 rotate(rot2 r) {
         constexpr int i0 = axis, i1 = (axis + 1) % 3, i2 = (axis + 2) % 3;
 
-        constexpr float rows[3][3] = {
-            { 1.f,  0.f,  0.f },
-            { 0.f, +r.x, +r.y },
-            { 0.f, -r.y, +r.x }
+        constexpr double rows[3][3] = {
+            { 1.0,  0.0,  0.0 },
+            { 0.0, +r.x, +r.y },
+            { 0.0, -r.y, +r.x }
         };
 
         return mat3(rows[i0][i0], rows[i0][i1], rows[i0][i2],
@@ -169,34 +169,34 @@ public:
     }
 
     constexpr rot3 to_rotation() const {
-        float tr = _rows[0][0] + _rows[1][1] + _rows[2][2];
-        if (tr > 0.f) {
-            float t = 1.f + tr;
-            float s = .5f / std::sqrt(t);
+        double tr = _rows[0][0] + _rows[1][1] + _rows[2][2];
+        if (tr > 0.0) {
+            double t = 1.0 + tr;
+            double s = 0.5 / std::sqrt(t);
             return rot3(
                 s * (_rows[2][1] - _rows[1][2]),
                 s * (_rows[0][2] - _rows[2][0]),
                 s * (_rows[1][0] - _rows[0][1]),
                 s * t);
         } else if (_rows[0][0] > _rows[1][1] && _rows[0][0] > _rows[2][2]) {
-            float t = 1.f + (_rows[0][0] - (_rows[1][1] + _rows[2][2]));
-            float s = .5f / std::sqrt(t);
+            double t = 1.0 + (_rows[0][0] - (_rows[1][1] + _rows[2][2]));
+            double s = 0.5 / std::sqrt(t);
             return rot3(
                 s * t,
                 s * (_rows[0][1] + _rows[1][0]),
                 s * (_rows[0][2] + _rows[2][0]),
                 s * (_rows[2][1] - _rows[1][2]));
         } else if (_rows[1][1] > _rows[2][2]) {
-            float t = 1.f + (_rows[1][1] - (_rows[2][2] + _rows[0][0]));
-            float s = .5f / std::sqrt(t);
+            double t = 1.0 + (_rows[1][1] - (_rows[2][2] + _rows[0][0]));
+            double s = 0.5 / std::sqrt(t);
             return rot3(
                 s * (_rows[0][1] + _rows[1][0]),
                 s * t,
                 s * (_rows[1][2] + _rows[2][1]),
                 s * (_rows[0][2] - _rows[2][0]));
         } else {
-            float t = 1.f + (_rows[2][2] - (_rows[0][0] + _rows[1][1]));
-            float s = .5f / std::sqrt(t);
+            double t = 1.0 + (_rows[2][2] - (_rows[0][0] + _rows[1][1]));
+            double s = 0.5 / std::sqrt(t);
             return rot3(
                 s * (_rows[0][2] + _rows[2][0]),
                 s * (_rows[1][2] + _rows[2][1]),
@@ -208,15 +208,15 @@ public:
 // scale
 
     void set_scale(vec3 const& s) {
-        _rows[0][0] = s.x; _rows[0][1] = 0.f; _rows[0][2] = 0.f;
-        _rows[1][0] = 0.f; _rows[1][1] = s.y; _rows[1][2] = 0.f;
-        _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = s.z;
+        _rows[0][0] = s.x; _rows[0][1] = 0.0; _rows[0][2] = 0.0;
+        _rows[1][0] = 0.0; _rows[1][1] = s.y; _rows[1][2] = 0.0;
+        _rows[2][0] = 0.0; _rows[2][1] = 0.0; _rows[2][2] = s.z;
     }
 
-    void set_scale(float s) { set_scale(vec3(s)); }
+    void set_scale(double s) { set_scale(vec3(s)); }
 
-    constexpr static mat3 scale(float s) { return scale(vec3(s)); }
-    constexpr static mat3 scale(float sx, float sy, float sz) { return scale(vec3(sx, sy, sz)); }
+    constexpr static mat3 scale(double s) { return scale(vec3(s)); }
+    constexpr static mat3 scale(double sx, double sy, double sz) { return scale(vec3(sx, sy, sz)); }
     constexpr static mat3 scale(vec3 s) { return mat3(s.x, 0, 0, 0, s.y, 0, 0, 0, s.z); }
 
 // homogenous transformation in two dimensions
@@ -252,7 +252,7 @@ public:
                     lhs[2] * rhs);
     }
 
-    constexpr friend mat3 operator*(mat3 const& lhs, float rhs) {
+    constexpr friend mat3 operator*(mat3 const& lhs, double rhs) {
         return mat3(lhs[0] * rhs,
                     lhs[1] * rhs,
                     lhs[2] * rhs);
@@ -284,10 +284,10 @@ public:
 // constructors
 
     mat4() = default;
-    constexpr mat4(float in11, float in12, float in13, float in14,
-                   float in21, float in22, float in23, float in24,
-                   float in31, float in32, float in33, float in34,
-                   float in41, float in42, float in43, float in44)
+    constexpr mat4(double in11, double in12, double in13, double in14,
+                   double in21, double in22, double in23, double in24,
+                   double in31, double in32, double in33, double in34,
+                   double in41, double in42, double in43, double in44)
         : _rows{vec4{in11, in12, in13, in14},
                 vec4{in21, in22, in23, in24},
                 vec4{in31, in32, in33, in34},
@@ -305,10 +305,10 @@ public:
 // basic functions
 
     void set_identity() {
-        _rows[0][0] = 1.f; _rows[0][1] = 0.f; _rows[0][2] = 0.f; _rows[0][3] = 0.f;
-        _rows[1][0] = 0.f; _rows[1][1] = 1.f; _rows[1][2] = 0.f; _rows[1][3] = 0.f;
-        _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = 1.f; _rows[2][3] = 0.f;
-        _rows[3][0] = 0.f; _rows[3][1] = 0.f; _rows[3][2] = 0.f; _rows[3][3] = 1.f;
+        _rows[0][0] = 1.0; _rows[0][1] = 0.f; _rows[0][2] = 0.0; _rows[0][3] = 0.0;
+        _rows[1][0] = 0.0; _rows[1][1] = 1.f; _rows[1][2] = 0.0; _rows[1][3] = 0.0;
+        _rows[2][0] = 0.0; _rows[2][1] = 0.f; _rows[2][2] = 1.0; _rows[2][3] = 0.0;
+        _rows[3][0] = 0.0; _rows[3][1] = 0.f; _rows[3][2] = 0.0; _rows[3][3] = 1.0;
     }
 
     constexpr mat3 minor(int R, int C) const {
@@ -318,7 +318,7 @@ public:
                     _rows[idx[R][2]][idx[C][0]], _rows[idx[R][2]][idx[C][1]], _rows[idx[R][2]][idx[C][2]]);
     }
 
-    constexpr float determinant() const {
+    constexpr double determinant() const {
         // Laplace expansion
         return _rows[0][0] * minor(0,0).determinant() - _rows[0][1] * minor(0,1).determinant()
              + _rows[0][2] * minor(0,2).determinant() - _rows[0][3] * minor(0,3).determinant();
@@ -329,21 +329,21 @@ public:
     template<int axis> void set_rotation(rot2 r) {
         constexpr int i0 = axis, i1 = (axis + 1) % 3, i2 = (axis + 2) % 3;
 
-        _rows[i0][i0] = 1.f; _rows[i0][i1] =  0.f; _rows[i0][i2] =  0.f; _rows[ 0][ 3] = 0.f;
-        _rows[i1][i0] = 0.f; _rows[i1][i1] = +r.x; _rows[i1][i2] = +r.y; _rows[ 1][ 3] = 0.f;
-        _rows[i2][i0] = 0.f; _rows[i2][i1] = -r.y; _rows[i2][i2] = +r.x; _rows[ 2][ 3] = 0.f;
-        _rows[ 3][ 0] = 0.f; _rows[ 3][ 1] =  0.f; _rows[ 3][ 2] =  0.f; _rows[ 3][ 3] = 1.f;
+        _rows[i0][i0] = 1.0; _rows[i0][i1] =  0.0; _rows[i0][i2] =  0.0; _rows[ 0][ 3] = 0.0;
+        _rows[i1][i0] = 0.0; _rows[i1][i1] = +r.x; _rows[i1][i2] = +r.y; _rows[ 1][ 3] = 0.0;
+        _rows[i2][i0] = 0.0; _rows[i2][i1] = -r.y; _rows[i2][i2] = +r.x; _rows[ 2][ 3] = 0.0;
+        _rows[ 3][ 0] = 0.0; _rows[ 3][ 1] =  0.0; _rows[ 3][ 2] =  0.0; _rows[ 3][ 3] = 1.0;
     }
 
     template<int axis> static mat4 rotate(rot2 r) {
         mat4 m; m.set_rotation<axis>(r); return m;
     }
 
-    template<int axis> void set_rotation(float theta) {
+    template<int axis> void set_rotation(double theta) {
         set_rotation<axis>(rot2(theta));
     }
 
-    template<int axis> static mat4 rotate(float theta) {
+    template<int axis> static mat4 rotate(double theta) {
         return rotate<axis>(rot2(theta));
     }
 
@@ -358,7 +358,7 @@ public:
 
     void set_translation(vec3 const& t) { set_translation(vec4(t)); }
 
-    constexpr static mat4 translate(float tx, float ty, float tz) { return translate(vec3(tx, ty, tz)); }
+    constexpr static mat4 translate(double tx, double ty, double tz) { return translate(vec3(tx, ty, tz)); }
     constexpr static mat4 translate(vec3 t) { return mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, t.x, t.y, t.z, 1); }
 
 // scale
@@ -370,10 +370,10 @@ public:
         _rows[3][0] = 0.f; _rows[3][1] = 0.f; _rows[3][2] = 0.f; _rows[3][3] = s.w;
     }
 
-    void set_scale(float s) { set_scale(vec4(s)); }
+    void set_scale(double s) { set_scale(vec4(s)); }
 
-    constexpr static mat4 scale(float s) { return scale(vec4(s)); }
-    constexpr static mat4 scale(float sx, float sy, float sz, float sw = 1) { return scale(vec4(sx, sy, sz, sw)); }
+    constexpr static mat4 scale(double s) { return scale(vec4(s)); }
+    constexpr static mat4 scale(double sx, double sy, double sz, double sw = 1) { return scale(vec4(sx, sy, sz, sw)); }
     constexpr static mat4 scale(vec4 s) { return mat4(s.x, 0, 0, 0, 0, s.y, 0, 0, 0, 0, s.z, 0, 0, 0, 0, s.w); }
 
 // multiplication

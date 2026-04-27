@@ -400,18 +400,18 @@ void application::generate_gamepad_events()
         game::gamepad pad{};
 
         pad.thumbstick[game::gamepad::left] = {
-            (float)state.Gamepad.sThumbLX, (float)state.Gamepad.sThumbLY
+            (double)state.Gamepad.sThumbLX, (double)state.Gamepad.sThumbLY
         };
 
         pad.thumbstick[game::gamepad::right] = {
-            (float)state.Gamepad.sThumbRX, (float)state.Gamepad.sThumbRY
+            (double)state.Gamepad.sThumbRX, (double)state.Gamepad.sThumbRY
         };
 
         pad.trigger[game::gamepad::left] = state.Gamepad.bLeftTrigger * (1.0f / 255.0f);
         pad.trigger[game::gamepad::right] = state.Gamepad.bRightTrigger * (1.0f / 255.0f);
 
         for (int side = 0; side < 2; ++side) {
-            float thumb_magnitude = pad.thumbstick[side].length();
+            double thumb_magnitude = pad.thumbstick[side].length();
             if (thumb_magnitude < thumb_deadzone) {
                 pad.thumbstick[side] = vec2_zero;
             } else {

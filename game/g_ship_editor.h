@@ -35,7 +35,7 @@ protected:
     std::vector<vec2> _deck_linearized;
 
     struct turret {
-        float radius;
+        double radius;
         std::vector<vec2> vertices;
         std::vector<segment_type> segments;
         std::vector<vec2> linearized;
@@ -52,7 +52,7 @@ protected:
     render::view _view;
     vec2 _cursor;
 
-    float _snap_distance;
+    double _snap_distance;
     bool _snap_to_grid;
     bool _snap_to_edge;
     bool _draw_grid;
@@ -92,14 +92,14 @@ protected:
     std::size_t _turret_instance;
 
     //! minimum distance between vertices squared
-    static constexpr float minimum_vertex_dsqr = 1.f;
+    static constexpr double minimum_vertex_dsqr = 1.0;
 
 protected:
     vec2 cursor_to_world() const;
-    float snap_radius(float r) const;
+    double snap_radius(double r) const;
     vec2 snap_vertex(vec2 pos) const;
 
-    float render_vertex_size() const { return _view.size.y * (1.f / 384.f); }
+    double render_vertex_size() const { return _view.size.y * (1.f / 384.f); }
 
     void update_highlight();
 
@@ -137,7 +137,7 @@ protected:
     //! Convert the given curve segments into a loop of vertices approximating the curve
     static std::vector<vec2> linearize(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments);
 
-    static std::vector<vec2> subdivide(std::function<vec2(float)> fn, float error);
+    static std::vector<vec2> subdivide(std::function<vec2(double)> fn, float error);
 };
 
 } // namespace game

@@ -76,7 +76,7 @@ void projectile::think()
     // Use impact time as a proxy for whether we've already hit something this frame
     if (_position.z < 0.f && _impact_time == time_value::max) {
         // intersect with z=0 plane
-        float t = _position.z / _velocity.z;
+        double t = _position.z / _velocity.z;
         vec3 p = _position - _velocity * t;
 
         _impact_time = get_world()->frametime() + (FRAMETIME - time_delta::from_seconds(t));
@@ -103,7 +103,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
         if (other) {
             relative_velocity -= other->get_linear_velocity();
         }
-        float delta_time = displacement.dot(relative_velocity) / relative_velocity.length_sqr();
+        double delta_time = displacement.dot(relative_velocity) / relative_velocity.length_sqr();
         _impact_time = get_world()->frametime() + time_delta::from_seconds(1) * delta_time;
     }
 
