@@ -35,8 +35,8 @@ model::model(model::rect const* rects, std::size_t num_rects)
         _indices.push_back(narrow_cast<uint16_t>(_vertices.size() + 3));
         _indices.push_back(narrow_cast<uint16_t>(_vertices.size() + 2));
 
-        vec2 mins = rects[ii].center - rects[ii].size * 0.5f;
-        vec2 maxs = rects[ii].center + rects[ii].size * 0.5f;
+        vec2 mins = rects[ii].center - rects[ii].size * 0.5;
+        vec2 maxs = rects[ii].center + rects[ii].size * 0.5;
 
         _vertices.emplace_back(mins.x, mins.y);
         _vertices.emplace_back(maxs.x, mins.y);

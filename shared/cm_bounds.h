@@ -66,7 +66,7 @@ public:
 
 // utility functions
 
-    vec2 center() const { return (_mins + _maxs) / 2.f; }
+    vec2 center() const { return 0.5 * (_mins + _maxs); }
     vec2 size() const { return _maxs - _mins; }
     double area() const { return (_maxs.x - _mins.x) * (_maxs.y - _mins.y); }
 

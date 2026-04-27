@@ -65,19 +65,19 @@ void button::draw_text(render::system* renderer, rect const& rect, string::view 
     vec2 size = renderer->string_size(text);
 
     if (flags & halign_left) {
-        position.x -= static_cast<int>(rect.size().x * 0.5f - margin);
+        position.x -= static_cast<int>(rect.size().x * 0.5 - margin);
     } else if (flags & halign_right) {
-        position.x += static_cast<int>(rect.size().x * 0.5f - size.x - margin);
+        position.x += static_cast<int>(rect.size().x * 0.5 - size.x - margin);
     } else {
-        position.x -= static_cast<int>(size.x * 0.5f);
+        position.x -= static_cast<int>(size.x * 0.5);
     }
 
     if (flags & valign_top) {
-        position.y -= static_cast<int>(rect.size().y * 0.5f - size.y - margin);
+        position.y -= static_cast<int>(rect.size().y * 0.5 - size.y - margin);
     } else if (flags & valign_bottom) {
-        position.y += static_cast<int>(rect.size().y * 0.5f - margin);
+        position.y += static_cast<int>(rect.size().y * 0.5 - margin);
     } else {
-        position.y += static_cast<int>(size.y * 0.5f);
+        position.y += static_cast<int>(size.y * 0.5);
     }
 
     renderer->draw_string(text, vec2(position), color);

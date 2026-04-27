@@ -111,12 +111,12 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
     if (_image) {
         renderer->set_view(_view);
         vec2 image_size = vec2(vec2i(_image->width(), _image->height())) * _image_scale;
-        renderer->draw_image(_image, _image_offset - .5f * image_size, image_size, color4(1,1,1,.5f));
+        renderer->draw_image(_image, _image_offset - 0.5 * image_size, image_size, color4(1,1,1,.5f));
     }
 
     renderer->set_view(_view);
-    vec2 vmin = _view.origin - .5f * _view.size;
-    vec2 vmax = _view.origin + .5f * _view.size;
+    vec2 vmin = _view.origin - 0.5 * _view.size;
+    vec2 vmax = _view.origin + 0.5 * _view.size;
 
     //
     // draw grid
@@ -129,7 +129,7 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
         if (_draw_grid) {
             vec2 mins = _snap_distance * vec2(std::round((vmin.x) / _snap_distance),
                                               std::round((vmin.y) / _snap_distance));
-            vec2 maxs = _view.origin + .5f * _view.size;
+            vec2 maxs = _view.origin + 0.5 * _view.size;
 
             for (double x = mins.x; x < maxs.x; x += _snap_distance) {
                 renderer->draw_line(vec2(x, vmin.y), vec2(x, vmax.y), c, c);
@@ -275,7 +275,7 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
             s = va("(%g, %g)", world_pos.x, world_pos.y);
         }
         vec2 size = renderer->string_size(s);
-        renderer->draw_string(s, _view.origin + _view.size * .49f - size, color4(1,1,1,.5f));
+        renderer->draw_string(s, _view.origin + _view.size * 0.49 - size, color4(1,1,1,0.5));
         // draw crosshair
         if (f != feature::turret_radius && f != feature::turret_rotation) {
             renderer->draw_line(vec2(crosshair.x, vmin.y), vec2(crosshair.x, vmax.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
@@ -284,13 +284,13 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
     }
     {
         vec2 size = renderer->monospace_size("foo");
-        renderer->draw_monospace(_filename, _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*1.f), color4(1,1,1,1));
+        renderer->draw_monospace(_filename, _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*1.0), color4(1,1,1,1));
 
-        renderer->draw_monospace("(s) snap to grid", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*3.f), color4(1,1,1, _snap_to_grid ? .6f : .3f));
-        renderer->draw_monospace("( ) snap to edge", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*4.f), color4(1,1,1, _snap_to_edge ? .6f : .3f));
+        renderer->draw_monospace("(s) snap to grid", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*3.0), color4(1,1,1, _snap_to_grid ? .6f : .3f));
+        renderer->draw_monospace("( ) snap to edge", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*4.0), color4(1,1,1, _snap_to_edge ? .6f : .3f));
 
-        renderer->draw_monospace("(d) deck mode", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*6.f), color4(1,1,1, _mode == editor_mode::deck ? .6f : .3f));
-        renderer->draw_monospace("(t) turret mode", _view.origin - _view.size * vec2(.5f,-.5f) - vec2(0,size.y*7.f), color4(1,1,1, _mode == editor_mode::turret ? .6f : .3f));
+        renderer->draw_monospace("(d) deck mode", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*6.0), color4(1,1,1, _mode == editor_mode::deck ? .6f : .3f));
+        renderer->draw_monospace("(t) turret mode", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*7.0), color4(1,1,1, _mode == editor_mode::turret ? .6f : .3f));
     }
 }
 
@@ -299,7 +299,7 @@ void ship_editor::draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec
 {
     vec2 v0 = a;
     for (int ii = 1; ii < 32; ++ii) {
-        float t = ii / 32.f;
+        double t = ii / 32.0;
         vec2 v1 = (1-t)*(1-t)*a + 2*(1-t)*t*b + t*t*c;
         renderer->draw_line(v0, v1, color, color);
         v0 = v1;
@@ -312,11 +312,11 @@ void ship_editor::draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec
 {
     vec2 v0 = a;
     for (int ii = 1; ii < 32; ++ii) {
-        float t = ii / 32.f;
-        float t2 = t * t;
-        float s = 1.f - t;
-        float s2 = s * s;
-        vec2 v1 = s2 * s * a + 3.f * s2 * t * b + 3.f * s * t2 * c + t * t2 * d;
+        double t = ii / 32.0;
+        double t2 = t * t;
+        double s = 1.0 - t;
+        double s2 = s * s;
+        vec2 v1 = s2 * s * a + 3.0 * s2 * t * b + 3.0 * s * t2 * c + t * t2 * d;
         renderer->draw_line(v0, v1, color, color);
         v0 = v1;
     }
@@ -433,9 +433,9 @@ double segment_closest_point(vec2 a, vec2 b, vec2 p)
     double num = dot(p - a, v);
     double den = dot(v, v);
     if (num >= den) {
-        return 1.f;
-    } else if (num <= 0.f) {
-        return 0.f;
+        return 1.0;
+    } else if (num <= 0.0) {
+        return 0.0;
     } else {
         return num / den;
     }
@@ -447,47 +447,47 @@ double segment_closest_point(vec2 a, vec2 b, vec2 p)
 double quad_closest_point(vec2 A, vec2 B, vec2 C, vec2 pos)
 {
     vec2 a = B - A;
-    vec2 b = A - 2.f * B + C;
-    vec2 c = a * 2.f;
+    vec2 b = A - 2.0 * B + C;
+    vec2 c = a * 2.0;
     vec2 d = A - pos;
 
-    double kk = 1.f / dot(b, b);
+    double kk = 1.0 / dot(b, b);
     double kx = kk * dot(a, b);
-    double ky = kk * (2.f * dot(a, a) + dot(d, b)) / 3.f;
+    double ky = kk * (2.0 * dot(a, a) + dot(d, b)) / 3.0;
     double kz = kk * dot(d, a);
 
-    double res = 0.f;
-    double sgn = 0.f;
-    double t = 0.f;
+    double res = 0.0;
+    double sgn = 0.0;
+    double t = 0.0;
 
     double p = ky - kx * kx;
     double p3 = p * p * p;
-    double q = kx * (2.f * kx * kx - 3.f * ky) + kz;
-    double h = q * q + 4.f * p3;
+    double q = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
+    double h = q * q + 4.0 * p3;
 
-    if (h >= 0.f) {
+    if (h >= 0.0) {
         h = std::sqrt(h);
-        vec2 x = (vec2(h, -h) - vec2(q)) / 2.f;
+        vec2 x = (vec2(h, -h) - vec2(q)) / 2.0;
         vec2 uv = vec2(std::cbrt(x.x), std::cbrt(x.y));
-        t = clamp(uv.x + uv.y - kx, 0.f, 1.f);
+        t = clamp(uv.x + uv.y - kx, 0.0, 1.0);
         vec2 qx = d + (c + b * t) * t;
         res = dot(qx, qx);
-        sgn = cross(c + 2.f * b * t, qx);
+        sgn = cross(c + 2.0 * b * t, qx);
     } else {
         double z = std::sqrt(-p);
-        double v = std::acos(q / (p * z * 2.f)) / 3.f;
+        double v = std::acos(q / (p * z * 2.0)) / 3.0;
         double m = std::cos(v);
-        double n = std::sin(v) * 1.732050808f; // sqrt(3)
+        double n = std::sin(v) * 1.732050808; // sqrt(3)
 
-        double tx = clamp((m + m) * z - kx, 0.f, 1.f);
+        double tx = clamp((m + m) * z - kx, 0.0, 1.0);
         vec2 qx = d + (c + b * tx) * tx;
         double dx = dot(qx, qx);
-        double sx = cross(c + 2.f * b * tx, qx);
+        double sx = cross(c + 2.0 * b * tx, qx);
 
-        double ty = clamp((-n - m) * z - kx, 0.f, 1.f);
+        double ty = clamp((-n - m) * z - kx, 0.0, 1.0);
         vec2 qy = d + (c + b * ty) * ty;
         double dy = dot(qy, qy);
-        double sy = cross(c + 2.f * b * ty, qy);
+        double sy = cross(c + 2.0 * b * ty, qy);
 
         // the third root cannot be the closest
         //float tz = clamp((n - m) * z - kx, 0.f, 1.f);
@@ -523,7 +523,7 @@ double cube_closest_point(vec2 A, vec2 B, vec2 C, vec2 D, vec2 pos)
     (void)C;
     (void)D;
     (void)pos;
-    return 0.5f;
+    return 0.5;
 }
 
 //------------------------------------------------------------------------------
@@ -569,12 +569,12 @@ std::size_t ship_editor::closest_segment(std::vector<vec2> const& vertices, std:
             jj += 2;
         } else if (segments[ii] == cube) {
             double t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
-            double s = 1.f - t;
+            double s = 1.0 - t;
             double t2 = t * t;
             double s2 = s * s;
             vec2 p = s2 * s * vertices[jj + 0]
-                + 3.f * s2 * t * vertices[jj + 1]
-                + 3.f * s * t2 * vertices[jj + 2]
+                + 3.0 * s2 * t * vertices[jj + 1]
+                + 3.0 * s * t2 * vertices[jj + 2]
                 + t * t2 * vertices[jj + 3];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
@@ -619,12 +619,12 @@ vec2 ship_editor::closest_point(std::vector<vec2> const& vertices, std::vector<s
             jj += 2;
         } else if (segments[ii] == cube) {
             double t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
-            double s = 1.f - t;
+            double s = 1.0 - t;
             double t2 = t * t;
             double s2 = s * s;
             vec2 p = s2 * s * vertices[jj + 0]
-                + 3.f * s2 * t * vertices[jj + 1]
-                + 3.f * s * t2 * vertices[jj + 2]
+                + 3.0 * s2 * t * vertices[jj + 1]
+                + 3.0 * s * t2 * vertices[jj + 2]
                 + t * t2 * vertices[jj + 3];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
@@ -687,12 +687,12 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
                 return false;
             }
             double t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
-            double s = 1.f - t;
+            double s = 1.0 - t;
             double t2 = t * t;
             double s2 = s * s;
             vec2 p = s2 * s * vertices[jj + 0]
-                   + 3.f * s2 * t * vertices[jj + 1]
-                   + 3.f * s * t2 * vertices[jj + 2]
+                   + 3.0 * s2 * t * vertices[jj + 1]
+                   + 3.0 * s * t2 * vertices[jj + 2]
                    + t * t2 * vertices[jj + 3];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
@@ -731,8 +731,8 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
         if (segments[ii] == quad) {
             // use De Casteljau's algorithm to subdivide the curve at `best_point`
             segments.insert(segments.begin() + ii, quad);
-            vec2 p01 = (1.f - best_t) * vertices[jj + 0] + best_t * vertices[jj + 1];
-            vec2 p12 = (1.f - best_t) * vertices[jj + 1] + best_t * vertices[jj + 2];
+            vec2 p01 = (1.0 - best_t) * vertices[jj + 0] + best_t * vertices[jj + 1];
+            vec2 p12 = (1.0 - best_t) * vertices[jj + 1] + best_t * vertices[jj + 2];
             // [a b c] -> [a p12 c]
             vertices[jj + 1] = p12;
             // [a p12 c] -> [a p01 p p12 c]
@@ -743,11 +743,11 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
         if (segments[ii] == cube) {
             // use De Casteljau's algorithm to subdivide the curve at `best_point`
             segments.insert(segments.begin() + ii, cube);
-            vec2 p01 = (1.f - best_t) * vertices[jj + 0] + best_t * vertices[jj + 1];
-            vec2 p12 = (1.f - best_t) * vertices[jj + 1] + best_t * vertices[jj + 2];
-            vec2 p23 = (1.f - best_t) * vertices[jj + 2] + best_t * vertices[jj + 3];
-            vec2 p012 = (1.f - best_t) * p01 + best_t * p12;
-            vec2 p123 = (1.f - best_t) * p12 + best_t * p23;
+            vec2 p01 = (1.0 - best_t) * vertices[jj + 0] + best_t * vertices[jj + 1];
+            vec2 p12 = (1.0 - best_t) * vertices[jj + 1] + best_t * vertices[jj + 2];
+            vec2 p23 = (1.0 - best_t) * vertices[jj + 2] + best_t * vertices[jj + 3];
+            vec2 p012 = (1.0 - best_t) * p01 + best_t * p12;
+            vec2 p123 = (1.0 - best_t) * p12 + best_t * p23;
             // [a b c d] -> [a p123 p23 d]
             vertices[jj + 1] = p123;
             vertices[jj + 2] = p23;
@@ -899,7 +899,7 @@ bool ship_editor::insert_turret(vec2 v)
     }
 
     if (!_turrets.size() || _control) {
-        _turrets.push_back({5.25f});
+        _turrets.push_back({5.25});
         _turrets.back().vertices = {vec2(-5,0), vec2(0,5), vec2(5,0)};
         _turrets.back().segments = {line, line};
     }
@@ -979,11 +979,11 @@ bool ship_editor::key_event(int key, bool down)
 
     switch (key) {
         case '[':
-            _snap_distance *= 2.f;
+            _snap_distance *= 2.0;
             return true;
 
         case ']':
-            _snap_distance *= .5f;
+            _snap_distance *= 0.5;
             return true;
 
         case 'd':
@@ -1070,11 +1070,11 @@ bool ship_editor::key_event(int key, bool down)
             break;
 
         case K_MWHEELUP:
-            _view.size /= 1.25f;
+            _view.size /= 1.25;
             return true;
 
         case K_MWHEELDOWN:
-            _view.size *= 1.25f;
+            _view.size *= 1.25;
             return true;
 
         case K_INS:
@@ -1268,7 +1268,7 @@ void ship_editor::update_highlight()
             best_dsqr = radius_dsqr;
         }
         // check rotation widget
-        vec2 rotation_pos = vec2(turret.radius + 1.f, 0) * instance.transform;
+        vec2 rotation_pos = vec2(turret.radius + 1.0, 0) * instance.transform;
         double rotation_dsqr = length_sqr(rotation_pos - cursor_to_world());
         if (rotation_dsqr < best_dsqr) {
             best_feature = feature::turret_rotation;
@@ -1277,7 +1277,7 @@ void ship_editor::update_highlight()
         }
     }
 
-    double minimum_dsqr = length_sqr(.01f * _view.size);
+    double minimum_dsqr = length_sqr(0.01 * _view.size);
     if (best_dsqr < minimum_dsqr) {
         _highlight_index = best_index;
         _highlight_feature = best_feature;
@@ -1412,7 +1412,7 @@ void ship_editor::clear()
     _filename.clear();
 
     _view.viewport.maxs() = application::singleton()->window()->size();
-    _view.size = {64.f, 64.f * double(_view.viewport.maxs().y) / double(_view.viewport.maxs().x)};
+    _view.size = {64.0, 64.0 * double(_view.viewport.maxs().y) / double(_view.viewport.maxs().x)};
 
     _image = application::singleton()->window()->renderer()->load_image(
         //"C:\\Users\\Carter\\OneDrive\\Pictures\\Trade Wars\\Constellation.bmp"
@@ -1632,21 +1632,21 @@ std::vector<vec2> ship_editor::linearize(std::vector<vec2> const& vertices, std:
             jj += 1;
         } else if (segments[ii] == quad) {
             std::vector<vec2> v = subdivide([&](double t){
-                double s = 1.f - t;
+                double s = 1.0 - t;
                 return s * s * vertices[jj + 0]
-                    + 2.f * s * t * vertices[jj + 1]
+                    + 2.0 * s * t * vertices[jj + 1]
                     + t * t * vertices[jj + 2];
                 }, 0.1f);
             linearized.insert(linearized.end(), v.begin() + 1, v.end());
             jj += 2;
         } else if (segments[ii] == cube) {
             std::vector<vec2> v = subdivide([&](double t){
-                double s = 1.f - t;
+                double s = 1.0 - t;
                 double t2 = t * t;
                 double s2 = s * s;
                 return s2 * s * vertices[jj + 0]
-                     + 3.f * s2 * t * vertices[jj + 1]
-                     + 3.f * s * t2 * vertices[jj + 2]
+                     + 3.0 * s2 * t * vertices[jj + 1]
+                     + 3.0 * s * t2 * vertices[jj + 2]
                      + t * t2 * vertices[jj + 3];
                 }, 0.1f);
             linearized.insert(linearized.end(), v.begin() + 1, v.end());
@@ -1678,16 +1678,16 @@ std::vector<vec2> ship_editor::subdivide(std::function<vec2(double)> fn, float e
     std::vector<double> t;
     std::vector<double> e;
 
-    p.push_back(fn(0.f));
-    p.push_back(fn(1.f));
-    t.push_back(0.f);
-    t.push_back(1.f);
-    e.push_back(0.f);
+    p.push_back(fn(0.0));
+    p.push_back(fn(1.0));
+    t.push_back(0.0);
+    t.push_back(1.0);
+    e.push_back(0.0);
 
     for (std::size_t n = 1; ; ++n) {
         p.insert(p.end() - 1, vec2_zero);
-        t.insert(t.end() - 1, 0.f);
-        e.push_back(0.f);
+        t.insert(t.end() - 1, 0.0);
+        e.push_back(0.0);
 
         for (std::size_t ii = 1; ii < n + 1; ++ii) {
             t[ii] = double(ii) / double(n + 1);
@@ -1695,10 +1695,10 @@ std::vector<vec2> ship_editor::subdivide(std::function<vec2(double)> fn, float e
         }
 
         for (std::size_t jj = 0; jj < 128; ++jj) {
-            double rms = 0.f;
-            double emax = 0.f;
+            double rms = 0.0;
+            double emax = 0.0;
             for (std::size_t ii = 0; ii < n + 1; ++ii) {
-                double t0 = .5f * (t[ii] + t[ii + 1]);
+                double t0 = 0.5 * (t[ii] + t[ii + 1]);
                 vec2 p0 = fn(t0);
                 vec2 v = p[ii + 1] - p[ii];
                 vec2 r = (p[ii] - p0) - dot(p[ii] - p0, v) * v / length_sqr(v);
@@ -1712,16 +1712,16 @@ std::vector<vec2> ship_editor::subdivide(std::function<vec2(double)> fn, float e
             }
 
             rms = sqrt(rms / double(n));
-            if (rms > 8.f * error) {
+            if (rms > 8.0 * error) {
                 break;
             }
 
-            e[0] = 1.f / e[0];
+            e[0] = 1.0 / e[0];
             for (std::size_t ii = 1; ii < n + 1; ++ii) {
-                e[ii] = e[ii - 1] + 1.f / e[ii];
+                e[ii] = e[ii - 1] + 1.0 / e[ii];
             }
             for (std::size_t ii = 1; ii < n + 1; ++ii) {
-                t[ii] = .5f * e[ii - 1] / e.back() + .5f * t[ii];
+                t[ii] = 0.5 * e[ii - 1] / e.back() + 0.5 * t[ii];
                 p[ii] = fn(t[ii]);
             }
         }

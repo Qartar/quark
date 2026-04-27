@@ -335,7 +335,7 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
 
     // Draw half-circle at start
     if ((start_color.a || start_edge_color.a)
-            && _view_bounds.intersects_circle(start, width * .5f)) {
+            && _view_bounds.intersects_circle(start, width * 0.5)) {
         glBegin(GL_TRIANGLE_FAN);
             glColor4fv(start_color);
             glVertex2dv(start);
@@ -351,7 +351,7 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
 
     // Draw half-circle at end
     if ((end_color.a || end_edge_color.a)
-            && _view_bounds.intersects_circle(end, width * .5f)) {
+            && _view_bounds.intersects_circle(end, width * 0.5)) {
         glBegin(GL_TRIANGLE_FAN);
             glColor4fv(end_color);
             glVertex2dv(end);

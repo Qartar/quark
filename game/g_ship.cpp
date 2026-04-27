@@ -37,7 +37,7 @@ ship::ship(handle<game::faction> faction)
     , _faction(faction)
     , _wake_index(0)
 {
-    _rigid_body = physics::rigid_body(&_design->hull_shape, &_material, 1.f);
+    _rigid_body = physics::rigid_body(&_design->hull_shape, &_material, 1.0);
 
     _turrets.resize(_design->turrets.size(), {});
 
@@ -98,10 +98,10 @@ void ship::draw(render::system* renderer, time_value time) const
 
     // draw rudder
     {
-        vec2 v0 = vec2(_design->length * -.45f, 0) * tx;
+        vec2 v0 = vec2(_design->length * -0.45, 0) * tx;
         vec2 vx = vec2(_design->length,0) * get_rotation(time) * rot2(_engines->get_rudder_angle());
-        vec2 v1 = v0 - vx * .025f;
-        vec2 v2 = v0 + vx * .025f;
+        vec2 v1 = v0 - vx * 0.025;
+        vec2 v2 = v0 + vx * 0.025;
         renderer->draw_line(v1, v2, color, color);
     }
 
@@ -128,7 +128,7 @@ void ship::draw(render::system* renderer, time_value time) const
         // draw guns
         for (int ii = 0; ii < turret.design->num_guns; ++ii) {
             double x = radius;
-            double y = turret.design->spacing * (ii - .5f * (turret.design->num_guns - 1));
+            double y = turret.design->spacing * (ii - 0.5 * (turret.design->num_guns - 1));
             vec2 v1 = vec2(x, y);
 
             double caliber = turret.design->gun_design->caliber;
@@ -343,9 +343,9 @@ void ship::get_firing_vectors(std::size_t turret_index, std::size_t gun_index, v
         turret.position,
         rot2(turret.orientation + _turrets[turret_index].traverse)) * get_transform();
 
-    position = vec3(vec2(turret.design->radius + cos(_turrets[turret_index].elevation) * 0.9f * turret.design->gun_design->length,
-                         turret.design->spacing * (gun_index - .5f * (turret.design->num_guns - 1))) * turret_tx,
-                    8.f + sin(_turrets[turret_index].elevation) * .9f * turret.design->gun_design->length);
+    position = vec3(vec2(turret.design->radius + cos(_turrets[turret_index].elevation) * 0.9 * turret.design->gun_design->length,
+                         turret.design->spacing * (gun_index - 0.5 * (turret.design->num_guns - 1))) * turret_tx,
+                    8.0 + sin(_turrets[turret_index].elevation) * 0.9 * turret.design->gun_design->length);
 
     direction = vec3(cos(_turrets[turret_index].elevation) * turret_tx[0][0],
                      cos(_turrets[turret_index].elevation) * turret_tx[0][1],

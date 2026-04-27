@@ -92,7 +92,7 @@ result system::init()
     font::init();
 
     _view.size = vec2(_window->size());
-    _view.origin = _view.size * 0.5f;
+    _view.origin = _view.size * 0.5;
     _view.viewport = {};
 
     resize(_window->size());
@@ -270,8 +270,8 @@ void system::set_default_state()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    vec2 view_min = _view.origin - _view.size * 0.5f;
-    vec2 view_max = _view.origin + _view.size * 0.5f;
+    vec2 view_min = _view.origin - _view.size * 0.5;
+    vec2 view_max = _view.origin + _view.size * 0.5;
 
     if (_view.raster) {
         glOrtho(view_min.x, view_max.x, view_max.y, view_min.y, -99999, 99999);

@@ -26,7 +26,7 @@ collide::motion_data::motion_data(motion const& motion)
 //------------------------------------------------------------------------------
 vec2 collide::closest_point(shape const* shape, vec2 point)
 {
-    static circle_shape point_shape(0.f);
+    static circle_shape point_shape(0.0);
     motion point_motion{&point_shape, point};
 
     if (shape->type() == shape_type::compound) {
@@ -147,11 +147,11 @@ vec3 collide::nearest_difference(support_vertex a, support_vertex b) const
 
     if (num >= den) {
         return b.d;
-    } else if (num < 0.0f) {
+    } else if (num < 0.0) {
         return a.d;
     } else {
         double t = num / den;
-        double s = 1.f - t;
+        double s = 1.0 - t;
         return a.d * s + b.d * t;
     }
 }
@@ -165,11 +165,11 @@ vec3 collide::nearest_point(support_vertex a, support_vertex b) const
 
     if (num >= den) {
         return b.a;
-    } else if (num < 0.0f) {
+    } else if (num < 0.0) {
         return a.a;
     } else {
         double t = num / den;
-        double s = 1.f - t;
+        double s = 1.0 - t;
         return a.a * s + b.a * t;
     }
 }
@@ -184,15 +184,15 @@ bool collide::triangle_contains_origin(vec3 a, vec3 b, vec3 c) const
     }
 
     // Ensure that the winding is consistent
-    if ((c - a).dot(n.cross(b - a)) > 0.0f) {
+    if ((c - a).dot(n.cross(b - a)) > 0.0) {
         n = -n;
     }
 
-    if (a.dot(n.cross(b - a)) < 0.0f) {
+    if (a.dot(n.cross(b - a)) < 0.0) {
         return false;
-    } else if (b.dot(n.cross(c - b)) < 0.0f) {
+    } else if (b.dot(n.cross(c - b)) < 0.0) {
         return false;
-    } else if (c.dot(n.cross(a - c)) < 0.0f) {
+    } else if (c.dot(n.cross(a - c)) < 0.0) {
         return false;
     } else {
         return true;

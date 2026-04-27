@@ -232,10 +232,10 @@ void generate_bitmap_r10g10b10a2(glyph const& glyph, mat3 image_to_glyph, std::s
     for (std::size_t yy = 0; yy < height; ++yy) {
         for (std::size_t xx = 0; xx < width; ++xx) {
             // transform pixel center coordinates in image space to glyph space
-            vec2 point = vec2(float(xx) + .5f, float(yy) + .5f) * image_to_glyph;
+            vec2 point = vec2(double(xx) + 0.5, double(yy) + 0.5) * image_to_glyph;
             vec3 d = glyph.signed_edge_distance_channels(point);
             // discretize d and write to bitmap
-            color3 c = color3(d * (1.f / 8.f) + vec3(.5f));
+            color3 c = color3(d * (1.f / 8.f) + vec3(0.5));
             data[yy * row_stride + xx] = pack_r10g10b10a2(color4(c));
         }
     }
@@ -370,11 +370,11 @@ void generate_sdf(HDC hdc, font_sdf::block const* blocks, std::size_t num_blocks
 
             uint32_t* glyph_data = image_data.data() + y0 * row_stride + x0;
             {
-                mat3 image_to_glyph = mat3(1.f / float(scale), 0.f, 0.f,
-                                            0.f, 1.f / float(scale), 0.f,
-                                            float(glyphs[ii].metrics().gmptGlyphOrigin.x - margin),
-                                            float(glyphs[ii].metrics().gmptGlyphOrigin.y - cell_size[jj].y + margin),
-                                            1.f);
+                mat3 image_to_glyph = mat3(1.0 / float(scale), 0.0, 0.0,
+                                           0.0, 1.0 / float(scale), 0.0,
+                                           float(glyphs[ii].metrics().gmptGlyphOrigin.x - margin),
+                                           float(glyphs[ii].metrics().gmptGlyphOrigin.y - cell_size[jj].y + margin),
+                                           1.0);
 
                 generate_bitmap_r10g10b10a2(glyphs[ii], image_to_glyph, cell_size[jj].x * scale, cell_size[jj].y * scale, row_stride, glyph_data);
             }

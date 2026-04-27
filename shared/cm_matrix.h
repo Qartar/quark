@@ -139,9 +139,9 @@ public:
 // basic functions
 
     void set_identity() {
-        _rows[0][0] = 1.f; _rows[0][1] = 0.f; _rows[0][2] = 0.f;
-        _rows[1][0] = 0.f; _rows[1][1] = 1.f; _rows[1][2] = 0.f;
-        _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = 1.f;
+        _rows[0][0] = 1.0; _rows[0][1] = 0.0; _rows[0][2] = 0.0;
+        _rows[1][0] = 0.0; _rows[1][1] = 1.0; _rows[1][2] = 0.0;
+        _rows[2][0] = 0.0; _rows[2][1] = 0.0; _rows[2][2] = 1.0;
     }
 
     constexpr double determinant() const {
@@ -350,9 +350,9 @@ public:
 // translation
 
     void set_translation(vec4 const& t) {
-        _rows[0][0] = 1.f; _rows[0][1] = 0.f; _rows[0][2] = 0.f; _rows[0][3] = 0.f;
-        _rows[1][0] = 0.f; _rows[1][1] = 1.f; _rows[1][2] = 0.f; _rows[1][3] = 0.f;
-        _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = 1.f; _rows[2][3] = 0.f;
+        _rows[0][0] = 1.0; _rows[0][1] = 0.0; _rows[0][2] = 0.0; _rows[0][3] = 0.0;
+        _rows[1][0] = 0.0; _rows[1][1] = 1.0; _rows[1][2] = 0.0; _rows[1][3] = 0.0;
+        _rows[2][0] = 0.0; _rows[2][1] = 0.0; _rows[2][2] = 1.0; _rows[2][3] = 0.0;
         _rows[3][0] = t.x; _rows[3][1] = t.y; _rows[3][2] = t.z; _rows[3][3] = t.w;
     }
 
@@ -364,10 +364,10 @@ public:
 // scale
 
     void set_scale(vec4 const& s) {
-        _rows[0][0] = s.x; _rows[0][1] = 0.f; _rows[0][2] = 0.f; _rows[0][3] = 0.f;
-        _rows[1][0] = 0.f; _rows[1][1] = s.y; _rows[1][2] = 0.f; _rows[1][3] = 0.f;
-        _rows[2][0] = 0.f; _rows[2][1] = 0.f; _rows[2][2] = s.z; _rows[2][3] = 0.f;
-        _rows[3][0] = 0.f; _rows[3][1] = 0.f; _rows[3][2] = 0.f; _rows[3][3] = s.w;
+        _rows[0][0] = s.x; _rows[0][1] = 0.0; _rows[0][2] = 0.0; _rows[0][3] = 0.0;
+        _rows[1][0] = 0.0; _rows[1][1] = s.y; _rows[1][2] = 0.0; _rows[1][3] = 0.0;
+        _rows[2][0] = 0.0; _rows[2][1] = 0.0; _rows[2][2] = s.z; _rows[2][3] = 0.0;
+        _rows[3][0] = 0.0; _rows[3][1] = 0.0; _rows[3][2] = 0.0; _rows[3][3] = s.w;
     }
 
     void set_scale(double s) { set_scale(vec4(s)); }

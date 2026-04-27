@@ -55,16 +55,16 @@ engines::engines(game::ship* owner)
     ship_design const* design = owner->design();
 
     // Calculate longitudinal drag coefficient by balancing it against maximum power and speed.
-    _linear_drag_coefficient[0] = 1e3f * design->power / cube(design->speed);
+    _linear_drag_coefficient[0] = 1e3 * design->power / cube(design->speed);
     // Hand-tuned transverse drag coefficient, could in theory be calculated from slip angle.
-    _linear_drag_coefficient[1] = 1e1f * _linear_drag_coefficient[0] * design->length / design->beam;
+    _linear_drag_coefficient[1] = 1e1 * _linear_drag_coefficient[0] * design->length / design->beam;
     // Torque per angular velocity squared due to drag, calculated by hand so
     // there is a 90% chance it is 100% wrong.
-    _angular_drag_coefficient = (1.f / 32.f) * pow(design->length, 4.f) * _linear_drag_coefficient[1];
+    _angular_drag_coefficient = (1.0 / 32.0) * pow(design->length, 4.0) * _linear_drag_coefficient[1];
     // Using moment of inertia of a solid ellipsoid as an approximation, could
     // use rigid body inertia instead but that would also be an approximation
     // since it also assumes uniform mass distribution.
-    _inverse_inertia = 5.f / ((square(design->length) + square(design->beam)) * design->displacement);
+    _inverse_inertia = 5.0 / ((square(design->length) + square(design->beam)) * design->displacement);
 
     _speed_target = design->speed;
 }

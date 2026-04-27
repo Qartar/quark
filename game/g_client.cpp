@@ -100,7 +100,7 @@ void session::read_snapshot(network::message& message)
     _world.read_snapshot(message);
     // gradually adjust client world time to match server
     // to compensate for variability in packet delivery
-    _worldtime += (_world.frametime() - _worldtime) * 0.1f;
+    _worldtime += (_world.frametime() - _worldtime) * 0.1;
     _net_bytes[++_framenum % _net_bytes.size()] = 0;
 }
 

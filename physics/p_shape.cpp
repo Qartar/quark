@@ -127,10 +127,10 @@ std::size_t convex_shape::_extract_convex_hull(vec2* vertices, std::size_t num_v
         vec2 d = b - pivot;
         double s = c.y * d.x - d.y * c.x;
 
-        if (c.y * d.y < 0.f) {
-            return d.y < 0.f;
-        } else if (s != 0.f) {
-            return s < 0.f;
+        if (c.y * d.y < 0.0) {
+            return d.y < 0.0;
+        } else if (s != 0.0) {
+            return s < 0.0;
         } else {
             return c.length_sqr() < d.length_sqr();
         }
@@ -138,7 +138,7 @@ std::size_t convex_shape::_extract_convex_hull(vec2* vertices, std::size_t num_v
 
     // graham scan to find vertices on the convex hull
     auto const is_convex = [](vec2 a, vec2 b, vec2 c) {
-        return (c - b).cross(b - a) < 0.f;
+        return (c - b).cross(b - a) < 0.0;
     };
 
     std::size_t out = 3;
@@ -170,9 +170,9 @@ convex_shape convex_shape::from_planes(vec3 const* planes, std::size_t num_plane
     std::size_t num_enumerated = 0;
 
     for (std::size_t ii = 0; ii < num_planes; ++ii) {
-        vec2 v = planes[ii].to_vec2().cross(1.f);
-        vec2 vmin = v * -1e+30f;
-        vec2 vmax = v * +1e+30f;
+        vec2 v = planes[ii].to_vec2().cross(1.0);
+        vec2 vmin = v * -1e+30;
+        vec2 vmax = v * +1e+30;
 
         for (std::size_t jj = 0; jj < num_planes; ++jj) {
             vec3 p = planes[ii].cross(planes[jj]);

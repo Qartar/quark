@@ -41,15 +41,15 @@ void compound_shape::calculate_mass_properties(double inverse_mass, vec2& center
 {
     center_of_mass = vec2_zero;
 
-    double inverse_area = 1.f / calculate_area();
-    double inertia = 0.f;
+    double inverse_area = 1.0 / calculate_area();
+    double inertia = 0.0;
 
     for (auto const& child : _children) {
         vec2 child_center_of_mass;
         double child_inverse_inertia;
 
         double child_area = child.shape->calculate_area();
-        double child_mass = inverse_mass ? child_area * inverse_area / inverse_mass : 0.f;
+        double child_mass = inverse_mass ? child_area * inverse_area / inverse_mass : 0.0;
 
         child.shape->calculate_mass_properties(
             inverse_mass,
@@ -59,12 +59,12 @@ void compound_shape::calculate_mass_properties(double inverse_mass, vec2& center
         center_of_mass += child_center_of_mass * child.transform() * child_mass;
         // by parallel axis theorem: I = I0 + md^2
         if (child_inverse_inertia) {
-            inertia += 1.f / child_inverse_inertia + child_mass * child.position.length_sqr();
+            inertia += 1.0 / child_inverse_inertia + child_mass * child.position.length_sqr();
         }
     }
 
     center_of_mass *= inverse_mass;
-    inverse_inertia = inertia ? 1.f / inertia : 0.f;
+    inverse_inertia = inertia ? 1.0 / inertia : 0.0;
 }
 
 //------------------------------------------------------------------------------

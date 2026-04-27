@@ -17,7 +17,7 @@ const object_type player::_type(object::_type);
 
 //------------------------------------------------------------------------------
 player::player()
-    : _view({vec2_zero, vec2(640.f, 480.0f)})
+    : _view({vec2_zero, vec2(640.0, 480.0)})
     , _usercmd({})
     , _usercmd_time(time_delta::zero)
     , _timescale_time(time_value::zero)
@@ -26,7 +26,7 @@ player::player()
     , _is_selecting(false)
 {
     _view.origin = vec2_zero;
-    _view.size = vec2(640.f, 480.f);
+    _view.size = vec2(640.0, 480.0);
 }
 
 //------------------------------------------------------------------------------
@@ -46,9 +46,9 @@ std::vector<vec2> create_outline(std::vector<vec2> const& v, float d)
     n.resize(v.size());
 
     for (std::size_t ii = 1; ii < v.size(); ++ii) {
-        n[ii] = normalize(v[ii] - v[ii - 1]).cross(-1.f);
+        n[ii] = normalize(v[ii] - v[ii - 1]).cross(-1.0);
     }
-    n.front() = normalize(v.front() - v.back()).cross(-1.f);
+    n.front() = normalize(v.front() - v.back()).cross(-1.0);
 
     std::vector<vec2> o;
     o.resize(v.size());
@@ -68,7 +68,7 @@ void player::draw(render::system* renderer, time_value time) const
                        : _follow.get();
     if (target) {
         double speed_in_knots = target->get_linear_velocity().length() * (1.0 / 0.5144447);
-        int heading = int(std::round(90.f - math::rad2deg(target->get_rotation().radians())));
+        int heading = int(std::round(90.0 - math::rad2deg(target->get_rotation().radians())));
         if (heading < 0) {
             heading += 360;
         }
@@ -78,7 +78,7 @@ void player::draw(render::system* renderer, time_value time) const
         renderer->draw_string(va("%.1f kn %d\xb0", speed_in_knots, heading), text_offset - vec2(0,text_size.y), color4(1,1,1,1));
         int rudder = int(std::round(math::rad2deg(target->engines()->get_rudder_angle())));
         renderer->draw_string(va("%d\xb0 rudder", rudder), text_offset - vec2(0,text_size.y*2), color4(1,1,1,1));
-        int avelocity = int(std::round(math::rad2deg(target->get_angular_velocity()*60.f)));
+        int avelocity = int(std::round(math::rad2deg(target->get_angular_velocity()*60.0)));
         renderer->draw_string(va("%d\xb0/min", avelocity), text_offset - vec2(0,text_size.y*3), color4(1,1,1,1));
 
         // draw slip angle (debug)
@@ -97,7 +97,7 @@ void player::draw(render::system* renderer, time_value time) const
 
         // draw hull outline
         if (target == _hover && !_is_selecting) {
-            std::vector<vec2> outline = create_outline(target->design()->hull_outline, 1.f);
+            std::vector<vec2> outline = create_outline(target->design()->hull_outline, 1.0);
             mat3 tx = target->get_transform(time);
             vec2 v0 = outline[0] * tx;
             for (std::size_t ii = 1; ii < outline.size(); ++ii) {
@@ -112,13 +112,13 @@ void player::draw(render::system* renderer, time_value time) const
 
     if (_is_selecting) {
         std::vector<handle<ship>> selection_preview;
-        selection_preview = selection_target((_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin);
+        selection_preview = selection_target((_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin);
         draw_selection(renderer, time, selection_preview);
     } else {
         draw_selection(renderer, time, _selection);
     }
 
-    constexpr time_delta fade_time = time_delta::from_seconds(1.5f);
+    constexpr time_delta fade_time = time_delta::from_seconds(1.5);
     // FIXME: using _usercmd_time as proxy for realtime
     if (_usercmd_time - _timescale_time < fade_time) {
         string::view str = "";
@@ -149,7 +149,7 @@ void player::draw(render::system* renderer, time_value time) const
         vec2 size = renderer->string_size(str);
         renderer->draw_string(
             str,
-            view.origin + offset - .5f * (view.size + size),
+            view.origin + offset - 0.5 * (view.size + size),
             color4(.9f * t * t, 1, 1, t));
 
         renderer->set_view(old_view);
@@ -160,7 +160,7 @@ void player::draw(render::system* renderer, time_value time) const
 void player::draw_selection(render::system* renderer, time_value time, std::vector<handle<ship>> const& selection) const
 {
     if (_is_selecting) {
-        vec2 cursor = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
+        vec2 cursor = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
         bounds b = bounds::from_points({_selection_start, cursor});
         vec2 p[4] = {
             {b[0][0], b[0][1]},
@@ -199,13 +199,13 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
             origin += ship->get_position(time);
         }
         origin /= float(selection.size());
-        vec2 cursor = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
+        vec2 cursor = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
         if (_hover) {
             cursor = _hover->get_position(time);
         }
 
         renderer->draw_line(origin, cursor, color4(1,1,1,1), color4(1,1,1,1));
-        renderer->draw_string(va("%.1f km", 1e-3f * length(cursor - origin)), .5f * (origin + cursor), color4(1,1,1,1));
+        renderer->draw_string(va("%.1f km", 1e-3 * length(cursor - origin)), 0.5 * (origin + cursor), color4(1,1,1,1));
         vec2 direction = normalize(cursor - origin);
         int heading = int(std::round(90.f - math::rad2deg(rot2(direction.x, direction.y).radians())));
         if (heading < 0) {
@@ -264,18 +264,18 @@ void player::set_aspect(float aspect)
 //------------------------------------------------------------------------------
 void player::update_usercmd(usercmd cmd, time_value realtime)
 {
-    constexpr double zoom_speed = 1.f + (1.f / 4.f);
-    constexpr double scroll_speed = 1.f;
+    constexpr double zoom_speed = 1.0 + (1.0 / 4.0);
+    constexpr double scroll_speed = 1.0;
 
     double delta_time = (realtime - _usercmd_time).to_seconds();
 
     if (!!(cmd.buttons & usercmd::button::select)
         && !(_usercmd.buttons & usercmd::button::select)) {
         _is_selecting = true;
-        _selection_start = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
+        _selection_start = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
     } else if (!(cmd.buttons & usercmd::button::select)
         && !!(_usercmd.buttons & usercmd::button::select)) {
-        on_select((_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin);
+        on_select((_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin);
     }
 
     if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
@@ -312,11 +312,11 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
         _view.origin = _follow->get_position();
     }
 
-    vec2 cursor = (_usercmd.cursor - vec2(.5f)) * _view.size + _view.origin;
+    vec2 cursor = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
     _hover = hover_target(cursor);
 
     if (_usercmd.action == usercmd::action::zoom_in) {
-        _view.size *= (1.f / zoom_speed);
+        _view.size *= (1.0 / zoom_speed);
     } else if (_usercmd.action == usercmd::action::zoom_out) {
         _view.size *= zoom_speed;
     } else if (_usercmd.action == usercmd::action::move) {

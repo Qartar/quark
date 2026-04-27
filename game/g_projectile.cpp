@@ -24,7 +24,7 @@ projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 
     , _velocity(velocity)
     , _impact_time(time_value::max)
 {
-    _rigid_body = physics::rigid_body(&_shape, &_material, 1e-3f);
+    _rigid_body = physics::rigid_body(&_shape, &_material, 1e-3);
     set_position(position.to_vec2(), true);
     set_linear_velocity(velocity.to_vec2());
     vec2 direction = normalize(velocity.to_vec2());
@@ -56,7 +56,7 @@ void projectile::think()
     ballistics::step(new_position, new_velocity, ballistics::curve::G1, _info.ballistic_coefficient, FRAMETIME);
 
     // Assume projectiles never hit anything on their way up
-    if (new_velocity.z < 0.f && new_position.z < 12.f) {
+    if (new_velocity.z < 0.0 && new_position.z < 12.0) {
         physics::contact c;
         game::object* obj = get_world()->trace(c, _position.to_vec2(), new_position.to_vec2());
 
@@ -74,7 +74,7 @@ void projectile::think()
     _velocity = new_velocity;
 
     // Use impact time as a proxy for whether we've already hit something this frame
-    if (_position.z < 0.f && _impact_time == time_value::max) {
+    if (_position.z < 0.0 && _impact_time == time_value::max) {
         // intersect with z=0 plane
         double t = _position.z / _velocity.z;
         vec3 p = _position - _velocity * t;
@@ -135,10 +135,10 @@ void projectile::draw(render::system* renderer, time_value time) const
     mat3 tx = get_transform(std::min(_impact_time, time));
     vec2 p[5] = {
         vec2( _info.diameter, 0) * tx,
-        vec2( 0, .5f * _info.diameter) * tx,
-        vec2(-2.f * _info.diameter, .5f * _info.diameter) * tx,
-        vec2(-2.f * _info.diameter,-.5f * _info.diameter) * tx,
-        vec2( 0,-.5f * _info.diameter) * tx,
+        vec2( 0, 0.5 * _info.diameter) * tx,
+        vec2(-2.0 * _info.diameter, 0.5 * _info.diameter) * tx,
+        vec2(-2.0 * _info.diameter,-0.5 * _info.diameter) * tx,
+        vec2( 0,-0.5 * _info.diameter) * tx,
     };
     renderer->draw_line(p[0], p[1], color, color);
     renderer->draw_line(p[1], p[2], color, color);

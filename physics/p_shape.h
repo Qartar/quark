@@ -43,7 +43,7 @@ class box_shape : public shape
 {
 public:
     box_shape(vec2 size)
-        : _half_size(size * 0.5f)
+        : _half_size(size * 0.5)
     {
     }
 
@@ -57,8 +57,8 @@ public:
     }
 
     virtual vec2 supporting_vertex(vec2 direction) const override {
-        return _half_size * mat2::scale(direction.x < 0.f ? -1.f : 1.f,
-                                        direction.y < 0.f ? -1.f : 1.f);
+        return _half_size * mat2::scale(direction.x < 0.0 ? -1.0 : 1.0,
+                                        direction.y < 0.0 ? -1.0 : 1.0);
     }
 
     virtual double calculate_area() const override {
@@ -116,7 +116,7 @@ public:
         if (inverse_mass > 0.0) {
             inverse_inertia = 2.0 * inverse_mass / (_radius * _radius);
         } else {
-            inverse_inertia = 0.0f;
+            inverse_inertia = 0.0;
         }
     }
 

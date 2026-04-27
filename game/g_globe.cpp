@@ -112,7 +112,7 @@ void globe::cursor_event(vec2 position)
     if (_is_dragging) {
         vec2 delta = position - _cursor;
         _longitude -= delta.x * _zoom;
-        _latitude = clamp(_latitude + delta.y * _zoom, -.5f * math::pi, .5f * math::pi);
+        _latitude = clamp(_latitude + delta.y * _zoom, -0.5 * math::pi, 0.5 * math::pi);
     }
 
     _cursor = position;

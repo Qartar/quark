@@ -42,7 +42,7 @@ void navigation::think()
         vec2 current_position = ship->get_position();
         rot2 target_heading = _target_heading;
 
-        float epsilon_sqr = square(2.f * ship->design()->minimum_turning_radius);
+        double epsilon_sqr = square(2.0 * ship->design()->minimum_turning_radius);
         while (_waypoints.size() && (_waypoints[0] - current_position).length_sqr() < epsilon_sqr) {
             _waypoints.erase(_waypoints.begin());
         }

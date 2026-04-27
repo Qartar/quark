@@ -47,30 +47,30 @@ void simulate_ballistic_coefficient(ballistic_data& data, ballistics::curve curv
 //------------------------------------------------------------------------------
 double compare_ballistic_data(ballistic_data const& b1, ballistic_data const& b2)
 {
-    double num = 0.f;
-    double den = 0.f;
+    double num = 0.0;
+    double den = 0.0;
 
     if (b1.range && b2.range) {
         num += square(b1.range - b2.range) / (b1.range * b2.range);
-        den += 1.f;
+        den += 1.0;
     }
 
     if (b1.time && b2.time) {
         num += square(b1.time - b2.time) / (b1.time * b2.time);
-        den += 1.f;
+        den += 1.0;
     }
 
     if (b1.impact_angle && b2.impact_angle) {
         num += square(b1.impact_angle - b2.impact_angle) / (b1.impact_angle * b2.impact_angle);
-        den += 1.f;
+        den += 1.0;
     }
 
     if (b1.impact_velocity && b2.impact_velocity) {
         num += square(b1.impact_velocity - b2.impact_velocity) / (b1.impact_velocity * b2.impact_velocity);
-        den += 1.f;
+        den += 1.0;
     }
 
-    return den ? num / den : 0.f;
+    return den ? num / den : 0.0;
 }
 
 //------------------------------------------------------------------------------
@@ -79,8 +79,8 @@ void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, t
     ballistic_data d;
 
     bc = 1e3;
-    rms = 0.f;
-    double den = 0.f;
+    rms = 0.0;
+    double den = 0.0;
 
     if (b.range) {
         for (std::size_t ii = 0; ii < 64; ++ii) {
@@ -89,7 +89,7 @@ void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, t
             bc *= b.range / d.range;
         }
         rms += compare_ballistic_data(b, d);
-        den += 1.f;
+        den += 1.0;
     }
 
     if (b.time) {
@@ -99,7 +99,7 @@ void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, t
             bc *= b.time / d.time;
         }
         rms += compare_ballistic_data(b, d);
-        den += 1.f;
+        den += 1.0;
     }
 
     if (b.impact_angle) {
@@ -109,7 +109,7 @@ void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, t
             bc *= d.impact_angle / b.impact_angle;
         }
         rms += compare_ballistic_data(b, d);
-        den += 1.f;
+        den += 1.0;
     }
 
     if (b.impact_velocity) {
@@ -119,7 +119,7 @@ void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, t
             bc *= b.impact_velocity / d.impact_velocity;
         }
         rms += compare_ballistic_data(b, d);
-        den += 1.f;
+        den += 1.0;
     }
 
     if (den) {
@@ -130,9 +130,9 @@ void solve_ballistic_coefficient(ballistic_data const& b, ballistics::curve c, t
 //------------------------------------------------------------------------------
 void solve_ballistic_coefficient(ballistic_data const* b, std::size_t n, ballistics::curve c, time_delta dt, double& bc, double& rms)
 {
-    rms = 0.f;
+    rms = 0.0;
     for (std::size_t ii = 0; ii < n; ++ii) {
-        double tmp = 0.f;
+        double tmp = 0.0;
         solve_ballistic_coefficient(b[ii], c, dt, bc, tmp);
         rms += tmp;
     }
@@ -358,7 +358,7 @@ void solve_ballistic_coefficient_cmd(parser::text const& /*args*/)
     for (auto const& s : sets) {
         log::message("%s\n", s.name.c_str());
 
-        double best_bc = 0.f, best_rms = DBL_MAX;
+        double best_bc = 0.0, best_rms = DBL_MAX;
         ballistics::curve best_curve = ballistics::curve::G1;
 
         double bc[6];
@@ -366,7 +366,7 @@ void solve_ballistic_coefficient_cmd(parser::text const& /*args*/)
 
         for (std::size_t kk = 0; kk < 6; ++kk) {
             ballistics::curve c = static_cast<ballistics::curve>(static_cast<std::size_t>(ballistics::curve::G1) + kk);
-            solve_ballistic_coefficient(s.data.data(), s.data.size(), c, time_delta::from_hertz(20.f), bc[kk], rms[kk]);
+            solve_ballistic_coefficient(s.data.data(), s.data.size(), c, time_delta::from_hertz(20.0), bc[kk], rms[kk]);
             if (rms[kk] < best_rms) {
                 best_bc = bc[kk];
                 best_rms = rms[kk];
@@ -389,7 +389,7 @@ void solve_ballistic_coefficient_cmd(parser::text const& /*args*/)
 
         for (std::size_t kk = 0; kk < s.data.size(); ++kk) {
             ballistic_data d = s.data[kk];
-            simulate_ballistic_coefficient(d, best_curve, time_delta::from_hertz(20.f), best_bc);
+            simulate_ballistic_coefficient(d, best_curve, time_delta::from_hertz(20.0), best_bc);
 
             log::message(" %zu %.16f %.1fs (%g vs %g m) (%g vs %g m/s) (%2.1f vs %2.1f)\n", kk, best_bc,
                 d.time,
@@ -917,7 +917,7 @@ template<std::size_t sz> double drag_table_lookup(const float (&table)[sz], doub
     for (std::size_t ii = 2; ii < sz; ii += 2) {
         if (table[ii] > mach_number) {
             double t = (table[ii] - mach_number) / (table[ii] - table[ii - 2]);
-            return table[ii - 1] * t + table[ii + 1] * (1.f - t);
+            return table[ii - 1] * t + table[ii + 1] * (1.0 - t);
         }
     }
     assert(false);
@@ -963,7 +963,7 @@ time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, dou
     do {
         dt += timestep;
         step(position, velocity, curve, ballistic_coefficient, timestep);
-    } while (position.z > 0.f);
+    } while (position.z > 0.0);
 
     // backstep to impact
     double t = position.z / velocity.z;

@@ -69,23 +69,23 @@ void world::reset()
     faction* opfor = spawn<faction>("opfor", color4(1.f, .6f, .6f, 1.f));
 
     for (int ii = 0; ii < 6; ++ii) {
-        float angle = float(ii) * (math::pi * 2.f / 6.f) + math::pi / 12.f;
+        double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>(blufor);
-        sh->set_position(-dir * 1024.f, true);
-        sh->set_rotation(rot2(math::pi * .5f), true);
+        sh->set_position(-dir * 1024.0, true);
+        sh->set_rotation(rot2(math::pi * 0.5), true);
 
         sh->navigation()->set_heading(rot2(0,1));
     }
 
     for (int ii = 0; ii < 6; ++ii) {
-        float angle = float(ii) * (math::pi * 2.f / 6.f) + math::pi / 12.f;
+        double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>(opfor);
-        sh->set_position(vec2(16384, 0) - dir * 1024.f, true);
-        sh->set_rotation(rot2(math::pi * .5f), true);
+        sh->set_position(vec2(16384, 0) - dir * 1024.0, true);
+        sh->set_rotation(rot2(math::pi * 0.5), true);
 
         sh->navigation()->set_heading(rot2(0,1));
     }

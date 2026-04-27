@@ -63,7 +63,7 @@ public:
     vec2 normalize() const { double len = length(); return len ? *this / len : *this; }
     void normalize_self() { double len = length(); if (len) { *this /= len; } }
     double normalize_length() { double len = length(); if (len) { *this /= len; } return len; }
-    void clear() { x=0.0f; y=0.0f; }
+    void clear() { x=0.0; y=0.0; }
 
     constexpr double dot(vec2 const& V) const { return x*V.x + y*V.y; }
     constexpr vec2 cross(double V) const { return vec2(y*V, -x*V); }
@@ -130,7 +130,7 @@ public:
     vec3 normalize() const { double len = length(); return len ? *this / len : *this; }
     void normalize_self() { double len = length(); if (len) { *this /= len; } }
     double normalize_length() { double len = length(); if (len) { *this /= len; } return len; }
-    void clear() { x=0.0f; y=0.0f; z=0.0f; }
+    void clear() { x=0.0; y=0.0; z=0.0; }
 
     constexpr double dot(vec3 const& V) const { return x*V.x + y*V.y + z*V.z;}
     constexpr vec3 cross(vec3 const& V) const { return vec3( y*V.z - z*V.y, z*V.x - x*V.z, x*V.y - y*V.x ); }
@@ -198,7 +198,7 @@ public:
     vec4 normalize() const { double len = length(); return len ? *this / len : *this; }
     void normalize_self() { double len = length(); if (len) { *this /= len; } }
     double normalize_length() { double len = length(); if (len) { *this /= len; } return len; }
-    void clear() { x=0.0f; y=0.0f; z=0.0f; w=0.0f; }
+    void clear() { x=0.0; y=0.0; z=0.0; w=0.0; }
 
     constexpr double dot(vec4 const& V) const { return x*V.x + y*V.y + z*V.z + w*V.w; }
     constexpr vec4 cross(vec4 const& V) const { return vec4(y*V.z - z*V.y, z*V.x - x*V.z, x*V.y - y*V.x, 0.0f); }

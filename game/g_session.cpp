@@ -202,7 +202,7 @@ void session::update_screen()
 
     view.raster = true;
     view.size = vec2(640, 480);
-    view.origin = view.size * 0.5f;
+    view.origin = view.size * 0.5;
     _renderer->set_view(view);
 
     //
@@ -400,7 +400,7 @@ void session::cursor_event(vec2 position)
     _globe.cursor_event(position);
 
     if (_ship_editor) {
-        _ship_editor->cursor_event(position / vec2(size) * vec2(1,-1) + vec2(-.5f,.5f));
+        _ship_editor->cursor_event(position / vec2(size) * vec2(1,-1) + vec2(-0.5,0.5));
     }
 
     _clients[0].input.cursor_event(position / vec2(size) * vec2(1,-1) + vec2(0,1));
@@ -463,15 +463,15 @@ void session::draw_netgraph()
         float yavg = std::min<float>(478.0f, 480.0f - avg * scale);
         float alpha_avg = std::min<float>(1, std::abs(ymax - yavg) * 0.1f);
 
-        _renderer->draw_line(vec2(width, 480.0f), vec2(width, ymax - 8.0f), color4(1,1,1,1), color4(1,1,1,1));
+        _renderer->draw_line(vec2(width, 480.0), vec2(width, ymax - 8.0f), color4(1,1,1,1), color4(1,1,1,1));
         _renderer->draw_line(vec2(0, ymax), vec2(width, ymax), color4(1,1,1,1), color4(1,1,1,1));
         _renderer->draw_line(vec2(0, yavg), vec2(width, yavg), color4(0.5f,1,0.75f,alpha_avg), color4(0.5f,1,0.7f,alpha_avg));
 
         string::buffer smax(va("%0.1f kbps", CHAR_BIT * max / (FRAMETIME.to_seconds() * 1024.0f)));
         string::buffer savg(va("%0.1f kbps", CHAR_BIT * avg / (FRAMETIME.to_seconds() * 1024.0f)));
 
-        _renderer->draw_string(smax, vec2(638.0f - _renderer->string_size(smax).x, ymax), color4(1,1,1,1));
-        _renderer->draw_string(savg, vec2(638.0f - _renderer->string_size(savg).x, yavg), color4(1,1,1,alpha_avg));
+        _renderer->draw_string(smax, vec2(638.0 - _renderer->string_size(smax).x, ymax), color4(1,1,1,1));
+        _renderer->draw_string(savg, vec2(638.0 - _renderer->string_size(savg).x, yavg), color4(1,1,1,alpha_avg));
     }
 }
 

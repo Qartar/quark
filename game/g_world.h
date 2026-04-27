@@ -23,7 +23,7 @@
 
 #define MAX_PLAYERS 16
 
-constexpr const time_delta FRAMETIME = time_delta::from_seconds(0.05f);
+constexpr const time_delta FRAMETIME = time_delta::from_seconds(0.05);
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {

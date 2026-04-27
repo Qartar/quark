@@ -101,7 +101,7 @@ public:
     //
 
     double get_mass() const {
-        return _inverse_mass ? 1.0f / _inverse_mass : 0.0f;
+        return _inverse_mass ? 1.0 / _inverse_mass : 0.0;
     }
 
     void set_mass(double mass);

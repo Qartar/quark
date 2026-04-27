@@ -99,7 +99,7 @@ protected:
     double snap_radius(double r) const;
     vec2 snap_vertex(vec2 pos) const;
 
-    double render_vertex_size() const { return _view.size.y * (1.f / 384.f); }
+    double render_vertex_size() const { return _view.size.y * (1.0 / 384.0); }
 
     void update_highlight();
 

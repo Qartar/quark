@@ -30,7 +30,7 @@ protected:
     double _damage;
 
     time_value _damage_time;
-    static constexpr time_delta repair_delay = time_delta::from_seconds(0.5f);
+    static constexpr time_delta repair_delay = time_delta::from_seconds(0.5);
 };
 
 //------------------------------------------------------------------------------

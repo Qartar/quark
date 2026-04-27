@@ -21,8 +21,8 @@ glyph glyph::from_hdc(HDC hdc, UINT ch)
     };
 
     auto const GetFixedPoint = [](POINTFX const& pfx) {
-        return vec2(float(pfx.x.value) + pfx.x.fract * (1.f / 65536.f),
-                    float(pfx.y.value) + pfx.y.fract * (1.f / 65536.f));
+        return vec2(double(pfx.x.value) + pfx.x.fract * (1.0 / 65536.0),
+                    double(pfx.y.value) + pfx.y.fract * (1.0 / 65536.0));
     };
 
     DWORD glyphBufSize = GetGlyphOutlineW(hdc, ch, GGO_NATIVE, &g._metrics, 0, NULL, &mat);
@@ -182,47 +182,47 @@ double determinant(vec2 a, vec2 b)
 edge_distance signed_qspline_distance_squared(vec2 A, vec2 B, vec2 C, vec2 pos)
 {
     vec2 a = B - A;
-    vec2 b = A - 2.f * B + C;
-    vec2 c = a * 2.f;
+    vec2 b = A - 2.0 * B + C;
+    vec2 c = a * 2.0;
     vec2 d = A - pos;
 
-    double kk = 1.f / dot(b, b);
+    double kk = 1.0 / dot(b, b);
     double kx = kk * dot(a, b);
-    double ky = kk * (2.f * dot(a, a) + dot(d, b)) / 3.f;
+    double ky = kk * (2.0 * dot(a, a) + dot(d, b)) / 3.0;
     double kz = kk * dot(d, a);
 
-    double res = 0.f;
-    double sgn = 0.f;
-    double t = 0.f;
+    double res = 0.0;
+    double sgn = 0.0;
+    double t = 0.0;
 
     double p = ky - kx * kx;
     double p3 = p * p * p;
-    double q = kx * (2.f * kx * kx - 3.f * ky) + kz;
-    double h = q * q + 4.f * p3;
+    double q = kx * (2.0 * kx * kx - 3.0 * ky) + kz;
+    double h = q * q + 4.0 * p3;
 
-    if (h >= 0.f) {
+    if (h >= 0.0) {
         h = std::sqrt(h);
-        vec2 x = (vec2(h, -h) - vec2(q)) / 2.f;
+        vec2 x = (vec2(h, -h) - vec2(q)) / 2.0;
         vec2 uv = vec2(std::cbrt(x.x), std::cbrt(x.y));
-        t = clamp(uv.x + uv.y - kx, 0.f, 1.f);
+        t = clamp(uv.x + uv.y - kx, 0.0, 1.0);
         vec2 qx = d + (c + b * t) * t;
         res = dot(qx, qx);
-        sgn = cross(c + 2.f * b * t, qx);
+        sgn = cross(c + 2.0 * b * t, qx);
     } else {
         double z = std::sqrt(-p);
-        double v = std::acos(q / (p * z * 2.f)) / 3.f;
+        double v = std::acos(q / (p * z * 2.0)) / 3.0;
         double m = std::cos(v);
-        double n = std::sin(v) * 1.732050808f; // sqrt(3)
+        double n = std::sin(v) * 1.732050808; // sqrt(3)
 
-        double tx = clamp((m + m) * z - kx, 0.f, 1.f);
+        double tx = clamp((m + m) * z - kx, 0.0, 1.0);
         vec2 qx = d + (c + b * tx) * tx;
         double dx = dot(qx, qx);
-        double sx = cross(c + 2.f * b * tx, qx);
+        double sx = cross(c + 2.0 * b * tx, qx);
 
-        double ty = clamp((-n - m) * z - kx, 0.f, 1.f);
+        double ty = clamp((-n - m) * z - kx, 0.0, 1.0);
         vec2 qy = d + (c + b * ty) * ty;
         double dy = dot(qy, qy);
-        double sy = cross(c + 2.f * b * ty, qy);
+        double sy = cross(c + 2.0 * b * ty, qy);
 
         // the third root cannot be the closest
         //float tz = clamp((n - m) * z - kx, 0.f, 1.f);
@@ -289,7 +289,7 @@ edge_distance signed_segment_distance_squared(vec2 a, vec2 b, vec2 c)
     double ortho = det * det / den;
     if (num >= den) {
         return {std::copysign((c - b).length_sqr(), det), ortho};
-    } else if (num < 0.f) {
+    } else if (num < 0.0) {
         return {std::copysign((c - a).length_sqr(), det), ortho};
     } else {
         return {std::copysign(det * det / den, det), ortho};
@@ -318,16 +318,16 @@ int signed_intersect_segments(vec2 a, vec2 b, vec2 c, vec2 d)
     vec2 ab = b - a;
     vec2 cd = d - c;
     double den = determinant(ab, cd);
-    if (den == 0.f) {
+    if (den == 0.0) {
         return 0;
     }
     vec2 ac = c - a;
-    double sgn = den < 0.f ? -1.f : 1.f;
+    double sgn = den < 0.0 ? -1.0 : 1.0;
     den = std::abs(den);
     double u = determinant(ac, cd) * sgn;
     double v = determinant(ac, ab) * sgn;
-    if (0.f <= u && u <= den && 0.f <= v && v <= den) {
-        return sgn < 0.f ? -1 : 1;
+    if (0.0 <= u && u <= den && 0.0 <= v && v <= den) {
+        return sgn < 0.0 ? -1 : 1;
     } else {
         return 0;
     }
@@ -357,15 +357,15 @@ int signed_intersect_qspline(vec2 a, vec2 b, vec2 p0, vec2 p1, vec2 p2)
 
     // If the subdivision is too small then just use the intersection with the
     // subdivided curve segments.
-    } else if ((p2 - p0).length_sqr() < 1e-6f) {
+    } else if ((p2 - p0).length_sqr() < 1e-6) {
         return i1 + i2;
 
     // Otherwise subdivide the curve and recurse.
     } else {
         // de Casteljau's algorithm
-        vec2 p01 = .5f * (p0 + p1);
-        vec2 p12 = .5f * (p1 + p2);
-        vec2 mid = .5f * (p01 + p12); // on the spline
+        vec2 p01 = 0.5 * (p0 + p1);
+        vec2 p12 = 0.5 * (p1 + p2);
+        vec2 mid = 0.5 * (p01 + p12); // on the spline
 
         // Sum the results to account for multiple intersections.
         return signed_intersect_qspline(a, b, p0, p01, mid)
@@ -390,7 +390,7 @@ int signed_intersect_qspline(vec2 a, vec2 b, vec2 const* first, vec2 const* last
         // calculate the endpoint as midpoint between the current
         // and next control points.
         if (points + 1 < last) {
-            p2 = .5f * (p1 + p2);
+            p2 = 0.5 * (p1 + p2);
         }
         n += signed_intersect_qspline(a, b, p0, p1, p2);
         // First endpoint of the next curve is the last endpoint
@@ -489,11 +489,11 @@ bool glyph::point_inside_glyph(vec2 p) const
             std::size_t last = _primitives[jj].last;
             switch (_primitives[jj].type) {
                 case glyph::primitive_type::segment: {
-                    n += signed_intersect_segments(p, vec2(-32.f, -16.f), _points[first], _points[last]);
+                    n += signed_intersect_segments(p, vec2(-32.0, -16.0), _points[first], _points[last]);
                     break;
                 }
                 case glyph::primitive_type::qspline: {
-                    n += signed_intersect_qspline(p, vec2(-32.f, -16.f), &_points[first], &_points[last]);
+                    n += signed_intersect_qspline(p, vec2(-32.0, -16.0), &_points[first], &_points[last]);
                     break;
                 }
                 case glyph::primitive_type::cspline:

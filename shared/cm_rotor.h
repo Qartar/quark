@@ -102,12 +102,12 @@ public:
         double yyxx = R.y * R.y - R.x * R.x;
         double wwzz = R.w * R.w - R.z * R.z;
 
-        double xw2 = R.x * R.w * 2.f;
-        double xy2 = R.x * R.y * 2.f;
-        double xz2 = R.x * R.z * 2.f;
-        double yw2 = R.y * R.w * 2.f;
-        double yz2 = R.y * R.z * 2.f;
-        double zw2 = R.z * R.w * 2.f;
+        double xw2 = R.x * R.w * 2.0;
+        double xy2 = R.x * R.y * 2.0;
+        double xz2 = R.x * R.z * 2.0;
+        double yw2 = R.y * R.w * 2.0;
+        double yz2 = R.y * R.z * 2.0;
+        double zw2 = R.z * R.w * 2.0;
 
         return vec3((xxzz + wwyy) * V.x +  (xy2 + zw2)  * V.y +  (xz2 - yw2)  * V.z,
                      (xy2 - zw2)  * V.x + (yyxx + wwzz) * V.y +  (yz2 + xw2)  * V.z,

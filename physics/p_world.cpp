@@ -63,7 +63,7 @@ void world::step(double delta_time)
 
             // check collision
             physics::trace tr(_bodies[ii], _bodies[jj], delta_time);
-            if (tr.get_fraction() == 1.f) {
+            if (tr.get_fraction() == 1.0) {
                 continue;
             }
 
@@ -122,7 +122,7 @@ std::size_t world::trace(
         }
 
         auto tr = physics::trace(_bodies[ii], start, end);
-        if (tr.get_fraction() == 1.f) {
+        if (tr.get_fraction() == 1.0) {
             continue;
         }
 
@@ -201,7 +201,7 @@ vec2 world::collision_impulse(
                            - vec3(body_a->get_linear_velocity(position.to_vec2()));
 
     // Simple collision response for penetrating bodies
-    if (distance >= 0.0f || relative_velocity.dot(direction) >= 0.f) {
+    if (distance >= 0.0 || relative_velocity.dot(direction) >= 0.0) {
         return vec2_zero;
     }
 
@@ -240,7 +240,7 @@ vec2 world::collision_impulse(
              + body_a->get_inverse_inertia() * ra.cross(-tangent).length_sqr()
              + body_b->get_inverse_inertia() * rb.cross(-tangent).length_sqr();
 
-    double dvx = -(1.0f + restitution) * relative_velocity.dot(direction);
+    double dvx = -(1.0 + restitution) * relative_velocity.dot(direction);
     double dvy = -relative_velocity.dot(-tangent);
 
     // Solve the vector equation:
@@ -255,7 +255,7 @@ vec2 world::collision_impulse(
     // M' = ----------- |          |
     //      GxHy - HxGy | -Gy   Gx |
 
-    double inv_det = 1.0f / (gx * hy - hx * gy);
+    double inv_det = 1.0 / (gx * hy - hx * gy);
 
     double dpx = inv_det * ( hy * dvx - hx * dvy);
     double dpy = inv_det * (-gy * dvx + gx * dvy);
