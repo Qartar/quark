@@ -35,7 +35,7 @@ struct GSHHG_POINT {    /* Each lon, lat pair is stored in micro-degrees in 4-by
 
 //------------------------------------------------------------------------------
 // Converts geocentric polar coordinates to geocentric cartesian coordinates
-gshhg::point geocentric_to_cartesian(GSHHG_POINT const& p)
+vec3f geocentric_to_cartesian(GSHHG_POINT const& p)
 {
     constexpr float R = 6371008.8f;
 
@@ -52,7 +52,7 @@ gshhg::point geocentric_to_cartesian(GSHHG_POINT const& p)
 
 //------------------------------------------------------------------------------
 // Converts WGS 84 geodetic coordinates to geocentric cartesian coordinates
-gshhg::point wgs84_to_cartesian(GSHHG_POINT const& p)
+vec3f wgs84_to_cartesian(GSHHG_POINT const& p)
 {
     constexpr float A = 6378137.0f; //! Semi-major axis (equitorial radius)
     constexpr float B = 6356752.314245f; //! Semi-minor axis (polar radius)
@@ -113,7 +113,7 @@ bool gshhg::load(resolution res)
             GSHHG_POINT const* pts = reinterpret_cast<GSHHG_POINT const*>(ptr + 1);
             _polygons.push_back(poly{narrow_cast<int>(_vertices.size()), ptr->n, ptr->flag});
             for (int ii = 0; ii < ptr->n; ++ii) {
-                point p = wgs84_to_cartesian(pts[ii]);
+                vec3f p = wgs84_to_cartesian(pts[ii]);
                 _vertices.push_back({p.x * (1.f / 6371008.8f), p.y * (1.f / 6371008.8f), p.z * (1.f / 6371008.8f)});
             }
             ptr = reinterpret_cast<GSHHG const*>(pts + ptr->n);

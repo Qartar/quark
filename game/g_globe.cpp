@@ -36,7 +36,7 @@ void globe::draw(render::system* renderer, time_value /*time*/)
 
     if (!_vbo[0].name()) {
         for (int ii = 0; ii < 5; ++ii ) {
-            _vbo[ii] = render::gl::vertex_buffer<gshhg::point>(
+            _vbo[ii] = render::gl::vertex_buffer<vec3f>(
                 render::gl::buffer_usage::static_,
                 render::gl::buffer_access::draw,
                 _gshhg[ii].vertices().size(),

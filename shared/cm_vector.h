@@ -370,3 +370,37 @@ protected:
 constexpr vec2 vec2_zero = vec2(0,0);
 constexpr vec3 vec3_zero = vec3(0,0,0);
 constexpr vec4 vec4_zero = vec4(0,0,0,0);
+
+//------------------------------------------------------------------------------
+class vec2f
+{
+public:
+    static constexpr int dimension = 2;
+
+    float x, y;
+
+    vec2f() = default;
+    constexpr vec2f(float X, float Y) : x(X), y(Y) {}
+    //! Explicit conversion from double-precision vector
+    explicit constexpr vec2f(vec2 v) : x(float(v.x)), y(float(v.y)) {}
+    //! Explicit conversion from integer vector
+    explicit constexpr vec2f(vec2i v) : x(float(v.x)), y(float(v.y)) {}
+    //! Implicit conversion to double-precision vector
+    constexpr operator vec2() const { return {x, y}; }
+};
+
+//------------------------------------------------------------------------------
+class vec3f
+{
+public:
+    static constexpr int dimension = 3;
+
+    float x, y, z;
+
+    vec3f() = default;
+    constexpr vec3f(float X, float Y, float Z) : x(X), y(Y), z(Z) {}
+    //! Explicit conversion from double-precision vector
+    explicit constexpr vec3f(vec3 v) : x(float(v.x)), y(float(v.y)), z(float(v.z)) {}
+    //! Implicit conversion to double-precision vector
+    constexpr operator vec3() const { return {x, y, z}; }
+};

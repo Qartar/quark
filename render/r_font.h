@@ -40,7 +40,7 @@ private:
     render::image const* _image;
 
     struct instance {
-        float position[2];
+        vec2f position;
         int index;
         uint32_t color;
     };
@@ -48,10 +48,10 @@ private:
     friend struct font_sdf;
 
     struct glyph_info {
-        float size[2]; // size of full glyph rect
-        float cell[2]; // top-left coordinate of glyph rect
-        float offset[2]; // offset of glyph origin relative to cell origin
-        float advance[2]; // offset to next character in text
+        vec2f size; // size of full glyph rect
+        vec2f cell; // top-left coordinate of glyph rect
+        vec2f offset; // offset of glyph origin relative to cell origin
+        vec2f advance; // offset to next character in text
     };
 
     gl::vertex_array _vao;

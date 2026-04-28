@@ -30,10 +30,6 @@ public:
         int flags;
     };
 
-    struct point {
-        float x, y, z;
-    };
-
 public:
     gshhg();
 
@@ -41,9 +37,9 @@ public:
     void clear();
 
     std::vector<poly> const& polygons() const { return _polygons; }
-    std::vector<point> const& vertices() const { return _vertices; }
+    std::vector<vec3f> const& vertices() const { return _vertices; }
 
 protected:
     std::vector<poly> _polygons;
-    std::vector<point> _vertices;
+    std::vector<vec3f> _vertices;
 };

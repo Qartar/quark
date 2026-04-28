@@ -32,7 +32,7 @@ public:
 protected:
     gshhg _gshhg[5];
 
-    render::gl::vertex_buffer<gshhg::point> _vbo[5];
+    render::gl::vertex_buffer<vec3f> _vbo[5];
     render::gl::vertex_array _vao[5];
 
     int _resolution;
