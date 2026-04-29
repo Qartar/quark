@@ -119,6 +119,8 @@ result system::init()
     _timers.resize((_window->size().x >> 1));
     _timer_index = 0;
 
+    _vaov2f = gl::vertex_array({gl::vertex_array_attrib{2, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
+
     return result::success;
 }
 

@@ -17,6 +17,7 @@ class window;
 class shader;
 class image;
 class font;
+class outline;
 
 //------------------------------------------------------------------------------
 struct view
@@ -73,6 +74,7 @@ public:
     void draw_particles(time_value time, render::particle const* particles, std::size_t num_particles);
     void draw_model(render::model const* model, mat3 transform, color4 color);
     void draw_starfield(vec2 streak_vector = vec2_zero);
+    void draw_outline(render::outline const& o, mat4 transform, color4 color);
 
     void set_view(render::view const& view);
 
@@ -144,6 +146,9 @@ private:
 
     float _costbl[360];
     float _sintbl[360];
+
+    //! Single attribute of 2D single-precision float elements
+    gl::vertex_array _vaov2f;
 
 private:
 

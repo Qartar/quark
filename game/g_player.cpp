@@ -97,16 +97,19 @@ void player::draw(render::system* renderer, time_value time) const
 
         // draw hull outline
         if (target == _hover && !_is_selecting) {
-            std::vector<vec2> outline = create_outline(target->design()->hull_outline, 1.0);
-            mat3 tx = target->get_transform(time);
-            vec2 v0 = outline[0] * tx;
-            for (std::size_t ii = 1; ii < outline.size(); ++ii) {
-                vec2 v1 = outline[ii] * tx;
-                renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
-                v0 = v1;
-            }
-            vec2 v1 = outline[0] * tx;
-            renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+            vec3 origin = globe::planar_to_surface(target->get_position(time));
+            rot2 r = target->get_rotation(time);
+            mat4 proj = mat4(r.x, r.y, 0, 0, -r.y, r.x, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) * globe::surface_projection(origin);
+
+            vec2 size = vec2(target->design()->length, target->design()->beam);
+            mat4 scale = mat4((size.x + 1.0) / size.x, 0, 0, 0,
+                              0, (size.y + 1.0) / size.y, 0, 0,
+                              0, 0, 1, 0, 0, 0, 0, 1);
+
+            renderer->draw_outline(
+                target->hull_outline(),
+                scale * proj,
+                color4(1,1,1,1));
         }
     }
 
@@ -180,16 +183,19 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
 
     // draw selection outlines
     for (auto&& ship : selection) {
-        std::vector<vec2> outline = create_outline(ship->design()->hull_outline, 1.f);
-        mat3 tx = ship->get_transform(time);
-        vec2 v0 = outline[0] * tx;
-        for (std::size_t ii = 1; ii < outline.size(); ++ii) {
-            vec2 v1 = outline[ii] * tx;
-            renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
-            v0 = v1;
-        }
-        vec2 v1 = outline[0] * tx;
-        renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+        vec3 origin = globe::planar_to_surface(ship->get_position(time));
+        rot2 r = ship->get_rotation(time);
+        mat4 proj = mat4(r.x, r.y, 0, 0, -r.y, r.x, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) * globe::surface_projection(origin);
+
+        vec2 size = vec2(ship->design()->length, ship->design()->beam);
+        mat4 scale = mat4((size.x + 1.0) / size.x, 0, 0, 0,
+                          0, (size.y + 1.0) / size.y, 0, 0,
+                          0, 0, 1, 0, 0, 0, 0, 1);
+
+        renderer->draw_outline(
+            ship->hull_outline(),
+            scale * proj,
+            color4(1,1,1,1));
     }
 
     // draw order preview

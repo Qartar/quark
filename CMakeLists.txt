@@ -109,6 +109,8 @@ set(QUARK_SOURCES
     render/r_main.h
     render/r_model.cpp
     render/r_model.h
+    render/r_outline.cpp
+    render/r_outline.h
     render/r_particle.h
     render/r_shader.cpp
     render/r_shader.h

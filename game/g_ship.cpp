@@ -63,6 +63,8 @@ void ship::spawn()
     _navigation = get_world()->spawn<game::navigation>(this);
     _subsystems.push_back(_navigation);
 
+    _outlines.push_back(render::outline(_design->hull_outline.data(), _design->hull_outline.size()));
+
     // add a fire director for each unique gun design
     {
         gun_design const* gun = nullptr;
@@ -76,6 +78,39 @@ void ship::spawn()
             _turrets[ii].fire_director = _fire_directors.back();
         }
     }
+
+    // add turret and gun outlines
+    // TODO: render outlines should be on the designs themselves instead of duplicated on every ship
+    {
+        for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
+            _turrets[ii].turret_outline = SIZE_MAX;
+            _turrets[ii].gun_outline = SIZE_MAX;
+            // turret designs are not necessarily 1:1 with gun designs, check all preceding designs
+            for (std::size_t jj = 0; jj < ii; ++jj) {
+                if (_design->turrets[ii].design == _design->turrets[jj].design) {
+                    _turrets[ii].turret_outline = _turrets[jj].turret_outline;
+                }
+                if (_design->turrets[ii].design->gun_design == _design->turrets[jj].design->gun_design) {
+                    _turrets[ii].gun_outline = _turrets[jj].gun_outline;
+                }
+            }
+
+            if (_turrets[ii].turret_outline == SIZE_MAX) {
+                _turrets[ii].turret_outline = _outlines.size();
+                _outlines.push_back(render::outline(
+                    _design->turrets[ii].design->outline.data(),
+                    _design->turrets[ii].design->outline.size()));
+
+            }
+
+            if (_turrets[ii].gun_outline == SIZE_MAX) {
+                _turrets[ii].gun_outline = _outlines.size();
+                _outlines.push_back(render::outline(
+                    _design->turrets[ii].design->gun_design->outline.data(),
+                    _design->turrets[ii].design->gun_design->outline.size()));
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -86,14 +121,12 @@ void ship::draw(render::system* renderer, time_value time) const
 
     // draw hull outline
     {
-        vec2 v0 = _design->hull_outline[0] * tx;
-        for (std::size_t ii = 1; ii < _design->hull_outline.size(); ++ii) {
-            vec2 v1 = _design->hull_outline[ii] * tx;
-            renderer->draw_line(v0, v1, color, color);
-            v0 = v1;
-        }
-        vec2 v1 = _design->hull_outline[0] * tx;
-        renderer->draw_line(v0, v1, color, color);
+        mat4 tx4(tx[0][0], tx[0][1], 0, tx[0][2],
+                 tx[1][0], tx[1][1], 0, tx[1][2],
+                 0,        0,        1, 0,
+                 tx[2][0], tx[2][1], 0, tx[2][2]);
+
+        renderer->draw_outline(_outlines[0], tx4, color);
     }
 
     // draw rudder
@@ -113,34 +146,26 @@ void ship::draw(render::system* renderer, time_value time) const
         float radius = turret.design->radius;
 
         // draw turret outline
-        {
-            vec2 v0 = turret.design->outline.front() * turret_tx;
-            for (std::size_t kk = 1, sz = turret.design->outline.size(); kk < sz; ++kk) {
-                vec2 v1 = turret.design->outline[kk] * turret_tx;
-                renderer->draw_line(v0, v1, color, color);
-                v0 = v1;
-            }
-            renderer->draw_line(v0, turret.design->outline.front() * turret_tx, color, color);
-        }
+        mat4 turret_tx4(turret_tx[0][0], turret_tx[0][1], 0, turret_tx[0][2],
+                        turret_tx[1][0], turret_tx[1][1], 0, turret_tx[1][2],
+                        0,               0,               1, 0,
+                        turret_tx[2][0], turret_tx[2][1], 0, turret_tx[2][2]);
 
-        double l = 0.7 * cos(_turrets[jj].elevation) * turret.design->gun_design->length;
+        renderer->draw_outline(_outlines[_turrets[jj].turret_outline], turret_tx4, color);
+
+        double cp = cos(_turrets[jj].elevation);
+        double sp = sin(_turrets[jj].elevation);
 
         // draw guns
         for (int ii = 0; ii < turret.design->num_guns; ++ii) {
-            double x = radius;
             double y = turret.design->spacing * (ii - 0.5 * (turret.design->num_guns - 1));
-            vec2 v1 = vec2(x, y);
 
-            double caliber = turret.design->gun_design->caliber;
-            vec2 pts[4] = {
-                (v1 + vec2(0, 1.25 * caliber)) * turret_tx,
-                (v1 + vec2(l, 0.5 * caliber)) * turret_tx,
-                (v1 + vec2(l, -0.5 * caliber)) * turret_tx,
-                (v1 + vec2(0, -1.25 * caliber)) * turret_tx
-            };
-            renderer->draw_line(pts[0], pts[1], color, color);
-            renderer->draw_line(pts[1], pts[2], color, color);
-            renderer->draw_line(pts[2], pts[3], color, color);
+            mat4 gun_tx4 = mat4(cp, 0, sp, 0,
+                                0,  1, 0,  0,
+                               -sp, 0, cp, 0,
+                                radius, y, 0, 1) * turret_tx4;
+
+            renderer->draw_outline(_outlines[_turrets[jj].gun_outline], gun_tx4, color);
         }
     }
 
@@ -343,6 +368,7 @@ void ship::get_firing_vectors(std::size_t turret_index, std::size_t gun_index, v
         turret.position,
         rot2(turret.orientation + _turrets[turret_index].traverse)) * get_transform();
 
+    // TODO: fix hard-coded muzzle transform
     position = vec3(vec2(turret.design->radius + cos(_turrets[turret_index].elevation) * 0.9 * turret.design->gun_design->length,
                          turret.design->spacing * (gun_index - 0.5 * (turret.design->num_guns - 1))) * turret_tx,
                     8.0 + sin(_turrets[turret_index].elevation) * 0.9 * turret.design->gun_design->length);

@@ -20,6 +20,8 @@ struct gun_design
     float shell_velocity; //!< Muzzle velocity of projectile
 
     float shell_coefficient; //!< Ballistic coefficient of projectile
+
+    std::vector<vec2> outline;
 };
 
 extern const gun_design gun_46cm_45_Type_94;

@@ -7,6 +7,7 @@
 #include "gl/gl_include.h"
 #include "r_font.h"
 #include "r_model.h"
+#include "r_outline.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace render {
@@ -455,6 +456,22 @@ void system::draw_starfield(vec2 streak_vector)
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
+}
+
+//------------------------------------------------------------------------------
+void system::draw_outline(render::outline const& o, mat4 transform, color4 color)
+{
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glMultMatrixd(&transform[0][0]);
+    glColor4fv(color);
+
+    _vaov2f.bind();
+    _vaov2f.bind_buffer(o.vertices(), 0);
+    glDrawArrays(GL_LINE_LOOP, 0, narrow_cast<GLsizei>(o.num_vertices()));
+
+    gl::vertex_array().bind();
+    glPopMatrix();
 }
 
 } // namespace render
