@@ -272,19 +272,15 @@ void system::set_default_state()
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    vec2 view_min = _view.origin - _view.size * 0.5;
-    vec2 view_max = _view.origin + _view.size * 0.5;
-
     if (_view.raster) {
-        glOrtho(view_min.x, view_max.x, view_max.y, view_min.y, -99999, 99999);
+        glOrtho(-0.5 * _view.size.x, 0.5 * _view.size.x, 0.5 * _view.size.y, -0.5 * _view.size.y, -99999, 9999999);
     } else {
-        glOrtho(view_min.x, view_max.x, view_min.y, view_max.y, -99999, 99999);
+        glOrtho(-0.5 * _view.size.x, 0.5 * _view.size.x, -0.5 * _view.size.y, 0.5 * _view.size.y, -99999, 9999999);
     }
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslated(_view.origin.x, _view.origin.y, 0);
     glRotatef(math::rad2deg(_view.angle), 0, 0, -1);
     glTranslated(-_view.origin.x, -_view.origin.y, 0);
 }
