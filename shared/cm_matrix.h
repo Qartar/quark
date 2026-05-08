@@ -301,6 +301,7 @@ public:
     bool operator!=(mat4 const& M) const { return _rows[0] != M[0] || _rows[1] != M[1] || _rows[2] != M[2] || _rows[3] != M[3]; }
     constexpr vec4 operator[](std::size_t idx) const { return _rows[idx]; }
     vec4& operator[](std::size_t idx) { return _rows[idx]; }
+    operator double const*() const { return &_rows[0].x; }
 
 // basic functions
 
@@ -322,6 +323,13 @@ public:
         // Laplace expansion
         return _rows[0][0] * minor(0,0).determinant() - _rows[0][1] * minor(0,1).determinant()
              + _rows[0][2] * minor(0,2).determinant() - _rows[0][3] * minor(0,3).determinant();
+    }
+
+    constexpr mat4 transpose() const {
+        return mat4(_rows[0][0], _rows[1][0], _rows[2][0], _rows[3][0],
+                    _rows[0][1], _rows[1][1], _rows[2][1], _rows[3][1],
+                    _rows[0][2], _rows[1][2], _rows[2][2], _rows[3][2],
+                    _rows[0][3], _rows[1][3], _rows[2][3], _rows[3][3]);
     }
 
 // rotation
@@ -375,6 +383,24 @@ public:
     constexpr static mat4 scale(double s) { return scale(vec4(s)); }
     constexpr static mat4 scale(double sx, double sy, double sz, double sw = 1) { return scale(vec4(sx, sy, sz, sw)); }
     constexpr static mat4 scale(vec4 s) { return mat4(s.x, 0, 0, 0, 0, s.y, 0, 0, 0, 0, s.z, 0, 0, 0, 0, s.w); }
+
+    //! Return a homogenous transformation matrix for the given translation and rotation
+    constexpr static mat4 transform(vec3 translation, mat3 rotation) {
+        return mat4(rotation[0][0], rotation[0][1], rotation[0][2], 0,
+                    rotation[1][0], rotation[1][1], rotation[1][2], 0,
+                    rotation[2][0], rotation[2][1], rotation[2][2], 0,
+                    translation.x, translation.y, translation.z, 1);
+    }
+
+    //! Return a homogenous transformation matrix that inverts the given translation and rotation
+    constexpr static mat4 inverse_transform(vec3 translation, mat3 rotation) {
+        vec3 t = -translation * rotation.transpose();
+
+        return mat4(rotation[0][0], rotation[1][0], rotation[2][0], 0,
+                    rotation[0][1], rotation[1][1], rotation[2][1], 0,
+                    rotation[0][2], rotation[1][2], rotation[2][2], 0,
+                    t.x, t.y, t.z, 1);
+    }
 
 // multiplication
 
