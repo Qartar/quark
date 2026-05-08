@@ -24,10 +24,21 @@ class globe
 public:
     globe();
 
-    void draw(render::system* renderer, time_value time);
+    //! Initialize rendering data
+    void init();
+    void draw(render::system* renderer, time_value time) const;
 
-    bool key_event(int key, bool down);
-    void cursor_event(vec2 position);
+    //! Convert longitude/latitude in radians into cartesian coordinates of a point on the surface
+    static vec3 lonlat_to_surface(vec2 lonlat);
+    //! Convert cartesian coordinates of a point on the surface into longitude/latitude in radians
+    static vec2 surface_to_lonlat(vec3 surface);
+    //! Create an orthogonal projection matrix centered on the given point on the suface
+    static mat4 surface_projection(vec3 surface);
+    //! Create an orthogonal inverse projection matrix centered on the given point on the surface
+    static mat4 surface_inverse_projection(vec3 surface);
+
+    //! Convert legacy 2D coordinates to 3D surface coordinates
+    static vec3 planar_to_surface(vec2 v);
 
 protected:
     gshhg _gshhg[5];
@@ -37,13 +48,11 @@ protected:
 
     int _resolution;
 
-    double _longitude;
-    double _latitude;
-
-    float _zoom;
-
-    bool _is_dragging;
-    vec2 _cursor;
+protected:
+    //! IUGG arithmetic mean radius of the Earth. Making this protected because
+    //! if a calculation is relying on this value it should probably be inlined
+    //! into this class.
+    static constexpr double mean_radius = 6371008.7714;
 };
 
 } // namespace game

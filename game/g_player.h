@@ -13,6 +13,7 @@ class ship;
 
 //------------------------------------------------------------------------------
 struct player_view {
+    mat4 transform;
     vec2 origin;
     vec2 size;
 };

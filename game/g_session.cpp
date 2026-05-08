@@ -186,8 +186,6 @@ void session::update_screen()
 {
     _renderer->begin_frame();
 
-    _globe.draw(_renderer, _frametime);
-
     if (_ship_editor) {
         _ship_editor->draw(_renderer, _frametime);
     } else {
@@ -354,10 +352,6 @@ void session::key_event(int key, bool down)
         }
     }
 
-    if (_globe.key_event(key, down)) {
-        return;
-    }
-
     if (_ship_editor && _ship_editor->key_event(key, down)) {
         return;
     }
@@ -396,8 +390,6 @@ void session::cursor_event(vec2 position)
     vec2i size = _renderer->window()->size();
     _cursor.x = static_cast<int>(position.x * 640 / size.x);
     _cursor.y = static_cast<int>(position.y * 480 / size.y);
-
-    _globe.cursor_event(position);
 
     if (_ship_editor) {
         _ship_editor->cursor_event(position / vec2(size) * vec2(1,-1) + vec2(-0.5,0.5));

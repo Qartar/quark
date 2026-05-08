@@ -119,15 +119,16 @@ void ship::draw(render::system* renderer, time_value time) const
     color4 color = _faction ? _faction->color() : color4(.8f,.9f,1.f,1.f);
     auto tx = get_transform(time);
 
-    // draw hull outline
-    {
-        mat4 tx4(tx[0][0], tx[0][1], 0, tx[0][2],
-                 tx[1][0], tx[1][1], 0, tx[1][2],
-                 0,        0,        1, 0,
-                 tx[2][0], tx[2][1], 0, tx[2][2]);
+    vec3 origin = globe::planar_to_surface(get_position(time));
+    mat4 proj = globe::surface_projection(origin);
 
-        renderer->draw_outline(_outlines[0], tx4, color);
-    }
+    // draw hull outline
+    mat4 tx4 = mat4(tx[0][0], tx[0][1], 0, 0,
+                    tx[1][0], tx[1][1], 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1) * proj;
+
+    renderer->draw_outline(_outlines[0], tx4, color);
 
     // draw rudder
     {
@@ -141,15 +142,15 @@ void ship::draw(render::system* renderer, time_value time) const
     // draw turrets
     for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
         auto const& turret = _design->turrets[jj];
-        mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[jj].traverse)) * tx;
+        mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[jj].traverse));
 
         float radius = turret.design->radius;
 
         // draw turret outline
-        mat4 turret_tx4(turret_tx[0][0], turret_tx[0][1], 0, turret_tx[0][2],
-                        turret_tx[1][0], turret_tx[1][1], 0, turret_tx[1][2],
-                        0,               0,               1, 0,
-                        turret_tx[2][0], turret_tx[2][1], 0, turret_tx[2][2]);
+        mat4 turret_tx4 = mat4(turret_tx[0][0], turret_tx[0][1], 0, turret_tx[0][2],
+                               turret_tx[1][0], turret_tx[1][1], 0, turret_tx[1][2],
+                               0,               0,               1, 0,
+                               turret_tx[2][0], turret_tx[2][1], 0, turret_tx[2][2]) * tx4;
 
         renderer->draw_outline(_outlines[_turrets[jj].turret_outline], turret_tx4, color);
 

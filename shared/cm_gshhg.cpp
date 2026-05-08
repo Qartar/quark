@@ -71,6 +71,27 @@ vec3f wgs84_to_cartesian(GSHHG_POINT const& p)
 }
 
 //------------------------------------------------------------------------------
+// Converts WGS 84 geodetic coordinates to geocentric cartesian coordinates and then
+// projects them onto a sphere with surface area equal to the reference ellipsoid.
+vec3f wgs84_projection_to_cartesian(GSHHG_POINT const& p)
+{
+    constexpr float A = 6378137.0f; //! Semi-major axis (equitorial radius)
+    constexpr float B = 6356752.314245f; //! Semi-minor axis (polar radius)
+    constexpr float R = 6371008.8f; //! IUGG arithmetic mean radius of the Earth.
+
+    // Note that the 23-bit mantisaa of single-precision fp is insufficient
+    // to represent the ~28 bits used for encoding lon/lat in micro-degrees.
+    double lon = double(p.x) * (math::pi / 180000000.0);
+    double lat = double(p.y) * (math::pi / 180000000.0);
+
+    float cl = float(cos(lon)), sl = float(sin(lon));
+    float cp = float(cos(lat)), sp = float(sin(lat));
+
+    vec3 r = vec3(cl * cp, sl * cp, (B * B / (A * A)) * sp).normalize();
+    return {float(R * r.x), float(R * r.y), float(R * r.z)};
+}
+
+//------------------------------------------------------------------------------
 gshhg::gshhg()
 {
 }
@@ -113,8 +134,8 @@ bool gshhg::load(resolution res)
             GSHHG_POINT const* pts = reinterpret_cast<GSHHG_POINT const*>(ptr + 1);
             _polygons.push_back(poly{narrow_cast<int>(_vertices.size()), ptr->n, ptr->flag});
             for (int ii = 0; ii < ptr->n; ++ii) {
-                vec3f p = wgs84_to_cartesian(pts[ii]);
-                _vertices.push_back({p.x * (1.f / 6371008.8f), p.y * (1.f / 6371008.8f), p.z * (1.f / 6371008.8f)});
+                vec3f p = wgs84_projection_to_cartesian(pts[ii]);
+                _vertices.push_back({p.x, p.y, p.z});
             }
             ptr = reinterpret_cast<GSHHG const*>(pts + ptr->n);
         }

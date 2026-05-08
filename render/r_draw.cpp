@@ -463,7 +463,7 @@ void system::draw_outline(render::outline const& o, mat4 transform, color4 color
 {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glMultMatrixd(&transform[0][0]);
+    glLoadMatrixd(transform * _view.transform);
     glColor4fv(color);
 
     _vaov2f.bind();

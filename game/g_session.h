@@ -9,8 +9,6 @@
 #include "net_socket.h"
 #include "cm_console.h"
 
-#include "g_globe.h"
-
 namespace render {
 class image;
 class system;
@@ -195,8 +193,6 @@ private:
     time_value _worldtime;
     time_value _frametime;
     std::size_t _framenum;
-
-    globe _globe;
 
     vec2i _cursor;
     bool _show_cursor;

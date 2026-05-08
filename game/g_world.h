@@ -5,6 +5,7 @@
 
 #include "g_usercmd.h"
 #include "g_object.h"
+#include "g_globe.h"
 
 #include "p_material.h"
 #include "p_rigidbody.h"
@@ -229,6 +230,8 @@ private:
 
     config::scalar _timescale; //!< Current game speed as a multiplier
     float _prev_timescale; //!< Previous game speed, used for unpausing
+
+    globe _globe;
 
     //
     // particle system

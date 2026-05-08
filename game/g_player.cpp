@@ -17,7 +17,7 @@ const object_type player::_type(object::_type);
 
 //------------------------------------------------------------------------------
 player::player()
-    : _view({vec2_zero, vec2(640.0, 480.0)})
+    : _view({mat4_identity, vec2_zero, vec2(640.0, 480.0)})
     , _usercmd({})
     , _usercmd_time(time_delta::zero)
     , _timescale_time(time_value::zero)
@@ -255,9 +255,14 @@ player_view player::view(time_value time, time_value realtime) const
     if (_follow) {
         game::player_view view = _view;
         view.origin = _follow->get_position(time);
+        vec3 surface = globe::planar_to_surface(view.origin);
+        view.transform = globe::surface_inverse_projection(surface);
         return view;
     } else {
-        return _view;
+        game::player_view view = _view;
+        vec3 surface = globe::planar_to_surface(_view.origin);
+        view.transform = globe::surface_inverse_projection(surface);
+        return view;
     }
 }
 

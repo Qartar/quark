@@ -15,11 +15,6 @@ namespace game {
 //------------------------------------------------------------------------------
 globe::globe()
     : _resolution(0)
-    , _longitude(0)
-    , _latitude(0)
-    , _zoom(1e-2f)
-    , _is_dragging(false)
-    , _cursor(vec2_zero)
 {
     _gshhg[0].load(gshhg::resolution::full);
     _gshhg[1].load(gshhg::resolution::high);
@@ -29,47 +24,26 @@ globe::globe()
 }
 
 //------------------------------------------------------------------------------
-void globe::draw(render::system* renderer, time_value /*time*/)
+void globe::init()
 {
-    render::view view{};
-    view.size = vec2(640, 360) * _zoom;
-
-    if (!_vbo[0].name()) {
-        for (int ii = 0; ii < 5; ++ii ) {
-            _vbo[ii] = render::gl::vertex_buffer<vec3f>(
-                render::gl::buffer_usage::static_,
-                render::gl::buffer_access::draw,
-                _gshhg[ii].vertices().size(),
-                _gshhg[ii].vertices().data());
-            _vao[ii] = render::gl::vertex_array({
-                render::gl::vertex_array_attrib{3, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
-            _vao[ii].bind_buffer(_vbo[ii], 0);
-        }
+    for (int ii = 0; ii < 5; ++ii ) {
+        _vbo[ii] = render::gl::vertex_buffer<vec3f>(
+            render::gl::buffer_usage::static_,
+            render::gl::buffer_access::draw,
+            _gshhg[ii].vertices().size(),
+            _gshhg[ii].vertices().data());
+        _vao[ii] = render::gl::vertex_array({
+            render::gl::vertex_array_attrib{3, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
+        _vao[ii].bind_buffer(_vbo[ii], 0);
     }
+}
 
-    renderer->set_view(view);
-    renderer->draw_arc(vec2_zero, 1.f, 0, 0, math::twopi, color4(1,1,1,.5f));
-
-    double cp = cos(_latitude);
-    double sp = sin(_latitude);
-    vec3 v = vec3(cos(_longitude) * cp, sin(_longitude) * cp, sp);
-    vec3 r = vec3(-sin(_longitude), cos(_longitude), 0);
-    vec3 u = cross(v, r);
-
-    GLdouble mm[16] = {
-        r.x, u.x, v.x, 0,
-        r.y, u.y, v.y, 0,
-        r.z, u.z, v.z, 0,
-        0, 0, 0, 1
-    };
-
+//------------------------------------------------------------------------------
+void globe::draw(render::system* renderer, time_value /*time*/) const
+{
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glMultMatrixd(mm);
-
-    glClearDepth(.5);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
+    glLoadMatrixd(renderer->view().transform);
 
     _vao[_resolution].bind();
     glColor4f(1,1,1,.5f);
@@ -83,39 +57,70 @@ void globe::draw(render::system* renderer, time_value /*time*/)
             _gshhg[_resolution].polygons()[ii].start,
             _gshhg[_resolution].polygons()[ii].count);
     }
-    glDisable(GL_DEPTH_TEST);
     glPopMatrix();
     render::gl::vertex_array().bind();
 }
 
 //------------------------------------------------------------------------------
-bool globe::key_event(int key, bool down)
+vec3 globe::lonlat_to_surface(vec2 lonlat)
 {
-    if (key == K_MOUSE2) {
-        _is_dragging = down;
-        return true;
-    } else if (down && key == K_MWHEELDOWN) {
-        _zoom *= 1.2f;
-    } else if (down && key == K_MWHEELUP) {
-        _zoom *= (1.f / 1.2f);
-    } else if (down && key == ',') {
-        _resolution = max(0, _resolution - 1);
-    } else if (down && key == '.') {
-        _resolution = min(4, _resolution + 1);
-    }
-    return false;
+    double cl = cos(lonlat.x);
+    double sl = sin(lonlat.x);
+    double cp = cos(lonlat.y);
+    double sp = sin(lonlat.y);
+
+    // Using spherical globe approximation (not ellipsoidal)
+    return mean_radius * vec3(cl * cp, sl * cp, sp);
 }
 
 //------------------------------------------------------------------------------
-void globe::cursor_event(vec2 position)
+vec2 globe::surface_to_lonlat(vec3 surface)
 {
-    if (_is_dragging) {
-        vec2 delta = position - _cursor;
-        _longitude -= delta.x * _zoom;
-        _latitude = clamp(_latitude + delta.y * _zoom, -0.5 * math::pi, 0.5 * math::pi);
-    }
+    // Using spherical globe approximation (not ellipsoidal)
+    return vec2(
+        atan2(surface.y, surface.x),
+        atan2(surface.z, sqrt(surface.x * surface.x + surface.y * surface.y)));
+}
 
-    _cursor = position;
+//------------------------------------------------------------------------------
+mat4 globe::surface_projection(vec3 surface)
+{
+    // Using spherical globe approximation (not ellipsoidal)
+    vec3 z = surface.normalize();
+    vec3 x = cross(vec3(0,0,1), z).normalize();
+    vec3 y = cross(z, x);
+
+    vec3 t = mean_radius * z;
+
+    return mat4(x.x, x.y, x.z, 0,
+                y.x, y.y, y.z, 0,
+                z.x, z.y, z.z, 0,
+                t.x, t.y, t.z, 1);
+}
+
+//------------------------------------------------------------------------------
+mat4 globe::surface_inverse_projection(vec3 surface)
+{
+    // Using spherical globe approximation (not ellipsoidal)
+    vec3 z = surface.normalize();
+    vec3 x = cross(vec3(0,0,1), z).normalize();
+    vec3 y = cross(z, x);
+
+    vec3 p = mean_radius * -z;
+    vec3 t = p * mat3(x, y, z).transpose();
+
+    return mat4(x.x, y.x, z.x, 0,
+                x.y, y.y, z.y, 0,
+                x.z, y.z, z.z, 0,
+                t.x, t.y, t.z, 1);
+}
+
+//------------------------------------------------------------------------------
+vec3 globe::planar_to_surface(vec2 v)
+{
+    static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait
+    // Pretend x/y are lon/lat
+    return lonlat_to_surface(v * (1.f / mean_radius) + offset);
 }
 
 } // namespace game
