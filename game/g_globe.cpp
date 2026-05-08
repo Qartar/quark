@@ -12,6 +12,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+namespace {
+using PFNGLMULTIDRAWARRAYS = void (APIENTRY*)(GLenum mode, GLint const* first, GLsizei const* count, GLsizei drawcount);
+PFNGLMULTIDRAWARRAYS glMultiDrawArrays;
+} // anonymous namespace
+
 //------------------------------------------------------------------------------
 globe::globe()
     : _resolution(0)
@@ -26,6 +31,8 @@ globe::globe()
 //------------------------------------------------------------------------------
 void globe::init()
 {
+    glMultiDrawArrays = (PFNGLMULTIDRAWARRAYS )wglGetProcAddress("glMultiDrawArrays");
+
     for (int ii = 0; ii < 5; ++ii ) {
         _vbo[ii] = render::gl::vertex_buffer<vec3f>(
             render::gl::buffer_usage::static_,
@@ -35,6 +42,18 @@ void globe::init()
         _vao[ii] = render::gl::vertex_array({
             render::gl::vertex_array_attrib{3, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
         _vao[ii].bind_buffer(_vbo[ii], 0);
+
+        _first[ii].clear();
+        _count[ii].clear();
+
+        for (std::size_t jj = 0; jj < _gshhg[ii].polygons().size(); ++jj) {
+            // Skip everything except islands/continents (1) and Antarctic ice-front (5)
+            if ((_gshhg[ii].polygons()[jj].flags & 255) != 1 && (_gshhg[ii].polygons()[jj].flags & 255) != 5) {
+                continue;
+            }
+            _first[ii].push_back(_gshhg[ii].polygons()[jj].start);
+            _count[ii].push_back(_gshhg[ii].polygons()[jj].count);
+        }
     }
 }
 
@@ -47,16 +66,11 @@ void globe::draw(render::system* renderer, time_value /*time*/) const
 
     _vao[_resolution].bind();
     glColor4f(1,1,1,.5f);
-    for (std::size_t ii = 0; ii < _gshhg[_resolution].polygons().size(); ++ii) {
-        // Skip everything except islands/continents (1) and Antarctic ice-front (5)
-        if ((_gshhg[_resolution].polygons()[ii].flags & 255) != 1 && (_gshhg[_resolution].polygons()[ii].flags & 255) != 5) {
-            continue;
-        }
-        glDrawArrays(
-            GL_LINE_LOOP,
-            _gshhg[_resolution].polygons()[ii].start,
-            _gshhg[_resolution].polygons()[ii].count);
-    }
+    glMultiDrawArrays(
+        GL_LINE_LOOP,
+        _first[_resolution].data(),
+        _count[_resolution].data(),
+        narrow_cast<GLsizei>(_count[_resolution].size()));
     glPopMatrix();
     render::gl::vertex_array().bind();
 }

@@ -46,6 +46,9 @@ protected:
     render::gl::vertex_buffer<vec3f> _vbo[5];
     render::gl::vertex_array _vao[5];
 
+    std::vector<GLint> _first[5];
+    std::vector<GLsizei> _count[5];
+
     int _resolution;
 
 protected:
