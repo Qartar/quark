@@ -81,7 +81,7 @@ void projectile::think()
 
         _impact_time = get_world()->frametime() + (FRAMETIME - time_delta::from_seconds(t));
 
-        get_world()->add_effect(_impact_time, effect_type::splash, p.to_vec2(), vec2_zero, std::cbrt(_info.damage));
+        get_world()->add_effect(_impact_time, effect_type::splash, globe::planar_to_surface(p.to_vec2()), vec3_zero, std::cbrt(_info.damage));
         get_world()->remove(this);
     }
 }
@@ -108,11 +108,17 @@ bool projectile::touch(object *other, physics::collision const* collision)
     }
 
     if (collision) {
+        vec3 collision_point = globe::planar_to_surface(collision->point);
         get_world()->add_sound(_info.impact_sound, collision->point, _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, collision->point, collision->normal, std::cbrt(_info.damage));
+        get_world()->add_effect(
+            _impact_time,
+            _info.impact_effect,
+            collision_point,
+            vec3(collision->normal) * globe::surface_projection(collision_point).submatrix<3,3>(),
+            std::cbrt(_info.damage));
     } else {
         get_world()->add_sound(_info.impact_sound, get_position(), _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, get_position(), vec2_zero, std::cbrt(_info.damage));
+        get_world()->add_effect(_impact_time, _info.impact_effect, globe::planar_to_surface(get_position()), vec3_zero, std::cbrt(_info.damage));
     }
 
     if (other && other->is_type<ship>()) {

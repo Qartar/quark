@@ -24,7 +24,7 @@ struct particle
 
     time_value time;
     float size, size_velocity;
-    vec2 position, velocity, acceleration;
+    vec3 position, velocity, acceleration;
     float drag;
     color4 color, color_velocity;
     flag_bits flags;

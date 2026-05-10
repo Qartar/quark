@@ -244,7 +244,15 @@ void ship::think()
             for (std::size_t ii = 0; ii < _design->turrets[idx].design->num_guns; ++ii) {
                 vec3 position, direction, velocity;
                 get_firing_vectors(idx, ii, position, direction, velocity);
-                get_world()->add_effect(time, effect_type::smoke, position.to_vec2(), direction.to_vec2() * 2.0 * t, float(3.0 * square(t)), velocity.to_vec2());
+                position = globe::planar_to_surface(position.to_vec2());
+                mat3 transform = globe::surface_projection(position).submatrix<3,3>();
+                get_world()->add_effect(
+                    time,
+                    effect_type::smoke,
+                    position,
+                    direction * 2.0 * t * transform,
+                    float(3.0 * square(t)),
+                    velocity * transform);
             }
         }
 
@@ -294,7 +302,15 @@ void ship::think()
 
             if (pinfo.launch_effect != effect_type::none) {
                 float strength = 1.9e-9f * turret.design->gun_design->shell_mass * square(turret.design->gun_design->shell_velocity);
-                get_world()->add_effect(time, pinfo.launch_effect, position.to_vec2(), direction.to_vec2() * 2, strength, velocity.to_vec2());
+                position = globe::planar_to_surface(position.to_vec2());
+                mat3 transform = globe::surface_projection(position).submatrix<3,3>();
+                get_world()->add_effect(
+                    time,
+                    pinfo.launch_effect,
+                    position,
+                    direction * 2 * transform,
+                    strength,
+                    velocity * transform);
             }
         }
 

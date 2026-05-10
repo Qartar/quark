@@ -49,11 +49,13 @@ void world::clear_particles()
 }
 
 //------------------------------------------------------------------------------
-void world::add_effect(time_value time, effect_type type, vec2 position, vec2 direction, float strength, vec2 velocity)
+void world::add_effect(time_value time, effect_type type, vec3 position, vec3 direction, float strength, vec3 velocity)
 {
     write_effect(time, type, position, direction, strength);
 
     float   r, d;
+
+    mat3 tx = globe::surface_projection(position).submatrix<3,3>();
 
     switch (type) {
         case effect_type::smoke: {
@@ -70,12 +72,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(4.f);
 
-                p->position = position + vec2(cos(r),sin(r))*d;
+                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 32.f;
 
-                p->velocity = vec2(cos(r),sin(r))*d;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
                 p->velocity += direction * d * 5.f + velocity;
 
                 p->color = color4(1.0f,_random.uniform_real(.25f, .75f),0.0f,0.1f);
@@ -95,12 +97,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
-                p->position = position + vec2(_random.uniform_real(-2.f, 2.f),_random.uniform_real(-2.f, 2.f));
+                p->position = position + vec3(vec2(_random.uniform_real(-2.f, 2.f),_random.uniform_real(-2.f, 2.f))) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(128.f);
 
-                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
                 p->velocity += direction * d * 0.5f;
 
                 p->color = color4(1,_random.uniform_real(.5f, 1.f),0,strength*_random.uniform_real(.5f, 1.5f));
@@ -141,12 +143,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(8.f * scale);
 
-                p->position = position + vec2(cos(r),sin(r))*d;
+                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 128.f * strength;
 
-                p->velocity = vec2(cos(r),sin(r))*d;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
                 p->velocity += direction * d * 0.5f + velocity;
 
                 p->color = color4(1.0f,_random.uniform_real(.25f, .75f),0.0f,0.1f);
@@ -166,12 +168,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(2.f * scale);
 
-                p->position = position + vec2(cos(r)*d,sin(r)*d);
+                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(128.f * scale);
 
-                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
                 p->velocity += direction * d * 0.5f + velocity;
 
                 p->color = color4(1,_random.uniform_real(.5f, 1.f),0,1);
@@ -210,12 +212,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(4.f);
 
-                p->position = position + vec2(cos(r),sin(r))*d;
+                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 32.f;
 
-                p->velocity = vec2(cos(r),sin(r))*d * scale;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d * scale) * tx;
                 p->velocity += direction * d * 5.f * scale + velocity;
 
                 p->color = color4(1.0f,_random.uniform_real(.25f, .75f),0.0f,0.1f);
@@ -235,18 +237,18 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(.5f);
 
-                p->position = position + vec2(cos(r)*d,sin(r)*d);
+                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f);
 
-                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
                 p->velocity += direction * _random.uniform_real(96.f) + velocity;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f, 128.f);
 
-                p->acceleration = vec2(cos(r), sin(r))*d;
+                p->acceleration = vec3(vec2(cos(r), sin(r))*d) * tx;
 
                 p->color = color4(1,_random.uniform_real(.25f, .75f),0,1);
                 p->color_velocity = color4(0,0,0,_random.uniform_real(-3.5f, -1.5f));
@@ -284,12 +286,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(4.f);
 
-                p->position = position + vec2(cos(r),sin(r))*d;
+                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 32.f;
 
-                p->velocity = vec2(cos(r),sin(r))*d;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
                 p->velocity += direction * d * 0.5f;
 
                 p->color = color4(1.0f,_random.uniform_real(.5f),0.0f,0.1f);
@@ -327,18 +329,18 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(.5f);
 
-                p->position = position + vec2(cos(r)*d,sin(r)*d);
+                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f);
 
-                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
                 p->velocity += direction * _random.uniform_real(96.f);
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f, 128.f);
 
-                p->acceleration = vec2(cos(r), sin(r))*d;
+                p->acceleration = vec3(vec2(cos(r), sin(r))*d) * tx;
 
                 p->color = color4(1,_random.uniform_real(.5f),0,1);
                 p->color_velocity = color4(0,0,0,_random.uniform_real(-3.5f, -1.5f));
@@ -391,12 +393,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(16.f * scale);
 
-                p->position = position + vec2(cos(r),sin(r))*d;
+                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 128.f * strength;
 
-                p->velocity = vec2(cos(r),sin(r))*d;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
                 p->velocity += direction * d * 0.5f;
 
                 p->color = color4(1.0f,_random.uniform_real(.5f),0.0f,0.1f);
@@ -416,12 +418,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(2.f * scale);
 
-                p->position = position + vec2(cos(r)*d,sin(r)*d);
+                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(128.f * scale);
 
-                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
                 p->velocity += direction * d * 0.5f;
 
                 p->color = color4(1,_random.uniform_real(.5f),0,1);
@@ -444,7 +446,7 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 return;
 
             p->position = position;
-            p->velocity = vec2_zero;
+            p->velocity = vec3_zero;
 
             p->color = color4(0.8f,0.9f,1.0f,0.25f);
             p->color_velocity = color4(0,0,0,-.1f / std::sqrt(scale));
@@ -461,12 +463,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(4.f * scale);
 
-                p->position = position + vec2(cos(r),sin(r))*d;
+                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real() * 32.f * strength;
 
-                p->velocity = vec2(cos(r),sin(r))*d;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
                 p->velocity += direction * d * 0.5f;
 
                 p->color = color4(0.8f,0.9f,1.0f,0.25f);
@@ -487,12 +489,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(2.f * scale);
 
-                p->position = position + vec2(cos(r)*d,sin(r)*d);
+                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(128.f * scale);
 
-                p->velocity = vec2(cos(r)*d,sin(r)*d);
+                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
                 p->velocity += direction * d * 0.5f;
 
                 p->color = color4(1,_random.uniform_real(.5f, 1.f),0,1);
@@ -512,11 +514,12 @@ void world::add_effect(time_value time, effect_type type, vec2 position, vec2 di
 }
 
 //------------------------------------------------------------------------------
-void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position, vec2 direction, float strength)
+void world::add_trail_effect(effect_type type, vec3 position, vec3 old_position, vec3 direction, float strength)
 {
     float   r, d;
 
-    vec2 lerp = position - old_position;
+    vec3 lerp = position - old_position;
+    mat3 tx = globe::surface_projection(position).submatrix<3,3>();
 
     switch (type) {
         case effect_type::missile_trail: {
@@ -532,8 +535,8 @@ void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position,
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real();
-                p->position = position + vec2(std::cos(r)*d,std::sin(r)*d) + lerp * static_cast<float>(ii) / static_cast<float>(count);
-                p->velocity = direction * _random.uniform_real(.25f, .75f) + vec2(_random.uniform_real(-24.f, 24.f),_random.uniform_real(-24.f, 24.f));
+                p->position = position + vec3(vec2(std::cos(r)*d,std::sin(r)*d)) * tx + lerp * static_cast<float>(ii) / static_cast<float>(count);
+                p->velocity = direction * _random.uniform_real(.25f, .75f) + vec3(vec2(_random.uniform_real(-24.f, 24.f),_random.uniform_real(-24.f, 24.f))) * tx;
 
                 p->size = _random.uniform_real(1.f, 2.f);
                 p->size_velocity = _random.uniform_real(18.f, 36.f);
@@ -554,12 +557,12 @@ void world::add_trail_effect(effect_type type, vec2 position, vec2 old_position,
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real();
 
-                p->position = position + vec2(std::cos(r),std::sin(r))*d + lerp * static_cast<float>(ii) / static_cast<float>(count);
+                p->position = position + vec3(vec2(std::cos(r),std::sin(r))*d) * tx + lerp * static_cast<float>(ii) / static_cast<float>(count);
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(64.f);
 
-                p->velocity = direction * _random.uniform_real(.25f, 1.f) + vec2(_random.uniform_real(-48.f, 48.f),_random.uniform_real(-48.f, 48.f));
+                p->velocity = direction * _random.uniform_real(.25f, 1.f) + vec3(vec2(_random.uniform_real(-48.f, 48.f),_random.uniform_real(-48.f, 48.f))) * tx;
 
                 p->color = color4(1,_random.uniform_real(.5f, 1.f),0,1);
                 p->color_velocity = color4(0,0,0,-3.0f-15.0f*(1.0f-square(_random.uniform_real())));

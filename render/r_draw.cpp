@@ -164,6 +164,10 @@ void system::draw_triangles(vec2 const* position, color4 const* color, int const
 //------------------------------------------------------------------------------
 void system::draw_particles(time_value time, render::particle const* particles, std::size_t num_particles)
 {
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
     // Scaling factor for particle tessellation
     vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
     const double view_scale = sqrt(framebuffer_size.length_sqr() / _view.size.length_sqr());
@@ -180,9 +184,9 @@ void system::draw_particles(time_value time, render::particle const* particles, 
 
         double radius = p->size + p->size_velocity * ptime;
         color4 color = p->color + p->color_velocity * float(ptime);
-        vec2 position = p->position
+        vec3 position = (p->position
                       + p->velocity * vtime
-                      + p->acceleration * 0.5 * vtime * vtime;
+                      + p->acceleration * 0.5 * vtime * vtime) * _view.transform;
 
         color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
         color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
@@ -194,30 +198,31 @@ void system::draw_particles(time_value time, render::particle const* particles, 
         int k = std::max<int>(1, narrow_cast<int>(countof(_costbl) / n));
 
         glColor4fv(color_in);
-        glVertex2dv(position);
+        glVertex3dv(position);
 
         if (!(p->flags & render::particle::tail)) {
             // draw circle outline
             glColor4fv(color_out);
             for (int ii = 0; ii < countof(_costbl); ii += k) {
-                vec2 vertex = position + vec2(_costbl[ii], _sintbl[ii]) * radius;
-                glVertex2dv(vertex);
+                vec3 vertex = position + vec3(_costbl[ii], _sintbl[ii], 0) * radius;
+                glVertex3dv(vertex);
             }
-            glVertex2d(position.x + radius, position.y);
+            vec3 vertex = position + vec3(1, 0, 0) * radius;
+            glVertex3dv(vertex);
         } else {
             double tail_time = std::max(0.0, (time - p->time - FRAMETIME).to_seconds());
             double tail_vtime = p->drag ? tanh(p->drag * tail_time) / p->drag : tail_time;
 
-            vec2 tail_position = p->position
+            vec3 tail_position = (p->position
                                + p->velocity * tail_vtime
-                               + p->acceleration * 0.5 * tail_vtime * tail_vtime;
+                               + p->acceleration * 0.5 * tail_vtime * tail_vtime) * _view.transform;
 
             // calculate forward and tangent vectors
-            vec2 normal = position - tail_position;
+            vec3 normal = position - tail_position;
             double distance = normal.length();
             normal /= distance;
-            distance = std::max<double>(distance, radius);
-            vec2 tangent = vec2(-normal.y, normal.x);
+            distance = std::max(distance, radius);
+            vec3 tangent = cross(normal, vec3(0, 0, 1));
 
             // particle needs at least 4 verts to look reasonable
             int n0 = std::max<int>(4, n);
@@ -227,24 +232,26 @@ void system::draw_particles(time_value time, render::particle const* particles, 
             for (int ii = 0; ii < countof(_costbl); ii += k0) {
                 if (ii < countof(_costbl) / 2) {
                     // draw forward-facing half-circle
-                    vec2 vertex = position + (tangent * _costbl[ii] + normal * _sintbl[ii]) * radius;
-                    glVertex2dv(vertex);
+                    vec3 vertex = position + (tangent * _costbl[ii] + normal * _sintbl[ii]) * radius;
+                    glVertex3dv(vertex);
                 } else {
                     // draw backward-facing elliptical tail
                     float alpha = -_sintbl[ii];
                     color4 vcolor = color_out * alpha + color_in * (1.0f - alpha);
-                    vec2 vertex = position + tangent * _costbl[ii] * radius + normal * _sintbl[ii] * distance;
+                    vec3 vertex = position + tangent * _costbl[ii] * radius + normal * _sintbl[ii] * distance;
 
                     glColor4fv(vcolor);
-                    glVertex2dv(vertex);
+                    glVertex3dv(vertex);
                 }
             }
             glColor4fv(color_in);
-            glVertex2d(position.x + tangent.x * radius, position.y + tangent.y * radius);
+            glVertex3dv(position + tangent * radius);
         }
 
         glEnd();
     }
+
+    glPopMatrix();
 }
 
 //------------------------------------------------------------------------------
