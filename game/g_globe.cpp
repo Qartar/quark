@@ -130,11 +130,36 @@ mat4 globe::surface_inverse_projection(vec3 surface)
 }
 
 //------------------------------------------------------------------------------
+double globe::intersect(vec3 start, vec3 direction)
+{
+    // Using spherical globe approximation (not ellipsoidal)
+    double a = dot(direction, direction);
+    double b = 2.0 * dot(start, direction);
+    double c = dot(start, start) - mean_radius * mean_radius;
+    double d = b * b - 4.0 * a * c;
+
+    if (d < 0.0) {
+        return DBL_MAX;
+    } else {
+        double q = -0.5 * (b + std::copysign(std::sqrt(d), b));
+        return std::min(q / a, c / q);
+    }
+}
+
+//------------------------------------------------------------------------------
 vec3 globe::planar_to_surface(vec2 v)
 {
     static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait
     // Pretend x/y are lon/lat
     return lonlat_to_surface(v * (1.f / mean_radius) + offset);
+}
+
+//------------------------------------------------------------------------------
+vec2 globe::surface_to_planar(vec3 v)
+{
+    static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait
+    // Pretend x/y are lon/lat
+    return (surface_to_lonlat(v) - offset) * mean_radius;
 }
 
 } // namespace game

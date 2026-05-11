@@ -73,7 +73,7 @@ void player::draw(render::system* renderer, time_value time) const
             heading += 360;
         }
         vec2 text_size = renderer->string_size(va("%s-class", target->design()->name.c_str()));
-        vec2 text_offset = _view.origin + 0.49 * _view.size - text_size;
+        vec2 text_offset = renderer->view().origin + 0.49 * renderer->view().size - text_size;
         renderer->draw_string(va("%s-class", target->design()->name.c_str()), text_offset, color4(1,1,1,1));
         renderer->draw_string(va("%.1f kn %d\xb0", speed_in_knots, heading), text_offset - vec2(0,text_size.y), color4(1,1,1,1));
         int rudder = int(std::round(math::rad2deg(target->engines()->get_rudder_angle())));
@@ -115,7 +115,7 @@ void player::draw(render::system* renderer, time_value time) const
 
     if (_is_selecting) {
         std::vector<handle<ship>> selection_preview;
-        selection_preview = selection_target((_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin);
+        selection_preview = selection_target((_usercmd.cursor - vec2(0.5)) * renderer->view().size + renderer->view().origin);
         draw_selection(renderer, time, selection_preview);
     } else {
         draw_selection(renderer, time, _selection);
@@ -163,7 +163,7 @@ void player::draw(render::system* renderer, time_value time) const
 void player::draw_selection(render::system* renderer, time_value time, std::vector<handle<ship>> const& selection) const
 {
     if (_is_selecting) {
-        vec2 cursor = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
+        vec2 cursor = (_usercmd.cursor - vec2(0.5)) * renderer->view().size + renderer->view().origin;
         bounds b = bounds::from_points({_selection_start, cursor});
         vec2 p[4] = {
             {b[0][0], b[0][1]},
@@ -205,7 +205,7 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
             origin += ship->get_position(time);
         }
         origin /= float(selection.size());
-        vec2 cursor = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
+        vec2 cursor = (_usercmd.cursor - vec2(0.5)) * renderer->view().size + renderer->view().origin;
         if (_hover) {
             cursor = _hover->get_position(time);
         }
@@ -306,14 +306,13 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
         _follow = nullptr;
     }
     if (!!(_usercmd.buttons & usercmd::button::zoom_in)) {
-        _view.size *= exp(-zoom_speed * delta_time);
+        on_zoom(_view.size * exp(-zoom_speed * delta_time));
     }
     if (!!(_usercmd.buttons & usercmd::button::zoom_out)) {
-        _view.size *= exp(zoom_speed * delta_time);
+        on_zoom(_view.size * exp(zoom_speed * delta_time));
     }
     if (!!(_usercmd.buttons & usercmd::button::pan)) {
-        _view.origin -= (cmd.cursor - _usercmd.cursor) * _view.size;
-        _follow = nullptr;
+        on_pan(cmd.cursor);
     }
 
     _usercmd = cmd;
@@ -327,9 +326,9 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
     _hover = hover_target(cursor);
 
     if (_usercmd.action == usercmd::action::zoom_in) {
-        _view.size *= (1.0 / zoom_speed);
+        on_zoom(_view.size * (1.0 / zoom_speed));
     } else if (_usercmd.action == usercmd::action::zoom_out) {
-        _view.size *= zoom_speed;
+        on_zoom(_view.size * zoom_speed);
     } else if (_usercmd.action == usercmd::action::move) {
         if (_selection.size()) {
             vec2 origin = vec2_zero;
@@ -393,6 +392,107 @@ void player::on_select(vec2 cursor)
         _selection_time = _usercmd_time;
     }
     _is_selecting = false;
+}
+
+//------------------------------------------------------------------------------
+void player::on_pan(vec2 cursor)
+{
+    if (cursor == _usercmd.cursor) {
+        return;
+    }
+
+    vec3 surface;
+    mat4 transform;
+
+    if (_follow) {
+        surface = globe::planar_to_surface(_follow->get_position());
+        transform = globe::surface_projection(surface);
+    } else {
+        surface = globe::planar_to_surface(_view.origin);
+        transform = globe::surface_projection(surface);
+    }
+
+    vec3 cursor_start = vec3((_usercmd.cursor - vec2(0.5)) * _view.size) * transform;
+    double t1 = globe::intersect(cursor_start, -surface);
+
+    if (t1 == DBL_MAX) {
+        return;
+    }
+
+    vec2 planar_start = globe::surface_to_planar(cursor_start - surface * t1);
+    vec2 view_origin = _view.origin;
+
+    // Dynamic epsilon based on view size
+    double epsilon = length_sqr(_view.size) * square(1e-5f);
+
+    // Iteratively find a new view origin so that the cursor stays at the same point
+    // in world space. An analytical solution to this problem likely exists.
+    for (std::size_t ii = 0; ii < 32; ++ii) {
+        vec3 cursor_end = vec3((cursor - vec2(0.5)) * _view.size) * transform;
+        double t2 = globe::intersect(cursor_end, -surface);
+
+        if (t2 == DBL_MAX) {
+            return;
+        }
+
+        vec2 delta = globe::surface_to_planar(cursor_end - surface * t2) - planar_start;
+        if (length_sqr(delta) < epsilon) {
+            break;
+        }
+        view_origin -= delta;
+        surface = globe::planar_to_surface(view_origin);
+        transform = globe::surface_projection(surface);
+    }
+
+    _view.origin = view_origin;
+    _follow = nullptr;
+}
+
+//------------------------------------------------------------------------------
+void player::on_zoom(vec2 view_size)
+{
+    if (_follow) {
+        _view.size = view_size;
+        return;
+    }
+
+    vec3 surface = globe::planar_to_surface(_view.origin);
+    mat4 transform = globe::surface_projection(surface);
+
+    vec3 cursor_start = vec3((_usercmd.cursor - vec2(0.5)) * _view.size) * transform;
+    double t1 = globe::intersect(cursor_start, -surface);
+
+    if (t1 == DBL_MAX) {
+        return;
+    }
+
+    vec2 planar_start = globe::surface_to_planar(cursor_start - surface * t1);
+    vec2 view_origin = _view.origin;
+
+    // Dynamic epsilon based on view size
+    double epsilon = length_sqr(_view.size) * square(1e-5f);
+
+    // Iteratively find a new view origin so that the cursor stays at the same point
+    // in world space. An analytical solution to this problem likely exists.
+    for (std::size_t ii = 0; ii < 32; ++ii) {
+        vec3 cursor_end = vec3((_usercmd.cursor - vec2(0.5)) * view_size) * transform;
+        double t2 = globe::intersect(cursor_end, -surface);
+
+        if (t2 == DBL_MAX) {
+            return;
+        }
+
+        vec2 delta = globe::surface_to_planar(cursor_end - surface * t2) - planar_start;
+        if (length_sqr(delta) < epsilon) {
+            break;
+        }
+        view_origin -= delta;
+        surface = globe::planar_to_surface(view_origin);
+        transform = globe::surface_projection(surface);
+    }
+
+    _view.origin = view_origin;
+    _view.size = view_size;
 }
 
 } // namespace game

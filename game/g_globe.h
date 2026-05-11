@@ -36,9 +36,13 @@ public:
     static mat4 surface_projection(vec3 surface);
     //! Create an orthogonal inverse projection matrix centered on the given point on the surface
     static mat4 surface_inverse_projection(vec3 surface);
+    //! Return the smallest intersection fraction, or DBL_MAX if no intersection exists
+    static double intersect(vec3 start, vec3 direction);
 
     //! Convert legacy 2D coordinates to 3D surface coordinates
     static vec3 planar_to_surface(vec2 v);
+    //! Convert 3D surface coordinates to legacy 2D coordinates
+    static vec2 surface_to_planar(vec3 v);
 
 protected:
     gshhg _gshhg[5];
