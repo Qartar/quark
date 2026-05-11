@@ -130,6 +130,10 @@ void player::draw(render::system* renderer, time_value time) const
             str = ">>";
         } else if (get_world()->timescale() == 9.f) {
             str = ">>>";
+        } else if (get_world()->timescale() == 27.f) {
+            str = ">>>>";
+        } else if (get_world()->timescale() == 81.f) {
+            str = ">>>>>";
         }
 
         float t = 1.f - (_usercmd_time - _timescale_time) / fade_time;

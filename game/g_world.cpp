@@ -380,7 +380,7 @@ bool world::physics_collide_callback(physics::rigid_body const* body_a, physics:
 //------------------------------------------------------------------------------
 void world::on_speed_up()
 {
-    _timescale = clamp(3.f * _timescale, 1.f, 9.f);
+    _timescale = clamp(3.f * _timescale, 1.f, 81.f);
 }
 
 //------------------------------------------------------------------------------
