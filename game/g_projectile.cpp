@@ -4,7 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "cm_ballistics.h"
+#include "g_ballistics.h"
 #include "g_projectile.h"
 #include "g_ship.h"
 #include "p_collide.h"

@@ -7,7 +7,7 @@
 #include "g_fire_director.h"
 #include "g_ship.h"
 #include "design/g_gun_design.h"
-#include "cm_ballistics.h"
+#include "g_ballistics.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {

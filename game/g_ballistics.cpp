@@ -1,13 +1,17 @@
-// cm_ballistics.cpp
+// g_ballistics.cpp
 //
 
-#include "cm_ballistics.h"
+#include "precompiled.h"
+#pragma hdrstop
+
+#include "g_ballistics.h"
 #include "cm_shared.h"
 #include "cm_string.h"
 
 #include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
+namespace game {
 namespace ballistics {
 
 //------------------------------------------------------------------------------
@@ -972,3 +976,4 @@ time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, dou
 }
 
 } // namespace ballistics
+} // namespace game

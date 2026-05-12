@@ -11,7 +11,7 @@
 #include "g_player.h"
 #include "p_collide.h"
 #include "p_trace.h"
-#include "cm_ballistics.h"
+#include "g_ballistics.h"
 
 #include <algorithm>
 #include <set>

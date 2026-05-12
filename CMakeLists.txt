@@ -51,6 +51,8 @@ set(QUARK_SOURCES
     game/design/g_ship_design.h
     game/design/g_turret_design.cpp
     game/design/g_turret_design.h
+    game/g_ballistics.cpp
+    game/g_ballistics.h
     game/g_button.cpp
     game/g_client.cpp
     game/g_faction.cpp

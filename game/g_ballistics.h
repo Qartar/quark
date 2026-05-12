@@ -1,4 +1,4 @@
-// cm_ballistics.h
+// g_ballistics.h
 //
 
 #pragma once
@@ -12,6 +12,7 @@ class text;
 } // namespace parser
 
 ////////////////////////////////////////////////////////////////////////////////
+namespace game {
 namespace ballistics {
 
 void solve_ballistic_coefficient_cmd(parser::text const& args);
@@ -33,3 +34,4 @@ void step(vec3& position, vec3& velocity, ballistics::curve curve, double ballis
 time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, double ballistic_coefficient, time_delta timestep);
 
 } // namespace ballistics
+} // namespace game
