@@ -30,6 +30,16 @@ projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 
     vec2 direction = normalize(velocity.to_vec2());
     set_rotation(rot2(direction.x, direction.y), true);
     _channel = pSound->allocate_channel();
+
+    vec2 p[5] = {
+        vec2( _info.diameter, 0),
+        vec2( 0, 0.5 * _info.diameter),
+        vec2(-2.0 * _info.diameter, 0.5 * _info.diameter),
+        vec2(-2.0 * _info.diameter,-0.5 * _info.diameter),
+        vec2( 0,-0.5 * _info.diameter),
+    };
+
+    _outline = render::outline(p, countof(p));
 }
 
 //------------------------------------------------------------------------------
@@ -139,18 +149,16 @@ void projectile::draw(render::system* renderer, time_value time) const
     }
 
     mat3 tx = get_transform(std::min(_impact_time, time));
-    vec2 p[5] = {
-        vec2( _info.diameter, 0) * tx,
-        vec2( 0, 0.5 * _info.diameter) * tx,
-        vec2(-2.0 * _info.diameter, 0.5 * _info.diameter) * tx,
-        vec2(-2.0 * _info.diameter,-0.5 * _info.diameter) * tx,
-        vec2( 0,-0.5 * _info.diameter) * tx,
-    };
-    renderer->draw_line(p[0], p[1], color, color);
-    renderer->draw_line(p[1], p[2], color, color);
-    renderer->draw_line(p[2], p[3], color, color);
-    renderer->draw_line(p[3], p[4], color, color);
-    renderer->draw_line(p[4], p[0], color, color);
+
+    vec3 origin = globe::planar_to_surface(get_position(time));
+    mat4 proj = globe::surface_projection(origin);
+
+    mat4 tx4 = mat4(tx[0][0], tx[0][1], 0, 0,
+                    tx[1][0], tx[1][1], 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1) * proj;
+
+    renderer->draw_outline(_outline, tx4, color);
 }
 
 //------------------------------------------------------------------------------

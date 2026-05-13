@@ -4,6 +4,7 @@
 #pragma once
 
 #include "g_object.h"
+#include "r_outline.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -60,6 +61,8 @@ protected:
     time_value _impact_time;
 
     sound::channel* _channel;
+
+    render::outline _outline;
 };
 
 } // namespace game
