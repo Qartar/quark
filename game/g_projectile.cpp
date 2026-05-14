@@ -4,8 +4,9 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_ballistics.h"
 #include "g_projectile.h"
+#include "g_ballistics.h"
+#include "g_globe.h"
 #include "g_ship.h"
 #include "p_collide.h"
 
@@ -28,7 +29,9 @@ projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 
     set_position(position, true);
     set_linear_velocity(velocity);
     vec3 direction = normalize(velocity);
-    //set_rotation(rot2(direction.x, direction.y), true);
+    vec3 tangent = normalize(cross(position, velocity));
+    vec3 normal = cross(direction, tangent);
+    set_rotation(mat3(direction, tangent, normal).to_rotation(), true);
     _channel = pSound->allocate_channel();
 
     vec2 p[5] = {
@@ -66,7 +69,7 @@ void projectile::think()
     ballistics::step(new_position, new_velocity, ballistics::curve::G1, _info.ballistic_coefficient, FRAMETIME);
 
     // Assume projectiles never hit anything on their way up
-    if (new_velocity.z < 0.0 && new_position.z < 12.0) {
+    if (dot(new_velocity, new_position) < 0.0 && globe::altitude(new_position) < 12.0) {
         physics::contact c;
         game::object* obj = get_world()->trace(c, _position, new_position);
 
@@ -76,24 +79,31 @@ void projectile::think()
         }
     }
 
-    // rigid body position and velocity is used for rendering
-    set_position(new_position);
-    set_linear_velocity((new_position - _position) / FRAMETIME.to_seconds());
-
-    _position = new_position;
-    _velocity = new_velocity;
+    vec3 avg_velocity = (new_position - _position) / FRAMETIME.to_seconds();
+    double t = globe::intersect(_position, avg_velocity);
 
     // Use impact time as a proxy for whether we've already hit something this frame
-    if (_position.z < 0.0 && _impact_time == time_value::max) {
+    if (0.0 < t && t < FRAMETIME.to_seconds() && _impact_time == time_value::max) {
         // intersect with z=0 plane
-        double t = _position.z / _velocity.z;
-        vec3 p = _position - _velocity * t;
+        vec3 p = _position + _velocity * t;
 
-        _impact_time = get_world()->frametime() + (FRAMETIME - time_delta::from_seconds(t));
+        _impact_time = get_world()->frametime() + time_delta::from_seconds(t);
 
         get_world()->add_effect(_impact_time, effect_type::splash, p, vec3_zero, std::cbrt(_info.damage));
         get_world()->remove(this);
     }
+
+    // rigid body position and velocity is used for rendering
+    set_position(new_position);
+    set_linear_velocity(avg_velocity);
+
+    vec3 direction = normalize(new_velocity);
+    vec3 tangent = normalize(cross(new_position, new_velocity));
+    vec3 normal = cross(direction, tangent);
+    set_rotation(mat3(direction, tangent, normal).to_rotation());
+
+    _position = new_position;
+    _velocity = new_velocity;
 }
 
 //------------------------------------------------------------------------------

@@ -5,9 +5,10 @@
 #pragma hdrstop
 
 #include "g_fire_director.h"
+#include "g_ballistics.h"
+#include "g_globe.h"
 #include "g_ship.h"
 #include "design/g_gun_design.h"
-#include "g_ballistics.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -65,9 +66,10 @@ void fire_director::update_solution()
 
     // Calculate range and bearing
     vec3 dv = _target->get_linear_velocity() - _owner->get_linear_velocity();
-    vec3 dir = _target->get_position() - _owner->get_position() + dv * _time_of_flight.to_seconds();
+    vec3 dr = _target->get_position() - _owner->get_position() + dv * _time_of_flight.to_seconds();
+    vec3 dir = dr * _owner->get_rotation().inverse();
     double dist = dir.normalize_length();
-    _bearing = atan2(dir.y, dir.x) - _owner->get_rotation().radians();
+    _bearing = std::atan2(dir.y, dir.x);
 
     // Calculate elevation and time of flight
     _is_valid = interpolate_range(dist, r);
@@ -113,8 +115,9 @@ void fire_director::populate_table()
     for (std::size_t ii = 0; ii < max_table; ++ii) {
         double elevation = ii * ((max_elevation - min_elevation) * (1.0 / double(max_table))) - min_elevation;
 
-        vec3 pos = vec3(0, 0, 1);
-        vec3 vel = vec3(cos(elevation), 0, sin(elevation)) * _gun->shell_velocity;
+        vec3 start = globe::lonlat_to_surface(vec2(0,0)) + vec3(1,0,0);
+        vec3 pos = start;
+        vec3 vel = vec3(sin(elevation), cos(elevation), 0) * _gun->shell_velocity;
 
         _table[ii].elevation = elevation;
         _table[ii].time_of_flight = ballistics::simulate(
@@ -123,7 +126,7 @@ void fire_director::populate_table()
             ballistics::curve::G1,
             _gun->shell_coefficient,
             FRAMETIME);
-        _table[ii].range = pos.x;
+        _table[ii].range = length(pos - start);
 
         if (ii > 0 && _table[ii].range < _table[ii - 1].range) {
             _table_size = ii;

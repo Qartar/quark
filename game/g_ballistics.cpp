@@ -37,14 +37,14 @@ struct ballistic_dataset
 //------------------------------------------------------------------------------
 void simulate_ballistic_coefficient(ballistic_data& data, ballistics::curve curve, time_delta dt, double bc)
 {
-    vec3 r = vec3_zero;
-    vec3 v = vec3(cos(math::deg2rad(data.initial_angle)),
-        0,
-        sin(math::deg2rad(data.initial_angle))) * data.initial_velocity;
+    vec3 r0 = globe::lonlat_to_surface(vec2(0,0)) + vec3(1,0,0);
+    vec3 r = r0;
+    vec3 v = vec3(sin(math::deg2rad(data.initial_angle)),
+                  cos(math::deg2rad(data.initial_angle)), 0) * data.initial_velocity;
 
     data.time = ballistics::simulate(r, v, curve, bc, dt).to_seconds();
-    data.range = r.x;
-    data.impact_angle = math::rad2deg(atan2(-v.z, v.x));
+    data.range = length(r - r0);
+    data.impact_angle = math::rad2deg(atan2(length(cross(v, r)), dot(v, r))) - 90.0;
     data.impact_velocity = length(v);
 }
 
@@ -945,12 +945,11 @@ double normalized_atmospheric_density(double altitude)
 //------------------------------------------------------------------------------
 void step(vec3& position, vec3& velocity, ballistics::curve curve, double ballistic_coefficient, time_delta dt)
 {
-    // Gravity varies with altitude by less than a percent at relevant altitudes.
-    constexpr vec3 gravity(0, 0, -9.80665);
-
-    double rho = normalized_atmospheric_density(position.z);
+    vec3 gravity = globe::gravity(position);
+    double altitude = globe::altitude(position);
+    double rho = normalized_atmospheric_density(altitude);
     double vlen = length(velocity);
-    double mach = vlen / speed_of_sound(position.z);
+    double mach = vlen / speed_of_sound(altitude);
     double Cd = drag_table_lookup(drag_tables[static_cast<int>(curve)], mach);
     vec3 vsqr = vlen * velocity;
     vec3 acceleration = gravity - 0.5 * Cd * rho * vsqr / ballistic_coefficient;
@@ -963,16 +962,17 @@ void step(vec3& position, vec3& velocity, ballistics::curve curve, double ballis
 time_delta simulate(vec3& position, vec3& velocity, ballistics::curve curve, double ballistic_coefficient, time_delta timestep)
 {
     time_delta dt = time_delta::zero;
+    double t;
 
     do {
         dt += timestep;
         step(position, velocity, curve, ballistic_coefficient, timestep);
-    } while (position.z > 0.0);
+        t = globe::intersect(position, velocity);
+    } while (t < -1.0 || t > 0.0);
 
     // backstep to impact
-    double t = position.z / velocity.z;
-    position -= velocity * t;
-    return dt - time_delta::from_seconds(t);
+    position += velocity * t;
+    return dt + time_delta::from_seconds(t);
 }
 
 } // namespace ballistics

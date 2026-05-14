@@ -38,6 +38,12 @@ public:
     static mat4 surface_inverse_projection(vec3 surface);
     //! Return the smallest intersection fraction, or DBL_MAX if no intersection exists
     static double intersect(vec3 start, vec3 direction);
+    //! Return the altitude above the surface of the given point
+    static double altitude(vec3 point);
+    //! Return the gravity vector (direction and magnitude) at the given point
+    static vec3 gravity(vec3 point);
+    //! Return the geodesic distance between the given two points on the surface
+    static double distance(vec3 a, vec3 b);
 
     //! Convert legacy 2D coordinates to 3D surface coordinates
     static vec3 planar_to_surface(vec2 v);
@@ -60,6 +66,8 @@ protected:
     //! if a calculation is relying on this value it should probably be inlined
     //! into this class.
     static constexpr double mean_radius = 6371008.7714;
+    //! Standard gravitational parameter
+    static constexpr double GM = 3.9860044188e14;
 };
 
 } // namespace game

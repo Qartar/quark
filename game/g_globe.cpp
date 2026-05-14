@@ -147,6 +147,27 @@ double globe::intersect(vec3 start, vec3 direction)
 }
 
 //------------------------------------------------------------------------------
+double globe::altitude(vec3 point)
+{
+    // Using spherical globe approximation (not ellipsoidal)
+    return length(point) - mean_radius;
+}
+
+//------------------------------------------------------------------------------
+vec3 globe::gravity(vec3 point)
+{
+    double rsqr = length_sqr(point);
+    // Assumes |r| >= mean_radius
+    return vec3(-point * GM / (rsqr * std::sqrt(rsqr)));
+}
+
+//------------------------------------------------------------------------------
+double globe::distance(vec3 a, vec3 b)
+{
+    return mean_radius * std::atan2(length(cross(a, b)), dot(a, b));
+}
+
+//------------------------------------------------------------------------------
 vec3 globe::planar_to_surface(vec2 v)
 {
     static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait
