@@ -277,7 +277,7 @@ void session::draw_world()
         const_cast<player*>(pl)->set_aspect(aspect_ratio);
         player_view plv = pl->view(_worldtime, _frametime);
         view.transform = plv.transform;
-        view.origin = plv.origin;
+        view.origin = vec2_zero;
         view.size = plv.size;
         view.angle = 0;
     }

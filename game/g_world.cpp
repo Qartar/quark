@@ -75,8 +75,9 @@ void world::reset()
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>(blufor);
-        sh->set_position(-dir * 1024.0, true);
-        sh->set_rotation(rot2(math::pi * 0.5), true);
+        vec3 p = globe::planar_to_surface(-dir * 1024.0);
+        sh->set_position(p, true);
+        sh->set_heading(rot2(0,1), true);
 
         sh->navigation()->set_heading(rot2(0,1));
     }
@@ -86,8 +87,9 @@ void world::reset()
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
 
         ship* sh = spawn<ship>(opfor);
-        sh->set_position(vec2(16384, 0) - dir * 1024.0, true);
-        sh->set_rotation(rot2(math::pi * 0.5), true);
+        vec3 p = globe::planar_to_surface(vec2(16384, 0) - dir * 1024.0);
+        sh->set_position(p, true);
+        sh->set_heading(rot2(0,1), true);
 
         sh->navigation()->set_heading(rot2(0,1));
     }
@@ -226,10 +228,10 @@ void world::read_frame(network::message const& /*message*/)
 void world::read_sound(network::message const& message)
 {
     int asset = message.read_long();
-    vec2 position = message.read_vector();
+    //vec2 position = message.read_vector();
     float volume = message.read_float();
 
-    add_sound(static_cast<sound::asset>(asset), position, volume);
+    add_sound(static_cast<sound::asset>(asset), vec3_zero, volume);
 }
 
 //------------------------------------------------------------------------------
@@ -264,11 +266,11 @@ void world::write_snapshot(network::message& message) const
 }
 
 //------------------------------------------------------------------------------
-void world::write_sound(sound::asset sound_asset, vec2 position, float volume)
+void world::write_sound(sound::asset sound_asset, vec3 /*position*/, float volume)
 {
     _message.write_byte(narrow_cast<uint8_t>(message_type::sound));
     _message.write_long(narrow_cast<int>(sound_asset));
-    _message.write_vector(position);
+    //_message.write_vector(position);
     _message.write_float(volume);
 }
 
@@ -284,7 +286,7 @@ void world::write_effect(time_value time, effect_type type, vec3 /*position*/, v
 }
 
 //------------------------------------------------------------------------------
-game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore) const
+game::object* world::trace(physics::contact& contact, vec3 start, vec3 end, game::object const* ignore) const
 {
     // TODO: Should either expose trace results to the caller or push the filtering
     // into the physics world to avoid an arbitrarily sized results array here.
@@ -304,7 +306,7 @@ game::object* world::trace(physics::contact& contact, vec2 start, vec2 end, game
 }
 
 //------------------------------------------------------------------------------
-game::object* world::point_query(vec2 point) const
+game::object* world::point_query(vec3 point) const
 {
     physics::rigid_body* body = _physics.point_query(point);
     if (body) {
@@ -314,7 +316,7 @@ game::object* world::point_query(vec2 point) const
 }
 
 //------------------------------------------------------------------------------
-std::size_t world::bounds_query(bounds b, game::object** objects, std::size_t max_objects_) const
+std::size_t world::bounds_query(bounds3 b, game::object** objects, std::size_t max_objects_) const
 {
     physics::rigid_body** bodies = reinterpret_cast<physics::rigid_body**>(objects);
     std::size_t num_bodies = _physics.bounds_query(b, bodies, max_objects_);
@@ -332,10 +334,10 @@ std::size_t world::bounds_query(bounds b, game::object** objects, std::size_t ma
 }
 
 //------------------------------------------------------------------------------
-void world::add_sound(sound::asset sound_asset, vec2 position, float volume)
+void world::add_sound(sound::asset sound_asset, vec3 position, float volume)
 {
     write_sound(sound_asset, position, volume);
-    pSound->play(sound_asset, vec3(position), volume, 1.0f);
+    pSound->play(sound_asset, position, volume, 1.0f);
 }
 
 //------------------------------------------------------------------------------

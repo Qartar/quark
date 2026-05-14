@@ -40,8 +40,10 @@ public:
     virtual void read_snapshot(network::message const& message) override;
     virtual void write_snapshot(network::message& message) const override;
 
+    void set_heading(rot2 heading, bool teleport = false);
+
     void update_usercmd(game::usercmd usercmd);
-    void damage(object* inflictor, vec2 point, float amount);
+    void damage(object* inflictor, vec3 point, float amount);
 
     std::vector<unique_handle<subsystem>>& subsystems() { return _subsystems; }
     std::vector<unique_handle<subsystem>> const& subsystems() const { return _subsystems; }
@@ -94,7 +96,7 @@ protected:
 
     handle<ship const> _primary_target;
 
-    vec2 _wake[128];
+    vec3 _wake[128];
     std::size_t _wake_index;
 
     static physics::material _material;

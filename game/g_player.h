@@ -14,7 +14,7 @@ class ship;
 //------------------------------------------------------------------------------
 struct player_view {
     mat4 transform;
-    vec2 origin;
+    vec3 origin;
     vec2 size;
 };
 
@@ -34,9 +34,9 @@ public:
     virtual void draw(render::system* renderer, time_value time) const;
     virtual void think() override;
 
-    virtual vec2 get_position(time_value time) const override;
-    virtual rot2 get_rotation(time_value time) const override;
-    virtual mat3 get_transform(time_value time) const override;
+    virtual vec3 get_position(time_value time) const override;
+    virtual rot3 get_rotation(time_value time) const override;
+    virtual mat4 get_transform(time_value time) const override;
 
     player_view view(time_value time, time_value realtime) const;
 
@@ -68,6 +68,9 @@ protected:
     void on_pan(vec2 cursor);
     //! Adjust the view origin and size so that the cursor remains in the same point in world space.
     void on_zoom(vec2 view_size);
+
+    vec3 screen_to_world(vec2 v) const;
+    vec2 world_to_screen(vec3 v) const;
 };
 
 } // namespace game

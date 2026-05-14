@@ -17,7 +17,7 @@ const object_type player::_type(object::_type);
 
 //------------------------------------------------------------------------------
 player::player()
-    : _view({mat4_identity, vec2_zero, vec2(640.0, 480.0)})
+    : _view({mat4_identity, vec3_zero, vec2(640.0, 480.0)})
     , _usercmd({})
     , _usercmd_time(time_delta::zero)
     , _timescale_time(time_value::zero)
@@ -25,8 +25,7 @@ player::player()
     , _selection_time(time_delta::zero)
     , _is_selecting(false)
 {
-    _view.origin = vec2_zero;
-    _view.size = vec2(640.0, 480.0);
+    _view.origin = globe::planar_to_surface(vec2_zero);
 }
 
 //------------------------------------------------------------------------------
@@ -78,10 +77,11 @@ void player::draw(render::system* renderer, time_value time) const
         renderer->draw_string(va("%.1f kn %d\xb0", speed_in_knots, heading), text_offset - vec2(0,text_size.y), color4(1,1,1,1));
         int rudder = int(std::round(math::rad2deg(target->engines()->get_rudder_angle())));
         renderer->draw_string(va("%d\xb0 rudder", rudder), text_offset - vec2(0,text_size.y*2), color4(1,1,1,1));
-        int avelocity = int(std::round(math::rad2deg(target->get_angular_velocity()*60.0)));
-        renderer->draw_string(va("%d\xb0/min", avelocity), text_offset - vec2(0,text_size.y*3), color4(1,1,1,1));
+        //int avelocity = int(std::round(math::rad2deg(target->get_angular_velocity()*60.0)));
+        //renderer->draw_string(va("%d\xb0/min", avelocity), text_offset - vec2(0,text_size.y*3), color4(1,1,1,1));
 
         // draw slip angle (debug)
+#if 0
         if (target == _hover && !_is_selecting) {
             renderer->draw_line(
                 target->get_position(time),
@@ -94,13 +94,10 @@ void player::draw(render::system* renderer, time_value time) const
                 color4(1,1,1,1),
                 color4(1,1,1,1));
         }
+#endif
 
         // draw hull outline
         if (target == _hover && !_is_selecting) {
-            vec3 origin = globe::planar_to_surface(target->get_position(time));
-            rot2 r = target->get_rotation(time);
-            mat4 proj = mat4(r.x, r.y, 0, 0, -r.y, r.x, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) * globe::surface_projection(origin);
-
             vec2 size = vec2(target->design()->length, target->design()->beam);
             mat4 scale = mat4((size.x + 1.0) / size.x, 0, 0, 0,
                               0, (size.y + 1.0) / size.y, 0, 0,
@@ -108,7 +105,7 @@ void player::draw(render::system* renderer, time_value time) const
 
             renderer->draw_outline(
                 target->hull_outline(),
-                scale * proj,
+                scale * target->get_transform(time),
                 color4(1,1,1,1));
         }
     }
@@ -163,8 +160,9 @@ void player::draw(render::system* renderer, time_value time) const
 void player::draw_selection(render::system* renderer, time_value time, std::vector<handle<ship>> const& selection) const
 {
     if (_is_selecting) {
+        vec2 start = (_selection_start - vec2(0.5)) * renderer->view().size + renderer->view().origin;
         vec2 cursor = (_usercmd.cursor - vec2(0.5)) * renderer->view().size + renderer->view().origin;
-        bounds b = bounds::from_points({_selection_start, cursor});
+        bounds b = bounds::from_points({start, cursor});
         vec2 p[4] = {
             {b[0][0], b[0][1]},
             {b[1][0], b[0][1]},
@@ -183,10 +181,6 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
 
     // draw selection outlines
     for (auto&& ship : selection) {
-        vec3 origin = globe::planar_to_surface(ship->get_position(time));
-        rot2 r = ship->get_rotation(time);
-        mat4 proj = mat4(r.x, r.y, 0, 0, -r.y, r.x, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1) * globe::surface_projection(origin);
-
         vec2 size = vec2(ship->design()->length, ship->design()->beam);
         mat4 scale = mat4((size.x + 1.0) / size.x, 0, 0, 0,
                           0, (size.y + 1.0) / size.y, 0, 0,
@@ -194,22 +188,22 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
 
         renderer->draw_outline(
             ship->hull_outline(),
-            scale * proj,
+            scale * ship->get_transform(time),
             color4(1,1,1,1));
     }
 
     // draw order preview
+#if 0
     if (!_is_selecting) {
-        vec2 origin = vec2_zero;
+        vec3 origin = vec3_zero;
         for (auto&& ship : selection) {
             origin += ship->get_position(time);
         }
         origin /= float(selection.size());
-        vec2 cursor = (_usercmd.cursor - vec2(0.5)) * renderer->view().size + renderer->view().origin;
+        vec3 cursor = screen_to_world(_usercmd.cursor - vec2(0.5));
         if (_hover) {
             cursor = _hover->get_position(time);
         }
-
         renderer->draw_line(origin, cursor, color4(1,1,1,1), color4(1,1,1,1));
         renderer->draw_string(va("%.1f km", 1e-3 * length(cursor - origin)), 0.5 * (origin + cursor), color4(1,1,1,1));
         vec2 direction = normalize(cursor - origin);
@@ -219,6 +213,7 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
         }
         renderer->draw_string(va("%d\xb0", heading), cursor, color4(1,1,1,1));
     }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -227,24 +222,24 @@ void player::think()
 }
 
 //------------------------------------------------------------------------------
-vec2 player::get_position(time_value time) const
+vec3 player::get_position(time_value time) const
 {
     (void)time;
-    return vec2_zero;
+    return vec3_zero;
 }
 
 //------------------------------------------------------------------------------
-rot2 player::get_rotation(time_value time) const
+rot3 player::get_rotation(time_value time) const
 {
     (void)time;
-    return rot2_identity;
+    return rot3_identity;
 }
 
 //------------------------------------------------------------------------------
-mat3 player::get_transform(time_value time) const
+mat4 player::get_transform(time_value time) const
 {
     (void)time;
-    return mat3_identity;
+    return mat4_identity;
 }
 
 //------------------------------------------------------------------------------
@@ -255,13 +250,11 @@ player_view player::view(time_value time, time_value realtime) const
     if (_follow) {
         game::player_view view = _view;
         view.origin = _follow->get_position(time);
-        vec3 surface = globe::planar_to_surface(view.origin);
-        view.transform = globe::surface_inverse_projection(surface);
+        view.transform = globe::surface_inverse_projection(view.origin);
         return view;
     } else {
         game::player_view view = _view;
-        vec3 surface = globe::planar_to_surface(_view.origin);
-        view.transform = globe::surface_inverse_projection(surface);
+        view.transform = globe::surface_inverse_projection(_view.origin);
         return view;
     }
 }
@@ -283,10 +276,10 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
     if (!!(cmd.buttons & usercmd::button::select)
         && !(_usercmd.buttons & usercmd::button::select)) {
         _is_selecting = true;
-        _selection_start = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
+        _selection_start = _usercmd.cursor;
     } else if (!(cmd.buttons & usercmd::button::select)
         && !!(_usercmd.buttons & usercmd::button::select)) {
-        on_select((_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin);
+        on_select(_usercmd.cursor - vec2(0.5));
     }
 
     if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
@@ -322,8 +315,8 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
         _view.origin = _follow->get_position();
     }
 
-    vec2 cursor = (_usercmd.cursor - vec2(0.5)) * _view.size + _view.origin;
-    _hover = hover_target(cursor);
+    vec3 cursor = screen_to_world(_usercmd.cursor - vec2(0.5));
+    _hover = hover_target(_usercmd.cursor);
 
     if (_usercmd.action == usercmd::action::zoom_in) {
         on_zoom(_view.size * (1.0 / zoom_speed));
@@ -331,12 +324,12 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
         on_zoom(_view.size * zoom_speed);
     } else if (_usercmd.action == usercmd::action::move) {
         if (_selection.size()) {
-            vec2 origin = vec2_zero;
+            vec3 origin = vec3_zero;
             for (auto&& ship : _selection) {
                 origin += ship->get_position();
             }
             origin /= double(_selection.size());
-            vec2 direction = normalize(cursor - origin);
+            vec3 direction = normalize(cursor - origin);
             double heading = std::round(math::rad2deg(rot2(direction.x, direction.y).radians()));
             for (auto&& ship : _selection) {
                 ship->navigation()->set_heading(rot2(math::deg2rad(heading)));
@@ -357,7 +350,7 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
 //------------------------------------------------------------------------------
 handle<ship> player::hover_target(vec2 cursor) const
 {
-    game::object* obj = get_world()->point_query(cursor);
+    game::object* obj = get_world()->point_query(screen_to_world(cursor - vec2(0.5)));
     return obj ? obj->cast<ship>() : nullptr;
 }
 
@@ -365,7 +358,9 @@ handle<ship> player::hover_target(vec2 cursor) const
 std::vector<handle<ship>> player::selection_target(vec2 cursor) const
 {
     game::object* objects[256];
-    bounds b = bounds::from_points({_selection_start, cursor});
+    bounds3 b = bounds3::from_points({
+        screen_to_world(_selection_start),
+        screen_to_world(cursor)});
     std::size_t num_objects = get_world()->bounds_query(b, objects);
     std::vector<handle<ship>> selection;
     selection.reserve(num_objects);
@@ -405,10 +400,10 @@ void player::on_pan(vec2 cursor)
     mat4 transform;
 
     if (_follow) {
-        surface = globe::planar_to_surface(_follow->get_position());
+        surface = _follow->get_position();
         transform = globe::surface_projection(surface);
     } else {
-        surface = globe::planar_to_surface(_view.origin);
+        surface = _view.origin;
         transform = globe::surface_projection(surface);
     }
 
@@ -419,8 +414,8 @@ void player::on_pan(vec2 cursor)
         return;
     }
 
-    vec2 planar_start = globe::surface_to_planar(cursor_start - surface * t1);
-    vec2 view_origin = _view.origin;
+    vec3 surface_start = cursor_start - surface * t1;
+    vec3 view_origin = _view.origin;
 
     // Dynamic epsilon based on view size
     double epsilon = length_sqr(_view.size) * square(1e-5f);
@@ -435,12 +430,12 @@ void player::on_pan(vec2 cursor)
             return;
         }
 
-        vec2 delta = globe::surface_to_planar(cursor_end - surface * t2) - planar_start;
+        vec3 delta = cursor_end - surface * t2 - surface_start;
         if (length_sqr(delta) < epsilon) {
             break;
         }
         view_origin -= delta;
-        surface = globe::planar_to_surface(view_origin);
+        surface = view_origin;
         transform = globe::surface_projection(surface);
     }
 
@@ -456,7 +451,7 @@ void player::on_zoom(vec2 view_size)
         return;
     }
 
-    vec3 surface = globe::planar_to_surface(_view.origin);
+    vec3 surface = _view.origin;
     mat4 transform = globe::surface_projection(surface);
 
     vec3 cursor_start = vec3((_usercmd.cursor - vec2(0.5)) * _view.size) * transform;
@@ -466,8 +461,8 @@ void player::on_zoom(vec2 view_size)
         return;
     }
 
-    vec2 planar_start = globe::surface_to_planar(cursor_start - surface * t1);
-    vec2 view_origin = _view.origin;
+    vec3 surface_start = cursor_start - surface * t1;
+    vec3 view_origin = _view.origin;
 
     // Dynamic epsilon based on view size
     double epsilon = length_sqr(_view.size) * square(1e-5f);
@@ -482,17 +477,38 @@ void player::on_zoom(vec2 view_size)
             return;
         }
 
-        vec2 delta = globe::surface_to_planar(cursor_end - surface * t2) - planar_start;
+        vec3 delta = cursor_end - surface * t2 - surface_start;
         if (length_sqr(delta) < epsilon) {
             break;
         }
         view_origin -= delta;
-        surface = globe::planar_to_surface(view_origin);
+        surface = view_origin;
         transform = globe::surface_projection(surface);
     }
 
     _view.origin = view_origin;
     _view.size = view_size;
+}
+
+//------------------------------------------------------------------------------
+vec3 player::screen_to_world(vec2 v) const
+{
+    mat4 transform = globe::surface_projection(_view.origin);
+    vec3 start = vec3(v * _view.size) * transform;
+    double t = globe::intersect(start, -_view.origin);
+
+    if (t < DBL_MAX) {
+        return start - t * _view.origin;
+    } else {
+        return vec3_zero;
+    }
+}
+
+//------------------------------------------------------------------------------
+vec2 player::world_to_screen(vec3 v) const
+{
+    mat4 transform = globe::surface_inverse_projection(_view.origin);
+    return (v * transform).to_vec2();
 }
 
 } // namespace game

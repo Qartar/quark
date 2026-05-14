@@ -25,10 +25,10 @@ projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 
     , _impact_time(time_value::max)
 {
     _rigid_body = physics::rigid_body(&_shape, &_material, 1e-3);
-    set_position(position.to_vec2(), true);
-    set_linear_velocity(velocity.to_vec2());
-    vec2 direction = normalize(velocity.to_vec2());
-    set_rotation(rot2(direction.x, direction.y), true);
+    set_position(position, true);
+    set_linear_velocity(velocity);
+    vec3 direction = normalize(velocity);
+    //set_rotation(rot2(direction.x, direction.y), true);
     _channel = pSound->allocate_channel();
 
     vec2 p[5] = {
@@ -68,7 +68,7 @@ void projectile::think()
     // Assume projectiles never hit anything on their way up
     if (new_velocity.z < 0.0 && new_position.z < 12.0) {
         physics::contact c;
-        game::object* obj = get_world()->trace(c, _position.to_vec2(), new_position.to_vec2());
+        game::object* obj = get_world()->trace(c, _position, new_position);
 
         if (obj) {
             physics::collision collision(c);
@@ -77,8 +77,8 @@ void projectile::think()
     }
 
     // rigid body position and velocity is used for rendering
-    set_position(new_position.to_vec2());
-    set_linear_velocity((new_position - _position).to_vec2() / FRAMETIME.to_seconds());
+    set_position(new_position);
+    set_linear_velocity((new_position - _position) / FRAMETIME.to_seconds());
 
     _position = new_position;
     _velocity = new_velocity;
@@ -91,7 +91,7 @@ void projectile::think()
 
         _impact_time = get_world()->frametime() + (FRAMETIME - time_delta::from_seconds(t));
 
-        get_world()->add_effect(_impact_time, effect_type::splash, globe::planar_to_surface(p.to_vec2()), vec3_zero, std::cbrt(_info.damage));
+        get_world()->add_effect(_impact_time, effect_type::splash, p, vec3_zero, std::cbrt(_info.damage));
         get_world()->remove(this);
     }
 }
@@ -108,8 +108,8 @@ bool projectile::touch(object *other, physics::collision const* collision)
 
     // calculate impact time
     {
-        vec2 displacement = (collision->point - get_position());
-        vec2 relative_velocity = get_linear_velocity();
+        vec3 displacement = vec3(collision->point) - get_position();
+        vec3 relative_velocity = get_linear_velocity();
         if (other) {
             relative_velocity -= other->get_linear_velocity();
         }
@@ -119,7 +119,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
 
     if (collision) {
         vec3 collision_point = globe::planar_to_surface(collision->point);
-        get_world()->add_sound(_info.impact_sound, collision->point, _info.damage);
+        get_world()->add_sound(_info.impact_sound, collision_point, _info.damage);
         get_world()->add_effect(
             _impact_time,
             _info.impact_effect,
@@ -128,11 +128,11 @@ bool projectile::touch(object *other, physics::collision const* collision)
             std::cbrt(_info.damage));
     } else {
         get_world()->add_sound(_info.impact_sound, get_position(), _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, globe::planar_to_surface(get_position()), vec3_zero, std::cbrt(_info.damage));
+        get_world()->add_effect(_impact_time, _info.impact_effect, get_position(), vec3_zero, std::cbrt(_info.damage));
     }
 
     if (other && other->is_type<ship>()) {
-        static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _info.damage);
+        static_cast<ship*>(other)->damage(this, collision ? vec3(collision->point) : get_position(), _info.damage);
     }
 
     get_world()->remove(this);
@@ -148,17 +148,7 @@ void projectile::draw(render::system* renderer, time_value time) const
         return;
     }
 
-    mat3 tx = get_transform(std::min(_impact_time, time));
-
-    vec3 origin = globe::planar_to_surface(get_position(time));
-    mat4 proj = globe::surface_projection(origin);
-
-    mat4 tx4 = mat4(tx[0][0], tx[0][1], 0, 0,
-                    tx[1][0], tx[1][1], 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1) * proj;
-
-    renderer->draw_outline(_outline, tx4, color);
+    renderer->draw_outline(_outline, get_transform(time), color);
 }
 
 //------------------------------------------------------------------------------
@@ -167,16 +157,16 @@ void projectile::read_snapshot(network::message const& message)
     _old_position = get_position();
 
     _owner = get_world()->find<object>(message.read_long());
-    set_position(message.read_vector());
-    set_linear_velocity(message.read_vector());
+    //set_position(message.read_vector());
+    //set_linear_velocity(message.read_vector());
 }
 
 //------------------------------------------------------------------------------
 void projectile::write_snapshot(network::message& message) const
 {
     message.write_long(narrow_cast<int>(_owner->get_sequence() & 0xffffffff));
-    message.write_vector(get_position());
-    message.write_vector(get_linear_velocity());
+    //message.write_vector(get_position());
+    //message.write_vector(get_linear_velocity());
 }
 
 } // namespace game

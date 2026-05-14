@@ -87,6 +87,7 @@ void engines::think()
 
     // Update velocity
     {
+#if 0
         vec2 current_velocity = _owner->get_linear_velocity();
         vec2 current_direction = vec2(1,0) * _owner->get_rotation();
         // Orthogonal velocity components
@@ -130,6 +131,7 @@ void engines::think()
         angular_velocity += torque * _inverse_inertia * FRAMETIME.to_seconds();
         _owner->set_linear_velocity(current_velocity);
         _owner->set_angular_velocity(angular_velocity);
+#endif
     }
 }
 

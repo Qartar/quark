@@ -107,39 +107,39 @@ public:
     virtual void write_snapshot(network::message& message) const;
 
     //! Get frame-interpolated position
-    virtual vec2 get_position(time_value time) const;
+    virtual vec3 get_position(time_value time) const;
 
     //! Get frame-interpolated rotation
-    virtual rot2 get_rotation(time_value time) const;
+    virtual rot3 get_rotation(time_value time) const;
 
     //! Get frame-interpolated transform matrix
-    virtual mat3 get_transform(time_value time) const;
+    virtual mat4 get_transform(time_value time) const;
 
     //! Get frame-interpolated inverse transform matrix
-    virtual mat3 get_inverse_transform(time_value time) const;
+    virtual mat4 get_inverse_transform(time_value time) const;
 
     physics::rigid_body const& rigid_body() const { return _rigid_body; }
 
-    void set_position(vec2 position, bool teleport = false);
-    void set_rotation(rot2 rotation, bool teleport = false);
-    void set_linear_velocity(vec2 linear_velocity) { _rigid_body.set_linear_velocity(linear_velocity); }
-    void set_angular_velocity(double angular_velocity) { _rigid_body.set_angular_velocity(angular_velocity); }
+    void set_position(vec3 position, bool teleport = false);
+    void set_rotation(rot3 rotation, bool teleport = false);
+    void set_linear_velocity(vec3 linear_velocity) { _rigid_body.set_linear_velocity(linear_velocity); }
+    void set_angular_velocity(vec3 angular_velocity) { _rigid_body.set_angular_velocity(angular_velocity); }
 
-    vec2 get_position() const { return _rigid_body.get_position(); }
-    rot2 get_rotation() const { return _rigid_body.get_rotation(); }
-    mat3 get_transform() const { return _rigid_body.get_transform(); }
-    mat3 get_inverse_transform() const { return _rigid_body.get_inverse_transform(); }
-    vec2 get_linear_velocity() const { return _rigid_body.get_linear_velocity(); }
-    double get_angular_velocity() const { return _rigid_body.get_angular_velocity(); }
+    vec3 get_position() const { return _rigid_body.get_position(); }
+    rot3 get_rotation() const { return _rigid_body.get_rotation(); }
+    mat4 get_transform() const { return _rigid_body.get_transform(); }
+    mat4 get_inverse_transform() const { return _rigid_body.get_inverse_transform(); }
+    vec3 get_linear_velocity() const { return _rigid_body.get_linear_velocity(); }
+    vec3 get_angular_velocity() const { return _rigid_body.get_angular_velocity(); }
 
-    void apply_impulse(vec2 impulse) { _rigid_body.apply_impulse(impulse); }
-    void apply_impulse(vec2 impulse, vec2 position) { _rigid_body.apply_impulse(impulse, position); }
+    void apply_impulse(vec3 impulse) { _rigid_body.apply_impulse(impulse); }
+    void apply_impulse(vec3 impulse, vec3 position) { _rigid_body.apply_impulse(impulse, position); }
 
     render::model const* _model;
     color4 _color;
 
-    vec2 _old_position;
-    rot2 _old_rotation;
+    vec3 _old_position;
+    rot3 _old_rotation;
 
 protected:
     friend world;

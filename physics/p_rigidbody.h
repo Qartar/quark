@@ -16,7 +16,11 @@ class rigid_body
 {
 public:
     rigid_body(shape const* shape, material const* material, double mass)
-        : _motion(shape)
+        : _shape(shape)
+        , _position(vec3_zero)
+        , _rotation(rot3_identity)
+        , _linear_velocity(vec3_zero)
+        , _angular_velocity(vec3_zero)
         , _inverse_mass(0)
         , _inverse_inertia(0)
         , _center_of_mass(0,0)
@@ -26,64 +30,54 @@ public:
         set_mass(mass);
     }
 
-    motion const& get_motion() const {
-        return _motion;
-    }
-
     //
     //  position
     //
 
-    vec2 get_position() const {
-        return _motion.get_position();
+    vec3 get_position() const {
+        return _position;
     }
 
-    void set_position(vec2 position) {
-        _motion.set_position(position);
+    void set_position(vec3 position) {
+        _position = position;
     }
 
-    rot2 get_rotation() const {
-        return _motion.get_rotation();
+    rot3 get_rotation() const {
+        return _rotation;
     }
 
-    void set_rotation(rot2 rotation) {
-        _motion.set_rotation(rotation);
+    void set_rotation(rot3 rotation) {
+        _rotation = rotation;
     }
 
-    mat3 get_transform() const {
-        return _motion.get_transform();
-    }
+    mat4 get_transform() const;
 
-    mat3 get_inverse_transform() const {
-        return _motion.get_inverse_transform();
-    }
+    mat4 get_inverse_transform() const;
 
-    bounds get_bounds() const {
-        return _motion.get_bounds();
-    }
+    bounds3 get_bounds() const;
 
     //
     //  velocity
     //
 
-    vec2 get_linear_velocity() const {
-        return _motion.get_linear_velocity();
+    vec3 get_linear_velocity() const {
+        return _linear_velocity;
     }
 
-    vec2 get_linear_velocity(vec2 position) const {
-        return _motion.get_linear_velocity(position);
+    vec3 get_linear_velocity(vec3 position) const {
+        return _linear_velocity + cross(_angular_velocity, position - _position);
     }
 
-    void set_linear_velocity(vec2 linear_velocity) {
-        _motion.set_linear_velocity(linear_velocity);
+    void set_linear_velocity(vec3 linear_velocity) {
+        _linear_velocity = linear_velocity;
     }
 
-    double get_angular_velocity() const {
-        return _motion.get_angular_velocity();
+    vec3 get_angular_velocity() const {
+        return _angular_velocity;
     }
 
-    void set_angular_velocity(double angular_velocity) {
-        _motion.set_angular_velocity(angular_velocity);
+    void set_angular_velocity(vec3 angular_velocity) {
+        _angular_velocity = angular_velocity;
     }
 
     double get_kinetic_energy() const;
@@ -92,9 +86,9 @@ public:
     //  dynamics
     //
 
-    void apply_impulse(vec2 impulse);
+    void apply_impulse(vec3 impulse);
 
-    void apply_impulse(vec2 impulse, vec2 position);
+    void apply_impulse(vec3 impulse, vec3 position);
 
     //
     //  properties
@@ -115,12 +109,18 @@ public:
     }
 
     shape const* get_shape() const {
-        return _motion.get_shape();
+        return _shape;
     }
 
     material const* get_material() const {
         return _material;
     }
+
+    //
+    //  query
+    //
+
+    bool contains_point(vec3 point) const;
 
     //
     //  game interface
@@ -135,7 +135,14 @@ public:
     }
 
 protected:
-    motion _motion;
+    shape const* _shape;
+
+    vec3 _position;
+    rot3 _rotation;
+    vec3 _linear_velocity;
+    vec3 _angular_velocity;
+
+    bounds3 _bounds;
 
     double _inverse_mass;
     double _inverse_inertia;

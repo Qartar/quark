@@ -64,8 +64,8 @@ void fire_director::update_solution()
     }
 
     // Calculate range and bearing
-    vec2 dv = _target->get_linear_velocity() - _owner->get_linear_velocity();
-    vec2 dir = _target->get_position() - _owner->get_position() + dv * _time_of_flight.to_seconds();
+    vec3 dv = _target->get_linear_velocity() - _owner->get_linear_velocity();
+    vec3 dir = _target->get_position() - _owner->get_position() + dv * _time_of_flight.to_seconds();
     double dist = dir.normalize_length();
     _bearing = atan2(dir.y, dir.x) - _owner->get_rotation().radians();
 

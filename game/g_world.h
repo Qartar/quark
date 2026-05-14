@@ -169,19 +169,19 @@ public:
 
     void remove(handle<object> object);
 
-    void add_sound(sound::asset sound_asset, vec2 position, float volume = 1.0f);
+    void add_sound(sound::asset sound_asset, vec3 position, float volume = 1.0f);
     void add_effect(time_value time, effect_type type, vec3 position, vec3 direction = vec3_zero, float strength = 1, vec3 velocity = vec3_zero);
     void add_trail_effect(effect_type type, vec3 position, vec3 old_position, vec3 direction = vec3_zero, float strength = 1);
 
     void add_body(game::object* owner, physics::rigid_body* body);
     void remove_body(physics::rigid_body* body);
 
-    game::object* trace(physics::contact& contact, vec2 start, vec2 end, game::object const* ignore = nullptr) const;
-    game::object* point_query(vec2 point) const;
-    std::size_t bounds_query(bounds b, game::object** objects, std::size_t max_objects) const;
+    game::object* trace(physics::contact& contact, vec3 start, vec3 end, game::object const* ignore = nullptr) const;
+    game::object* point_query(vec3 point) const;
+    std::size_t bounds_query(bounds3 b, game::object** objects, std::size_t max_objects) const;
 
     template<std::size_t max_objects>
-    std::size_t bounds_query(bounds b, game::object* (&objects)[max_objects]) const {
+    std::size_t bounds_query(bounds3 b, game::object* (&objects)[max_objects]) const {
         return bounds_query(b, objects, max_objects);
     }
 
@@ -261,7 +261,7 @@ protected:
     void read_sound(network::message const& message);
     void read_effect(network::message const& message);
 
-    void write_sound(sound::asset sound_asset, vec2 position, float volume);
+    void write_sound(sound::asset sound_asset, vec3 position, float volume);
     void write_effect(time_value time, effect_type type, vec3 position, vec3 direction, float strength);
 };
 

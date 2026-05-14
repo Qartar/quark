@@ -39,6 +39,7 @@ void navigation::think()
     auto engines = ship ? ship->engines() : nullptr;
 
     if (engines) {
+#if 0
         vec2 current_position = ship->get_position();
         rot2 target_heading = _target_heading;
 
@@ -62,6 +63,8 @@ void navigation::think()
         } else {
             engines->set_rudder_target(std::copysign(ship->design()->rudder_angle, -delta_angle));
         }
+#endif
+        engines->set_speed_target(ship->design()->speed);
     }
 }
 

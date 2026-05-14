@@ -47,15 +47,15 @@ public:
 
     //! Trace through all bodies in the world from `start` to `end` and return
     //! a list of contacts in `results` sorted by trace fraction.
-    std::size_t trace(vec2 start,
-                      vec2 end,
+    std::size_t trace(vec3 start,
+                      vec3 end,
                       trace_result* results,
                       std::size_t max_results) const;
 
     //! Returns the rigid body at the given point, if one exists
-    physics::rigid_body* point_query(vec2 point) const;
+    physics::rigid_body* point_query(vec3 point) const;
     //! Returns rigid bodies intersecting the given bounds
-    std::size_t bounds_query(bounds b, physics::rigid_body** bodies, std::size_t max_bodies) const;
+    std::size_t bounds_query(bounds3 b, physics::rigid_body** bodies, std::size_t max_bodies) const;
 
 protected:
     std::vector<physics::rigid_body*> _bodies;

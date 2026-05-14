@@ -15,7 +15,7 @@ class rigid_body;
 class trace
 {
 public:
-    trace(rigid_body const* body, vec2 start, vec2 end);
+    trace(rigid_body const* body, vec3 start, vec3 end);
     trace(rigid_body const* body_a, rigid_body const* body_b, double delta_time);
 
     double get_fraction() const { return _fraction; }

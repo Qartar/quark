@@ -90,8 +90,8 @@ void world::step(double delta_time)
             }
 
             // collision response
-            _bodies[ii]->apply_impulse(-c.impulse, c.point);
-            _bodies[jj]->apply_impulse( c.impulse, c.point);
+            //_bodies[ii]->apply_impulse(-c.impulse, c.point);
+            //_bodies[jj]->apply_impulse( c.impulse, c.point);
 
             break;
         }
@@ -101,18 +101,18 @@ void world::step(double delta_time)
 
     for (std::size_t ii = 0; ii < _bodies.size(); ++ii) {
         _bodies[ii]->set_position(_bodies[ii]->get_position() + _bodies[ii]->get_linear_velocity() * delta_time);
-        _bodies[ii]->set_rotation(_bodies[ii]->get_rotation() * rot2(_bodies[ii]->get_angular_velocity() * delta_time));
+        _bodies[ii]->set_rotation(_bodies[ii]->get_rotation() * rot3(_bodies[ii]->get_angular_velocity() * delta_time));
     }
 }
 
 //------------------------------------------------------------------------------
 std::size_t world::trace(
-    vec2 start,
-    vec2 end,
+    vec3 start,
+    vec3 end,
     trace_result* results,
     std::size_t max_results) const
 {
-    bounds trace_bounds = bounds::from_points({start, end});
+    bounds3 trace_bounds = bounds3::from_points({start, end});
     std::size_t num_results = 0;
 
     // TODO: spatial acceleration
@@ -156,7 +156,7 @@ std::size_t world::trace(
 }
 
 //------------------------------------------------------------------------------
-physics::rigid_body* world::point_query(vec2 point) const
+physics::rigid_body* world::point_query(vec3 point) const
 {
     // TODO: spatial acceleration
     for (std::size_t ii = 0; ii < _bodies.size(); ++ii) {
@@ -164,7 +164,7 @@ physics::rigid_body* world::point_query(vec2 point) const
             continue;
         }
 
-        if (_bodies[ii]->get_motion().contains_point(point)) {
+        if (_bodies[ii]->contains_point(point)) {
             return _bodies[ii];
         }
     }
@@ -173,7 +173,7 @@ physics::rigid_body* world::point_query(vec2 point) const
 }
 
 //------------------------------------------------------------------------------
-std::size_t world::bounds_query(bounds b, physics::rigid_body** bodies, std::size_t max_bodies) const
+std::size_t world::bounds_query(bounds3 b, physics::rigid_body** bodies, std::size_t max_bodies) const
 {
     // TODO: spatial acceleration
     std::size_t num_bodies = 0;
@@ -197,8 +197,8 @@ vec2 world::collision_impulse(
     double distance = contact.distance;
 
     // Calculate the relative velocity of the bodies at the contact point
-    vec3 relative_velocity = vec3(body_b->get_linear_velocity(position.to_vec2()))
-                           - vec3(body_a->get_linear_velocity(position.to_vec2()));
+    vec3 relative_velocity = vec3(body_b->get_linear_velocity(position))
+                           - vec3(body_a->get_linear_velocity(position));
 
     // Simple collision response for penetrating bodies
     if (distance >= 0.0 || relative_velocity.dot(direction) >= 0.0) {
@@ -276,11 +276,11 @@ vec2 world::collision_impulse(
 //------------------------------------------------------------------------------
 std::vector<world::overlap> world::generate_overlaps(double delta_time) const
 {
-    std::vector<bounds> swept_bounds(_bodies.size());
+    std::vector<bounds3> swept_bounds(_bodies.size());
     for (std::size_t ii = 0, sz = _bodies.size(); ii < sz; ++ii) {
         // todo: include rotation
-        swept_bounds[ii] = bounds::from_translation(_bodies[ii]->get_bounds(),
-                                                    _bodies[ii]->get_linear_velocity() * delta_time);
+        swept_bounds[ii] = bounds3::from_translation(_bodies[ii]->get_bounds(),
+                                                     _bodies[ii]->get_linear_velocity() * delta_time);
     }
 
     std::vector<overlap> axis_overlaps[2];
@@ -296,7 +296,7 @@ std::vector<world::overlap> world::generate_overlaps(double delta_time) const
 
         // generate overlaps on the current axis
         for (std::size_t ii = 0, sz = _bodies.size(); ii < sz; ++ii) {
-            bounds b = swept_bounds[sorted[ii]];
+            bounds3 b = swept_bounds[sorted[ii]];
             for (std::size_t jj = ii + 1; jj < sz; ++jj) {
                 if (b[1][axis] < swept_bounds[sorted[jj]][0][axis]) {
                     break;

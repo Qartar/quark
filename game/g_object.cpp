@@ -112,8 +112,8 @@ physics::circle_shape object::_default_shape(0.5f);
 object::object(object* owner)
     : _model(nullptr)
     , _color(1,1,1,1)
-    , _old_position(vec2_zero)
-    , _old_rotation(0)
+    , _old_position(vec3_zero)
+    , _old_rotation(rot3_identity)
     , _owner(owner)
     , _rigid_body(&_default_shape, &_default_material, _default_mass)
 {}
@@ -134,7 +134,7 @@ bool object::touch(object* /*other*/, physics::collision const* /*collision*/)
 void object::draw(render::system* renderer, time_value time) const
 {
     if (_model) {
-        renderer->draw_model(_model, get_transform(time), _color);
+        renderer->draw_model(_model, get_transform(time).submatrix<2,2>(), _color);
     }
 }
 
@@ -154,33 +154,33 @@ void object::write_snapshot(network::message& /*message*/) const
 }
 
 //------------------------------------------------------------------------------
-vec2 object::get_position(time_value time) const
+vec3 object::get_position(time_value time) const
 {
     float lerp = (time - get_world()->frametime()) / FRAMETIME;
     return _old_position + (get_position() - _old_position) * lerp;
 }
 
 //------------------------------------------------------------------------------
-rot2 object::get_rotation(time_value time) const
+rot3 object::get_rotation(time_value time) const
 {
     float lerp = (time - get_world()->frametime()) / FRAMETIME;
-    return _old_rotation * rot2((get_rotation() / _old_rotation).radians() * lerp);
+    return slerp(_old_rotation, get_rotation(), lerp);
 }
 
 //------------------------------------------------------------------------------
-mat3 object::get_transform(time_value time) const
+mat4 object::get_transform(time_value time) const
 {
-    return mat3::transform(get_position(time), get_rotation(time));
+    return mat4::transform(get_position(time), mat3(get_rotation(time)));
 }
 
 //------------------------------------------------------------------------------
-mat3 object::get_inverse_transform(time_value time) const
+mat4 object::get_inverse_transform(time_value time) const
 {
-    return mat3::inverse_transform(get_position(time), get_rotation(time));
+    return mat4::inverse_transform(get_position(time), mat3(get_rotation(time)));
 }
 
 //------------------------------------------------------------------------------
-void object::set_position(vec2 position, bool teleport/* = false*/)
+void object::set_position(vec3 position, bool teleport/* = false*/)
 {
     _rigid_body.set_position(position);
     if (teleport) {
@@ -189,7 +189,7 @@ void object::set_position(vec2 position, bool teleport/* = false*/)
 }
 
 //------------------------------------------------------------------------------
-void object::set_rotation(rot2 rotation, bool teleport/* = false*/)
+void object::set_rotation(rot3 rotation, bool teleport/* = false*/)
 {
     _rigid_body.set_rotation(rotation);
     if (teleport) {

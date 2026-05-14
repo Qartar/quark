@@ -11,20 +11,20 @@
 namespace physics {
 
 //------------------------------------------------------------------------------
-trace::trace(rigid_body const* body, vec2 start, vec2 end)
+trace::trace(rigid_body const* body, vec3 start, vec3 end)
 {
     physics::motion body_motion{
         body->get_shape(),
-        body->get_position(),
-        body->get_rotation()
+        vec2_zero,
+        rot2_identity
     };
 
     physics::circle_shape shape(0);
     physics::motion point_motion{
         &shape,
-        start,
+        ((start - body->get_position()) * body->get_rotation().inverse()).to_vec2(),
         rot2_identity,
-        end - start
+        ((end - start) * body->get_rotation().inverse()).to_vec2()
     };
 
     _fraction = dispatch(_contact, body_motion, point_motion, 1.0);
@@ -33,7 +33,10 @@ trace::trace(rigid_body const* body, vec2 start, vec2 end)
 //------------------------------------------------------------------------------
 trace::trace(rigid_body const* body_a, rigid_body const* body_b, double delta_time)
 {
-    _fraction = dispatch(_contact, body_a->get_motion(), body_b->get_motion(), delta_time);
+    (void)body_a;
+    (void)body_b;
+    (void)delta_time;
+    //_fraction = dispatch(_contact, body_a->get_motion(), body_b->get_motion(), delta_time);
 }
 
 //------------------------------------------------------------------------------

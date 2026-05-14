@@ -117,20 +117,14 @@ void ship::spawn()
 void ship::draw(render::system* renderer, time_value time) const
 {
     color4 color = _faction ? _faction->color() : color4(.8f,.9f,1.f,1.f);
-    auto tx = get_transform(time);
-
-    vec3 origin = globe::planar_to_surface(get_position(time));
-    mat4 proj = globe::surface_projection(origin);
 
     // draw hull outline
-    mat4 tx4 = mat4(tx[0][0], tx[0][1], 0, 0,
-                    tx[1][0], tx[1][1], 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1) * proj;
+    mat4 tx4 = get_transform(time);
 
     renderer->draw_outline(_outlines[0], tx4, color);
 
     // draw rudder
+#if 0
     {
         vec2 v0 = vec2(_design->length * -0.45, 0) * tx;
         vec2 vx = vec2(_design->length,0) * get_rotation(time) * rot2(_engines->get_rudder_angle());
@@ -138,6 +132,7 @@ void ship::draw(render::system* renderer, time_value time) const
         vec2 v2 = v0 + vx * 0.025;
         renderer->draw_line(v1, v2, color, color);
     }
+#endif
 
     // draw turrets
     for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
@@ -171,6 +166,7 @@ void ship::draw(render::system* renderer, time_value time) const
     }
 
     // draw wake
+#if 0
     for (std::size_t ii = 0; ii + 1 < _wake_index && ii + 1 < countof(_wake); ++ii) {
         float a0 = float(countof(_wake) - ii) / float(countof(_wake));
         float a1 = float(countof(_wake) - ii - 1) / float(countof(_wake));
@@ -181,6 +177,7 @@ void ship::draw(render::system* renderer, time_value time) const
             color4(.8f,.9f,1.f,.5f * a1));
 
     }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -196,7 +193,7 @@ void ship::think()
 
     {
         _wake_index = std::size_t(time.to_seconds() / 1.f);
-        _wake[_wake_index % countof(_wake)] = get_position() - vec2(.5f * _design->length, 0) * get_rotation();
+        _wake[_wake_index % countof(_wake)] = get_position() - vec3(.5f * _design->length, 0, 0) * get_rotation();
     }
 
     for (std::size_t ii = 0, num = _turrets.size(); ii < num; ++ii) {
@@ -244,15 +241,13 @@ void ship::think()
             for (std::size_t ii = 0; ii < _design->turrets[idx].design->num_guns; ++ii) {
                 vec3 position, direction, velocity;
                 get_firing_vectors(idx, ii, position, direction, velocity);
-                position = globe::planar_to_surface(position.to_vec2());
-                mat3 transform = globe::surface_projection(position).submatrix<3,3>();
                 get_world()->add_effect(
                     time,
                     effect_type::smoke,
                     position,
-                    direction * 2.0 * t * transform,
+                    direction * 2.0 * t,
                     float(3.0 * square(t)),
-                    velocity * transform);
+                    velocity);
             }
         }
 
@@ -302,15 +297,13 @@ void ship::think()
 
             if (pinfo.launch_effect != effect_type::none) {
                 float strength = 1.9e-9f * turret.design->gun_design->shell_mass * square(turret.design->gun_design->shell_velocity);
-                position = globe::planar_to_surface(position.to_vec2());
-                mat3 transform = globe::surface_projection(position).submatrix<3,3>();
                 get_world()->add_effect(
                     time,
                     pinfo.launch_effect,
                     position,
-                    direction * 2 * transform,
+                    direction * 2,
                     strength,
-                    velocity * transform);
+                    velocity);
             }
         }
 
@@ -329,7 +322,15 @@ void ship::write_snapshot(network::message& /*message*/) const
 }
 
 //------------------------------------------------------------------------------
-void ship::damage(object* /*inflictor*/, vec2 /*point*/, float /*amount*/)
+void ship::set_heading(rot2 heading, bool teleport)
+{
+    mat3 proj = globe::surface_projection(get_position()).submatrix<3,3>();
+    mat3 tx = mat3(heading.x, heading.y, 0, -heading.y, heading.x, 0, 0, 0, 1) * proj;
+    set_rotation(tx.to_rotation(), teleport);
+}
+
+//------------------------------------------------------------------------------
+void ship::damage(object* /*inflictor*/, vec3 /*point*/, float /*amount*/)
 {
 }
 
@@ -381,20 +382,28 @@ void ship::get_firing_vectors(std::size_t turret_index, std::size_t gun_index, v
 {
     auto const& turret = _design->turrets[turret_index];
 
-    mat3 turret_tx = mat3::transform(
-        turret.position,
-        rot2(turret.orientation + _turrets[turret_index].traverse)) * get_transform();
+    mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[turret_index].traverse));
+    mat4 turret_tx4 = mat4(turret_tx[0][0], turret_tx[0][1], 0, turret_tx[0][2],
+                           turret_tx[1][0], turret_tx[1][1], 0, turret_tx[1][2],
+                           0,               0,               1, 0,
+                           turret_tx[2][0], turret_tx[2][1], 0, turret_tx[2][2]) * get_transform();
+
+    double cp = cos(_turrets[turret_index].elevation);
+    double sp = sin(_turrets[turret_index].elevation);
 
     // TODO: fix hard-coded muzzle transform
-    position = vec3(vec2(turret.design->radius + cos(_turrets[turret_index].elevation) * 0.9 * turret.design->gun_design->length,
-                         turret.design->spacing * (gun_index - 0.5 * (turret.design->num_guns - 1))) * turret_tx,
-                    8.0 + sin(_turrets[turret_index].elevation) * 0.9 * turret.design->gun_design->length);
+    vec2 gun_offset = vec2(turret.design->radius,
+                           turret.design->spacing * (gun_index - 0.5 * (turret.design->num_guns - 1)));
+    vec3 muzzle_offset = vec3(0.9 * turret.design->gun_design->length, 0, 0);
 
-    direction = vec3(cos(_turrets[turret_index].elevation) * turret_tx[0][0],
-                     cos(_turrets[turret_index].elevation) * turret_tx[0][1],
-                     sin(_turrets[turret_index].elevation));
+    mat4 gun_tx4 = mat4(cp, 0, sp, 0,
+                        0,  1, 0,  0,
+                       -sp, 0, cp, 0,
+                        gun_offset.x, gun_offset.y, 8, 1) * turret_tx4;
 
-    velocity = vec3(get_linear_velocity() + (position.to_vec2() - get_position()).cross(get_angular_velocity()), 0);
+    position = muzzle_offset * gun_tx4;
+    direction = vec3(cp, 0, sp) * turret_tx4.submatrix<3,3>();
+    velocity = get_linear_velocity() + cross(get_angular_velocity(), position - get_position());
 }
 
 } // namespace game
