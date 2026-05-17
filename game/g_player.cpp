@@ -67,7 +67,7 @@ void player::draw(render::system* renderer, time_value time) const
                        : _follow.get();
     if (target) {
         double speed_in_knots = target->get_linear_velocity().length() * (1.0 / 0.5144447);
-        int heading = int(std::round(90.0 - math::rad2deg(target->get_rotation().radians())));
+        int heading = int(std::round(90.0 - math::rad2deg(globe::heading(target->get_position(time), target->get_rotation(time)).radians())));
         if (heading < 0) {
             heading += 360;
         }
@@ -77,8 +77,11 @@ void player::draw(render::system* renderer, time_value time) const
         renderer->draw_string(va("%.1f kn %d\xb0", speed_in_knots, heading), text_offset - vec2(0,text_size.y), color4(1,1,1,1));
         int rudder = int(std::round(math::rad2deg(target->engines()->get_rudder_angle())));
         renderer->draw_string(va("%d\xb0 rudder", rudder), text_offset - vec2(0,text_size.y*2), color4(1,1,1,1));
-        //int avelocity = int(std::round(math::rad2deg(target->get_angular_velocity()*60.0)));
-        //renderer->draw_string(va("%d\xb0/min", avelocity), text_offset - vec2(0,text_size.y*3), color4(1,1,1,1));
+        vec3 local_angular_velocity = target->get_angular_velocity() * target->get_rotation(time).inverse();
+        int avelocity = int(std::round(math::rad2deg(local_angular_velocity.z*60.0)));
+        renderer->draw_string(va("%d\xb0/min", avelocity), text_offset - vec2(0,text_size.y*3), color4(1,1,1,1));
+
+        renderer->draw_string(va("z=%.1f m", globe::altitude(target->get_position(time))), text_offset - vec2(0,text_size.y*4), color4(1,1,1,1));
 
         // draw slip angle (debug)
 #if 0

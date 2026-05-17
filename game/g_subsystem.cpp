@@ -87,32 +87,32 @@ void engines::think()
 
     // Update velocity
     {
-#if 0
-        vec2 current_velocity = _owner->get_linear_velocity();
-        vec2 current_direction = vec2(1,0) * _owner->get_rotation();
+        vec3 current_axis = vec3(0,0,1) * _owner->get_rotation();
+        vec3 current_velocity = _owner->get_linear_velocity();
+        vec3 current_direction = vec3(1,0,0) * _owner->get_rotation();
         // Orthogonal velocity components
-        vec2 vx = current_direction * dot(current_direction, current_velocity);
-        vec2 vy = current_velocity - vx;
+        vec3 vx = current_direction * dot(current_direction, current_velocity);
+        vec3 vy = current_velocity - vx;
         // Calculate drag from linear velocity of ship hull
-        vec2 drag_force = -_linear_drag_coefficient[0] * vx * length(vx)
+        vec3 drag_force = -_linear_drag_coefficient[0] * vx * length(vx)
                           -_linear_drag_coefficient[1] * vy * length(vy);
         // Calculate drag from angular velocity of ship hull
-        double drag_torque = _angular_drag_coefficient * std::copysign(square(_owner->get_angular_velocity()), _owner->get_angular_velocity());
+        vec3 drag_torque = _angular_drag_coefficient * _owner->get_angular_velocity() * length(_owner->get_angular_velocity());
 
         // Simplified rudder model: Calculate torque required to match drag torque
         // at target angular velocity and apply directly to forehead.
-        double target_curvature = -_rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
+        double target_curvature = _rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
         double target_angular_velocity = dot(current_velocity, current_direction) * target_curvature;
-        double rudder_torque = _angular_drag_coefficient * std::copysign(square(target_angular_velocity), target_angular_velocity);
+        vec3 rudder_torque = _angular_drag_coefficient * current_axis * target_angular_velocity * abs(target_angular_velocity);
 
-        double torque = rudder_torque - drag_torque;
+        vec3 torque = rudder_torque - drag_torque;
 
-        vec2 rudder_offset = current_direction * design->length * -0.45; // FIXME: add to design
-        vec2 rudder_direction = current_direction * rot2(_rudder_angle);
-        vec2 rudder_normal = rudder_direction.cross(1.0);
+        vec3 rudder_offset = current_direction * design->length * -0.45; // FIXME: add to design
+        vec3 rudder_direction = current_direction * rot3(current_axis, _rudder_angle);
+        vec3 rudder_normal = rudder_direction.cross(current_axis);
 
         // Calculate force imparted by rudder
-        vec2 rudder_force = rudder_normal * torque / (rudder_offset.length() * cos(_rudder_angle));
+        vec3 rudder_force = rudder_normal * torque / (rudder_offset.length() * cos(_rudder_angle));
 
         // Apply drag
         current_velocity += (rudder_force + drag_force) / design->displacement * FRAMETIME.to_seconds();
@@ -127,11 +127,18 @@ void engines::think()
             current_velocity += current_direction * speed_delta;
         }
 
-        double angular_velocity = _owner->get_angular_velocity();
+        vec3 angular_velocity = _owner->get_angular_velocity();
         angular_velocity += torque * _inverse_inertia * FRAMETIME.to_seconds();
+        // project velocity onto local plane
+        angular_velocity = current_axis * dot(angular_velocity, current_axis);
+        current_velocity -= current_axis * dot(current_velocity, current_axis);
         _owner->set_linear_velocity(current_velocity);
         _owner->set_angular_velocity(angular_velocity);
-#endif
+
+        // Even if we project velocity onto the local plane every frame we will
+        // drift in the local-z direction due the plane rotating beneath us.
+        _owner->set_position(_owner->get_position() - current_axis * globe::altitude(_owner->get_position()));
+        // TODO: reproject rotation, move to post-physics
     }
 }
 

@@ -39,21 +39,22 @@ void navigation::think()
     auto engines = ship ? ship->engines() : nullptr;
 
     if (engines) {
-#if 0
-        vec2 current_position = ship->get_position();
-        rot2 target_heading = _target_heading;
+        vec3 current_position = ship->get_position();
 
         double epsilon_sqr = square(2.0 * ship->design()->minimum_turning_radius);
         while (_waypoints.size() && (_waypoints[0] - current_position).length_sqr() < epsilon_sqr) {
             _waypoints.erase(_waypoints.begin());
         }
 
+        double delta_angle;
         if (_waypoints.size()) {
-            vec2 direction = normalize(_waypoints[0] - current_position);
-            target_heading = rot2(direction.x, direction.y);
+            vec3 direction = (_waypoints[0] - current_position) * ship->get_rotation().inverse();
+            delta_angle = std::atan2(direction.y, direction.x);
+        } else {
+            rot2 current_heading = globe::heading(current_position, ship->get_rotation());
+            delta_angle = (_target_heading * current_heading.inverse()).radians();
         }
 
-        double delta_angle = (target_heading * ship->get_rotation().inverse()).radians();
         double angular_velocity = ship->get_linear_velocity().length() * engines->get_rudder_angle()
             / (ship->design()->rudder_angle * ship->design()->minimum_turning_radius);
         double angular_accel = ship->design()->rudder_speed * angular_velocity;
@@ -63,7 +64,7 @@ void navigation::think()
         } else {
             engines->set_rudder_target(std::copysign(ship->design()->rudder_angle, -delta_angle));
         }
-#endif
+
         engines->set_speed_target(ship->design()->speed);
     }
 }

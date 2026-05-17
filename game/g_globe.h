@@ -44,6 +44,8 @@ public:
     static vec3 gravity(vec3 point);
     //! Return the geodesic distance between the given two points on the surface
     static double distance(vec3 a, vec3 b);
+    //! Return the heading for the given position and rotation
+    static rot2 heading(vec3 position, rot3 rotation);
 
     //! Convert legacy 2D coordinates to 3D surface coordinates
     static vec3 planar_to_surface(vec2 v);

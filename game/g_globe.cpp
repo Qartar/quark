@@ -168,6 +168,18 @@ double globe::distance(vec3 a, vec3 b)
 }
 
 //------------------------------------------------------------------------------
+rot2 globe::heading(vec3 position, rot3 rotation)
+{
+    // Using spherical globe approximation (not ellipsoidal)
+    vec3 z = position.normalize();
+    vec3 x = cross(vec3(0,0,1), z); // Note: not necessarily unit-length
+    vec3 y = cross(z, x);
+
+    vec3 forward = vec3(1,0,0) * rotation;
+    return rot2(dot(forward, x), dot(forward, y));
+}
+
+//------------------------------------------------------------------------------
 vec3 globe::planar_to_surface(vec2 v)
 {
     static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait

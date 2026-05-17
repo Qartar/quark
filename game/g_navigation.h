@@ -33,20 +33,20 @@ public:
         _waypoints.resize(0);
     }
 
-    std::vector<vec2> const& waypoints() const { return _waypoints; }
+    std::vector<vec3> const& waypoints() const { return _waypoints; }
 
-    void set_waypoint(vec2 point) {
+    void set_waypoint(vec3 point) {
         _waypoints.resize(0);
         _waypoints.push_back(point);
     }
-    void add_waypoint(vec2 point) {
+    void add_waypoint(vec3 point) {
         _waypoints.push_back(point);
     }
 
 protected:
     float _target_speed;
     rot2 _target_heading;
-    std::vector<vec2> _waypoints;
+    std::vector<vec3> _waypoints;
 };
 
 } // namespace game
