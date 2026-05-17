@@ -124,15 +124,13 @@ void ship::draw(render::system* renderer, time_value time) const
     renderer->draw_outline(_outlines[0], tx4, color);
 
     // draw rudder
-#if 0
     {
-        vec2 v0 = vec2(_design->length * -0.45, 0) * tx;
-        vec2 vx = vec2(_design->length,0) * get_rotation(time) * rot2(_engines->get_rudder_angle());
-        vec2 v1 = v0 - vx * 0.025;
-        vec2 v2 = v0 + vx * 0.025;
+        vec3 v0 = vec3(_design->length * -0.45, 0, 0) * tx4;
+        vec3 vx = vec3(vec2(_design->length,0) * rot2(_engines->get_rudder_angle())) * get_rotation(time);
+        vec2 v1 = ((v0 - vx * 0.025) * renderer->view().transform).to_vec2();
+        vec2 v2 = ((v0 + vx * 0.025) * renderer->view().transform).to_vec2();
         renderer->draw_line(v1, v2, color, color);
     }
-#endif
 
     // draw turrets
     for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
@@ -166,18 +164,16 @@ void ship::draw(render::system* renderer, time_value time) const
     }
 
     // draw wake
-#if 0
     for (std::size_t ii = 0; ii + 1 < _wake_index && ii + 1 < countof(_wake); ++ii) {
         float a0 = float(countof(_wake) - ii) / float(countof(_wake));
         float a1 = float(countof(_wake) - ii - 1) / float(countof(_wake));
         renderer->draw_line(
-            _wake[(_wake_index - ii) % countof(_wake)],
-            _wake[(_wake_index - ii - 1) % countof(_wake)],
+            (_wake[(_wake_index - ii) % countof(_wake)] * renderer->view().transform).to_vec2(),
+            (_wake[(_wake_index - ii - 1) % countof(_wake)] * renderer->view().transform).to_vec2(),
             color4(.8f,.9f,1.f,.5f * a0),
             color4(.8f,.9f,1.f,.5f * a1));
 
     }
-#endif
 }
 
 //------------------------------------------------------------------------------

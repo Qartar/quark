@@ -115,7 +115,7 @@ void player::draw(render::system* renderer, time_value time) const
 
     if (_is_selecting) {
         std::vector<handle<ship>> selection_preview;
-        selection_preview = selection_target((_usercmd.cursor - vec2(0.5)) * renderer->view().size + renderer->view().origin);
+        selection_preview = selection_target(_usercmd.cursor);
         draw_selection(renderer, time, selection_preview);
     } else {
         draw_selection(renderer, time, _selection);
@@ -196,27 +196,26 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
     }
 
     // draw order preview
-#if 0
     if (!_is_selecting) {
         vec3 origin = vec3_zero;
         for (auto&& ship : selection) {
             origin += ship->get_position(time);
         }
         origin /= float(selection.size());
-        vec3 cursor = screen_to_world(_usercmd.cursor - vec2(0.5));
-        if (_hover) {
-            cursor = _hover->get_position(time);
-        }
-        renderer->draw_line(origin, cursor, color4(1,1,1,1), color4(1,1,1,1));
-        renderer->draw_string(va("%.1f km", 1e-3 * length(cursor - origin)), 0.5 * (origin + cursor), color4(1,1,1,1));
-        vec2 direction = normalize(cursor - origin);
-        int heading = int(std::round(90.f - math::rad2deg(rot2(direction.x, direction.y).radians())));
+        vec3 cursor = _hover ? _hover->get_position(time)
+                             : screen_to_world(_usercmd.cursor - vec2(0.5));
+
+        vec2 view_origin = (origin * renderer->view().transform).to_vec2();
+        vec2 view_cursor = (cursor * renderer->view().transform).to_vec2();
+
+        renderer->draw_line(view_origin, view_cursor, color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_string(va("%.1f km", 1e-3 * globe::distance(origin, origin)), 0.5 * (view_origin + view_cursor), color4(1,1,1,1));
+        int heading = int(std::round(90.f - math::rad2deg(globe::bearing(origin, cursor).radians())));
         if (heading < 0) {
             heading += 360;
         }
-        renderer->draw_string(va("%d\xb0", heading), cursor, color4(1,1,1,1));
+        renderer->draw_string(va("%d\xb0", heading), view_cursor, color4(1,1,1,1));
     }
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -282,7 +281,7 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
         _selection_start = _usercmd.cursor;
     } else if (!(cmd.buttons & usercmd::button::select)
         && !!(_usercmd.buttons & usercmd::button::select)) {
-        on_select(_usercmd.cursor - vec2(0.5));
+        on_select(_usercmd.cursor);
     }
 
     if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
@@ -332,10 +331,12 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
                 origin += ship->get_position();
             }
             origin /= double(_selection.size());
-            vec3 direction = normalize(cursor - origin);
-            double heading = std::round(math::rad2deg(rot2(direction.x, direction.y).radians()));
+            rot2 heading = globe::bearing(origin, cursor);
+            // Round to the nearest whole degree
+            double rounded = std::round(math::rad2deg(heading.radians()));
+            heading = rot2(math::deg2rad(rounded));
             for (auto&& ship : _selection) {
-                ship->navigation()->set_heading(rot2(math::deg2rad(heading)));
+                ship->navigation()->set_heading(heading);
             }
         }
     } else if (_usercmd.action == usercmd::action::speed_up) {
@@ -361,16 +362,23 @@ handle<ship> player::hover_target(vec2 cursor) const
 std::vector<handle<ship>> player::selection_target(vec2 cursor) const
 {
     game::object* objects[256];
-    bounds3 b = bounds3::from_points({
-        screen_to_world(_selection_start),
-        screen_to_world(cursor)});
-    std::size_t num_objects = get_world()->bounds_query(b, objects);
+    mat4 transform = globe::surface_inverse_projection(_view.origin);
+    bounds b = bounds::from_points({
+        (_selection_start - vec2(0.5)) * _view.size,
+        (cursor - vec2(0.5)) * _view.size});
+    std::size_t num_objects = get_world()->bounds_query(b, transform, objects);
     std::vector<handle<ship>> selection;
     selection.reserve(num_objects);
     for (std::size_t ii = 0; ii < num_objects; ++ii) {
-        if (objects[ii]->is_type<ship>()) {
-            selection.push_back(objects[ii]->cast<ship>());
+        // Filter out everything that's not a ship
+        if (!objects[ii]->is_type<ship>()) {
+            continue;
         }
+        // Filter out objects on the opposite side of the globe
+        if (dot(_view.origin, objects[ii]->get_position()) < 0.0) {
+            continue;
+        }
+        selection.push_back(objects[ii]->cast<ship>());
     }
     return selection;
 }

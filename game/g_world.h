@@ -178,11 +178,11 @@ public:
 
     game::object* trace(physics::contact& contact, vec3 start, vec3 end, game::object const* ignore = nullptr) const;
     game::object* point_query(vec3 point) const;
-    std::size_t bounds_query(bounds3 b, game::object** objects, std::size_t max_objects) const;
+    std::size_t bounds_query(bounds b, mat4 projection, game::object** objects, std::size_t max_objects) const;
 
     template<std::size_t max_objects>
-    std::size_t bounds_query(bounds3 b, game::object* (&objects)[max_objects]) const {
-        return bounds_query(b, objects, max_objects);
+    std::size_t bounds_query(bounds b, mat4 projection, game::object* (&objects)[max_objects]) const {
+        return bounds_query(b, projection, objects, max_objects);
     }
 
     int framenum() const { return _framenum; }

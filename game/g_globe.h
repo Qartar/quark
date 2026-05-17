@@ -46,6 +46,8 @@ public:
     static double distance(vec3 a, vec3 b);
     //! Return the heading for the given position and rotation
     static rot2 heading(vec3 position, rot3 rotation);
+    //! Return the absolute bearing from the given position to the given target position
+    static rot2 bearing(vec3 position, vec3 target);
 
     //! Convert legacy 2D coordinates to 3D surface coordinates
     static vec3 planar_to_surface(vec2 v);

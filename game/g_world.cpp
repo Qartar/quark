@@ -316,10 +316,10 @@ game::object* world::point_query(vec3 point) const
 }
 
 //------------------------------------------------------------------------------
-std::size_t world::bounds_query(bounds3 b, game::object** objects, std::size_t max_objects_) const
+std::size_t world::bounds_query(bounds b, mat4 projection, game::object** objects, std::size_t max_objects_) const
 {
     physics::rigid_body** bodies = reinterpret_cast<physics::rigid_body**>(objects);
-    std::size_t num_bodies = _physics.bounds_query(b, bodies, max_objects_);
+    std::size_t num_bodies = _physics.bounds_query(b, projection, bodies, max_objects_);
     std::size_t num_objects = 0;
 
     for (std::size_t ii = 0; ii < num_bodies; ++ii) {

@@ -27,6 +27,12 @@ bounds3 rigid_body::get_bounds() const
 }
 
 //------------------------------------------------------------------------------
+bounds rigid_body::get_bounds(mat4 projection) const
+{
+    return _shape->calculate_bounds((get_transform() * projection).submatrix<2,2>());
+}
+
+//------------------------------------------------------------------------------
 double rigid_body::get_kinetic_energy() const
 {
     double energy = 0.0;

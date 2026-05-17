@@ -55,6 +55,7 @@ public:
     mat4 get_inverse_transform() const;
 
     bounds3 get_bounds() const;
+    bounds get_bounds(mat4 projection) const;
 
     //
     //  velocity

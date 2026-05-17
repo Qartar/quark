@@ -180,6 +180,19 @@ rot2 globe::heading(vec3 position, rot3 rotation)
 }
 
 //------------------------------------------------------------------------------
+rot2 globe::bearing(vec3 position, vec3 target)
+{
+    // Using spherical globe approximation (not ellipsoidal)
+    vec3 z = position.normalize();
+    vec3 x = cross(vec3(0,0,1), z); // Note: not necessarily unit-length
+    vec3 y = cross(z, x);
+
+    vec3 direction = target - position;
+    vec2 projection = normalize(vec2(dot(direction, x), dot(direction, y)));
+    return rot2(projection.x, projection.y);
+}
+
+//------------------------------------------------------------------------------
 vec3 globe::planar_to_surface(vec2 v)
 {
     static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait
