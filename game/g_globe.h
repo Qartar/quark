@@ -42,6 +42,8 @@ public:
     static double altitude(vec3 point);
     //! Return the gravity vector (direction and magnitude) at the given point
     static vec3 gravity(vec3 point);
+    //! Return the normalized gravity vector at the given point
+    static vec3 gravity_normal(vec3 point);
     //! Return the geodesic distance between the given two points on the surface
     static double distance(vec3 a, vec3 b);
     //! Return the heading for the given position and rotation

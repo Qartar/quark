@@ -162,6 +162,13 @@ vec3 globe::gravity(vec3 point)
 }
 
 //------------------------------------------------------------------------------
+vec3 globe::gravity_normal(vec3 point)
+{
+    // Using spherical globe approximation (not ellipsoidal)
+    return normalize(-point);
+}
+
+//------------------------------------------------------------------------------
 double globe::distance(vec3 a, vec3 b)
 {
     return mean_radius * std::atan2(length(cross(a, b)), dot(a, b));

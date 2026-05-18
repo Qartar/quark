@@ -137,8 +137,18 @@ void engines::think()
 
         // Even if we project velocity onto the local plane every frame we will
         // drift in the local-z direction due the plane rotating beneath us.
-        _owner->set_position(_owner->get_position() - current_axis * globe::altitude(_owner->get_position()));
-        // TODO: reproject rotation, move to post-physics
+        // TODO: move this to post-physics update so that we're always on plane.
+        {
+            vec3 vertical = -globe::gravity_normal(_owner->get_position());
+            // Reproject position
+            _owner->set_position(_owner->get_position() - vertical * globe::altitude(_owner->get_position()));
+            // Reproject rotation
+            mat3 rotation = mat3(_owner->get_rotation());
+            rotation[0] = normalize(rotation[0] - vertical * dot(rotation[0], vertical));
+            rotation[1] = normalize(rotation[1] - vertical * dot(rotation[1], vertical));
+            rotation[2] = cross(rotation[0], rotation[1]);
+            _owner->set_rotation(rotation.to_rotation());
+        }
     }
 }
 

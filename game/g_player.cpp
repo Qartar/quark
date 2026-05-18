@@ -209,7 +209,7 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
         vec2 view_cursor = (cursor * renderer->view().transform).to_vec2();
 
         renderer->draw_line(view_origin, view_cursor, color4(1,1,1,1), color4(1,1,1,1));
-        renderer->draw_string(va("%.1f km", 1e-3 * globe::distance(origin, origin)), 0.5 * (view_origin + view_cursor), color4(1,1,1,1));
+        renderer->draw_string(va("%.1f km", 1e-3 * globe::distance(origin, cursor)), 0.5 * (view_origin + view_cursor), color4(1,1,1,1));
         int heading = int(std::round(90.f - math::rad2deg(globe::bearing(origin, cursor).radians())));
         if (heading < 0) {
             heading += 360;
