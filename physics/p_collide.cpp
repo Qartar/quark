@@ -39,17 +39,17 @@ vec2 collide::closest_point(shape const* shape, vec2 point)
                 child.rotation
             };
             collide c(shape_motion, point_motion);
-            double distance = (c.get_contact().point - point).length_sqr();
+            double distance = (c.get_contact().point.to_vec2() - point).length_sqr();
             if (distance < best_distance) {
                 best_distance = distance;
-                best_point = c.get_contact().point;
+                best_point = c.get_contact().point.to_vec2();
             }
         }
         return best_point;
     } else {
         motion shape_motion{shape};
         collide c(shape_motion, point_motion);
-        return c.get_contact().point;
+        return c.get_contact().point.to_vec2();
     }
 }
 
@@ -73,8 +73,8 @@ collide::collide(motion const& motion_a, motion const& motion_b)
     }
 
     _contact.distance = distance;
-    _contact.point = position.to_vec2();
-    _contact.normal = direction.to_vec2();
+    _contact.point = vec3(position.x, position.y, 0);
+    _contact.normal = vec3(direction.x, direction.y, 0);
     assert(!isnan(_contact.distance));
     assert(!isnan(_contact.point));
     assert(!isnan(_contact.normal));

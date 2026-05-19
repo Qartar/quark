@@ -15,8 +15,8 @@ class shape;
 struct contact
 {
     double distance; //!< Contact distance, negative for penetration
-    vec2 point; //!< Contact point in world space
-    vec2 normal; //!< Contact normal in world space
+    vec3 point; //!< Contact point in world space
+    vec3 normal; //!< Contact normal in world space
 };
 
 //------------------------------------------------------------------------------

@@ -84,7 +84,6 @@ void projectile::think()
 
     // Use impact time as a proxy for whether we've already hit something this frame
     if (0.0 < t && t < FRAMETIME.to_seconds() && _impact_time == time_value::max) {
-        // intersect with z=0 plane
         vec3 p = _position + _velocity * t;
 
         _impact_time = get_world()->frametime() + time_delta::from_seconds(t);
@@ -118,7 +117,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
 
     // calculate impact time
     {
-        vec3 displacement = vec3(collision->point) - get_position();
+        vec3 displacement = collision->point - get_position();
         vec3 relative_velocity = get_linear_velocity();
         if (other) {
             relative_velocity -= other->get_linear_velocity();
@@ -128,13 +127,12 @@ bool projectile::touch(object *other, physics::collision const* collision)
     }
 
     if (collision) {
-        vec3 collision_point = globe::planar_to_surface(collision->point);
-        get_world()->add_sound(_info.impact_sound, collision_point, _info.damage);
+        get_world()->add_sound(_info.impact_sound, collision->point, _info.damage);
         get_world()->add_effect(
             _impact_time,
             _info.impact_effect,
-            collision_point,
-            vec3(collision->normal) * globe::surface_projection(collision_point).submatrix<3,3>(),
+            collision->point,
+            collision->normal,
             std::cbrt(_info.damage));
     } else {
         get_world()->add_sound(_info.impact_sound, get_position(), _info.damage);
@@ -142,7 +140,7 @@ bool projectile::touch(object *other, physics::collision const* collision)
     }
 
     if (other && other->is_type<ship>()) {
-        static_cast<ship*>(other)->damage(this, collision ? vec3(collision->point) : get_position(), _info.damage);
+        static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _info.damage);
     }
 
     get_world()->remove(this);

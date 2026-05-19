@@ -28,6 +28,8 @@ trace::trace(rigid_body const* body, vec3 start, vec3 end)
     };
 
     _fraction = dispatch(_contact, body_motion, point_motion, 1.0);
+    _contact.point = _contact.point * body->get_rotation() + body->get_position();
+    _contact.normal = _contact.normal * body->get_rotation();
 }
 
 //------------------------------------------------------------------------------
@@ -195,10 +197,10 @@ double trace::convex_convex_dispatch(contact& contact, motion motion_a, motion m
 
         contact = physics::collide(motion_a, motion_b).get_contact();
 
-        direction = motion_b.get_linear_velocity(contact.point)
-                  - motion_a.get_linear_velocity(contact.point);
+        direction = motion_b.get_linear_velocity(contact.point.to_vec2())
+                  - motion_a.get_linear_velocity(contact.point.to_vec2());
 
-        if (contact.normal.dot(direction) >= 0.0) {
+        if (contact.normal.to_vec2().dot(direction) >= 0.0) {
             return 1.0;
         }
 
@@ -206,7 +208,7 @@ double trace::convex_convex_dispatch(contact& contact, motion motion_a, motion m
             break;
         }
 
-        fraction -= contact.distance / contact.normal.dot(direction);
+        fraction -= contact.distance / contact.normal.to_vec2().dot(direction);
         assert(!isnan(fraction));
     }
 
