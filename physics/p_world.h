@@ -18,7 +18,7 @@ class shape;
 //------------------------------------------------------------------------------
 struct collision : contact
 {
-    vec2 impulse; //!< Impulse that should be applied to body_b to resolve the collision
+    vec3 impulse; //!< Impulse that should be applied to body_b to resolve the collision
 
     collision() = default;
     explicit collision(contact const& c) : contact(c) {}
@@ -64,7 +64,7 @@ protected:
     collision_callback_type _collision_callback;
 
 protected:
-    vec2 collision_impulse(physics::rigid_body const* body_a,
+    vec3 collision_impulse(physics::rigid_body const* body_a,
                            physics::rigid_body const* body_b,
                            physics::contact const& contact) const;
 

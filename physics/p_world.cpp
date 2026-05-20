@@ -90,8 +90,8 @@ void world::step(double delta_time)
             }
 
             // collision response
-            //_bodies[ii]->apply_impulse(-c.impulse, c.point);
-            //_bodies[jj]->apply_impulse( c.impulse, c.point);
+            _bodies[ii]->apply_impulse(-c.impulse, c.point);
+            _bodies[jj]->apply_impulse( c.impulse, c.point);
 
             break;
         }
@@ -187,22 +187,22 @@ std::size_t world::bounds_query(bounds b, mat4 projection, physics::rigid_body**
 }
 
 //------------------------------------------------------------------------------
-vec2 world::collision_impulse(
+vec3 world::collision_impulse(
     physics::rigid_body const* body_a,
     physics::rigid_body const* body_b,
     physics::contact const& contact) const
 {
-    vec3 position = vec3(contact.point);
-    vec3 direction = vec3(contact.normal);
+    vec3 position = contact.point;
+    vec3 direction = contact.normal;
     double distance = contact.distance;
 
     // Calculate the relative velocity of the bodies at the contact point
-    vec3 relative_velocity = vec3(body_b->get_linear_velocity(position))
-                           - vec3(body_a->get_linear_velocity(position));
+    vec3 relative_velocity = body_b->get_linear_velocity(position)
+                           - body_a->get_linear_velocity(position);
 
     // Simple collision response for penetrating bodies
     if (distance >= 0.0 || relative_velocity.dot(direction) >= 0.0) {
-        return vec2_zero;
+        return vec3_zero;
     }
 
     vec3 tangent = (relative_velocity - direction * relative_velocity.dot(direction)).normalize();
@@ -219,8 +219,8 @@ vec2 world::collision_impulse(
     double inverse_reduced_mass = body_a->get_inverse_mass()
                                + body_b->get_inverse_mass();
 
-    vec3 ra = position - vec3(body_a->get_position());
-    vec3 rb = position - vec3(body_b->get_position());
+    vec3 ra = position - body_a->get_position();
+    vec3 rb = position - body_b->get_position();
 
     // Change in normal velocity per change in momentum along normal
     double gx = inverse_reduced_mass
@@ -270,7 +270,7 @@ vec2 world::collision_impulse(
         dpy = inv_det * (-gy * dvx + gx * dvy0);
     }
 
-    return (direction * dpx - tangent * dpy).to_vec2();
+    return direction * dpx - tangent * dpy;
 }
 
 //------------------------------------------------------------------------------

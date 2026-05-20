@@ -35,10 +35,34 @@ trace::trace(rigid_body const* body, vec3 start, vec3 end)
 //------------------------------------------------------------------------------
 trace::trace(rigid_body const* body_a, rigid_body const* body_b, double delta_time)
 {
-    (void)body_a;
-    (void)body_b;
-    (void)delta_time;
-    //_fraction = dispatch(_contact, body_a->get_motion(), body_b->get_motion(), delta_time);
+    vec3 position = 0.5 * (body_a->get_position() + body_b->get_position());
+    rot3 rotation = slerp(body_a->get_rotation(), body_b->get_rotation(), 0.5);
+
+    vec3 rotation_a = vec3(1,0,0) * (body_a->get_rotation() * rotation.inverse());
+    vec3 angular_a = vec3(0,0,1) * (body_a->get_rotation() * rotation.inverse());
+
+    physics::motion motion_a{
+        body_a->get_shape(),
+        ((body_a->get_position() - position) * rotation.inverse()).to_vec2(),
+        rot2(rotation_a.x, rotation_a.y),
+        (body_a->get_linear_velocity() * rotation.inverse()).to_vec2(),
+        dot(body_a->get_angular_velocity(), angular_a),
+    };
+
+    vec3 rotation_b = vec3(1,0,0) * (body_b->get_rotation() * rotation.inverse());
+    vec3 angular_b = vec3(0,0,1) * (body_b->get_rotation() * rotation.inverse());
+
+    physics::motion motion_b{
+        body_b->get_shape(),
+        ((body_b->get_position() - position) * rotation.inverse()).to_vec2(),
+        rot2(rotation_b.x, rotation_b.y),
+        (body_b->get_linear_velocity() * rotation.inverse()).to_vec2(),
+        dot(body_b->get_angular_velocity(), angular_b),
+    };
+
+    _fraction = dispatch(_contact, motion_a, motion_b, delta_time);
+    _contact.point = _contact.point * rotation + position;
+    _contact.normal = _contact.normal * rotation;
 }
 
 //------------------------------------------------------------------------------
