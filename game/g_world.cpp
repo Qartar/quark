@@ -27,7 +27,7 @@ world::world()
     , _physics(
         std::bind(&world::physics_filter_callback, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&world::physics_collide_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
-    , _timescale(1)
+    , _timescale("timescale", 1, config::server, "rate of game time relative to real time")
     , _prev_timescale(1)
 {
     static console_command cmd("solve_ballistics", &ballistics::solve_ballistic_coefficient_cmd);

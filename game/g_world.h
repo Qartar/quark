@@ -227,7 +227,7 @@ private:
     bool physics_filter_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b);
     bool physics_collide_callback(physics::rigid_body const* body_a, physics::rigid_body const* body_b, physics::collision const& collision);
 
-    float _timescale; //!< Current game speed as a multiplier
+    config::scalar _timescale; //!< Current game speed as a multiplier
     float _prev_timescale; //!< Previous game speed, used for unpausing
 
     //
