@@ -71,6 +71,9 @@ template<typename T, typename Y> constexpr T clamp(Y value, T min, T max) { retu
 template<typename T> constexpr T min(T a, T b) { return a < b ? a : b; }
 template<typename T> constexpr T max(T a, T b) { return a > b ? a : b; }
 
+template<typename T> constexpr int min3index(T a, T b, T c) { return (a < b ? (a < c ? 0 : (b < c ? 1 : 2)) : (b < c ? 1 : 2)); }
+template<typename T> constexpr int max3index(T a, T b, T c) { return (a > b ? (a > c ? 0 : (b > c ? 1 : 2)) : (b > c ? 1 : 2)); }
+
 //------------------------------------------------------------------------------
 template<typename T, std::size_t size> constexpr std::size_t countof(T const (&)[size])
 {
