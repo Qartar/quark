@@ -65,7 +65,8 @@ protected:
     std::vector<GLint> _first[5];
     std::vector<GLsizei> _count[5];
 
-    int _resolution;
+    render::gl::vertex_buffer<vec2f> _outline_vbo;
+    render::gl::vertex_array _outline_vao;
 
 protected:
     //! IUGG arithmetic mean radius of the Earth. Making this protected because

@@ -135,8 +135,6 @@ void world::remove(handle<object> object)
 //------------------------------------------------------------------------------
 void world::draw(render::system* renderer, time_value time) const
 {
-    renderer->draw_starfield();
-
     _globe.draw(renderer, time);
 
     for (auto& obj : _objects) {

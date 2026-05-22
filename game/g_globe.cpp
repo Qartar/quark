@@ -19,7 +19,6 @@ PFNGLMULTIDRAWARRAYS glMultiDrawArrays;
 
 //------------------------------------------------------------------------------
 globe::globe()
-    : _resolution(0)
 {
     _gshhg[0].load(gshhg::resolution::full);
     _gshhg[1].load(gshhg::resolution::high);
@@ -55,6 +54,23 @@ void globe::init()
             _count[ii].push_back(_gshhg[ii].polygons()[jj].count);
         }
     }
+
+    vec2f outline[4096];
+    constexpr float dd = math::twopi / float(countof(outline));
+    for (std::size_t ii = 0; ii < countof(outline); ++ii) {
+        float c = std::cos(float(ii) * dd);
+        float s = std::sin(float(ii) * dd);
+        outline[ii] = vec2f(c * float(mean_radius), s * float(mean_radius));
+    }
+
+    _outline_vbo = render::gl::vertex_buffer<vec2f>(
+        render::gl::buffer_usage::static_,
+        render::gl::buffer_access::draw,
+        countof(outline),
+        outline);
+    _outline_vao = render::gl::vertex_array({
+        render::gl::vertex_array_attrib{2, GL_FLOAT, render::gl::vertex_attrib_type::float_, 0}});
+    _outline_vao.bind_buffer(_outline_vbo, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -62,17 +78,42 @@ void globe::draw(render::system* renderer, time_value /*time*/) const
 {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glLoadMatrixd(renderer->view().transform);
 
-    _vao[_resolution].bind();
+    int res = clamp<int>(3e-1 * std::log2(renderer->view().size.length()) - 4.5, 0, 4);
+
+    //
+    // draw outline
+    //
+
+    glLoadIdentity();
+    _outline_vao.bind();
+    glColor4f(.1f,.2f,.4f,1);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, narrow_cast<GLsizei>(_outline_vbo.num_elements()));
     glColor4f(1,1,1,.5f);
+    glDrawArrays(GL_LINE_LOOP, 0, narrow_cast<GLsizei>(_outline_vbo.num_elements()));
+    // FIXME: hard-coded depth range
+    glClearDepth((mean_radius + 99999.0) / (9999999.0 + 99999.0));
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    //
+    // draw edges
+    //
+
+    glLoadMatrixd(renderer->view().transform);
+    glColor4f(1,1,1,.5f);
+
+    _vao[res].bind();
     glMultiDrawArrays(
         GL_LINE_LOOP,
-        _first[_resolution].data(),
-        _count[_resolution].data(),
-        narrow_cast<GLsizei>(_count[_resolution].size()));
-    glPopMatrix();
+        _first[res].data(),
+        _count[res].data(),
+        narrow_cast<GLsizei>(_count[res].size()));
     render::gl::vertex_array().bind();
+
+    glPopMatrix();
+    glDisable(GL_DEPTH_TEST);
 }
 
 //------------------------------------------------------------------------------
