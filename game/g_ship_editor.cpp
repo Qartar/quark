@@ -1450,6 +1450,13 @@ void ship_editor::clear()
 //------------------------------------------------------------------------------
 struct file_header
 {
+    enum version {
+        //! Added turrets and turret instances
+        v2 = 104,
+        //! Conversion from single-precision to double-precision
+        v3 = 112,
+    };
+
     std::size_t header_size;
     std::size_t image_name_size;
     std::size_t image_name_offset;
@@ -1552,36 +1559,82 @@ bool ship_editor::load(string::view filename)
     }
 
     file_header const* h = reinterpret_cast<file_header const*>(b.data());
+    std::size_t header_size = h->header_size;
 
     string::view image_name(
         (char const*)b.data() + h->image_name_offset,
         (char const*)b.data() + h->image_name_offset + h->image_name_size);
     _image = application::singleton()->window()->renderer()->load_image(image_name);
 
-    _image_offset = h->image_offset;
-    _image_scale = h->image_scale;
+    if (header_size < file_header::version::v3) {
+        _image_offset.x = reinterpret_cast<float const*>(&h->image_offset)[0];
+        _image_offset.y = reinterpret_cast<float const*>(&h->image_offset)[1];
+        _image_scale = reinterpret_cast<float const*>(&h->image_offset)[2];
+        // Realign header with fields after image scale, offset is only 8 bytes due to padding
+        h = reinterpret_cast<file_header const*>(reinterpret_cast<byte const*>(h) - 8);
+    } else {
+        _image_offset = h->image_offset;
+        _image_scale = h->image_scale;
+    }
 
-    _deck_vertices.resize(h->deck_vertices_size / sizeof(_deck_vertices[0]));
-    memcpy(_deck_vertices.data(), b.data() + h->deck_vertices_offset, h->deck_vertices_size);
+    if (header_size < file_header::version::v3) {
+        _deck_vertices.resize(h->deck_vertices_size / sizeof(vec2f));
+        for (std::size_t ii = 0, sz = _deck_vertices.size(); ii < sz; ++ii) {
+            _deck_vertices[ii] = reinterpret_cast<vec2f const*>(b.data() + h->deck_vertices_offset)[ii];
+        }
+    } else {
+        _deck_vertices.resize(h->deck_vertices_size / sizeof(_deck_vertices[0]));
+        memcpy(_deck_vertices.data(), b.data() + h->deck_vertices_offset, h->deck_vertices_size);
+    }
 
     _deck_segments.resize(h->deck_segments_size / sizeof(_deck_segments[0]));
     memcpy(_deck_segments.data(), b.data() + h->deck_segments_offset, h->deck_segments_size);
 
-    if (h->header_size >= 104) {
+    //
+    // Load turrets and turret instances
+    //
+
+    if (header_size >= file_header::version::v2) {
         _turrets.resize(h->turrets_size / sizeof(turret_header));
         turret_header const* th = reinterpret_cast<turret_header const*>(b.data() + h->turrets_offset);
         for (std::size_t ii = 0; ii < _turrets.size(); ++ii, ++th) {
-            _turrets[ii].radius = th->radius;
 
-            _turrets[ii].vertices.resize(th->vertices_size / sizeof(_turrets[ii].vertices[0]));
-            memcpy(_turrets[ii].vertices.data(), b.data() + th->vertices_offset, th->vertices_size);
+            if (header_size < file_header::version::v3) {
+                _turrets[ii].radius = *reinterpret_cast<float const*>(&th->radius);
+                // No realignment required due to padding
+            } else {
+                _turrets[ii].radius = th->radius;
+            }
+
+            if (header_size < file_header::version::v3) {
+                _turrets[ii].vertices.resize(th->vertices_size / sizeof(vec2f));
+                for (std::size_t jj = 0, sz = _turrets[ii].vertices.size(); jj < sz; ++jj) {
+                    _turrets[ii].vertices[jj] = reinterpret_cast<vec2f const*>(b.data() + th->vertices_offset)[jj];
+                }
+            } else {
+                _turrets[ii].vertices.resize(th->vertices_size / sizeof(_turrets[ii].vertices[0]));
+                memcpy(_turrets[ii].vertices.data(), b.data() + th->vertices_offset, th->vertices_size);
+            }
 
             _turrets[ii].segments.resize(th->segments_size / sizeof(_turrets[ii].segments[0]));
             memcpy(_turrets[ii].segments.data(), b.data() + th->segments_offset, th->segments_size);
         }
 
-        _turret_instances.resize(h->turret_instances_size / sizeof(_turret_instances[0]));
-        memcpy(_turret_instances.data(), b.data() + h->turret_instances_offset, h->turret_instances_size);
+        if (header_size < file_header::version::v3) {
+            struct turret_instance_f { float transform[9]; std::size_t index; };
+            _turret_instances.resize(h->turret_instances_size / sizeof(turret_instance_f));
+
+            turret_instance_f const* ti = reinterpret_cast<turret_instance_f const*>(b.data() + h->turret_instances_offset);
+            for (std::size_t jj = 0; jj < _turret_instances.size(); ++jj, ++ti) {
+                _turret_instances[jj].transform = mat3(ti->transform[0], ti->transform[1], ti->transform[2],
+                                                       ti->transform[3], ti->transform[4], ti->transform[5],
+                                                       ti->transform[6], ti->transform[7], ti->transform[8]);
+                _turret_instances[jj].index = ti->index;
+            }
+        } else {
+            _turret_instances.resize(h->turret_instances_size / sizeof(_turret_instances[0]));
+            memcpy(_turret_instances.data(), b.data() + h->turret_instances_offset, h->turret_instances_size);
+        }
     } else {
         _turrets.resize(0);
         _turret_instances.resize(0);
