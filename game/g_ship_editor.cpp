@@ -518,12 +518,55 @@ double quad_closest_point(vec2 A, vec2 B, vec2 C, vec2 pos)
 //------------------------------------------------------------------------------
 double cube_closest_point(vec2 A, vec2 B, vec2 C, vec2 D, vec2 pos)
 {
-    (void)A;
-    (void)B;
-    (void)C;
-    (void)D;
-    (void)pos;
-    return 0.5;
+    // Calculate standard form coefficients for faster evaluation
+    vec2 a = -A + 3.0 * B - 3.0 * C + D;
+    vec2 b = 3.0 * A - 6.0 * B + 3.0 * C;
+    vec2 c = -3.0 * A + 3.0 * B;
+    vec2 d = A;
+
+    double t[5] = { 0, 0.25, 0.5, 0.75, 1.0 };
+    vec2 p[5] = {
+        A,
+        ((a * 0.25 + b) * 0.25 + c) * 0.25 + d,
+        ((a * 0.50 + b) * 0.50 + c) * 0.50 + d,
+        ((a * 0.75 + b) * 0.75 + c) * 0.75 + d,
+        D,
+    };
+
+    for (std::size_t ii = 0; ii < 32; ++ii) {
+        std::size_t best_idx = 0;
+        double best_dsqr = length_sqr(p[0] - pos);
+        for (std::size_t jj = 1; jj < 5; ++jj) {
+            double dsqr = length_sqr(p[jj] - pos);
+            if (dsqr < best_dsqr) {
+                best_idx = jj;
+                best_dsqr = dsqr;
+            }
+        }
+
+        if (best_dsqr < square(1e-4)) {
+            return t[best_idx];
+        }
+
+        // Reframe search to points above and below closest point
+        best_idx = clamp(best_idx, 1, 3);
+        double tmin = t[best_idx - 1];
+        double tmax = t[best_idx + 1];
+
+        t[0] = tmin;
+        t[1] = tmin + (tmax - tmin) * 0.25;
+        t[2] = tmin + (tmax - tmin) * 0.5;
+        t[3] = tmin + (tmax - tmin) * 0.75;
+        t[4] = tmax;
+
+        p[0] = p[best_idx - 1];
+        p[4] = p[best_idx + 1];
+        for (std::size_t jj = 1; jj < 4; ++jj) {
+            p[jj] = ((a * t[jj] + b) * t[jj] + c) * t[jj] + d;
+        }
+    }
+
+    return t[2];
 }
 
 //------------------------------------------------------------------------------
