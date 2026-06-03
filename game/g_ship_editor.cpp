@@ -17,285 +17,114 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-#define SHIP(L,B)               \
-    vec2(-0.5f * L, 0.f),       \
-    vec2(-0.5f * L, 0.5f * B),  \
-    vec2(0.f, 0.5f * B),        \
-    vec2(0.3f * L, 0.5f * B),   \
-    vec2(0.5f * L, 0.f),
-
-
-#define SHIP_CUBE(L,B)          \
-    vec2(-0.5f * L, 0.f),       \
-    vec2(-0.5f * L, 0.5f * B),  \
-    vec2(-0.25f * L, 0.5f * B), \
-    vec2(-0.1f * L, 0.5f * B),  \
-    vec2(0.1f * L, 0.5f * B),   \
-    vec2(0.25f * L, 0.5f * B),  \
-    vec2(0.3f * L, 0.5f * B),   \
-    vec2(0.5f * L, 0.f),
-
-#define SHIP_CUBE2(L,B)          \
-    vec2(-0.5f * L, 0.f),       \
-    vec2(-0.5f * L, 0.5f * B),  \
-    vec2(-0.25f * L, 0.5f * B), \
-    vec2(0, 0.5f * B),          \
-    vec2(0.25f * L, 0.5f * B),  \
-    vec2(0.3f * L, 0.5f * B),   \
-    vec2(0.5f * L, 0.f),
-
 //------------------------------------------------------------------------------
-ship_editor::ship_editor()
-    : _view{}
-    , _cursor{}
-    , _snap_distance(1.f)
-    , _snap_to_grid(true)
-    , _snap_to_edge(true)
-    , _draw_grid(true)
-    , _draw_linearized(false)
-    , _is_panning(false)
-    , _is_panning_image(false)
-    , _control(false)
-    , _drag_feature(feature::none)
-    , _drag_index(0)
-    , _image(nullptr)
-    , _image_offset(vec2_zero)
-    , _image_scale("image_scale", 1.f/15.175f, 0, "")
-    , _highlight_feature(feature::none)
-    , _highlight_index(0)
-    , _mode(editor_mode::deck)
-    , _turret_instance(0)
-{
-    clear();
-}
-
-//------------------------------------------------------------------------------
-ship_editor::~ship_editor()
+ship_outline::ship_outline(std::vector<vec2>&& vertices, std::vector<segment_type>&& segments)
+    : _vertices(std::move(vertices))
+    , _segments(std::move(segments))
 {
 }
 
 //------------------------------------------------------------------------------
-vec2 ship_editor::cursor_to_world() const
+void ship_outline::draw(render::system* renderer, mat3 transform, vec2 vertex_size) const
 {
-    //return _view.origin + _view.size * (_cursor / 
-    //    vec2(_view.viewport.maxs() - _view.viewport.mins()) - vec2(.5f,.5f));
-    return _view.origin + _view.size * _cursor;
-}
-
-//------------------------------------------------------------------------------
-double ship_editor::snap_radius(double r) const
-{
-    double snap_distance = _snap_to_grid ? _snap_distance : 0.01;
-    return std::floor(r / snap_distance + 0.5) * snap_distance;
-}
-
-//------------------------------------------------------------------------------
-vec2 ship_editor::snap_vertex(vec2 pos) const
-{
-    vec2 out = pos;
-    double snap_distance = _snap_to_grid ? _snap_distance : 0.01;
-
-    vec2 grid_snap = {
-        std::floor(pos.x / snap_distance + 0.5) * snap_distance,
-        std::floor(pos.y / snap_distance + 0.5) * snap_distance,
-    };
-
-    out = grid_snap;
-
-    return out;
-}
-
-//------------------------------------------------------------------------------
-void ship_editor::draw(render::system* renderer, time_value /*time*/) const
-{
-    if (_image) {
-        renderer->set_view(_view);
-        vec2 image_size = vec2(vec2i(_image->width(), _image->height())) * _image_scale;
-        renderer->draw_image(_image, _image_offset - 0.5 * image_size, image_size, color4(1,1,1,.5f));
-    }
-
-    renderer->set_view(_view);
-    vec2 vmin = _view.origin - 0.5 * _view.size;
-    vec2 vmax = _view.origin + 0.5 * _view.size;
-
-    //
-    // draw grid
-    //
-
-    {
-        color4 c(1.f, 1.f, 1.f, .2f);
-        renderer->draw_line(vec2(0, vmin.y), vec2(0, vmax.y), c, c);
-        renderer->draw_line(vec2(vmin.x, 0), vec2(vmax.x, 0), c, c);
-        if (_draw_grid) {
-            vec2 mins = _snap_distance * vec2(std::round((vmin.x) / _snap_distance),
-                                              std::round((vmin.y) / _snap_distance));
-            vec2 maxs = _view.origin + 0.5 * _view.size;
-
-            for (double x = mins.x; x < maxs.x; x += _snap_distance) {
-                renderer->draw_line(vec2(x, vmin.y), vec2(x, vmax.y), c, c);
-            }
-            for (double y = mins.y; y < maxs.y; y += _snap_distance) {
-                renderer->draw_line(vec2(vmin.x, y), vec2(vmax.x, y), c, c);
-            }
+    for (size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
+        if (_segments[ii] == line) {
+            vec2 a = _vertices[jj + 0] * transform;
+            vec2 b = _vertices[jj + 1] * transform;
+            renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,0,0,1));
+            jj += 1;
+        } else if (_segments[ii] == quad) {
+            vec2 a = _vertices[jj + 0] * transform;
+            vec2 b = _vertices[jj + 1] * transform;
+            vec2 c = _vertices[jj + 2] * transform;
+            draw_bezier_quad(renderer, a, b, c, color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, c, color4(1,0,0,1));
+            jj += 2;
+        } else if (_segments[ii] == cube) {
+            vec2 a = _vertices[jj + 0] * transform;
+            vec2 b = _vertices[jj + 1] * transform;
+            vec2 c = _vertices[jj + 2] * transform;
+            vec2 d = _vertices[jj + 3] * transform;
+            draw_bezier_cube(renderer, a, b, c, d, color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, c, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, d, color4(1,0,0,1));
+            jj += 3;
         }
     }
 
-    //
-    // draw deck outline
-    //
+    mat3 mirrored = mat3(1,0,0,0,-1,0,0,0,1) * transform;
 
-    if (_draw_linearized) {
-        draw_transformed(renderer, mat3_identity, _deck_linearized);
-    } else {
-        draw_transformed(renderer, mat3_identity, _deck_vertices, _deck_segments);
+    if (_vertices.front().y) {
+        vec2 a = _vertices.front() * transform;
+        vec2 b = _vertices.front() * mirrored;
+        renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
     }
 
-    //
-    // draw turrets
-    //
-
-    for (std::size_t ii = 0; ii < _turret_instances.size(); ++ii) {
-        turret_instance const& i = _turret_instances[ii];
-        if (_draw_linearized) {
-            draw_transformed(renderer, i.transform, _turrets[i.index].linearized);
-        } else {
-            draw_transformed(renderer, i.transform, _turrets[i.index].vertices, _turrets[i.index].segments);
-            vec2 center = vec2_zero * i.transform;
-            double offset = render_vertex_size() * 2.0;
-
-            if ((_highlight_feature == feature::turret || _drag_feature == feature::turret) && ii == _turret_instance) {
-                renderer->draw_line(center - vec2(0,offset), center + vec2(0,offset), color4(0,1,0,1), color4(0,1,0,1));
-                renderer->draw_line(center - vec2(offset,0), center + vec2(offset,0), color4(0,1,0,1), color4(0,1,0,1));
-            } else {
-                renderer->draw_line(center - vec2(0,offset), center + vec2(0,offset), color4(1,0,0,1), color4(1,0,0,1));
-                renderer->draw_line(center - vec2(offset,0), center + vec2(offset,0), color4(1,0,0,1), color4(1,0,0,1));
-            }
-
-            if (_mode == editor_mode::turret && ii == _turret_instance) {
-                if ((_highlight_feature == feature::turret_radius || _drag_feature == feature::turret_radius) && _highlight_index == i.index) {
-                    renderer->draw_arc(center, float(_turrets[i.index].radius), 0, 0, math::twopi, color4(0,1,0,1));
-                } else {
-                    renderer->draw_arc(center, float(_turrets[i.index].radius), 0, 0, math::twopi, color4(0,1,1,1));
-                }
-
-                vec2 v0 = vec2(_turrets[i.index].radius, 0) * i.transform;
-                vec2 v1 = vec2(_turrets[i.index].radius + 1.f, 0) * i.transform;
-                renderer->draw_line(v0, v1, color4(0,1,1,1), color4(0,1,1,1));
-                if ((_highlight_feature == feature::turret_rotation || _drag_feature == feature::turret_rotation) && _highlight_index == _turret_instance) {
-                    renderer->draw_box(vec2(render_vertex_size()), v1, color4(0,1,0,1));
-                } else {
-                    renderer->draw_box(vec2(render_vertex_size()), v1, color4(1,0,0,1));
-                }
-            }
-        }
+    if (_vertices.back().y) {
+        vec2 a = _vertices.back() * transform;
+        vec2 b = _vertices.back() * mirrored;
+        renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
     }
 
-    //
-    // draw vertex highlight and closest point
-    //
-
-    if (_mode == editor_mode::deck) {
-        if (_drag_feature == feature::vertex) {
-            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_drag_index], color4(0,1,0,1));
-        } else if (_highlight_feature == feature::vertex) {
-            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_highlight_index], color4(0,1,0,1));
-        } else if (_drag_feature == feature::vertex_mirror) {
-            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_drag_index] * vec2(1,-1), color4(0,1,0,1));
-        } else if (_highlight_feature == feature::vertex_mirror) {
-            renderer->draw_box(vec2(render_vertex_size()), _deck_vertices[_highlight_index] * vec2(1,-1), color4(0,1,0,1));
+    for (size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
+        if (_segments[ii] == line) {
+            vec2 a = _vertices[jj + 0] * mirrored;
+            vec2 b = _vertices[jj + 1] * mirrored;
+            renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,0,0,1));
+            jj += 1;
+        } else if (_segments[ii] == quad) {
+            vec2 a = _vertices[jj + 0] * mirrored;
+            vec2 b = _vertices[jj + 1] * mirrored;
+            vec2 c = _vertices[jj + 2] * mirrored;
+            draw_bezier_quad(renderer, a, b, c, color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, c, color4(1,0,0,1));
+            jj += 2;
+        } else if (_segments[ii] == cube) {
+            vec2 a = _vertices[jj + 0] * mirrored;
+            vec2 b = _vertices[jj + 1] * mirrored;
+            vec2 c = _vertices[jj + 2] * mirrored;
+            vec2 d = _vertices[jj + 3] * mirrored;
+            draw_bezier_cube(renderer, a, b, c, d, color4(1,1,1,1));
+            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
+            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, c, color4(1,1,0,1));
+            renderer->draw_box(vertex_size, d, color4(1,0,0,1));
+            jj += 3;
         }
-    } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
-        auto const& instance = _turret_instances[_turret_instance];
-        auto const& turret = _turrets[instance.index];
-        if (_drag_feature == feature::vertex) {
-            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_drag_index] * instance.transform, color4(0,1,0,1));
-        } else if (_highlight_feature == feature::vertex) {
-            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_highlight_index] * instance.transform, color4(0,1,0,1));
-        } else if (_drag_feature == feature::vertex_mirror) {
-            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_drag_index] * vec2(1,-1) * instance.transform, color4(0,1,0,1));
-        } else if (_highlight_feature == feature::vertex_mirror) {
-            renderer->draw_box(vec2(render_vertex_size()), turret.vertices[_highlight_index] * vec2(1,-1) * instance.transform, color4(0,1,0,1));
-        }
-    }
-
-    vec2 world_pos = snap_vertex(cursor_to_world());
-
-    {
-        feature f = _drag_feature != feature::none ? _drag_feature : _highlight_feature;
-        std::size_t idx = _drag_feature != feature::none ? _drag_index : _highlight_index;
-        vec2 crosshair = world_pos;
-
-        string::view s = "";
-        if (f == feature::turret_radius) {
-            // draw turret radius
-            assert(_turret_instance < _turret_instances.size());
-            s = va("(%g)", _turrets[_turret_instances[_turret_instance].index].radius);
-        } else if (f == feature::turret_rotation) {
-            // draw turret rotation
-            assert(_turret_instance < _turret_instances.size());
-            auto& instance = _turret_instances[_turret_instance];
-            int angle = int(std::round(math::rad2deg(std::atan2(instance.transform[0][1], instance.transform[0][0]))));
-            s = va("(%d\xb0)", angle);
-        } else if (f == feature::turret) {
-            // draw turret origin in world space
-            assert(_turret_instance < _turret_instances.size());
-            s = va("(%g, %g)", _turret_instances[_turret_instance].transform[2][0], _turret_instances[_turret_instance].transform[2][1]);
-            crosshair = vec2(_turret_instances[_turret_instance].transform[2][0], _turret_instances[_turret_instance].transform[2][1]);
-        } else if (f == feature::vertex) {
-            if (_mode == editor_mode::deck) {
-                // draw vertex position in world space
-                s = va("(%g, %g)", _deck_vertices[idx].x, _deck_vertices[idx].y);
-                crosshair = _deck_vertices[idx];
-            } else if (_mode == editor_mode::turret) {
-                // draw vertex position in turret-local space
-                assert(_turret_instance < _turret_instances.size());
-                vec2 v = _turrets[_turret_instances[_turret_instance].index].vertices[idx];
-                s = va("(%g, %g)", v.x, v.y);
-                crosshair = v * _turret_instances[_turret_instance].transform;
-            }
-        } else if (f == feature::vertex_mirror) {
-            if (_mode == editor_mode::deck) {
-                // draw vertex position in world space
-                s = va("(%g, %g)", _deck_vertices[idx].x, -_deck_vertices[idx].y);
-                crosshair = _deck_vertices[idx] * vec2(1,-1);
-            } else if (_mode == editor_mode::turret) {
-                // draw vertex position in turret-local space
-                assert(_turret_instance < _turret_instances.size());
-                vec2 v = _turrets[_turret_instances[_turret_instance].index].vertices[idx] * vec2(1,-1);
-                s = va("(%g, %g)", v.x, v.y);
-                crosshair = v * _turret_instances[_turret_instance].transform;
-            }
-        } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
-            // draw cursor position in turret-local space
-            vec2 local_pos = snap_vertex(cursor_to_world() * _turret_instances[_turret_instance].transform.inverse_transform());
-            s = va("(%g, %g)", local_pos.x, local_pos.y);
-            crosshair = local_pos * _turret_instances[_turret_instance].transform;
-        } else {
-            // draw cursor position in world space
-            s = va("(%g, %g)", world_pos.x, world_pos.y);
-        }
-        vec2 size = renderer->string_size(s);
-        renderer->draw_string(s, _view.origin + _view.size * 0.49 - size, color4(1,1,1,0.5));
-        // draw crosshair
-        if (f != feature::turret_radius && f != feature::turret_rotation) {
-            renderer->draw_line(vec2(crosshair.x, vmin.y), vec2(crosshair.x, vmax.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
-            renderer->draw_line(vec2(vmin.x, crosshair.y), vec2(vmax.x, crosshair.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
-        }
-    }
-    {
-        vec2 size = renderer->monospace_size("foo");
-        renderer->draw_monospace(_filename, _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*1.0), color4(1,1,1,1));
-
-        renderer->draw_monospace("(s) snap to grid", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*3.0), color4(1,1,1, _snap_to_grid ? .6f : .3f));
-        renderer->draw_monospace("( ) snap to edge", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*4.0), color4(1,1,1, _snap_to_edge ? .6f : .3f));
-
-        renderer->draw_monospace("(d) deck mode", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*6.0), color4(1,1,1, _mode == editor_mode::deck ? .6f : .3f));
-        renderer->draw_monospace("(t) turret mode", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*7.0), color4(1,1,1, _mode == editor_mode::turret ? .6f : .3f));
     }
 }
 
 //------------------------------------------------------------------------------
-void ship_editor::draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const
+void ship_outline::draw_linearized(render::system* renderer, mat3 transform, vec2 vertex_size) const
+{
+    if (!_linearized.size()) {
+        return;
+    }
+
+    vec2 v0 = _linearized[0] * transform;
+    for (size_t ii = 0; ii + 1 < _linearized.size(); ++ii) {
+        vec2 v1 = _linearized[ii + 1] * transform;
+        renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+        renderer->draw_box(vertex_size, v0, color4(1,0,0,1));
+        v0 = v1;
+    }
+    vec2 v1 = _linearized[0] * transform;
+    renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+    renderer->draw_box(vertex_size, v0, color4(1,0,0,1));
+}
+
+//------------------------------------------------------------------------------
+void ship_outline::draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const
 {
     vec2 v0 = a;
     for (int ii = 1; ii < 32; ++ii) {
@@ -308,7 +137,7 @@ void ship_editor::draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec
 }
 
 //------------------------------------------------------------------------------
-void ship_editor::draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec2 c, vec2 d, color4 color) const
+void ship_outline::draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec2 c, vec2 d, color4 color) const
 {
     vec2 v0 = a;
     for (int ii = 1; ii < 32; ++ii) {
@@ -321,109 +150,6 @@ void ship_editor::draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec
         v0 = v1;
     }
     renderer->draw_line(v0, d, color, color);
-}
-
-//------------------------------------------------------------------------------
-void ship_editor::draw_transformed(render::system* renderer, mat3 transform, std::vector<vec2> const& linearized) const
-{
-    vec2 vertex_size = vec2(render_vertex_size());
-
-    if (!linearized.size()) {
-        return;
-    }
-
-    vec2 v0 = linearized[0] * transform;
-    for (size_t ii = 0; ii + 1 < linearized.size(); ++ii) {
-        vec2 v1 = linearized[ii + 1] * transform;
-        renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
-        renderer->draw_box(vertex_size, v0, color4(1,0,0,1));
-        v0 = v1;
-    }
-    vec2 v1 = linearized[0] * transform;
-    renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
-    renderer->draw_box(vertex_size, v0, color4(1,0,0,1));
-}
-
-//------------------------------------------------------------------------------
-void ship_editor::draw_transformed(render::system* renderer, mat3 transform, std::vector<vec2> const& vertices, std::vector<segment_type> const& segments) const
-{
-    vec2 vertex_size = vec2(render_vertex_size());
-
-    for (size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
-        if (segments[ii] == line) {
-            vec2 a = vertices[jj + 0] * transform;
-            vec2 b = vertices[jj + 1] * transform;
-            renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
-            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
-            renderer->draw_box(vertex_size, b, color4(1,0,0,1));
-            jj += 1;
-        } else if (segments[ii] == quad) {
-            vec2 a = vertices[jj + 0] * transform;
-            vec2 b = vertices[jj + 1] * transform;
-            vec2 c = vertices[jj + 2] * transform;
-            draw_bezier_quad(renderer, a, b, c, color4(1,1,1,1));
-            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
-            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
-            renderer->draw_box(vertex_size, c, color4(1,0,0,1));
-            jj += 2;
-        } else if (segments[ii] == cube) {
-            vec2 a = vertices[jj + 0] * transform;
-            vec2 b = vertices[jj + 1] * transform;
-            vec2 c = vertices[jj + 2] * transform;
-            vec2 d = vertices[jj + 3] * transform;
-            draw_bezier_cube(renderer, a, b, c, d, color4(1,1,1,1));
-            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
-            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
-            renderer->draw_box(vertex_size, c, color4(1,1,0,1));
-            renderer->draw_box(vertex_size, d, color4(1,0,0,1));
-            jj += 3;
-        }
-    }
-
-    mat3 mirrored = mat3(1,0,0,0,-1,0,0,0,1) * transform;
-
-    if (vertices.front().y) {
-        vec2 a = vertices.front() * transform;
-        vec2 b = vertices.front() * mirrored;
-        renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
-    }
-
-    if (vertices.back().y) {
-        vec2 a = vertices.back() * transform;
-        vec2 b = vertices.back() * mirrored;
-        renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
-    }
-
-    for (size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
-        if (segments[ii] == line) {
-            vec2 a = vertices[jj + 0] * mirrored;
-            vec2 b = vertices[jj + 1] * mirrored;
-            renderer->draw_line(a, b, color4(1,1,1,1), color4(1,1,1,1));
-            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
-            renderer->draw_box(vertex_size, b, color4(1,0,0,1));
-            jj += 1;
-        } else if (segments[ii] == quad) {
-            vec2 a = vertices[jj + 0] * mirrored;
-            vec2 b = vertices[jj + 1] * mirrored;
-            vec2 c = vertices[jj + 2] * mirrored;
-            draw_bezier_quad(renderer, a, b, c, color4(1,1,1,1));
-            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
-            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
-            renderer->draw_box(vertex_size, c, color4(1,0,0,1));
-            jj += 2;
-        } else if (segments[ii] == cube) {
-            vec2 a = vertices[jj + 0] * mirrored;
-            vec2 b = vertices[jj + 1] * mirrored;
-            vec2 c = vertices[jj + 2] * mirrored;
-            vec2 d = vertices[jj + 3] * mirrored;
-            draw_bezier_cube(renderer, a, b, c, d, color4(1,1,1,1));
-            renderer->draw_box(vertex_size, a, color4(1,0,0,1));
-            renderer->draw_box(vertex_size, b, color4(1,1,0,1));
-            renderer->draw_box(vertex_size, c, color4(1,1,0,1));
-            renderer->draw_box(vertex_size, d, color4(1,0,0,1));
-            jj += 3;
-        }
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -560,22 +286,22 @@ double cube_closest_point(vec2 A, vec2 B, vec2 C, vec2 D, vec2 pos)
         t[4] = tmax;
 
         p[0] = p[best_idx - 1];
-        p[4] = p[best_idx + 1];
         for (std::size_t jj = 1; jj < 4; ++jj) {
             p[jj] = ((a * t[jj] + b) * t[jj] + c) * t[jj] + d;
         }
+        p[4] = p[best_idx + 1];
     }
 
     return t[2];
 }
 
 //------------------------------------------------------------------------------
-std::size_t ship_editor::closest_vertex(std::vector<vec2> const& vertices, vec2 v) const
+std::size_t ship_outline::closest_vertex(vec2 v) const
 {
     std::size_t best_idx = SIZE_MAX;
     double best_dsqr = DBL_MAX;
-    for (std::size_t ii = 0; ii < vertices.size(); ++ii) {
-        double dsqr = length_sqr(vertices[ii] - v);
+    for (std::size_t ii = 0; ii < _vertices.size(); ++ii) {
+        double dsqr = length_sqr(_vertices[ii] - v);
         if (dsqr < best_dsqr) {
             best_idx = ii;
             best_dsqr = dsqr;
@@ -585,40 +311,40 @@ std::size_t ship_editor::closest_vertex(std::vector<vec2> const& vertices, vec2 
 }
 
 //------------------------------------------------------------------------------
-std::size_t ship_editor::closest_segment(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments, vec2 v) const
+std::size_t ship_outline::closest_segment(vec2 v) const
 {
     std::size_t best_idx = SIZE_MAX;
     double best_dsqr = DBL_MAX;
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
-        if (segments[ii] == line) {
-            double t = segment_closest_point(vertices[jj + 0], vertices[jj + 1], v);
-            vec2 p = vertices[jj + 0] + (vertices[jj + 1] - vertices[jj + 0]) * t;
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
+        if (_segments[ii] == line) {
+            double t = segment_closest_point(_vertices[jj + 0], _vertices[jj + 1], v);
+            vec2 p = _vertices[jj + 0] + (_vertices[jj + 1] - _vertices[jj + 0]) * t;
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
                 best_dsqr = dsqr;
             }
             jj += 1;
-        } else if (segments[ii] == quad) {
-            double t = quad_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], v);
-            vec2 p = (1 - t) * (1 - t) * vertices[jj + 0]
-                + 2 * (1 - t) * t * vertices[jj + 1]
-                + t * t * vertices[jj + 2];
+        } else if (_segments[ii] == quad) {
+            double t = quad_closest_point(_vertices[jj + 0], _vertices[jj + 1], _vertices[jj + 2], v);
+            vec2 p = (1 - t) * (1 - t) * _vertices[jj + 0]
+                + 2 * (1 - t) * t * _vertices[jj + 1]
+                + t * t * _vertices[jj + 2];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
                 best_dsqr = dsqr;
             }
             jj += 2;
-        } else if (segments[ii] == cube) {
-            double t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
+        } else if (_segments[ii] == cube) {
+            double t = cube_closest_point(_vertices[jj + 0], _vertices[jj + 1], _vertices[jj + 2], _vertices[jj + 3], v);
             double s = 1.0 - t;
             double t2 = t * t;
             double s2 = s * s;
-            vec2 p = s2 * s * vertices[jj + 0]
-                + 3.0 * s2 * t * vertices[jj + 1]
-                + 3.0 * s * t2 * vertices[jj + 2]
-                + t * t2 * vertices[jj + 3];
+            vec2 p = s2 * s * _vertices[jj + 0]
+                + 3.0 * s2 * t * _vertices[jj + 1]
+                + 3.0 * s * t2 * _vertices[jj + 2]
+                + t * t2 * _vertices[jj + 3];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
@@ -632,15 +358,15 @@ std::size_t ship_editor::closest_segment(std::vector<vec2> const& vertices, std:
 }
 
 //------------------------------------------------------------------------------
-vec2 ship_editor::closest_point(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments, vec2 v) const
+vec2 ship_outline::closest_point(vec2 v) const
 {
     std::size_t best_idx = SIZE_MAX;
     vec2 best_point = vec2_zero;
     double best_dsqr = DBL_MAX;
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
-        if (segments[ii] == line) {
-            double t = segment_closest_point(vertices[jj + 0], vertices[jj + 1], v);
-            vec2 p = vertices[jj + 0] + (vertices[jj + 1] - vertices[jj + 0]) * t;
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
+        if (_segments[ii] == line) {
+            double t = segment_closest_point(_vertices[jj + 0], _vertices[jj + 1], v);
+            vec2 p = _vertices[jj + 0] + (_vertices[jj + 1] - _vertices[jj + 0]) * t;
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
@@ -648,11 +374,11 @@ vec2 ship_editor::closest_point(std::vector<vec2> const& vertices, std::vector<s
                 best_dsqr = dsqr;
             }
             jj += 1;
-        } else if (segments[ii] == quad) {
-            double t = quad_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], v);
-            vec2 p = (1 - t) * (1 - t) * vertices[jj + 0]
-                   + 2 * (1 - t) * t * vertices[jj + 1]
-                   + t * t * vertices[jj + 2];
+        } else if (_segments[ii] == quad) {
+            double t = quad_closest_point(_vertices[jj + 0], _vertices[jj + 1], _vertices[jj + 2], v);
+            vec2 p = (1 - t) * (1 - t) * _vertices[jj + 0]
+                   + 2 * (1 - t) * t * _vertices[jj + 1]
+                   + t * t * _vertices[jj + 2];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
@@ -660,15 +386,15 @@ vec2 ship_editor::closest_point(std::vector<vec2> const& vertices, std::vector<s
                 best_dsqr = dsqr;
             }
             jj += 2;
-        } else if (segments[ii] == cube) {
-            double t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
+        } else if (_segments[ii] == cube) {
+            double t = cube_closest_point(_vertices[jj + 0], _vertices[jj + 1], _vertices[jj + 2], _vertices[jj + 3], v);
             double s = 1.0 - t;
             double t2 = t * t;
             double s2 = s * s;
-            vec2 p = s2 * s * vertices[jj + 0]
-                + 3.0 * s2 * t * vertices[jj + 1]
-                + 3.0 * s * t2 * vertices[jj + 2]
-                + t * t2 * vertices[jj + 3];
+            vec2 p = s2 * s * _vertices[jj + 0]
+                + 3.0 * s2 * t * _vertices[jj + 1]
+                + 3.0 * s * t2 * _vertices[jj + 2]
+                + t * t2 * _vertices[jj + 3];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
@@ -683,24 +409,24 @@ vec2 ship_editor::closest_point(std::vector<vec2> const& vertices, std::vector<s
 }
 
 //------------------------------------------------------------------------------
-bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v)
+bool ship_outline::insert_vertex(vec2 v, double minimum_vertex_dsqr)
 {
     std::size_t best_idx = SIZE_MAX;
     double best_t = 0;
     vec2 best_point = vec2_zero;
     double best_dsqr = DBL_MAX;
 
-    if (length_sqr(v - vertices[0]) < minimum_vertex_dsqr) {
+    if (length_sqr(v - _vertices[0]) < minimum_vertex_dsqr) {
         return false;
     }
 
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
-        if (segments[ii] == line) {
-            if (length_sqr(v - vertices[jj + 1]) < minimum_vertex_dsqr) {
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
+        if (_segments[ii] == line) {
+            if (length_sqr(v - _vertices[jj + 1]) < minimum_vertex_dsqr) {
                 return false;
             }
-            double t = segment_closest_point(vertices[jj + 0], vertices[jj + 1], v);
-            vec2 p = vertices[jj + 0] + (vertices[jj + 1] - vertices[jj + 0]) * t;
+            double t = segment_closest_point(_vertices[jj + 0], _vertices[jj + 1], v);
+            vec2 p = _vertices[jj + 0] + (_vertices[jj + 1] - _vertices[jj + 0]) * t;
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
@@ -709,14 +435,14 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
                 best_dsqr = dsqr;
             }
             jj += 1;
-        } else if (segments[ii] == quad) {
-            if (length_sqr(v - vertices[jj + 2]) < minimum_vertex_dsqr) {
+        } else if (_segments[ii] == quad) {
+            if (length_sqr(v - _vertices[jj + 2]) < minimum_vertex_dsqr) {
                 return false;
             }
-            double t = quad_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], v);
-            vec2 p = (1 - t) * (1 - t) * vertices[jj + 0]
-                + 2 * (1 - t) * t * vertices[jj + 1]
-                + t * t * vertices[jj + 2];
+            double t = quad_closest_point(_vertices[jj + 0], _vertices[jj + 1], _vertices[jj + 2], v);
+            vec2 p = (1 - t) * (1 - t) * _vertices[jj + 0]
+                + 2 * (1 - t) * t * _vertices[jj + 1]
+                + t * t * _vertices[jj + 2];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
@@ -725,18 +451,18 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
                 best_dsqr = dsqr;
             }
             jj += 2;
-        } else if (segments[ii] == cube) {
-            if (length_sqr(v - vertices[jj + 3]) < minimum_vertex_dsqr) {
+        } else if (_segments[ii] == cube) {
+            if (length_sqr(v - _vertices[jj + 3]) < minimum_vertex_dsqr) {
                 return false;
             }
-            double t = cube_closest_point(vertices[jj + 0], vertices[jj + 1], vertices[jj + 2], vertices[jj + 3], v);
+            double t = cube_closest_point(_vertices[jj + 0], _vertices[jj + 1], _vertices[jj + 2], _vertices[jj + 3], v);
             double s = 1.0 - t;
             double t2 = t * t;
             double s2 = s * s;
-            vec2 p = s2 * s * vertices[jj + 0]
-                   + 3.0 * s2 * t * vertices[jj + 1]
-                   + 3.0 * s * t2 * vertices[jj + 2]
-                   + t * t2 * vertices[jj + 3];
+            vec2 p = s2 * s * _vertices[jj + 0]
+                   + 3.0 * s2 * t * _vertices[jj + 1]
+                   + 3.0 * s * t2 * _vertices[jj + 2]
+                   + t * t2 * _vertices[jj + 3];
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
@@ -752,50 +478,50 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
         return false;
     }
 
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
         if (ii != best_idx) {
-            if (segments[ii] == line) {
+            if (_segments[ii] == line) {
                 jj += 1;
-            } else if (segments[ii] == quad) {
+            } else if (_segments[ii] == quad) {
                 jj += 2;
-            } else if (segments[ii] == cube) {
+            } else if (_segments[ii] == cube) {
                 jj += 3;
             }
             continue;
         }
 
-        if (segments[ii] == line) {
+        if (_segments[ii] == line) {
             // convert the line to a bezier curve by inserting a control point
-            vertices.insert(vertices.begin() + jj + 1, best_point);
-            segments.insert(segments.begin() + ii, line);
+            _vertices.insert(_vertices.begin() + jj + 1, best_point);
+            _segments.insert(_segments.begin() + ii, line);
             return true;
         }
 
-        if (segments[ii] == quad) {
+        if (_segments[ii] == quad) {
             // use De Casteljau's algorithm to subdivide the curve at `best_point`
-            segments.insert(segments.begin() + ii, quad);
-            vec2 p01 = (1.0 - best_t) * vertices[jj + 0] + best_t * vertices[jj + 1];
-            vec2 p12 = (1.0 - best_t) * vertices[jj + 1] + best_t * vertices[jj + 2];
+            _segments.insert(_segments.begin() + ii, quad);
+            vec2 p01 = (1.0 - best_t) * _vertices[jj + 0] + best_t * _vertices[jj + 1];
+            vec2 p12 = (1.0 - best_t) * _vertices[jj + 1] + best_t * _vertices[jj + 2];
             // [a b c] -> [a p12 c]
-            vertices[jj + 1] = p12;
+            _vertices[jj + 1] = p12;
             // [a p12 c] -> [a p01 p p12 c]
-            vertices.insert(vertices.begin() + jj + 1, {p01, best_point});
+            _vertices.insert(_vertices.begin() + jj + 1, {p01, best_point});
             return true;
         }
 
-        if (segments[ii] == cube) {
+        if (_segments[ii] == cube) {
             // use De Casteljau's algorithm to subdivide the curve at `best_point`
-            segments.insert(segments.begin() + ii, cube);
-            vec2 p01 = (1.0 - best_t) * vertices[jj + 0] + best_t * vertices[jj + 1];
-            vec2 p12 = (1.0 - best_t) * vertices[jj + 1] + best_t * vertices[jj + 2];
-            vec2 p23 = (1.0 - best_t) * vertices[jj + 2] + best_t * vertices[jj + 3];
+            _segments.insert(_segments.begin() + ii, cube);
+            vec2 p01 = (1.0 - best_t) * _vertices[jj + 0] + best_t * _vertices[jj + 1];
+            vec2 p12 = (1.0 - best_t) * _vertices[jj + 1] + best_t * _vertices[jj + 2];
+            vec2 p23 = (1.0 - best_t) * _vertices[jj + 2] + best_t * _vertices[jj + 3];
             vec2 p012 = (1.0 - best_t) * p01 + best_t * p12;
             vec2 p123 = (1.0 - best_t) * p12 + best_t * p23;
             // [a b c d] -> [a p123 p23 d]
-            vertices[jj + 1] = p123;
-            vertices[jj + 2] = p23;
+            _vertices[jj + 1] = p123;
+            _vertices[jj + 2] = p23;
             // [a p123 p23 d] -> [a p01 p012 p p123 p23 d]
-            vertices.insert(vertices.begin() + jj + 1, {p01, p012, best_point});
+            _vertices.insert(_vertices.begin() + jj + 1, {p01, p012, best_point});
             return true;
         }
     }
@@ -805,12 +531,12 @@ bool ship_editor::insert_vertex(std::vector<vec2>& vertices, std::vector<segment
 }
 
 //------------------------------------------------------------------------------
-bool ship_editor::remove_vertex(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v)
+bool ship_outline::remove_vertex(vec2 v, double minimum_vertex_dsqr)
 {
     std::size_t best_idx = SIZE_MAX;
     double best_dsqr = DBL_MAX;
-    for (std::size_t ii = 1; ii + 1 < vertices.size(); ++ii) {
-        double dsqr = length_sqr(v - vertices[ii]);
+    for (std::size_t ii = 1; ii + 1 < _vertices.size(); ++ii) {
+        double dsqr = length_sqr(v - _vertices[ii]);
         if (dsqr < best_dsqr) {
             best_idx = ii;
             best_dsqr = dsqr;
@@ -822,44 +548,44 @@ bool ship_editor::remove_vertex(std::vector<vec2>& vertices, std::vector<segment
     }
 
     // cannot delete first or last vertex
-    if (best_idx == 0 || best_idx >= vertices.size() - 1) {
+    if (best_idx == 0 || best_idx >= _vertices.size() - 1) {
         return false;
     }
 
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
-        if (segments[ii] == line) {
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
+        if (_segments[ii] == line) {
             // deleting first point of a line
             if (best_idx == jj + 0) {
-                vertices.erase(vertices.begin() + best_idx);
-                segments.erase(segments.begin() + ii);
+                _vertices.erase(_vertices.begin() + best_idx);
+                _segments.erase(_segments.begin() + ii);
                 return true;
             }
             jj += 1;
-        } else if (segments[ii] == quad) {
+        } else if (_segments[ii] == quad) {
             // deleting first point of a quadratic bezier curve
             if (best_idx == jj + 0) {
-                vertices.erase(vertices.begin() + best_idx, vertices.begin() + best_idx + 2);
-                segments.erase(segments.begin() + ii);
+                _vertices.erase(_vertices.begin() + best_idx, _vertices.begin() + best_idx + 2);
+                _segments.erase(_segments.begin() + ii);
                 return true;
 
                 // deleting quadratic bezier control point, turn into a line
             } else if (best_idx == jj + 1) {
-                segments[ii] = line;
-                vertices.erase(vertices.begin() + best_idx);
+                _segments[ii] = line;
+                _vertices.erase(_vertices.begin() + best_idx);
                 return true;
             }
             jj += 2;
-        } else if (segments[ii] == cube) {
+        } else if (_segments[ii] == cube) {
             // deleting first point of a cubic bezier curve
             if (best_idx == jj + 0) {
-                vertices.erase(vertices.begin() + best_idx, vertices.begin() + best_idx + 3);
-                segments.erase(segments.begin() + ii);
+                _vertices.erase(_vertices.begin() + best_idx, _vertices.begin() + best_idx + 3);
+                _segments.erase(_segments.begin() + ii);
                 return true;
 
                 // deleting cubic bezier control point, turn into a quadratic bezier curve
             } else if (best_idx == jj + 1 || best_idx == jj + 2) {
-                segments[ii] = quad;
-                vertices.erase(vertices.begin() + best_idx);
+                _segments[ii] = quad;
+                _vertices.erase(_vertices.begin() + best_idx);
                 return true;
             }
             jj += 3;
@@ -870,27 +596,27 @@ bool ship_editor::remove_vertex(std::vector<vec2>& vertices, std::vector<segment
 }
 
 //------------------------------------------------------------------------------
-bool ship_editor::upconvert_segment(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v)
+bool ship_outline::upconvert_segment(vec2 v)
 {
-    std::size_t best_idx = closest_segment(vertices, segments, v);
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
+    std::size_t best_idx = closest_segment(v);
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
         if (ii != best_idx) {
-            if (segments[ii] == line) {
+            if (_segments[ii] == line) {
                 jj += 1;
-            } else if (segments[ii] == quad) {
+            } else if (_segments[ii] == quad) {
                 jj += 2;
-            } else if (segments[ii] == cube) {
+            } else if (_segments[ii] == cube) {
                 jj += 3;
             }
             continue;
         }
 
-        if (segments[ii] == line) {
-            vertices.insert(vertices.begin() + jj + 1, v);
-            segments[ii] = quad;
-        } else if (segments[ii] == quad) {
-            vertices.insert(vertices.begin() + jj + 1, v);
-            segments[ii] = cube;
+        if (_segments[ii] == line) {
+            _vertices.insert(_vertices.begin() + jj + 1, v);
+            _segments[ii] = quad;
+        } else if (_segments[ii] == quad) {
+            _vertices.insert(_vertices.begin() + jj + 1, v);
+            _segments[ii] = cube;
         }
 
         return true;
@@ -900,33 +626,402 @@ bool ship_editor::upconvert_segment(std::vector<vec2>& vertices, std::vector<seg
 }
 
 //------------------------------------------------------------------------------
-bool ship_editor::downconvert_segment(std::vector<vec2>& vertices, std::vector<segment_type>& segments, vec2 v)
+bool ship_outline::downconvert_segment(vec2 v)
 {
-    std::size_t best_idx = closest_segment(vertices, segments, v);
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
+    std::size_t best_idx = closest_segment(v);
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
         if (ii != best_idx) {
-            if (segments[ii] == line) {
+            if (_segments[ii] == line) {
                 jj += 1;
-            } else if (segments[ii] == quad) {
+            } else if (_segments[ii] == quad) {
                 jj += 2;
-            } else if (segments[ii] == cube) {
+            } else if (_segments[ii] == cube) {
                 jj += 3;
             }
             continue;
         }
 
-        if (segments[ii] == quad) {
-            vertices.erase(vertices.begin() + jj + 1);
-            segments[ii] = line;
-        } else if (segments[ii] == cube) {
-            vertices.erase(vertices.begin() + jj + 1);
-            segments[ii] = quad;
+        if (_segments[ii] == quad) {
+            _vertices.erase(_vertices.begin() + jj + 1);
+            _segments[ii] = line;
+        } else if (_segments[ii] == cube) {
+            _vertices.erase(_vertices.begin() + jj + 1);
+            _segments[ii] = quad;
         }
 
         return true;
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+void ship_outline::linearize()
+{
+    _linearized.resize(0);
+    _linearized.push_back(_vertices[0]);
+
+    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
+        if (_segments[ii] == line) {
+            _linearized.push_back(_vertices[jj + 1]);
+            jj += 1;
+        } else if (_segments[ii] == quad) {
+            std::vector<vec2> v = subdivide([&](double t){
+                double s = 1.0 - t;
+                return s * s * _vertices[jj + 0]
+                    + 2.0 * s * t * _vertices[jj + 1]
+                    + t * t * _vertices[jj + 2];
+                }, 0.1f);
+            _linearized.insert(_linearized.end(), v.begin() + 1, v.end());
+            jj += 2;
+        } else if (_segments[ii] == cube) {
+            std::vector<vec2> v = subdivide([&](double t){
+                double s = 1.0 - t;
+                double t2 = t * t;
+                double s2 = s * s;
+                return s2 * s * _vertices[jj + 0]
+                     + 3.0 * s2 * t * _vertices[jj + 1]
+                     + 3.0 * s * t2 * _vertices[jj + 2]
+                     + t * t2 * _vertices[jj + 3];
+                }, 0.1f);
+            _linearized.insert(_linearized.end(), v.begin() + 1, v.end());
+            jj += 3;
+        }
+    }
+
+    // duplicate vertices along the bottom half
+    if (_linearized.back().y) {
+        _linearized.push_back(vec2(_linearized.back().x, -_linearized.back().y));
+    }
+
+    for (std::size_t ii = _linearized.size() - 2; ii > 0; --ii) {
+        _linearized.push_back(vec2(_linearized[ii].x, -_linearized[ii].y));
+    }
+
+    // duplicate final vertex if necessary, i.e. for transom stern
+    if (_linearized[0].y) {
+        _linearized.push_back(vec2(_linearized[0].x, -_linearized[0].y));
+    }
+}
+
+//------------------------------------------------------------------------------
+std::vector<vec2> ship_outline::subdivide(std::function<vec2(double)> fn, float error)
+{
+    std::vector<vec2> p;
+    std::vector<double> t;
+    std::vector<double> e;
+
+    p.push_back(fn(0.0));
+    p.push_back(fn(1.0));
+    t.push_back(0.0);
+    t.push_back(1.0);
+    e.push_back(0.0);
+
+    for (std::size_t n = 1; ; ++n) {
+        p.insert(p.end() - 1, vec2_zero);
+        t.insert(t.end() - 1, 0.0);
+        e.push_back(0.0);
+
+        for (std::size_t ii = 1; ii < n + 1; ++ii) {
+            t[ii] = double(ii) / double(n + 1);
+            p[ii] = fn(t[ii]);
+        }
+
+        for (std::size_t jj = 0; jj < 128; ++jj) {
+            double rms = 0.0;
+            double emax = 0.0;
+            for (std::size_t ii = 0; ii < n + 1; ++ii) {
+                double t0 = 0.5 * (t[ii] + t[ii + 1]);
+                vec2 p0 = fn(t0);
+                vec2 v = p[ii + 1] - p[ii];
+                vec2 r = (p[ii] - p0) - dot(p[ii] - p0, v) * v / length_sqr(v);
+                e[ii] = length(r);
+                emax = max(emax, e[ii]);
+                rms += square(e[ii]);
+            }
+
+            if (emax < error) {
+                return p;
+            }
+
+            rms = sqrt(rms / double(n));
+            if (rms > 8.0 * error) {
+                break;
+            }
+
+            e[0] = 1.0 / e[0];
+            for (std::size_t ii = 1; ii < n + 1; ++ii) {
+                e[ii] = e[ii - 1] + 1.0 / e[ii];
+            }
+            for (std::size_t ii = 1; ii < n + 1; ++ii) {
+                t[ii] = 0.5 * e[ii - 1] / e.back() + 0.5 * t[ii];
+                p[ii] = fn(t[ii]);
+            }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#define SHIP(L,B)               \
+    vec2(-0.5f * L, 0.f),       \
+    vec2(-0.5f * L, 0.5f * B),  \
+    vec2(0.f, 0.5f * B),        \
+    vec2(0.3f * L, 0.5f * B),   \
+    vec2(0.5f * L, 0.f),
+
+
+#define SHIP_CUBE(L,B)          \
+    vec2(-0.5f * L, 0.f),       \
+    vec2(-0.5f * L, 0.5f * B),  \
+    vec2(-0.25f * L, 0.5f * B), \
+    vec2(-0.1f * L, 0.5f * B),  \
+    vec2(0.1f * L, 0.5f * B),   \
+    vec2(0.25f * L, 0.5f * B),  \
+    vec2(0.3f * L, 0.5f * B),   \
+    vec2(0.5f * L, 0.f),
+
+#define SHIP_CUBE2(L,B)          \
+    vec2(-0.5f * L, 0.f),       \
+    vec2(-0.5f * L, 0.5f * B),  \
+    vec2(-0.25f * L, 0.5f * B), \
+    vec2(0, 0.5f * B),          \
+    vec2(0.25f * L, 0.5f * B),  \
+    vec2(0.3f * L, 0.5f * B),   \
+    vec2(0.5f * L, 0.f),
+
+//------------------------------------------------------------------------------
+ship_editor::ship_editor()
+    : _view{}
+    , _cursor{}
+    , _snap_distance(1.f)
+    , _snap_to_grid(true)
+    , _snap_to_edge(true)
+    , _draw_grid(true)
+    , _draw_linearized(false)
+    , _is_panning(false)
+    , _is_panning_image(false)
+    , _control(false)
+    , _drag_feature(feature::none)
+    , _drag_index(0)
+    , _drag_outline_index(0)
+    , _drag_outline_transform(mat3_identity)
+    , _image(nullptr)
+    , _image_offset(vec2_zero)
+    , _image_scale("image_scale", 1.f/15.175f, 0, "")
+    , _highlight_feature(feature::none)
+    , _highlight_index(0)
+    , _highlight_outline_index(0)
+    , _highlight_outline_transform(mat3_identity)
+    , _mode(editor_mode::deck)
+    , _turret_instance(0)
+{
+    clear();
+}
+
+//------------------------------------------------------------------------------
+ship_editor::~ship_editor()
+{
+}
+
+//------------------------------------------------------------------------------
+vec2 ship_editor::cursor_to_world() const
+{
+    //return _view.origin + _view.size * (_cursor / 
+    //    vec2(_view.viewport.maxs() - _view.viewport.mins()) - vec2(.5f,.5f));
+    return _view.origin + _view.size * _cursor;
+}
+
+//------------------------------------------------------------------------------
+double ship_editor::snap_radius(double r) const
+{
+    double snap_distance = _snap_to_grid ? _snap_distance : 0.01;
+    return std::floor(r / snap_distance + 0.5) * snap_distance;
+}
+
+//------------------------------------------------------------------------------
+vec2 ship_editor::snap_vertex(vec2 pos) const
+{
+    vec2 out = pos;
+    double snap_distance = _snap_to_grid ? _snap_distance : 0.01;
+
+    vec2 grid_snap = {
+        std::floor(pos.x / snap_distance + 0.5) * snap_distance,
+        std::floor(pos.y / snap_distance + 0.5) * snap_distance,
+    };
+
+    out = grid_snap;
+
+    return out;
+}
+
+//------------------------------------------------------------------------------
+void ship_editor::draw(render::system* renderer, time_value /*time*/) const
+{
+    if (_image) {
+        renderer->set_view(_view);
+        vec2 image_size = vec2(vec2i(_image->width(), _image->height())) * _image_scale;
+        renderer->draw_image(_image, _image_offset - 0.5 * image_size, image_size, color4(1,1,1,.5f));
+    }
+
+    renderer->set_view(_view);
+    vec2 vmin = _view.origin - 0.5 * _view.size;
+    vec2 vmax = _view.origin + 0.5 * _view.size;
+    vec2 vertex_size = vec2(render_vertex_size());
+
+    //
+    // draw grid
+    //
+
+    {
+        color4 c(1.f, 1.f, 1.f, .2f);
+        renderer->draw_line(vec2(0, vmin.y), vec2(0, vmax.y), c, c);
+        renderer->draw_line(vec2(vmin.x, 0), vec2(vmax.x, 0), c, c);
+        if (_draw_grid) {
+            vec2 mins = _snap_distance * vec2(std::round((vmin.x) / _snap_distance),
+                                              std::round((vmin.y) / _snap_distance));
+            vec2 maxs = _view.origin + 0.5 * _view.size;
+
+            for (double x = mins.x; x < maxs.x; x += _snap_distance) {
+                renderer->draw_line(vec2(x, vmin.y), vec2(x, vmax.y), c, c);
+            }
+            for (double y = mins.y; y < maxs.y; y += _snap_distance) {
+                renderer->draw_line(vec2(vmin.x, y), vec2(vmax.x, y), c, c);
+            }
+        }
+    }
+
+    //
+    // draw deck outline
+    //
+
+    if (_draw_linearized) {
+        _outlines[0].draw_linearized(renderer, mat3_identity, vertex_size);
+    } else {
+        _outlines[0].draw(renderer, mat3_identity, vertex_size);
+    }
+
+    //
+    // draw turrets
+    //
+
+    for (std::size_t ii = 0; ii < _turret_instances.size(); ++ii) {
+        turret_instance const& i = _turret_instances[ii];
+        turret const& t = _turrets[i.index];
+        if (_draw_linearized) {
+            _outlines[t.index].draw_linearized(renderer, i.transform, vertex_size);
+        } else {
+            _outlines[t.index].draw(renderer, i.transform, vertex_size);
+            vec2 center = vec2_zero * i.transform;
+            double offset = render_vertex_size() * 2.0;
+
+            if ((_highlight_feature == feature::turret || _drag_feature == feature::turret) && ii == _turret_instance) {
+                renderer->draw_line(center - vec2(0,offset), center + vec2(0,offset), color4(0,1,0,1), color4(0,1,0,1));
+                renderer->draw_line(center - vec2(offset,0), center + vec2(offset,0), color4(0,1,0,1), color4(0,1,0,1));
+            } else {
+                renderer->draw_line(center - vec2(0,offset), center + vec2(0,offset), color4(1,0,0,1), color4(1,0,0,1));
+                renderer->draw_line(center - vec2(offset,0), center + vec2(offset,0), color4(1,0,0,1), color4(1,0,0,1));
+            }
+
+            if (_mode == editor_mode::turret && ii == _turret_instance) {
+                if ((_highlight_feature == feature::turret_radius || _drag_feature == feature::turret_radius) && _highlight_index == i.index) {
+                    renderer->draw_arc(center, float(_turrets[i.index].radius), 0, 0, math::twopi, color4(0,1,0,1));
+                } else {
+                    renderer->draw_arc(center, float(_turrets[i.index].radius), 0, 0, math::twopi, color4(0,1,1,1));
+                }
+
+                vec2 v0 = vec2(_turrets[i.index].radius, 0) * i.transform;
+                vec2 v1 = vec2(_turrets[i.index].radius + 1.f, 0) * i.transform;
+                renderer->draw_line(v0, v1, color4(0,1,1,1), color4(0,1,1,1));
+                if ((_highlight_feature == feature::turret_rotation || _drag_feature == feature::turret_rotation) && _highlight_index == _turret_instance) {
+                    renderer->draw_box(vertex_size, v1, color4(0,1,0,1));
+                } else {
+                    renderer->draw_box(vertex_size, v1, color4(1,0,0,1));
+                }
+            }
+        }
+    }
+
+    //
+    // draw vertex highlight and closest point
+    //
+
+    if (_drag_feature == feature::vertex) {
+        ship_outline const& drag_outline = _outlines[_drag_outline_index];
+        renderer->draw_box(vertex_size, drag_outline.vertices()[_drag_index] * _drag_outline_transform, color4(0,1,0,1));
+    } else if (_highlight_feature == feature::vertex) {
+        ship_outline const& highlight_outline = _outlines[_highlight_outline_index];
+        renderer->draw_box(vertex_size, highlight_outline.vertices()[_highlight_index] * _highlight_outline_transform, color4(0,1,0,1));
+    } else if (_drag_feature == feature::vertex_mirror) {
+        ship_outline const& drag_outline = _outlines[_drag_outline_index];
+        renderer->draw_box(vertex_size, drag_outline.vertices()[_drag_index] * vec2(1,-1) * _drag_outline_transform, color4(0,1,0,1));
+    } else if (_highlight_feature == feature::vertex_mirror) {
+        ship_outline const& highlight_outline = _outlines[_highlight_outline_index];
+        renderer->draw_box(vertex_size, highlight_outline.vertices()[_highlight_index] * vec2(1,-1) * _highlight_outline_transform, color4(0,1,0,1));
+    }
+
+    vec2 world_pos = snap_vertex(cursor_to_world());
+
+    {
+        feature f = _drag_feature != feature::none ? _drag_feature : _highlight_feature;
+        std::size_t idx = _drag_feature != feature::none ? _drag_index : _highlight_index;
+        ship_outline const& outline = _drag_feature != feature::none ? _outlines[_drag_outline_index] : _outlines[_highlight_outline_index];
+        mat3 transform = _drag_feature != feature::none ? _drag_outline_transform : _highlight_outline_transform;
+
+        vec2 crosshair = world_pos;
+
+        string::view s = "";
+        if (f == feature::turret_radius) {
+            // draw turret radius
+            assert(_turret_instance < _turret_instances.size());
+            s = va("(%g)", _turrets[_turret_instances[_turret_instance].index].radius);
+        } else if (f == feature::turret_rotation) {
+            // draw turret rotation
+            assert(_turret_instance < _turret_instances.size());
+            auto& instance = _turret_instances[_turret_instance];
+            int angle = int(std::round(math::rad2deg(std::atan2(instance.transform[0][1], instance.transform[0][0]))));
+            s = va("(%d\xb0)", angle);
+        } else if (f == feature::turret) {
+            // draw turret origin in world space
+            assert(_turret_instance < _turret_instances.size());
+            s = va("(%g, %g)", _turret_instances[_turret_instance].transform[2][0], _turret_instances[_turret_instance].transform[2][1]);
+            crosshair = vec2(_turret_instances[_turret_instance].transform[2][0], _turret_instances[_turret_instance].transform[2][1]);
+        } else if (f == feature::vertex) {
+            // draw vertex position in local space
+            vec2 v = outline.vertices()[idx];
+            s = va("(%g, %g)", v.x, v.y);
+            crosshair = v * transform;
+        } else if (f == feature::vertex_mirror) {
+            // draw vertex position in local space
+            vec2 v = outline.vertices()[idx] * vec2(1,-1);
+            s = va("(%g, %g)", v.x, v.y);
+            crosshair = v * transform;
+        } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
+            // draw cursor position in turret-local space
+            vec2 local_pos = snap_vertex(cursor_to_world() * _turret_instances[_turret_instance].transform.inverse_transform());
+            s = va("(%g, %g)", local_pos.x, local_pos.y);
+            crosshair = local_pos * _turret_instances[_turret_instance].transform;
+        } else {
+            // draw cursor position in world space
+            s = va("(%g, %g)", world_pos.x, world_pos.y);
+        }
+        vec2 size = renderer->string_size(s);
+        renderer->draw_string(s, _view.origin + _view.size * 0.49 - size, color4(1,1,1,0.5));
+        // draw crosshair
+        if (f != feature::turret_radius && f != feature::turret_rotation) {
+            renderer->draw_line(vec2(crosshair.x, vmin.y), vec2(crosshair.x, vmax.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
+            renderer->draw_line(vec2(vmin.x, crosshair.y), vec2(vmax.x, crosshair.y), color4(0,1,1,.2f), color4(0,1,1,.2f));
+        }
+    }
+    {
+        vec2 size = renderer->monospace_size("foo");
+        renderer->draw_monospace(_filename, _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*1.0), color4(1,1,1,1));
+
+        renderer->draw_monospace("(s) snap to grid", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*3.0), color4(1,1,1, _snap_to_grid ? .6f : .3f));
+        renderer->draw_monospace("( ) snap to edge", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*4.0), color4(1,1,1, _snap_to_edge ? .6f : .3f));
+
+        renderer->draw_monospace("(d) deck mode", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*6.0), color4(1,1,1, _mode == editor_mode::deck ? .6f : .3f));
+        renderer->draw_monospace("(t) turret mode", _view.origin - _view.size * vec2(0.5,-0.5) - vec2(0,size.y*7.0), color4(1,1,1, _mode == editor_mode::turret ? .6f : .3f));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -934,17 +1029,18 @@ bool ship_editor::insert_turret(vec2 v)
 {
     if (_turret_instance < _turret_instances.size()) {
         std::size_t index = _turret_instances[_turret_instance].index;
-        if (insert_vertex(_turrets[index].vertices,
-                          _turrets[index].segments,
-                          v * _turret_instances[_turret_instance].transform.inverse_transform())) {
+        if (_outlines[_turrets[index].index].insert_vertex(
+            v * _turret_instances[_turret_instance].transform.inverse_transform(),
+            minimum_vertex_dsqr)) {
             return true;
         }
     }
 
     if (!_turrets.size() || _control) {
-        _turrets.push_back({5.25});
-        _turrets.back().vertices = {vec2(-5,0), vec2(0,5), vec2(5,0)};
-        _turrets.back().segments = {line, line};
+        _turrets.push_back({{5.25}, _outlines.size()});
+        _outlines.push_back(ship_outline(
+            {vec2(-5,0), vec2(0,5), vec2(5,0)},
+            {ship_outline::line, ship_outline::line}));
     }
 
     _turret_instances.push_back({mat3::transform(v, rot2_identity), _turrets.size() - 1});
@@ -958,9 +1054,9 @@ bool ship_editor::remove_turret(vec2 v)
 {
     if (_turret_instance < _turret_instances.size()) {
         std::size_t index = _turret_instances[_turret_instance].index;
-        if (remove_vertex(_turrets[index].vertices,
-                          _turrets[index].segments,
-                          v * _turret_instances[_turret_instance].transform.inverse_transform())) {
+        if (_outlines[_turrets[index].index].remove_vertex(
+            v * _turret_instances[_turret_instance].transform.inverse_transform(),
+            minimum_vertex_dsqr)) {
             return true;
         }
     }
@@ -1081,9 +1177,8 @@ bool ship_editor::key_event(int key, bool down)
         case 'l':
             _draw_linearized = !_draw_linearized;
             if (_draw_linearized) {
-                _deck_linearized = linearize(_deck_vertices, _deck_segments);
-                for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
-                    _turrets[ii].linearized = linearize(_turrets[ii].vertices, _turrets[ii].segments);
+                for (auto& outline : _outlines) {
+                    outline.linearize();
                 }
             }
             return true;
@@ -1104,6 +1199,8 @@ bool ship_editor::key_event(int key, bool down)
             if (_highlight_feature != feature::none) {
                 _drag_feature = _highlight_feature;
                 _drag_index = _highlight_index;
+                _drag_outline_index = _highlight_outline_index;
+                _drag_outline_transform = _highlight_outline_transform;
                 return true;
             }
             break;
@@ -1122,7 +1219,7 @@ bool ship_editor::key_event(int key, bool down)
 
         case K_INS:
             if (_mode == editor_mode::deck) {
-                insert_vertex(_deck_vertices, _deck_segments, cursor_to_world());
+                _outlines[0].insert_vertex(cursor_to_world(), minimum_vertex_dsqr);
             } else if (_mode == editor_mode::turret) {
                 insert_turret(cursor_to_world());
             }
@@ -1131,7 +1228,7 @@ bool ship_editor::key_event(int key, bool down)
 
         case K_DEL:
             if (_mode == editor_mode::deck) {
-                remove_vertex(_deck_vertices, _deck_segments, cursor_to_world());
+                _outlines[0].remove_vertex(cursor_to_world(), minimum_vertex_dsqr);
             } else if (_mode == editor_mode::turret) {
                 remove_turret(cursor_to_world());
             }
@@ -1140,26 +1237,28 @@ bool ship_editor::key_event(int key, bool down)
 
         case K_PGUP:
             if (_mode == editor_mode::deck) {
-                return upconvert_segment(_deck_vertices, _deck_segments, cursor_to_world());
+                _outlines[0].upconvert_segment(cursor_to_world());
             } else if (_mode == editor_mode::turret) {
                 if (_turret_instance < _turret_instances.size()) {
-                    return upconvert_segment(
-                        _turrets[_turret_instances[_turret_instance].index].vertices,
-                        _turrets[_turret_instances[_turret_instance].index].segments,
-                        cursor_to_world() * _turret_instances[_turret_instance].transform.inverse_transform());
+                    auto& instance = _turret_instances[_turret_instance];
+                    auto& turret = _turrets[instance.index];
+                    auto& outline = _outlines[turret.index];
+                    return outline.upconvert_segment(
+                        cursor_to_world() * instance.transform.inverse_transform());
                 }
             }
             break;
 
         case K_PGDN:
             if (_mode == editor_mode::deck) {
-                return downconvert_segment(_deck_vertices, _deck_segments, cursor_to_world());
+                _outlines[0].downconvert_segment(cursor_to_world());
             } else if (_mode == editor_mode::turret) {
                 if (_turret_instance < _turret_instances.size()) {
-                    return downconvert_segment(
-                        _turrets[_turret_instances[_turret_instance].index].vertices,
-                        _turrets[_turret_instances[_turret_instance].index].segments,
-                        cursor_to_world() * _turret_instances[_turret_instance].transform.inverse_transform());
+                    auto& instance = _turret_instances[_turret_instance];
+                    auto& turret = _turrets[instance.index];
+                    auto& outline = _outlines[turret.index];
+                    return outline.downconvert_segment(
+                        cursor_to_world() * instance.transform.inverse_transform());
                 }
             }
             break;
@@ -1209,27 +1308,29 @@ void ship_editor::cursor_event(vec2 position)
         _image_offset = (position - _cursor) * _view.size + _image_offset;
     } else if (_drag_feature == feature::vertex) {
         if (_mode == editor_mode::deck) {
-            _deck_vertices[_drag_index] = snap_vertex(_view.origin + _view.size * position);
+            _outlines[0].vertices()[_drag_index] = snap_vertex(_view.origin + _view.size * position);
         } else if (_mode == editor_mode::turret) {
             if (_turret_instance < _turret_instances.size()) {
                 auto& instance = _turret_instances[_turret_instance];
                 auto& turret = _turrets[instance.index];
-                if (_drag_index < turret.vertices.size()) {
+                auto& outline = _outlines[turret.index];
+                if (_drag_index < outline.vertices().size()) {
                     vec2 pos = snap_vertex((_view.origin + _view.size * position) * instance.transform.inverse_transform());
-                    turret.vertices[_drag_index] = pos;
+                    outline.vertices()[_drag_index] = pos;
                 }
             }
         }
     } else if (_drag_feature == feature::vertex_mirror) {
         if (_mode == editor_mode::deck) {
-            _deck_vertices[_drag_index] = snap_vertex(_view.origin + _view.size * position) * vec2(1,-1);
+            _outlines[0].vertices()[_drag_index] = snap_vertex(_view.origin + _view.size * position) * vec2(1,-1);
         } else if (_mode == editor_mode::turret) {
             if (_turret_instance < _turret_instances.size()) {
                 auto& instance = _turret_instances[_turret_instance];
                 auto& turret = _turrets[instance.index];
-                if (_drag_index < turret.vertices.size()) {
+                auto& outline = _outlines[turret.index];
+                if (_drag_index < outline.vertices().size()) {
                     vec2 pos = snap_vertex((_view.origin + _view.size * position) * instance.transform.inverse_transform()) * vec2(1,-1);
-                    turret.vertices[_drag_index] = pos;
+                    outline.vertices()[_drag_index] = pos;
                 }
             }
         }
@@ -1270,11 +1371,11 @@ void ship_editor::update_highlight()
     if (_mode == editor_mode::deck) {
         // check nearest vertex
         best_feature = feature::vertex;
-        best_index = closest_vertex(_deck_vertices, cursor_to_world());
-        best_dsqr = length_sqr(_deck_vertices[best_index] - cursor_to_world());
+        best_index = _outlines[0].closest_vertex(cursor_to_world());
+        best_dsqr = length_sqr(_outlines[0].vertices()[best_index] - cursor_to_world());
         // check nearest vertex mirror
-        std::size_t mirror_index = closest_vertex(_deck_vertices, cursor_to_world() * vec2(1,-1));
-        double mirror_dsqr = length_sqr(_deck_vertices[mirror_index] - cursor_to_world() * vec2(1,-1));
+        std::size_t mirror_index = _outlines[0].closest_vertex(cursor_to_world() * vec2(1,-1));
+        double mirror_dsqr = length_sqr(_outlines[0].vertices()[mirror_index] - cursor_to_world() * vec2(1,-1));
         if (mirror_dsqr < best_dsqr) {
             best_feature = feature::vertex_mirror;
             best_index = mirror_index;
@@ -1283,14 +1384,15 @@ void ship_editor::update_highlight()
     } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
         auto& instance = _turret_instances[_turret_instance];
         auto& turret = _turrets[instance.index];
+        auto& outline = _outlines[turret.index];
         vec2 cursor_local = cursor_to_world() * instance.transform.inverse_transform();
         // check nearest vertex
         best_feature = feature::vertex;
-        best_index = closest_vertex(turret.vertices, cursor_local);
-        best_dsqr = length_sqr(turret.vertices[best_index] - cursor_local);
+        best_index = outline.closest_vertex(cursor_local);
+        best_dsqr = length_sqr(outline.vertices()[best_index] - cursor_local);
         // check nearest vertex mirror
-        std::size_t mirror_index = closest_vertex(turret.vertices, cursor_local * vec2(1,-1));
-        double mirror_dsqr = length_sqr(turret.vertices[mirror_index] - cursor_local * vec2(1,-1));
+        std::size_t mirror_index = outline.closest_vertex(cursor_local * vec2(1,-1));
+        double mirror_dsqr = length_sqr(outline.vertices()[mirror_index] - cursor_local * vec2(1,-1));
         if (mirror_dsqr < best_dsqr) {
             best_feature = feature::vertex_mirror;
             best_index = mirror_index;
@@ -1324,6 +1426,15 @@ void ship_editor::update_highlight()
     if (best_dsqr < minimum_dsqr) {
         _highlight_index = best_index;
         _highlight_feature = best_feature;
+        if (_mode == editor_mode::deck) {
+            _highlight_outline_index = 0;
+            _highlight_outline_transform = mat3_identity;
+        } else {
+            auto& instance = _turret_instances[_turret_instance];
+            auto& turret = _turrets[instance.index];
+            _highlight_outline_index = turret.index;
+            _highlight_outline_transform = instance.transform;
+        }
     } else {
         _highlight_index = 0;
         _highlight_feature = feature::none;
@@ -1469,8 +1580,11 @@ void ship_editor::clear()
         //"D:\\Users\\Carter\\Pictures\\Littorio_class_battleship-drawing-2views.bmp"
     );
 
-    _deck_vertices = { SHIP(219.61f, 33.1f) };
-    _deck_segments = { quad, quad };
+    _outlines.clear();
+    //_outlines.push_back(ship_outline(
+    //    { SHIP(219.61f, 33.1f) },
+    //    { ship_outline::quad, ship_outline::quad }
+    //));
 
     //_deck_vertices = { SHIP_CUBE(219.61f, 28.04f) }; // Kongo
     //_deck_vertices = { SHIP_CUBE(210.f, 33.1f) }; // Fuso
@@ -1478,12 +1592,12 @@ void ship_editor::clear()
     //_deck_vertices = { SHIP_CUBE(227.f, 31.5f) }; // KGV
     //_deck_segments = { cube, line, cube };
     //_deck_vertices = { SHIP_CUBE2(247.85f, 33.08f) }; // Richelieu (scale 0.1524)
-    _deck_vertices = { SHIP_CUBE2(251.f, 36.f) }; // Bismarck (scale 0.1503)
-    _deck_segments = { cube, cube };
+    _outlines.push_back(ship_outline(
+        { SHIP_CUBE2(251.f, 36.f) }, // Bismarck (scale 0.1503)
+        { ship_outline::cube, ship_outline::cube }
+    ));
     //_deck_vertices = { SHIP_CUBE(237.76f, 32.82f) }; // Littorio (scale 0.415)
     //_deck_segments = { cube, line, cube };
-
-    _deck_linearized.clear();
 
     _turrets.clear();
     _turret_instances.clear();
@@ -1544,9 +1658,9 @@ bool ship_editor::save(string::view filename) const
     h.image_name_offset = 0;
     h.image_offset = _image_offset;
     h.image_scale = _image_scale;
-    h.deck_vertices_size = _deck_vertices.size() * sizeof(_deck_vertices[0]);
+    h.deck_vertices_size = _outlines[0].vertices().size() * sizeof(_outlines[0].vertices()[0]);
     h.deck_vertices_offset = 0;
-    h.deck_segments_size = _deck_segments.size() * sizeof(_deck_segments[0]);
+    h.deck_segments_size = _outlines[0].segments().size() * sizeof(_outlines[0].segments()[0]);
     h.deck_segments_offset = 0;
     h.turrets_size = _turrets.size() * sizeof(turret_header);
     h.turrets_offset = 0;
@@ -1560,23 +1674,24 @@ bool ship_editor::save(string::view filename) const
     s.write((file::byte const*)_image->name().c_str(), h.image_name_size);
     // write deck vertices
     h.deck_vertices_offset = s.tell();
-    s.write((file::byte const*)_deck_vertices.data(), h.deck_vertices_size);
+    s.write((file::byte const*)_outlines[0].vertices().data(), h.deck_vertices_size);
     // write deck segments
     h.deck_segments_offset = s.tell();
-    s.write((file::byte const*)_deck_segments.data(), h.deck_segments_size);
+    s.write((file::byte const*)_outlines[0].segments().data(), h.deck_segments_size);
     // write turrets
     turret_header th[128];
     for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
         assert(ii < countof(th));
+        auto& outline = _outlines[_turrets[ii].index];
         th[ii].radius = _turrets[ii].radius;
-        th[ii].vertices_size = _turrets[ii].vertices.size() * sizeof(_turrets[ii].vertices[0]);
-        th[ii].segments_size = _turrets[ii].segments.size() * sizeof(_turrets[ii].segments[0]);
+        th[ii].vertices_size = outline.vertices().size() * sizeof(outline.vertices()[0]);
+        th[ii].segments_size = outline.segments().size() * sizeof(outline.segments()[0]);
         // write turret vertices
         th[ii].vertices_offset = s.tell();
-        s.write((file::byte const*)_turrets[ii].vertices.data(), th[ii].vertices_size);
+        s.write((file::byte const*)outline.vertices().data(), th[ii].vertices_size);
         // write turret segments
         th[ii].segments_offset = s.tell();
-        s.write((file::byte const*)_turrets[ii].segments.data(), th[ii].segments_size);
+        s.write((file::byte const*)outline.segments().data(), th[ii].segments_size);
     }
     h.turrets_offset = s.tell();
     s.write((file::byte const*)th, h.turrets_size);
@@ -1620,18 +1735,24 @@ bool ship_editor::load(string::view filename)
         _image_scale = h->image_scale;
     }
 
+    std::vector<vec2> vertices;
+    std::vector<ship_outline::segment_type> segments;
+
     if (header_size < file_header::version::v3) {
-        _deck_vertices.resize(h->deck_vertices_size / sizeof(vec2f));
-        for (std::size_t ii = 0, sz = _deck_vertices.size(); ii < sz; ++ii) {
-            _deck_vertices[ii] = reinterpret_cast<vec2f const*>(b.data() + h->deck_vertices_offset)[ii];
+        vertices.resize(h->deck_vertices_size / sizeof(vec2f));
+        for (std::size_t ii = 0, sz = vertices.size(); ii < sz; ++ii) {
+            vertices[ii] = reinterpret_cast<vec2f const*>(b.data() + h->deck_vertices_offset)[ii];
         }
     } else {
-        _deck_vertices.resize(h->deck_vertices_size / sizeof(_deck_vertices[0]));
-        memcpy(_deck_vertices.data(), b.data() + h->deck_vertices_offset, h->deck_vertices_size);
+        vertices.resize(h->deck_vertices_size / sizeof(vertices[0]));
+        memcpy(vertices.data(), b.data() + h->deck_vertices_offset, h->deck_vertices_size);
     }
 
-    _deck_segments.resize(h->deck_segments_size / sizeof(_deck_segments[0]));
-    memcpy(_deck_segments.data(), b.data() + h->deck_segments_offset, h->deck_segments_size);
+    segments.resize(h->deck_segments_size / sizeof(segments[0]));
+    memcpy(segments.data(), b.data() + h->deck_segments_offset, h->deck_segments_size);
+
+    _outlines.clear();
+    _outlines.push_back({std::move(vertices), std::move(segments)});
 
     //
     // Load turrets and turret instances
@@ -1650,17 +1771,20 @@ bool ship_editor::load(string::view filename)
             }
 
             if (header_size < file_header::version::v3) {
-                _turrets[ii].vertices.resize(th->vertices_size / sizeof(vec2f));
-                for (std::size_t jj = 0, sz = _turrets[ii].vertices.size(); jj < sz; ++jj) {
-                    _turrets[ii].vertices[jj] = reinterpret_cast<vec2f const*>(b.data() + th->vertices_offset)[jj];
+                vertices.resize(th->vertices_size / sizeof(vec2f));
+                for (std::size_t jj = 0, sz = vertices.size(); jj < sz; ++jj) {
+                    vertices[jj] = reinterpret_cast<vec2f const*>(b.data() + th->vertices_offset)[jj];
                 }
             } else {
-                _turrets[ii].vertices.resize(th->vertices_size / sizeof(_turrets[ii].vertices[0]));
-                memcpy(_turrets[ii].vertices.data(), b.data() + th->vertices_offset, th->vertices_size);
+                vertices.resize(th->vertices_size / sizeof(vertices[0]));
+                memcpy(vertices.data(), b.data() + th->vertices_offset, th->vertices_size);
             }
 
-            _turrets[ii].segments.resize(th->segments_size / sizeof(_turrets[ii].segments[0]));
-            memcpy(_turrets[ii].segments.data(), b.data() + th->segments_offset, th->segments_size);
+            segments.resize(th->segments_size / sizeof(segments[0]));
+            memcpy(segments.data(), b.data() + th->segments_offset, th->segments_size);
+
+            _turrets[ii].index = _outlines.size();
+            _outlines.push_back({std::move(vertices), std::move(segments)});
         }
 
         if (header_size < file_header::version::v3) {
@@ -1683,9 +1807,8 @@ bool ship_editor::load(string::view filename)
         _turret_instances.resize(0);
     }
 
-    _deck_linearized = linearize(_deck_vertices, _deck_segments);
-    for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
-        _turrets[ii].linearized = linearize(_turrets[ii].vertices, _turrets[ii].segments);
+    for (auto& outline : _outlines) {
+        outline.linearize();
     }
 
     return true;
@@ -1702,125 +1825,16 @@ void ship_editor::export_verts(string::view filename) const
     }
 
     s.printf("{\n    ");
-    for (std::size_t ii = 0; ii < _deck_linearized.size(); ++ii) {
-        s.printf("vec2(%.2ff, %.2ff), ", _deck_linearized[ii].x, _deck_linearized[ii].y);
+    for (std::size_t ii = 0; ii < _outlines[0].linearized().size(); ++ii) {
+        s.printf("vec2(%.2ff, %.2ff), ", _outlines[0].linearized()[ii].x, _outlines[0].linearized()[ii].y);
     }
     s.printf("\n}\n");
     for (std::size_t jj = 0; jj < _turrets.size(); ++jj) {
         s.printf("{\n    ");
-        for (std::size_t ii = 0; ii < _turrets[jj].linearized.size(); ++ii) {
-            s.printf("vec2(%.2ff, %.2ff), ", _turrets[jj].linearized[ii].x, _turrets[jj].linearized[ii].y);
+        for (std::size_t ii = 0; ii < _outlines[_turrets[jj].index].linearized().size(); ++ii) {
+            s.printf("vec2(%.2ff, %.2ff), ", _outlines[_turrets[jj].index].linearized()[ii].x, _outlines[_turrets[jj].index].linearized()[ii].y);
         }
         s.printf("\n}\n");
-    }
-}
-
-//------------------------------------------------------------------------------
-std::vector<vec2> ship_editor::linearize(std::vector<vec2> const& vertices, std::vector<segment_type> const& segments)
-{
-    std::vector<vec2> linearized;
-
-    linearized.push_back(vertices[0]);
-
-    for (std::size_t ii = 0, jj = 0; ii < segments.size(); ++ii) {
-        if (segments[ii] == line) {
-            linearized.push_back(vertices[jj + 1]);
-            jj += 1;
-        } else if (segments[ii] == quad) {
-            std::vector<vec2> v = subdivide([&](double t){
-                double s = 1.0 - t;
-                return s * s * vertices[jj + 0]
-                    + 2.0 * s * t * vertices[jj + 1]
-                    + t * t * vertices[jj + 2];
-                }, 0.1f);
-            linearized.insert(linearized.end(), v.begin() + 1, v.end());
-            jj += 2;
-        } else if (segments[ii] == cube) {
-            std::vector<vec2> v = subdivide([&](double t){
-                double s = 1.0 - t;
-                double t2 = t * t;
-                double s2 = s * s;
-                return s2 * s * vertices[jj + 0]
-                     + 3.0 * s2 * t * vertices[jj + 1]
-                     + 3.0 * s * t2 * vertices[jj + 2]
-                     + t * t2 * vertices[jj + 3];
-                }, 0.1f);
-            linearized.insert(linearized.end(), v.begin() + 1, v.end());
-            jj += 3;
-        }
-    }
-
-    // duplicate vertices along the bottom half
-    if (linearized.back().y) {
-        linearized.push_back(vec2(linearized.back().x, -linearized.back().y));
-    }
-
-    for (std::size_t ii = linearized.size() - 2; ii > 0; --ii) {
-        linearized.push_back(vec2(linearized[ii].x, -linearized[ii].y));
-    }
-
-    // duplicate final vertex if necessary, i.e. for transom stern
-    if (linearized[0].y) {
-        linearized.push_back(vec2(linearized[0].x, -linearized[0].y));
-    }
-
-    return linearized;
-}
-
-//------------------------------------------------------------------------------
-std::vector<vec2> ship_editor::subdivide(std::function<vec2(double)> fn, float error)
-{
-    std::vector<vec2> p;
-    std::vector<double> t;
-    std::vector<double> e;
-
-    p.push_back(fn(0.0));
-    p.push_back(fn(1.0));
-    t.push_back(0.0);
-    t.push_back(1.0);
-    e.push_back(0.0);
-
-    for (std::size_t n = 1; ; ++n) {
-        p.insert(p.end() - 1, vec2_zero);
-        t.insert(t.end() - 1, 0.0);
-        e.push_back(0.0);
-
-        for (std::size_t ii = 1; ii < n + 1; ++ii) {
-            t[ii] = double(ii) / double(n + 1);
-            p[ii] = fn(t[ii]);
-        }
-
-        for (std::size_t jj = 0; jj < 128; ++jj) {
-            double rms = 0.0;
-            double emax = 0.0;
-            for (std::size_t ii = 0; ii < n + 1; ++ii) {
-                double t0 = 0.5 * (t[ii] + t[ii + 1]);
-                vec2 p0 = fn(t0);
-                vec2 v = p[ii + 1] - p[ii];
-                vec2 r = (p[ii] - p0) - dot(p[ii] - p0, v) * v / length_sqr(v);
-                e[ii] = length(r);
-                emax = max(emax, e[ii]);
-                rms += square(e[ii]);
-            }
-
-            if (emax < error) {
-                return p;
-            }
-
-            rms = sqrt(rms / double(n));
-            if (rms > 8.0 * error) {
-                break;
-            }
-
-            e[0] = 1.0 / e[0];
-            for (std::size_t ii = 1; ii < n + 1; ++ii) {
-                e[ii] = e[ii - 1] + 1.0 / e[ii];
-            }
-            for (std::size_t ii = 1; ii < n + 1; ++ii) {
-                t[ii] = 0.5 * e[ii - 1] / e.back() + 0.5 * t[ii];
-                p[ii] = fn(t[ii]);
-            }
-        }
     }
 }
 
