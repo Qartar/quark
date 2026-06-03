@@ -102,6 +102,7 @@ protected:
     bool _is_panning;
     bool _is_panning_image;
     bool _control;
+    bool _is_dragging;
 
     enum class feature {
         none,
@@ -112,15 +113,10 @@ protected:
         turret_rotation,
     };
 
-    feature _drag_feature;
-    std::size_t _drag_index;
-    std::size_t _drag_outline_index;
-    mat3 _drag_outline_transform;
-
-    feature _highlight_feature;
-    std::size_t _highlight_index;
-    std::size_t _highlight_outline_index;
-    mat3 _highlight_outline_transform;
+    feature _feature;
+    std::size_t _feature_index;
+    std::size_t _feature_outline;
+    mat3 _feature_transform;
 
     string::buffer _filename;
 
