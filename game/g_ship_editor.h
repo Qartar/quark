@@ -23,43 +23,43 @@ public:
     };
 
 public:
-    ship_outline(std::vector<vec2>&& vertices, std::vector<segment_type>&& segments);
+    ship_outline(std::vector<vec3>&& vertices, std::vector<segment_type>&& segments);
 
-    void draw(render::system* renderer, mat3 transform, vec2 vertex_size) const;
-    void draw_linearized(render::system* renderer, mat3 transform, vec2 vertex_size) const;
+    void draw(render::system* renderer, mat4 transform, vec2 vertex_size) const;
+    void draw_linearized(render::system* renderer, mat4 transform, vec2 vertex_size) const;
 
-    std::vector<vec2>& vertices() { return _vertices; }
+    std::vector<vec3>& vertices() { return _vertices; }
 
-    std::vector<vec2> const& vertices() const { return _vertices; }
+    std::vector<vec3> const& vertices() const { return _vertices; }
     std::vector<segment_type> const& segments() const { return _segments; }
-    std::vector<vec2> const& linearized() const { return _linearized; }
+    std::vector<vec3> const& linearized() const { return _linearized; }
 
     //! Return the index of the closest vertex to the given point
-    std::size_t closest_vertex(vec2 v) const;
+    std::size_t closest_vertex(vec3 v, mat4 projection) const;
     //! Return the index of the closest segment to the given point
-    std::size_t closest_segment(vec2 v) const;
+    std::size_t closest_segment(vec3 v, mat4 projection) const;
     //! Return the closest point on the given curve segments to the given point
-    vec2 closest_point(vec2 v) const;
+    vec2 closest_point(vec3 v, mat4 projection) const;
 
-    bool insert_vertex(vec2 v, double minimum_vertex_dsqr);
-    bool remove_vertex(vec2 v, double minimum_vertex_dsqr);
+    bool insert_vertex(vec3 v, mat4 projection, double minimum_vertex_dsqr);
+    bool remove_vertex(vec3 v, mat4 projection, double minimum_vertex_dsqr);
 
-    bool upconvert_segment(vec2 v);
-    bool downconvert_segment(vec2 v);
+    bool upconvert_segment(vec3 v, mat4 projection);
+    bool downconvert_segment(vec3 v, mat4 projection);
 
     //! Convert the given curve segments into a loop of vertices approximating the curve
     void linearize();
 
 protected:
-    std::vector<vec2> _vertices;
+    std::vector<vec3> _vertices;
     std::vector<segment_type> _segments;
-    std::vector<vec2> _linearized;
+    std::vector<vec3> _linearized;
 
 protected:
     void draw_bezier_quad(render::system* renderer, vec2 a, vec2 b, vec2 c, color4 color) const;
     void draw_bezier_cube(render::system* renderer, vec2 a, vec2 b, vec2 c, vec2 d, color4 color) const;
 
-    static std::vector<vec2> subdivide(std::function<vec2(double)> fn, float error);
+    static std::vector<vec3> subdivide(std::function<vec3(double)> fn, float error);
 };
 
 //------------------------------------------------------------------------------
@@ -81,7 +81,8 @@ protected:
     };
 
     struct turret_instance {
-        mat3 transform;
+        mat4 transform;
+        mat4 inverse_transform;
         std::size_t index; //!< turret index
     };
 
@@ -116,13 +117,26 @@ protected:
     feature _feature;
     std::size_t _feature_index;
     std::size_t _feature_outline;
-    mat3 _feature_transform;
+    mat4 _feature_transform;
+    mat4 _feature_inverse_transform;
+
+    enum class viewport {
+        plan, //!< XY projection
+        profile, //!< XZ projection
+    };
+
+    viewport _viewport;
+    mat4 _viewport_projection; //!< Projection matrix from 3D to 2D
 
     string::buffer _filename;
 
-    render::image const* _image;
-    vec2 _image_offset;
-    config::scalar _image_scale;
+    render::image const* _plan_image;
+    vec2 _plan_image_offset;
+    config::scalar _plan_image_scale;
+
+    render::image const* _profile_image;
+    vec2 _profile_image_offset;
+    config::scalar _profile_image_scale;
 
     enum class editor_mode {
         deck,
@@ -136,16 +150,20 @@ protected:
     static constexpr double minimum_vertex_dsqr = 1.0;
 
 protected:
-    vec2 cursor_to_world() const;
+    vec3 cursor_to_world() const;
+    vec3 screen_to_world(vec2 p) const;
     double snap_radius(double r) const;
+    vec3 snap_vertex(vec3 pos) const;
     vec2 snap_vertex(vec2 pos) const;
+
+    void draw_view(render::system* renderer, render::view const& view, render::image const* image, vec2 image_offset, double image_scale) const;
 
     double render_vertex_size() const { return _view.size.y * (1.0 / 384.0); }
 
     void update_highlight();
 
-    bool insert_turret(vec2 v);
-    bool remove_turret(vec2 v);
+    bool insert_turret(vec3 v, mat4 projection);
+    bool remove_turret(vec3 v, mat4 projection);
 
     bool get_save_filename(string::buffer& filename) const;
     bool get_load_filename(string::buffer& filename) const;
@@ -155,6 +173,9 @@ protected:
     bool save(string::view filename) const;
     bool load(string::view filename);
     void export_verts(string::view filename) const;
+
+    static constexpr mat4 plan_projection = mat4(1,0,0,0, 0,1,0,0, 0,0,0,0, 0,0,0,1);
+    static constexpr mat4 profile_projection = mat4(1,0,0,0, 0,0,0,0, 0,1,0,0, 0,0,0,1);
 };
 
 } // namespace game
