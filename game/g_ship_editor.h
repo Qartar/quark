@@ -133,10 +133,12 @@ protected:
     render::image const* _plan_image;
     vec2 _plan_image_offset;
     config::scalar _plan_image_scale;
+    config::scalar _plan_image_rotation;
 
     render::image const* _profile_image;
     vec2 _profile_image_offset;
     config::scalar _profile_image_scale;
+    config::scalar _profile_image_rotation;
 
     enum class editor_mode {
         deck,
@@ -156,7 +158,7 @@ protected:
     vec3 snap_vertex(vec3 pos) const;
     vec2 snap_vertex(vec2 pos) const;
 
-    void draw_view(render::system* renderer, render::view const& view, render::image const* image, vec2 image_offset, double image_scale) const;
+    void draw_view(render::system* renderer, render::view const& view, render::image const* image, vec2 image_offset, double image_rotation, double image_scale) const;
 
     double render_vertex_size() const { return _view.size.y * (1.0 / 384.0); }
 

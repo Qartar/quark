@@ -22,6 +22,11 @@ ship_outline::ship_outline(std::vector<vec3>&& vertices, std::vector<segment_typ
     : _vertices(std::move(vertices))
     , _segments(std::move(segments))
 {
+    // Ensure all outlines have the same orientation
+    if (_vertices.size() && _vertices.front().x > _vertices.back().x) {
+        std::reverse(_vertices.begin(), _vertices.end());
+        std::reverse(_segments.begin(), _segments.end());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -859,9 +864,11 @@ ship_editor::ship_editor()
     , _plan_image(nullptr)
     , _plan_image_offset(vec2_zero)
     , _plan_image_scale("image_scale", 1.f/15.175f, 0, "")
+    , _plan_image_rotation("image_rotation", 0, 0, "")
     , _profile_image(nullptr)
     , _profile_image_offset(vec2_zero)
     , _profile_image_scale("profile_scale", 1.f/15.175f, 0, "")
+    , _profile_image_rotation("profile_rotation", 0, 0, "")
     , _mode(editor_mode::deck)
     , _turret_instance(0)
 {
@@ -929,13 +936,21 @@ void ship_editor::draw_view(
     render::view const& view,
     render::image const* image,
     vec2 image_offset,
+    double image_rotation,
     double image_scale) const
 {
     renderer->set_view(view);
 
     if (image) {
+        // This would be simpler if we just added a rotation parameter to draw_image.
+        render::view image_view = view;
+        image_view.angle = float(-image_rotation);
+        rot2 r = rot2(image_view.angle);
+        image_view.origin = image_view.origin * r;
+        renderer->set_view(image_view);
         vec2 image_size = vec2(vec2i(image->width(), image->height())) * image_scale;
-        renderer->draw_image(image, image_offset - 0.5 * image_size, image_size, color4(1,1,1,.5f));
+        renderer->draw_image(image, (image_offset - 0.5 * image_size) * r, image_size, color4(1,1,1,.5f));
+        renderer->set_view(view);
     }
 
     vec2 vmin = view.origin - 0.5 * view.size;
@@ -1074,8 +1089,8 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
     profile_view.viewport = rect({0, 0}, {renderer->window()->width(), renderer->window()->height() / 2});
     profile_view.transform = profile_projection;
 
-    draw_view(renderer, plan_view, _plan_image, _plan_image_offset, _plan_image_scale);
-    draw_view(renderer, profile_view, _profile_image, _profile_image_offset, _profile_image_scale);
+    draw_view(renderer, plan_view, _plan_image, _plan_image_offset, _plan_image_rotation, _plan_image_scale);
+    draw_view(renderer, profile_view, _profile_image, _profile_image_offset, _profile_image_rotation, _profile_image_scale);
 
     renderer->set_view(_view);
 
@@ -1763,6 +1778,8 @@ struct file_header
         v3 = 112,
         //! Conversion to 3D, add profile image
         v4 = 152,
+        //! Added image rotation
+        v5 = 160,
     };
 
     std::size_t header_size;
@@ -1785,6 +1802,9 @@ struct file_header
     std::size_t profile_image_name_offset;
     vec2 profile_image_offset;
     float profile_image_scale;
+    // image rotation
+    float plan_image_rotation;
+    float profile_image_rotation;
 };
 
 //------------------------------------------------------------------------------
@@ -1810,7 +1830,7 @@ bool ship_editor::save(string::view filename) const
     file_header h;
 
     h.header_size = sizeof(file_header);
-    h.plan_image_name_size = _plan_image->name().length();
+    h.plan_image_name_size = _plan_image ? _plan_image->name().length() : 0;
     h.plan_image_name_offset = 0;
     h.plan_image_offset = _plan_image_offset;
     h.plan_image_scale = _plan_image_scale;
@@ -1822,22 +1842,28 @@ bool ship_editor::save(string::view filename) const
     h.turrets_offset = 0;
     h.turret_instances_size = _turret_instances.size() * sizeof(_turret_instances[0]);
     h.turret_instances_offset = 0;
-    h.profile_image_name_size = _profile_image->name().length();
+    h.profile_image_name_size = _profile_image ? _profile_image->name().length() : 0;
     h.profile_image_name_offset = 0;
     h.profile_image_offset = _profile_image_offset;
     h.profile_image_scale = _profile_image_scale;
+    h.plan_image_rotation = _plan_image_rotation;
+    h.profile_image_rotation = _profile_image_rotation;
 
     // write header placeholder
     s.write((file::byte const*)&h, h.header_size);
     // write image name
     h.plan_image_name_offset = s.tell();
-    s.write((file::byte const*)_plan_image->name().c_str(), h.plan_image_name_size);
+    if (_plan_image) {
+        s.write((file::byte const*)_plan_image->name().c_str(), h.plan_image_name_size);
+    }
     // write profile image name
     if (_profile_image == _plan_image) {
         h.profile_image_name_offset = h.plan_image_name_offset;
     } else {
         h.profile_image_name_offset = s.tell();
-        s.write((file::byte const*)_profile_image->name().c_str(), h.profile_image_name_size);
+        if (_profile_image) {
+            s.write((file::byte const*)_profile_image->name().c_str(), h.profile_image_name_size);
+        }
     }
     // write deck vertices
     h.deck_vertices_offset = s.tell();
@@ -1897,7 +1923,7 @@ bool ship_editor::load(string::view filename)
     string::view image_name(
         (char const*)b.data() + h->plan_image_name_offset,
         (char const*)b.data() + h->plan_image_name_offset + h->plan_image_name_size);
-    _plan_image = application::singleton()->window()->renderer()->load_image(image_name);
+    _plan_image = h->plan_image_name_size ? application::singleton()->window()->renderer()->load_image(image_name) : nullptr;
 
     if (header_size < file_header::version::v3) {
         _plan_image_offset.x = reinterpret_cast<float const*>(&h->plan_image_offset)[0];
@@ -2009,13 +2035,21 @@ bool ship_editor::load(string::view filename)
         string::view profile_image_name(
             (char const*)b.data() + h->profile_image_name_offset,
             (char const*)b.data() + h->profile_image_name_offset + h->profile_image_name_size);
-        _profile_image = application::singleton()->window()->renderer()->load_image(profile_image_name);
+        _profile_image = h->profile_image_name_size ? application::singleton()->window()->renderer()->load_image(profile_image_name) : nullptr;
         _profile_image_offset = h->profile_image_offset;
         _profile_image_scale = h->profile_image_scale;
     } else {
         _profile_image = _plan_image;
         _profile_image_offset = _plan_image_offset;
         _profile_image_scale = _plan_image_scale;
+    }
+
+    if (header_size >= file_header::version::v5) {
+        _plan_image_rotation = h->plan_image_rotation;
+        _profile_image_rotation = h->profile_image_rotation;
+    } else {
+        _plan_image_rotation = 0;
+        _profile_image_rotation = 0;
     }
 
     //
