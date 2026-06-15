@@ -319,12 +319,14 @@ std::size_t ship_outline::closest_vertex(vec3 v0, mat4 projection) const
 }
 
 //------------------------------------------------------------------------------
-std::size_t ship_outline::closest_segment(vec3 v0, mat4 projection) const
+ship_outline::segment_point ship_outline::closest_point(vec3 v0, mat4 projection) const
 {
     vec2 v = (v0 * projection).to_vec2();
 
     std::size_t best_idx = SIZE_MAX;
+    vec3 best_point = vec3_zero;
     double best_dsqr = DBL_MAX;
+    double best_t = 0;
     for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
         if (_segments[ii] == line) {
             vec2 a = (_vertices[jj + 0] * projection).to_vec2();
@@ -334,7 +336,9 @@ std::size_t ship_outline::closest_segment(vec3 v0, mat4 projection) const
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
+                best_point = _vertices[jj + 0] + (_vertices[jj + 1] - _vertices[jj + 0]) * t;
                 best_dsqr = dsqr;
+                best_t = t;
             }
             jj += 1;
         } else if (_segments[ii] == quad) {
@@ -348,7 +352,11 @@ std::size_t ship_outline::closest_segment(vec3 v0, mat4 projection) const
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
+                best_point = (1 - t) * (1 - t) * _vertices[jj + 0]
+                        + 2 * (1 - t) * t * _vertices[jj + 1]
+                        + t * t * _vertices[jj + 2];
                 best_dsqr = dsqr;
+                best_t = t;
             }
             jj += 2;
         } else if (_segments[ii] == cube) {
@@ -367,156 +375,36 @@ std::size_t ship_outline::closest_segment(vec3 v0, mat4 projection) const
             double dsqr = length_sqr(p - v);
             if (dsqr < best_dsqr) {
                 best_idx = ii;
+                best_point = s2 * s * _vertices[jj + 0]
+                        + 3.0 * s2 * t * _vertices[jj + 1]
+                        + 3.0 * s * t2 * _vertices[jj + 2]
+                        + t * t2 * _vertices[jj + 3];
                 best_dsqr = dsqr;
+                best_t = t;
             }
             jj += 3;
         }
     }
 
-    return best_idx;
-}
-
-//------------------------------------------------------------------------------
-vec2 ship_outline::closest_point(vec3 v0, mat4 projection) const
-{
-    vec2 v = (v0 * projection).to_vec2();
-
-    std::size_t best_idx = SIZE_MAX;
-    vec2 best_point = vec2_zero;
-    double best_dsqr = DBL_MAX;
-    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
-        if (_segments[ii] == line) {
-            vec2 a = (_vertices[jj + 0] * projection).to_vec2();
-            vec2 b = (_vertices[jj + 1] * projection).to_vec2();
-            double t = segment_closest_point(a, b, v);
-            vec2 p = a + (b - a) * t;
-            double dsqr = length_sqr(p - v);
-            if (dsqr < best_dsqr) {
-                best_idx = ii;
-                best_point = p;
-                best_dsqr = dsqr;
-            }
-            jj += 1;
-        } else if (_segments[ii] == quad) {
-            vec2 a = (_vertices[jj + 0] * projection).to_vec2();
-            vec2 b = (_vertices[jj + 1] * projection).to_vec2();
-            vec2 c = (_vertices[jj + 2] * projection).to_vec2();
-            double t = quad_closest_point(a, b, c, v);
-            vec2 p = (1 - t) * (1 - t) * a
-                + 2 * (1 - t) * t * b
-                + t * t * c;
-            double dsqr = length_sqr(p - v);
-            if (dsqr < best_dsqr) {
-                best_idx = ii;
-                best_point = p;
-                best_dsqr = dsqr;
-            }
-            jj += 2;
-        } else if (_segments[ii] == cube) {
-            vec2 a = (_vertices[jj + 0] * projection).to_vec2();
-            vec2 b = (_vertices[jj + 1] * projection).to_vec2();
-            vec2 c = (_vertices[jj + 2] * projection).to_vec2();
-            vec2 d = (_vertices[jj + 3] * projection).to_vec2();
-            double t = cube_closest_point(a, b, c, d, v);
-            double s = 1.0 - t;
-            double t2 = t * t;
-            double s2 = s * s;
-            vec2 p = s2 * s * a
-                + 3.0 * s2 * t * b
-                + 3.0 * s * t2 * c
-                + t * t2 * d;
-            double dsqr = length_sqr(p - v);
-            if (dsqr < best_dsqr) {
-                best_idx = ii;
-                best_point = p;
-                best_dsqr = dsqr;
-            }
-            jj += 3;
-        }
-    }
-
-    return best_point;
+    return { best_idx, best_point, best_t };
 }
 
 //------------------------------------------------------------------------------
 bool ship_outline::insert_vertex(vec3 v0, mat4 projection, double minimum_vertex_dsqr)
 {
-    std::size_t best_idx = SIZE_MAX;
-    double best_t = 0;
-    double best_dsqr = DBL_MAX;
+    segment_point cp = closest_point(v0, projection);
+    if (length_sqr((cp.point - v0) * projection) > minimum_vertex_dsqr) {
+        return false;
+    }
 
-    vec2 v = (v0 * projection).to_vec2();
-
-    if (length_sqr(v - (_vertices[0] * projection).to_vec2()) < minimum_vertex_dsqr) {
+    // check if point is too close to an existing vertex
+    std::size_t vtx = closest_vertex(cp.point, projection);
+    if (length_sqr((cp.point - _vertices[vtx]) * projection) < minimum_vertex_dsqr) {
         return false;
     }
 
     for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
-        if (_segments[ii] == line) {
-            vec2 a = (_vertices[jj + 0] * projection).to_vec2();
-            vec2 b = (_vertices[jj + 1] * projection).to_vec2();
-            if (length_sqr(v - b) < minimum_vertex_dsqr) {
-                return false;
-            }
-            double t = segment_closest_point(a, b, v);
-            vec2 p = a + (b - a) * t;
-            double dsqr = length_sqr(p - v);
-            if (dsqr < best_dsqr) {
-                best_idx = ii;
-                best_t = t;
-                best_dsqr = dsqr;
-            }
-            jj += 1;
-        } else if (_segments[ii] == quad) {
-            vec2 a = (_vertices[jj + 0] * projection).to_vec2();
-            vec2 b = (_vertices[jj + 1] * projection).to_vec2();
-            vec2 c = (_vertices[jj + 2] * projection).to_vec2();
-            if (length_sqr(v - c) < minimum_vertex_dsqr) {
-                return false;
-            }
-            double t = quad_closest_point(a, b, c, v);
-            vec2 p = (1 - t) * (1 - t) * a
-                + 2 * (1 - t) * t * b
-                + t * t * c;
-            double dsqr = length_sqr(p - v);
-            if (dsqr < best_dsqr) {
-                best_idx = ii;
-                best_t = t;
-                best_dsqr = dsqr;
-            }
-            jj += 2;
-        } else if (_segments[ii] == cube) {
-            vec2 a = (_vertices[jj + 0] * projection).to_vec2();
-            vec2 b = (_vertices[jj + 1] * projection).to_vec2();
-            vec2 c = (_vertices[jj + 2] * projection).to_vec2();
-            vec2 d = (_vertices[jj + 3] * projection).to_vec2();
-            if (length_sqr(v - d) < minimum_vertex_dsqr) {
-                return false;
-            }
-            double t = cube_closest_point(a, b, c, d, v);
-            double s = 1.0 - t;
-            double t2 = t * t;
-            double s2 = s * s;
-            vec2 p = s2 * s * a
-                + 3.0 * s2 * t * b
-                + 3.0 * s * t2 * c
-                + t * t2 * d;
-            double dsqr = length_sqr(p - v);
-            if (dsqr < best_dsqr) {
-                best_idx = ii;
-                best_t = t;
-                best_dsqr = dsqr;
-            }
-            jj += 3;
-        }
-    }
-
-    if (best_idx == SIZE_MAX || best_dsqr > minimum_vertex_dsqr) {
-        return false;
-    }
-
-    for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
-        if (ii != best_idx) {
+        if (ii != cp.segment) {
             if (_segments[ii] == line) {
                 jj += 1;
             } else if (_segments[ii] == quad) {
@@ -528,50 +416,36 @@ bool ship_outline::insert_vertex(vec3 v0, mat4 projection, double minimum_vertex
         }
 
         if (_segments[ii] == line) {
-            vec3 p = _vertices[jj + 0] + (_vertices[jj + 1] - _vertices[jj + 0]) * best_t;
+            vec3 p = _vertices[jj + 0] + (_vertices[jj + 1] - _vertices[jj + 0]) * cp.t;
             // convert the line to a bezier curve by inserting a control point
             _vertices.insert(_vertices.begin() + jj + 1, p);
             _segments.insert(_segments.begin() + ii, line);
             return true;
-        }
-
-        if (_segments[ii] == quad) {
-            double t = best_t;
-            vec3 p = (1 - t) * (1 - t) * _vertices[jj + 0]
-                + 2 * (1 - t) * t * _vertices[jj + 1]
-                + t * t * _vertices[jj + 2];
+        } else if (_segments[ii] == quad) {
             // use De Casteljau's algorithm to subdivide the curve at `best_point`
             _segments.insert(_segments.begin() + ii, quad);
-            vec3 p01 = (1.0 - best_t) * _vertices[jj + 0] + best_t * _vertices[jj + 1];
-            vec3 p12 = (1.0 - best_t) * _vertices[jj + 1] + best_t * _vertices[jj + 2];
+            vec3 p01 = (1.0 - cp.t) * _vertices[jj + 0] + cp.t * _vertices[jj + 1];
+            vec3 p12 = (1.0 - cp.t) * _vertices[jj + 1] + cp.t * _vertices[jj + 2];
             // [a b c] -> [a p12 c]
             _vertices[jj + 1] = p12;
             // [a p12 c] -> [a p01 p p12 c]
-            _vertices.insert(_vertices.begin() + jj + 1, {p01, p});
+            _vertices.insert(_vertices.begin() + jj + 1, {p01, cp.point});
             return true;
-        }
-
-        if (_segments[ii] == cube) {
-            double t = best_t;
-            double s = 1.0 - t;
-            double t2 = t * t;
-            double s2 = s * s;
-            vec3 p = s2 * s * _vertices[jj + 0]
-                + 3.0 * s2 * t * _vertices[jj + 1]
-                + 3.0 * s * t2 * _vertices[jj + 2]
-                + t * t2 * _vertices[jj + 3];
+        } else if (_segments[ii] == cube) {
+            double t = cp.t;
+            double s = 1.0 - cp.t;
             // use De Casteljau's algorithm to subdivide the curve at `best_point`
             _segments.insert(_segments.begin() + ii, cube);
-            vec3 p01 = (1.0 - best_t) * _vertices[jj + 0] + best_t * _vertices[jj + 1];
-            vec3 p12 = (1.0 - best_t) * _vertices[jj + 1] + best_t * _vertices[jj + 2];
-            vec3 p23 = (1.0 - best_t) * _vertices[jj + 2] + best_t * _vertices[jj + 3];
-            vec3 p012 = (1.0 - best_t) * p01 + best_t * p12;
-            vec3 p123 = (1.0 - best_t) * p12 + best_t * p23;
+            vec3 p01 = s * _vertices[jj + 0] + t * _vertices[jj + 1];
+            vec3 p12 = s * _vertices[jj + 1] + t * _vertices[jj + 2];
+            vec3 p23 = s * _vertices[jj + 2] + t * _vertices[jj + 3];
+            vec3 p012 = s * p01 + t * p12;
+            vec3 p123 = s * p12 + t * p23;
             // [a b c d] -> [a p123 p23 d]
             _vertices[jj + 1] = p123;
             _vertices[jj + 2] = p23;
             // [a p123 p23 d] -> [a p01 p012 p p123 p23 d]
-            _vertices.insert(_vertices.begin() + jj + 1, {p01, p012, p});
+            _vertices.insert(_vertices.begin() + jj + 1, {p01, p012, cp.point});
             return true;
         }
     }
@@ -651,7 +525,7 @@ bool ship_outline::remove_vertex(vec3 v0, mat4 projection, double minimum_vertex
 //------------------------------------------------------------------------------
 bool ship_outline::upconvert_segment(vec3 v, mat4 projection)
 {
-    std::size_t best_idx = closest_segment(v, projection);
+    std::size_t best_idx = closest_point(v, projection).segment;
     for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
         if (ii != best_idx) {
             if (_segments[ii] == line) {
@@ -681,7 +555,7 @@ bool ship_outline::upconvert_segment(vec3 v, mat4 projection)
 //------------------------------------------------------------------------------
 bool ship_outline::downconvert_segment(vec3 v, mat4 projection)
 {
-    std::size_t best_idx = closest_segment(v, projection);
+    std::size_t best_idx = closest_point(v, projection).segment;
     for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
         if (ii != best_idx) {
             if (_segments[ii] == line) {

@@ -34,12 +34,16 @@ public:
     std::vector<segment_type> const& segments() const { return _segments; }
     std::vector<vec3> const& linearized() const { return _linearized; }
 
+    struct segment_point {
+        std::size_t segment; //!< Index of segment containing point
+        vec3 point; //!< Point (unprojected)
+        double t; //!< Fraction along segment containing point
+    };
+
     //! Return the index of the closest vertex to the given point
     std::size_t closest_vertex(vec3 v, mat4 projection) const;
-    //! Return the index of the closest segment to the given point
-    std::size_t closest_segment(vec3 v, mat4 projection) const;
     //! Return the closest point on the given curve segments to the given point
-    vec2 closest_point(vec3 v, mat4 projection) const;
+    segment_point closest_point(vec3 v, mat4 projection) const;
 
     bool insert_vertex(vec3 v, mat4 projection, double minimum_vertex_dsqr);
     bool remove_vertex(vec3 v, mat4 projection, double minimum_vertex_dsqr);
