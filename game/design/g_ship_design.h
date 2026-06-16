@@ -35,7 +35,7 @@ struct ship_design
 
     struct turret_instance
     {
-        vec2 position; //!< Position of the turret on the ship
+        vec3 position; //!< Position of the turret on the ship
         float orientation; //!< Default orientation, in radians from ship ahead
         vec2 train_limit; //!< Minimum and maximum train, in radians from default orientation
 

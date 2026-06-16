@@ -30,7 +30,12 @@ const turret_design turret_yamato_46cm =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-5.f, 45.f),
     /* num_guns */          3,
-    /* spacing */           2.9f,
+    /* position */
+    {
+        vec3(6.5, -2.9, 1),
+        vec3(6.5, 0, 1),
+        vec3(6.5, 2.9, 1),
+    },
     /* reload_time */       time_delta::from_seconds(24.f),
     /* gun_design */        &gun_46cm_45_Type_94,
     /* outline */           {
@@ -65,7 +70,12 @@ const turret_design turret_yamato_15_5cm =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-7.f, 55.f),
     /* num_guns */          3,
-    /* spacing */           1.5f,
+    /* position */
+    {
+        vec3(2.9, -1.5, 1),
+        vec3(2.9, 0, 1),
+        vec3(2.9, 1.5, 1),
+    },
     /* reload_time */       time_delta::from_seconds(12.f),
     /* gun_design */        &gun_15_5cm_60_3rd_Year_Type,
     /* outline */           {
@@ -93,7 +103,11 @@ const turret_design turret_fuso_36cm =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-3.f, 43.f),
     /* num_guns */          2,
-    /* spacing */           2.0f,
+    /* position */
+    {
+        vec3(4.75, -1, 1),
+        vec3(4.75, 1, 1),
+    },
     /* reload_time */       time_delta::from_seconds(30.f),
     /* gun_design */        &gun_36cm_41st_Year_Type,
     /* outline */           {
@@ -117,7 +131,11 @@ const turret_design turret_fuso_36cm_rf =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-3.f, 43.f),
     /* num_guns */          2,
-    /* spacing */           2.0f,
+    /* position */
+    {
+        vec3(4.75, -1, 1),
+        vec3(4.75, 1, 1),
+    },
     /* reload_time */       time_delta::from_seconds(30.f),
     /* gun_design */        &gun_36cm_41st_Year_Type,
     /* outline */           {
@@ -147,7 +165,12 @@ const turret_design turret_iowa_16in =
     /* elevation_speed */   DEG(12.f),
     /* elevation_limit */   DEGV(-5.f, 45.f),
     /* num_guns */          3,
-    /* spacing */           2.25f,
+    /* position */
+    {
+        vec3(6.5, -2.25, 1),
+        vec3(6.5, 0, 1),
+        vec3(6.5, 2.25, 1),
+    },
     /* reload_time */       time_delta::from_seconds(30.f),
     /* gun_design */        &gun_16in_50_caliber_Mark_7,
     /* outline */           {
@@ -176,7 +199,12 @@ const turret_design turret_north_carolina_16in =
     /* elevation_speed */   DEG(12.f),
     /* elevation_limit */   DEGV(-2.f, 45.f),
     /* num_guns */          3,
-    /* spacing */           3.f,
+    /* position */
+    {
+        vec3(5, -3, 1),
+        vec3(5, 0, 1),
+        vec3(5, 3, 1),
+    },
     /* reload_time */       time_delta::from_seconds(30.f),
     /* gun_design */        &gun_16in_45_caliber_Mark_6,
     /* outline */           {
@@ -206,7 +234,11 @@ const turret_design turret_north_carolina_5in =
     /* elevation_speed */   DEG(12.f),
     /* elevation_limit */   DEGV(-15.f, 85.f),
     /* num_guns */          2,
-    /* spacing */           2.5f,
+    /* position */
+    {
+        vec3(2, -1.25, 1),
+        vec3(2, 1.25, 1),
+    },
     /* reload_time */       time_delta::from_seconds(4.f),
     /* gun_design */        &gun_5in_38_caliber_Mark_12,
     /* outline */           {
@@ -230,7 +262,13 @@ const turret_design turret_kgv_14in_quad =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-5.f, 41.f),
     /* num_guns */          4,
-    /* spacing */           2.5f,
+    /* position */
+    {
+        vec3(4.75, -3.75, 1),
+        vec3(4.75, -1.25, 1),
+        vec3(4.75, 1.25, 1),
+        vec3(4.75, 3.75, 1),
+    },
     /* reload_time */       time_delta::from_seconds(30.f),
     /* gun_design */        &gun_BL_14_inch_Mk_VII,
     /* outline */           {
@@ -261,7 +299,11 @@ const turret_design turret_kgv_14in_twin =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-5.f, 41.f),
     /* num_guns */          2,
-    /* spacing */           2.5f,
+    /* position */
+    {
+        vec3(.65 * 4.75, -1.25, 1),
+        vec3(.65 * 4.75, 1.25, 1),
+    },
     /* reload_time */       time_delta::from_seconds(30.f),
     /* gun_design */        &gun_BL_14_inch_Mk_VII,
     /* outline */           {
@@ -293,7 +335,11 @@ const turret_design turret_kgv_5_25in =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-5.f, 70.f),
     /* num_guns */          2,
-    /* spacing */           2.5f,
+    /* position */
+    {
+        vec3(1, -1.25, 1),
+        vec3(1, 1.25, 1),
+    },
     /* reload_time */       time_delta::from_seconds(7.5f),
     /* gun_design */        &gun_QF_5_25_inch_Mk_I,
     /* outline */           {
@@ -324,7 +370,13 @@ const turret_design turret_richelieu_380mm =
     /* elevation_speed */   DEG(6.f),
     /* elevation_limit */   DEGV(-5.f, 35.f),
     /* num_guns */          4,
-    /* spacing */           2.25f, // guns are not actually evenly spaced
+    /* position */
+    {
+        vec3(5, -3.375, 1),
+        vec3(5, -1.125, 1),
+        vec3(5, 1.125, 1),
+        vec3(5, 3.375, 1),
+    },
     /* reload_time */       time_delta::from_seconds(33.f),
     /* gun_design */        &gun_380mm_45_Modele_1935,
     /* outline */           {
@@ -352,7 +404,12 @@ const turret_design turret_richelieu_152mm =
     /* elevation_speed */   DEG(8.f),
     /* elevation_limit */   DEGV(-10.f, 85.f),
     /* num_guns */          3,
-    /* spacing */           1.85f,//1.6667f,
+    /* position */
+    {
+        vec3(3.2, -1.85, 1),
+        vec3(3.2, 0, 1),
+        vec3(3.2, 1.85, 1),
+    },
     /* reload_time */       time_delta::from_seconds(12.f),
     /* gun_design */        &gun_152mm_55_Modele_1930,
     /* outline */           {
@@ -386,7 +443,11 @@ const turret_design turret_bismarck_38cm =
     /* elevation_speed */   DEG(6.f),
     /* elevation_limit */   DEGV(-5.5f, 30.f),
     /* num_guns */          2,
-    /* spacing */           3.6f,
+    /* position */
+    {
+        vec3(5.15, -1.8, 1),
+        vec3(5.15, 1.8, 1),
+    },
     /* reload_time */       time_delta::from_seconds(24.f),
     /* gun_design */        &gun_38cm_SK_C_34,
     /* outline */           {
@@ -417,7 +478,11 @@ const turret_design turret_bismarck_15cm_rf =
     /* elevation_speed */   DEG(8.f),
     /* elevation_limit */   DEGV(-10.f, 40.f),
     /* num_guns */          2,
-    /* spacing */           1.5f,
+    /* position */
+    {
+        vec3(2, -0.75, 1),
+        vec3(2, 0.75, 1),
+    },
     /* reload_time */       time_delta::from_seconds(7.5f),
     /* gun_design */        &gun_15cm_SK_C_28,
     /* outline */           {
@@ -449,7 +514,11 @@ const turret_design turret_bismarck_15cm =
     /* elevation_speed */   DEG(8.f),
     /* elevation_limit */   DEGV(-10.f, 40.f),
     /* num_guns */          2,
-    /* spacing */           1.5f,
+    /* position */
+    {
+        vec3(2, -0.75, 1),
+        vec3(2, 0.75, 1),
+    },
     /* reload_time */       time_delta::from_seconds(7.5f),
     /* gun_design */        &gun_15cm_SK_C_28,
     /* outline */           {
@@ -475,7 +544,12 @@ const turret_design turret_littorio_381mm =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-5.f, 35.f),
     /* num_guns */          3,
-    /* spacing */           2.5f,
+    /* position */
+    {
+        vec3(5.15, -2.5, 1),
+        vec3(5.15, 0, 1),
+        vec3(5.15, 2.5, 1),
+    },
     /* reload_time */       time_delta::from_seconds(45.f),
     /* gun_design */        &gun_381_50_ansaldo_m1934,
     /* outline */           {
@@ -507,7 +581,12 @@ const turret_design turret_littorio_152mm =
     /* elevation_speed */   DEG(10.f),
     /* elevation_limit */   DEGV(-5.f, 35.f),
     /* num_guns */          3,
-    /* spacing */           1.5f,
+    /* position */
+    {
+        vec3(2, -1.5, 1),
+        vec3(2, 0, 1),
+        vec3(2, 1.5, 1),
+    },
     /* reload_time */       time_delta::from_seconds(6.f),
     /* gun_design */        &gun_152_55_ansaldo_m1934,
     /* outline */           {
@@ -540,7 +619,12 @@ const turret_design turret_deutschland_28cm =
     /* elevation_speed */   DEG(15.f),
     /* elevation_limit */   DEGV(-8.f, 40.f),
     /* num_guns */          3,
-    /* spacing */           1.75f,
+    /* position */
+    {
+        vec3(5.5, -1.75, 1),
+        vec3(5.5, 0, 1),
+        vec3(5.5, 1.75, 1),
+    },
     /* reload_time */       time_delta::from_seconds(24.f),
     /* gun_design */        &gun_28cm_SK_C_28,
     /* outline */           OUTLINE(5.5f)
@@ -553,7 +637,12 @@ const turret_design turret_town_6in =
     /* elevation_speed */   DEG(20.f),
     /* elevation_limit */   DEGV(-5.f, 45.f),
     /* num_guns */          3,
-    /* spacing */           1.f,
+    /* position */
+    {
+        vec3(3, -1, 1),
+        vec3(3, 0, 1),
+        vec3(3, 1, 1),
+    },
     /* reload_time */       time_delta::from_seconds(8.f),
     /* gun_design */        &gun_BL_6_inch_Mk_XXIII,
     /* outline */           OUTLINE(3.f)
@@ -566,7 +655,11 @@ const turret_design turret_tribal_4_7in =
     /* elevation_speed */   DEG(25.f),
     /* elevation_limit */   DEGV(-5.f, 40.f),
     /* num_guns */          2,
-    /* spacing */           0.75f,
+    /* position */
+    {
+        vec3(2, -0.375, 1),
+        vec3(2, 0.375, 1),
+    },
     /* reload_time */       time_delta::from_seconds(4.f),
     /* gun_design */        &gun_QF_4_7_inch_Mark_IX,
     /* outline */           OUTLINE(2.f)

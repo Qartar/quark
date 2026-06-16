@@ -18,8 +18,9 @@ struct turret_design
     float elevation_speed; //!< Angular speed in radians/sec
     vec2 elevation_limit; //!< Minimum and maximum elevation angle, in radians
 
+    static constexpr int max_guns = 4;
     int num_guns; //!< Number of gun barrels
-    float spacing; //!< Distance between each gun barrel
+    vec3 position[max_guns];  //!< Position of each gun barrel
     time_delta reload_time; //!< Time to reload all barrels
 
     gun_design const* gun_design;

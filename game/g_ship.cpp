@@ -135,15 +135,13 @@ void ship::draw(render::system* renderer, time_value time) const
     // draw turrets
     for (std::size_t jj = 0, num = _turrets.size(); jj < num; ++jj) {
         auto const& turret = _design->turrets[jj];
-        mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[jj].traverse));
-
-        float radius = turret.design->radius;
+        rot2 turret_rx = rot2(turret.orientation + _turrets[jj].traverse);
 
         // draw turret outline
-        mat4 turret_tx4 = mat4(turret_tx[0][0], turret_tx[0][1], 0, turret_tx[0][2],
-                               turret_tx[1][0], turret_tx[1][1], 0, turret_tx[1][2],
-                               0,               0,               1, 0,
-                               turret_tx[2][0], turret_tx[2][1], 0, turret_tx[2][2]) * tx4;
+        mat4 turret_tx4 = mat4(turret_rx[0], turret_rx[1], 0, 0,
+                              -turret_rx[1], turret_rx[0], 0, 0,
+                               0,             0,           1, 0,
+                               turret.position.x, turret.position.y, turret.position.z, 1) * tx4;
 
         renderer->draw_outline(_outlines[_turrets[jj].turret_outline], turret_tx4, color);
 
@@ -152,12 +150,12 @@ void ship::draw(render::system* renderer, time_value time) const
 
         // draw guns
         for (int ii = 0; ii < turret.design->num_guns; ++ii) {
-            double y = turret.design->spacing * (ii - 0.5 * (turret.design->num_guns - 1));
+            vec3 p = turret.design->position[ii];
 
             mat4 gun_tx4 = mat4(cp, 0, sp, 0,
                                 0,  1, 0,  0,
                                -sp, 0, cp, 0,
-                                radius, y, 0, 1) * turret_tx4;
+                                p.x, p.y, p.z, 1) * turret_tx4;
 
             renderer->draw_outline(_outlines[_turrets[jj].gun_outline], gun_tx4, color);
         }
@@ -378,24 +376,23 @@ void ship::get_firing_vectors(std::size_t turret_index, std::size_t gun_index, v
 {
     auto const& turret = _design->turrets[turret_index];
 
-    mat3 turret_tx = mat3::transform(turret.position, rot2(turret.orientation + _turrets[turret_index].traverse));
-    mat4 turret_tx4 = mat4(turret_tx[0][0], turret_tx[0][1], 0, turret_tx[0][2],
-                           turret_tx[1][0], turret_tx[1][1], 0, turret_tx[1][2],
-                           0,               0,               1, 0,
-                           turret_tx[2][0], turret_tx[2][1], 0, turret_tx[2][2]) * get_transform();
+    rot2 turret_rx = rot2(turret.orientation + _turrets[turret_index].traverse);
+    mat4 turret_tx4 = mat4(turret_rx[0], turret_rx[1], 0, 0,
+                          -turret_rx[1], turret_rx[0], 0, 0,
+                           0,             0,           1, 0,
+                           turret.position.x, turret.position.y, turret.position.z, 1) * get_transform();
 
     double cp = cos(_turrets[turret_index].elevation);
     double sp = sin(_turrets[turret_index].elevation);
 
     // TODO: fix hard-coded muzzle transform
-    vec2 gun_offset = vec2(turret.design->radius,
-                           turret.design->spacing * (gun_index - 0.5 * (turret.design->num_guns - 1)));
+    vec3 gun_offset = turret.design->position[gun_index];
     vec3 muzzle_offset = vec3(0.9 * turret.design->gun_design->length, 0, 0);
 
     mat4 gun_tx4 = mat4(cp, 0, sp, 0,
                         0,  1, 0,  0,
                        -sp, 0, cp, 0,
-                        gun_offset.x, gun_offset.y, 8, 1) * turret_tx4;
+                        gun_offset.x, gun_offset.y, gun_offset.z, 1) * turret_tx4;
 
     position = muzzle_offset * gun_tx4;
     direction = vec3(cp, 0, sp) * turret_tx4.submatrix<3,3>();

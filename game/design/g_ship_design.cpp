@@ -107,44 +107,44 @@ const ship_design ship_yamato_battleship =
     {
         // main battery
         {
-            /* position */          vec2(52,0),
+            /* position */          vec3(52,0,6.75),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_yamato_46cm,
         },
         {
-            /* position */          vec2(30,0),
+            /* position */          vec3(30,0,9.75),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_yamato_46cm,
         },
         {
-            /* position */          vec2(-65,0),
+            /* position */          vec3(-65,0,8.25),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_yamato_46cm,
         },
         // secondary battery
         {
-            /* position */          vec2(12.5f, 0),
+            /* position */          vec3(12.5f, 0, 13.75),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_yamato_15_5cm,
         },
         {
-            /* position */          vec2(-19.8f, -13.1f),
+            /* position */          vec3(-19.8f, -13.1f, 8.25),
             /* orientation */       0,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_yamato_15_5cm,
         },
         {
-            /* position */          vec2(-19.8f, 13.1f),
+            /* position */          vec3(-19.8f, 13.1f, 8.25),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_yamato_15_5cm,
         },
         {
-            /* position */          vec2(-49, 0),
+            /* position */          vec3(-49, 0, 13),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_yamato_15_5cm,
@@ -176,37 +176,37 @@ const ship_design ship_fuso_battleship =
     /* turrets */
     {
         {
-            /* position */          vec2(56.5f,0),
+            /* position */          vec3(56.5f,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-150.f, 150.f),
             /* design */            &turret_fuso_36cm,
         },
         {
-            /* position */          vec2(43.5f,0),
+            /* position */          vec3(43.5f,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-150.f, 150.f),
             /* design */            &turret_fuso_36cm_rf,
         },
         {
-            /* position */          vec2(5.25f,0),
+            /* position */          vec3(5.25f,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-150.f, 150.f),
             /* design */            &turret_fuso_36cm_rf,
         },
         {
-            /* position */          vec2(-24.25f,0),
+            /* position */          vec3(-24.25f,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-150.f, 150.f),
             /* design */            &turret_fuso_36cm_rf,
         },
         {
-            /* position */          vec2(-55.f,0),
+            /* position */          vec3(-55.f,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-150.f, 150.f),
             /* design */            &turret_fuso_36cm_rf,
         },
         {
-            /* position */          vec2(-67.25f,0),
+            /* position */          vec3(-67.25f,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-150.f, 150.f),
             /* design */            &turret_fuso_36cm,
@@ -238,19 +238,19 @@ const ship_design ship_iowa_battleship =
     /* turrets */
     {
         {
-            /* position */          vec2(59,0),
+            /* position */          vec3(59,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_iowa_16in,
         },
         {
-            /* position */          vec2(38,0),
+            /* position */          vec3(38,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_iowa_16in,
         },
         {
-            /* position */          vec2(-67,0),
+            /* position */          vec3(-67,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_iowa_16in,
@@ -283,81 +283,81 @@ const ship_design ship_north_carolina_battleship =
     {
         // main battery
         {
-            /* position */          vec2(51,0),
+            /* position */          vec3(51,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_north_carolina_16in,
         },
         {
-            /* position */          vec2(30.5f,0),
+            /* position */          vec3(30.5f,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_north_carolina_16in,
         },
         {
-            /* position */          vec2(-62,0),
+            /* position */          vec3(-62,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_north_carolina_16in,
         },
         // secondary battery starboard
         {
-            /* position */          vec2(0,-10),
+            /* position */          vec3(0,-10,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-7,-14),
+            /* position */          vec3(-7,-14,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-16,-10),
+            /* position */          vec3(-16,-10,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-23.5f,-14),
+            /* position */          vec3(-23.5f,-14,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-32,-10),
+            /* position */          vec3(-32,-10,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_north_carolina_5in,
         },
         // secondary battery port
         {
-            /* position */          vec2(0,10),
+            /* position */          vec3(0,10,1),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-7,14),
+            /* position */          vec3(-7,14,1),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-16,10),
+            /* position */          vec3(-16,10,1),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-23.5f,14),
+            /* position */          vec3(-23.5f,14,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_north_carolina_5in,
         },
         {
-            /* position */          vec2(-32,10),
+            /* position */          vec3(-32,10,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_north_carolina_5in,
@@ -390,69 +390,69 @@ const ship_design ship_king_george_v_battleship =
     {
         // main battery
         {
-            /* position */          vec2(49.5f,0),
+            /* position */          vec3(49.5f,0,8.25),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_kgv_14in_quad,
         },
         {
-            /* position */          vec2(34.25f,0),
+            /* position */          vec3(34.25f,0,11.5),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_kgv_14in_twin,
         },
         {
-            /* position */          vec2(-62,0),
+            /* position */          vec3(-62,0,8.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_kgv_14in_quad,
         },
         // secondary battery starboard
         {
-            /* position */          vec2(11.5f, -13.f),
+            /* position */          vec3(11.5f, -13.f, 7.75),
             /* orientation */       0,
             /* train_limit */       DEGV(-150.f, 0.f),
             /* design */            &turret_kgv_5_25in,
         },
         {
-            /* position */          vec2(.25f, -13.25f),
+            /* position */          vec3(.25f, -13.25f, 10.25),
             /* orientation */       0,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_kgv_5_25in,
         },
         {
-            /* position */          vec2(-24.f, -13.f),
+            /* position */          vec3(-24.f, -13.f, 10.25),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_kgv_5_25in,
         },
         {
-            /* position */          vec2(-34.5f, -12.25f),
+            /* position */          vec3(-34.5f, -12.25f, 7.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 150.f),
             /* design */            &turret_kgv_5_25in,
         },
         // secondary battery port
         {
-            /* position */          vec2(11.5f, 13.f),
+            /* position */          vec3(11.5f, 13.f, 7.75),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 150.f),
             /* design */            &turret_kgv_5_25in,
         },
         {
-            /* position */          vec2(.25f, 13.25f),
+            /* position */          vec3(.25f, 13.25f, 10.25),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_kgv_5_25in,
         },
         {
-            /* position */          vec2(-24.f, 13.f),
+            /* position */          vec3(-24.f, 13.f, 10.25),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_kgv_5_25in,
         },
         {
-            /* position */          vec2(-34.5f, 12.25f),
+            /* position */          vec3(-34.5f, 12.25f, 7.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-150.f, 0.f),
             /* design */            &turret_kgv_5_25in,
@@ -485,32 +485,32 @@ const ship_design ship_richelieu_battleship =
     {
         // main battery
         {
-            /* position */          vec2(51.f,0),
+            /* position */          vec3(51.f,0,8),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_richelieu_380mm,
         },
         {
-            /* position */          vec2(18.f,0),
+            /* position */          vec3(18.f,0,12),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_richelieu_380mm,
         },
         // secondary battery
         {
-            /* position */          vec2(-53.f,0),
+            /* position */          vec3(-53.f,0,12.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-155.f, 155.f),
             /* design */            &turret_richelieu_152mm,
         },
         {
-            /* position */          vec2(-67.6f, -8.55f),
+            /* position */          vec3(-67.6f, -8.55f,10.25),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 170.f),
             /* design */            &turret_richelieu_152mm,
         },
         {
-            /* position */          vec2(-67.6f, 8.55f),
+            /* position */          vec3(-67.6f, 8.55f,10.25),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-170.f, 0.f),
             /* design */            &turret_richelieu_152mm,
@@ -543,62 +543,62 @@ const ship_design ship_bismarck_battleship =
     {
         // main battery
         {
-            /* position */          vec2(69.75f,0),
+            /* position */          vec3(69.75f,0,8.25),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
         },
         {
-            /* position */          vec2(52.f,0),
+            /* position */          vec3(52.f,0,11.75),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
         },
         {
-            /* position */          vec2(-59.5f,0),
+            /* position */          vec3(-59.5f,0,11.25),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
         },
         {
-            /* position */          vec2(-78.f,0),
+            /* position */          vec3(-78.f,0,7.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_bismarck_38cm,
         },
         // secondary battery
         {
-            /* position */          vec2(27.85f, 9.6f),
+            /* position */          vec3(27.85f, 9.6f, 7.5),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 135.f),
             /* design */            &turret_bismarck_15cm,
         },
         {
-            /* position */          vec2(27.85f, -9.6f),
+            /* position */          vec3(27.85f, -9.6f, 7.5),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 0.f),
             /* design */            &turret_bismarck_15cm,
         },
         {
-            /* position */          vec2(8.3f, 14.5f),
+            /* position */          vec3(8.3f, 14.5f, 7.5),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 180.f),
             /* design */            &turret_bismarck_15cm_rf,
         },
         {
-            /* position */          vec2(8.3f, -14.5f),
+            /* position */          vec3(8.3f, -14.5f, 7.5),
             /* orientation */       0,
             /* train_limit */       DEGV(-180.f, 0.f),
             /* design */            &turret_bismarck_15cm_rf,
         },
         {
-            /* position */          vec2(-24.7f, 14.15f),
+            /* position */          vec3(-24.7f, 14.15f, 7.5),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 0.f),
             /* design */            &turret_bismarck_15cm,
         },
         {
-            /* position */          vec2(-24.7f, -14.15f),
+            /* position */          vec3(-24.7f, -14.15f, 7.5),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 135.f),
             /* design */            &turret_bismarck_15cm,
@@ -631,44 +631,44 @@ const ship_design ship_littorio_battleship =
     {
         // main battery
         {
-            /* position */          vec2(56.f,0),
+            /* position */          vec3(56.f,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_littorio_381mm,
         },
         {
-            /* position */          vec2(34.5f,0),
+            /* position */          vec3(34.5f,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_littorio_381mm,
         },
         {
-            /* position */          vec2(-56.f,0),
+            /* position */          vec3(-56.f,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-155.f, 155.f),
             /* design */            &turret_littorio_381mm,
         },
         // secondary battery
         {
-            /* position */          vec2(26.5f, 9.6f),
+            /* position */          vec3(26.5f, 9.6f,1),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 160.f),
             /* design */            &turret_littorio_152mm,
         },
         {
-            /* position */          vec2(26.5f, -9.6f),
+            /* position */          vec3(26.5f, -9.6f,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-160.f, 0.f),
             /* design */            &turret_littorio_152mm,
         },
         {
-            /* position */          vec2(-48.f, 9.6f),
+            /* position */          vec3(-48.f, 9.6f,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-170.f, 0.f),
             /* design */            &turret_littorio_152mm,
         },
         {
-            /* position */          vec2(-48.f, -9.6f),
+            /* position */          vec3(-48.f, -9.6f,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 170.f),
             /* design */            &turret_littorio_152mm,
@@ -700,13 +700,13 @@ const ship_design ship_deutschland_cruiser =
     /* turrets */
     {
         {
-            /* position */          vec2(32,0),
+            /* position */          vec3(32,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_deutschland_28cm,
         },
         {
-            /* position */          vec2(-32,0),
+            /* position */          vec3(-32,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_deutschland_28cm,
@@ -738,25 +738,25 @@ const ship_design ship_town_cruiser =
     /* turrets */
     {
         {
-            /* position */          vec2(32,0),
+            /* position */          vec3(32,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_town_6in,
         },
         {
-            /* position */          vec2(16,0),
+            /* position */          vec3(16,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_town_6in,
         },
         {
-            /* position */          vec2(-16,0),
+            /* position */          vec3(-16,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_town_6in,
         },
         {
-            /* position */          vec2(-32,0),
+            /* position */          vec3(-32,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_town_6in,
@@ -788,25 +788,25 @@ const ship_design ship_tribal_destroyer =
     /* turrets */
     {
         {
-            /* position */          vec2(24,0),
+            /* position */          vec3(24,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_tribal_4_7in,
         },
         {
-            /* position */          vec2(12,0),
+            /* position */          vec3(12,0,1),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_tribal_4_7in,
         },
         {
-            /* position */          vec2(-12,0),
+            /* position */          vec3(-12,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_tribal_4_7in,
         },
         {
-            /* position */          vec2(-24,0),
+            /* position */          vec3(-24,0,1),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_tribal_4_7in,
