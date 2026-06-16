@@ -45,8 +45,8 @@ public:
     //! Return the closest point on the given curve segments to the given point
     segment_point closest_point(vec3 v, mat4 projection) const;
 
-    bool insert_vertex(vec3 v, mat4 projection, double minimum_vertex_dsqr);
-    bool remove_vertex(vec3 v, mat4 projection, double minimum_vertex_dsqr);
+    bool insert_vertex(vec3 v, mat4 projection);
+    bool remove_vertex(vec3 v, mat4 projection);
 
     bool upconvert_segment(vec3 v, mat4 projection);
     bool downconvert_segment(vec3 v, mat4 projection);
@@ -113,6 +113,8 @@ protected:
         none,
         vertex,
         vertex_mirror,
+        segment,
+        segment_mirror,
         turret,
         turret_radius,
         turret_rotation,
@@ -120,6 +122,7 @@ protected:
 
     feature _feature;
     std::size_t _feature_index;
+    vec3 _feature_point;
     std::size_t _feature_outline;
     mat4 _feature_transform;
     mat4 _feature_inverse_transform;

@@ -390,18 +390,9 @@ ship_outline::segment_point ship_outline::closest_point(vec3 v0, mat4 projection
 }
 
 //------------------------------------------------------------------------------
-bool ship_outline::insert_vertex(vec3 v0, mat4 projection, double minimum_vertex_dsqr)
+bool ship_outline::insert_vertex(vec3 v0, mat4 projection)
 {
     segment_point cp = closest_point(v0, projection);
-    if (length_sqr((cp.point - v0) * projection) > minimum_vertex_dsqr) {
-        return false;
-    }
-
-    // check if point is too close to an existing vertex
-    std::size_t vtx = closest_vertex(cp.point, projection);
-    if (length_sqr((cp.point - _vertices[vtx]) * projection) < minimum_vertex_dsqr) {
-        return false;
-    }
 
     for (std::size_t ii = 0, jj = 0; ii < _segments.size(); ++ii) {
         if (ii != cp.segment) {
@@ -455,7 +446,7 @@ bool ship_outline::insert_vertex(vec3 v0, mat4 projection, double minimum_vertex
 }
 
 //------------------------------------------------------------------------------
-bool ship_outline::remove_vertex(vec3 v0, mat4 projection, double minimum_vertex_dsqr)
+bool ship_outline::remove_vertex(vec3 v0, mat4 projection)
 {
     vec2 v = (v0 * projection).to_vec2();
 
@@ -468,10 +459,6 @@ bool ship_outline::remove_vertex(vec3 v0, mat4 projection, double minimum_vertex
             best_idx = ii;
             best_dsqr = dsqr;
         }
-    }
-
-    if (best_dsqr > minimum_vertex_dsqr) {
-        return false;
     }
 
     // cannot delete first or last vertex
@@ -914,6 +901,10 @@ void ship_editor::draw_view(
     } else if (_feature == feature::vertex_mirror) {
         ship_outline const& drag_outline = _outlines[_feature_outline];
         renderer->draw_box(vertex_size, (drag_outline.vertices()[_feature_index] * vec3(1,-1,1) * _feature_transform * view.transform).to_vec2(), color4(0,1,0,1));
+    } else if (_feature == feature::segment) {
+        renderer->draw_box(vertex_size, (_feature_point * _feature_transform * view.transform).to_vec2(), color4(0,1,0,1));
+    } else if (_feature == feature::segment_mirror) {
+        renderer->draw_box(vertex_size, (_feature_point * vec3(1,-1,1) * _feature_transform * view.transform).to_vec2(), color4(0,1,0,1));
     }
 
     //
@@ -938,6 +929,12 @@ void ship_editor::draw_view(
             // draw vertex position in local space
             vec3 v = outline.vertices()[_feature_index] * vec3(1,-1,1);
             crosshair = (v * _feature_transform * view.transform).to_vec2();
+        } else if (_feature == feature::segment) {
+            // draw vertex position in local space
+            crosshair = (_feature_point * _feature_transform * view.transform).to_vec2();
+        } else if (_feature == feature::segment_mirror) {
+            // draw vertex position in local space
+            crosshair = (_feature_point * vec3(1,-1,1) * _feature_transform * view.transform).to_vec2();
         } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
             // draw cursor position in turret-local space
             vec3 local_pos = snap_vertex(cursor_to_world() * _turret_instances[_turret_instance].inverse_transform * view.transform);
@@ -996,6 +993,12 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
             // draw vertex position in local space
             vec3 v = outline.vertices()[_feature_index] * vec3(1,-1,1);
             s = va("(%g, %g, %g)", v.x, v.y, v.z);
+        } else if (_feature == feature::segment) {
+            // draw closest point in local space
+            s = va("(%g, %g, %g)", _feature_point.x, _feature_point.y, _feature_point.z);
+        } else if (_feature == feature::segment_mirror) {
+            // draw closest point in local space
+            s = va("(%g, %g, %g)", _feature_point.x, -_feature_point.y, _feature_point.z);
         } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
             // draw cursor position in turret-local space
             vec3 local_pos = snap_vertex(cursor_to_world() * _turret_instances[_turret_instance].inverse_transform * _viewport_projection);
@@ -1020,18 +1023,8 @@ void ship_editor::draw(render::system* renderer, time_value /*time*/) const
 }
 
 //------------------------------------------------------------------------------
-bool ship_editor::insert_turret(vec3 v, mat4 projection)
+bool ship_editor::insert_turret(vec3 v, mat4 /*projection*/)
 {
-    if (_turret_instance < _turret_instances.size()) {
-        std::size_t index = _turret_instances[_turret_instance].index;
-        if (_outlines[_turrets[index].index].insert_vertex(
-            v * _turret_instances[_turret_instance].inverse_transform,
-            projection,
-            minimum_vertex_dsqr)) {
-            return true;
-        }
-    }
-
     if (!_turrets.size() || _control) {
         _turrets.push_back({{5.25}, _outlines.size()});
         _outlines.push_back(ship_outline(
@@ -1048,15 +1041,6 @@ bool ship_editor::insert_turret(vec3 v, mat4 projection)
 //------------------------------------------------------------------------------
 bool ship_editor::remove_turret(vec3 v, mat4 projection)
 {
-    if (_turret_instance < _turret_instances.size()) {
-        std::size_t index = _turret_instances[_turret_instance].index;
-        if (_outlines[_turrets[index].index].remove_vertex(
-            v * _turret_instances[_turret_instance].inverse_transform,
-            projection,
-            minimum_vertex_dsqr)) {
-            return true;
-        }
-    }
     std::size_t best_instance = SIZE_MAX;
     double best_dsqr = DBL_MAX;
     for (std::size_t ii = 0; ii < _turret_instances.size(); ++ii) {
@@ -1217,18 +1201,22 @@ bool ship_editor::key_event(int key, bool down)
             return true;
 
         case K_INS:
-            if (_mode == editor_mode::deck) {
-                _outlines[0].insert_vertex(cursor_to_world(), _viewport_projection, minimum_vertex_dsqr);
-            } else if (_mode == editor_mode::turret) {
+            if (_mode == editor_mode::deck && (_feature == feature::segment || _feature == feature::segment_mirror)) {
+                _outlines[0].insert_vertex(cursor_to_world(), _viewport_projection);
+            } else if (_mode == editor_mode::turret && (_feature == feature::segment || _feature == feature::segment_mirror)) {
+                _outlines[_feature_outline].insert_vertex(cursor_to_world() * _feature_inverse_transform, _viewport_projection);
+            } else if (_mode == editor_mode::turret && _feature == feature::none) {
                 insert_turret(cursor_to_world(), _viewport_projection);
             }
             update_highlight();
             return true;
 
         case K_DEL:
-            if (_mode == editor_mode::deck) {
-                _outlines[0].remove_vertex(cursor_to_world(), _viewport_projection, minimum_vertex_dsqr);
-            } else if (_mode == editor_mode::turret) {
+            if (_mode == editor_mode::deck && (_feature == feature::vertex || _feature == feature::vertex_mirror)) {
+                _outlines[0].remove_vertex(cursor_to_world(), _viewport_projection);
+            } else if (_mode == editor_mode::turret && (_feature == feature::vertex || _feature == feature::vertex_mirror)) {
+                _outlines[_feature_outline].remove_vertex(cursor_to_world() * _feature_inverse_transform, _viewport_projection);
+            } else if (_mode == editor_mode::turret && _feature == feature::turret) {
                 remove_turret(cursor_to_world(), _viewport_projection);
             }
             update_highlight();
@@ -1382,8 +1370,11 @@ void ship_editor::cursor_event(vec2 position)
 //------------------------------------------------------------------------------
 void ship_editor::update_highlight()
 {
+    double minimum_dsqr = length_sqr(0.01 * _view.size);
+
     feature best_feature = feature::none;
     std::size_t best_index = 0;
+    vec3 best_point = vec3_zero;
     double best_dsqr = DBL_MAX;
 
     if (_mode == editor_mode::deck) {
@@ -1405,6 +1396,26 @@ void ship_editor::update_highlight()
                 best_dsqr = mirror_dsqr;
             }
         }
+        // check nearest segment
+        auto cp = _outlines[0].closest_point(cursor_to_world(), _viewport_projection);
+        double segment_dsqr = length_sqr((cp.point - cursor_to_world()) * _viewport_projection);
+        if (segment_dsqr < best_dsqr && best_dsqr > minimum_dsqr) {
+            best_feature = feature::segment;
+            best_index = cp.segment;
+            best_point = cp.point;
+            best_dsqr = segment_dsqr;
+        }
+        // check nearest segment mirror
+        if (_viewport == viewport::plan) {
+            cp = _outlines[0].closest_point(cursor_to_world() * vec3(1,-1,1), _viewport_projection);
+            segment_dsqr = length_sqr((cp.point - cursor_to_world() * vec3(1,-1,1)) * _viewport_projection);
+            if (segment_dsqr < best_dsqr && best_dsqr > minimum_dsqr) {
+                best_feature = feature::segment_mirror;
+                best_index = cp.segment;
+                best_point = cp.point;
+                best_dsqr = segment_dsqr;
+            }
+        }
     } else if (_mode == editor_mode::turret && _turret_instance < _turret_instances.size()) {
         auto& instance = _turret_instances[_turret_instance];
         auto& turret = _turrets[instance.index];
@@ -1424,6 +1435,26 @@ void ship_editor::update_highlight()
                 best_feature = feature::vertex_mirror;
                 best_index = mirror_index;
                 best_dsqr = mirror_dsqr;
+            }
+        }
+        // check nearest segment
+        auto cp = outline.closest_point(cursor_to_world() * instance.inverse_transform, _viewport_projection);
+        double segment_dsqr = length_sqr((cp.point - cursor_to_world() * instance.inverse_transform) * _viewport_projection);
+        if (segment_dsqr < best_dsqr && best_dsqr > minimum_dsqr) {
+            best_feature = feature::segment;
+            best_index = cp.segment;
+            best_point = cp.point;
+            best_dsqr = segment_dsqr;
+        }
+        // check nearest segment mirror
+        if (_viewport == viewport::plan) {
+            cp = outline.closest_point(cursor_to_world() * instance.inverse_transform * vec3(1,-1,1), _viewport_projection);
+            segment_dsqr = length_sqr((cp.point - cursor_to_world() * instance.inverse_transform * vec3(1,-1,1)) * _viewport_projection);
+            if (segment_dsqr < best_dsqr && best_dsqr > minimum_dsqr) {
+                best_feature = feature::segment_mirror;
+                best_index = cp.segment;
+                best_point = cp.point;
+                best_dsqr = segment_dsqr;
             }
         }
         // check translation widget
@@ -1458,9 +1489,9 @@ void ship_editor::update_highlight()
         }
     }
 
-    double minimum_dsqr = length_sqr(0.01 * _view.size);
     if (best_dsqr < minimum_dsqr) {
         _feature_index = best_index;
+        _feature_point = best_point;
         _feature = best_feature;
         if (_mode == editor_mode::deck) {
             _feature_outline = 0;
