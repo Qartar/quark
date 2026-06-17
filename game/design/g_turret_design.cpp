@@ -453,7 +453,7 @@ const turret_design turret_bismarck_38cm =
     /* outline */           {
         vec2(-8.7f, -0.00f),
         vec2(-8.25f, 2.15f),
-        vec2(-7.23f, 4.21f),
+        vec2(-7.25f, 4.20f),
         vec2(-6.3f, 4.20f),
         vec2(-6.3f, 5.25f),
         vec2(-4.f, 5.4f),
@@ -466,7 +466,7 @@ const turret_design turret_bismarck_38cm =
         vec2(-4.f, -5.4f),
         vec2(-6.3f, -5.25f),
         vec2(-6.3f, -4.20f),
-        vec2(-7.25f, -4.21f),
+        vec2(-7.25f, -4.20f),
         vec2(-8.25f, -2.15f),
     }
 };

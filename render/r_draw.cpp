@@ -382,19 +382,30 @@ void system::draw_line(float width, vec2 start, vec2 end, color4 start_color, co
 }
 
 //------------------------------------------------------------------------------
-void system::draw_outline(render::outline const& o, mat4 transform, color4 color)
+void system::draw_outline(render::outline const& o, mat4 transform, color4 color, color4 fill_color)
 {
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadMatrixd(transform * _view.transform);
-    glColor4fv(color);
+
+    glEnable(GL_DEPTH_TEST);
 
     _vaov2f.bind();
     _vaov2f.bind_buffer(o.vertices(), 0);
+    _vaov2f.bind_buffer(o.indices());
+
+    glColor4fv(color);
     glDrawArrays(GL_LINE_LOOP, 0, narrow_cast<GLsizei>(o.num_vertices()));
+
+    if (o.num_indices()) {
+        glColor4fv(fill_color);
+        glDrawElements(GL_TRIANGLES, narrow_cast<GLsizei>(o.num_indices()), GL_UNSIGNED_SHORT, nullptr);
+    }
 
     gl::vertex_array().bind();
     glPopMatrix();
+
+    glDisable(GL_DEPTH_TEST);
 }
 
 } // namespace render

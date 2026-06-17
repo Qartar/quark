@@ -151,12 +151,13 @@ bool projectile::touch(object *other, physics::collision const* collision)
 void projectile::draw(render::system* renderer, time_value time) const
 {
     constexpr color4 color(1,1,1,1);
+    constexpr color4 fill_color = color * .25f + color4(.1f,.2f,.4f,1) * .75f;
 
     if (time > _impact_time) {
         return;
     }
 
-    renderer->draw_outline(_outline, get_transform(time), color);
+    renderer->draw_outline(_outline, get_transform(time), color, fill_color);
 }
 
 //------------------------------------------------------------------------------

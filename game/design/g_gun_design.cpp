@@ -10,10 +10,12 @@
 namespace game {
 
 #define GUN_OUTLINE(c, l) {     \
+    vec2(-0.08 * l,  1.25f * c),\
     vec2(0,  1.25f * c),        \
     vec2(0.7 * l,  0.5f * c),   \
     vec2(0.7 * l, -0.5f * c),   \
     vec2(0, -1.25f * c),        \
+    vec2(-0.08 * l, -1.25f * c),\
 }
 
 const gun_design gun_46cm_45_Type_94 =

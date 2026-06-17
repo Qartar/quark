@@ -121,7 +121,9 @@ void ship::draw(render::system* renderer, time_value time) const
     // draw hull outline
     mat4 tx4 = get_transform(time);
 
-    renderer->draw_outline(_outlines[0], tx4, color);
+    // blend color with sea color to give semi-transparent effect, but render solid
+    color4 hull_color = color * .25f + color4(.1f,.2f,.4f,1) * .75f;
+    renderer->draw_outline(_outlines[0], tx4, color, hull_color);
 
     // draw rudder
     {
@@ -143,7 +145,8 @@ void ship::draw(render::system* renderer, time_value time) const
                                0,             0,           1, 0,
                                turret.position.x, turret.position.y, turret.position.z, 1) * tx4;
 
-        renderer->draw_outline(_outlines[_turrets[jj].turret_outline], turret_tx4, color);
+        color4 fill_color = color * .25f + hull_color * .75f;
+        renderer->draw_outline(_outlines[_turrets[jj].turret_outline], turret_tx4, color, fill_color);
 
         double cp = cos(_turrets[jj].elevation);
         double sp = sin(_turrets[jj].elevation);
@@ -157,7 +160,7 @@ void ship::draw(render::system* renderer, time_value time) const
                                -sp, 0, cp, 0,
                                 p.x, p.y, p.z, 1) * turret_tx4;
 
-            renderer->draw_outline(_outlines[_turrets[jj].gun_outline], gun_tx4, color);
+            renderer->draw_outline(_outlines[_turrets[jj].gun_outline], gun_tx4, color, fill_color);
         }
     }
 
