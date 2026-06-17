@@ -77,7 +77,7 @@ const vec2 bismarck_verts[] = {
 };
 
 const vec2 littorio_verts[] = {
-    vec2(-118.88f, 0.00f), vec2(-118.50f, 1.12f), vec2(-117.16f, 2.44f), vec2(-114.48f, 3.97f), vec2(-110.10f, 5.68f), vec2(-103.73f, 7.52f), vec2(-95.27f, 9.40f), vec2(-84.76f, 11.22f), vec2(-72.41f, 12.87f), vec2(-58.51f, 14.27f), vec2(-43.42f, 15.35f), vec2(-27.47f, 16.04f), vec2(-11.00f, 16.34f), vec2(7.03f, 16.34f), vec2(20.69f, 16.00f), vec2(36.53f, 15.07f), vec2(53.44f, 13.55f), vec2(70.00f, 11.56f), vec2(84.95f, 9.24f), vec2(97.43f, 6.80f), vec2(107.13f, 4.38f), vec2(114.15f, 2.10f), vec2(118.88f, 0.00f), vec2(114.15f, -2.10f), vec2(107.13f, -4.38f), vec2(97.43f, -6.80f), vec2(84.95f, -9.24f), vec2(70.00f, -11.56f), vec2(53.44f, -13.55f), vec2(36.53f, -15.07f), vec2(20.69f, -16.00f), vec2(7.03f, -16.34f), vec2(-11.00f, -16.34f), vec2(-27.47f, -16.04f), vec2(-43.42f, -15.35f), vec2(-58.51f, -14.27f), vec2(-72.41f, -12.87f), vec2(-84.76f, -11.22f), vec2(-95.27f, -9.40f), vec2(-103.73f, -7.52f), vec2(-110.10f, -5.68f), vec2(-114.48f, -3.97f), vec2(-117.16f, -2.44f), vec2(-118.50f, -1.12f),
+    vec2(-118.90f, 0.00f), vec2(-118.61f, 1.06f), vec2(-117.45f, 2.24f), vec2(-114.75f, 3.74f), vec2(-107.00f, 6.75f), vec2(-97.70f, 9.16f), vec2(-87.12f, 11.20f), vec2(-75.81f, 12.69f), vec2(-65.00f, 13.50f), vec2(-64.25f, 13.50f), vec2(-59.25f, 13.50f), vec2(-39.33f, 14.93f), vec2(-20.08f, 15.74f), vec2(0.00f, 16.00f), vec2(19.93f, 15.73f), vec2(35.59f, 15.00f), vec2(48.06f, 13.90f), vec2(58.00f, 12.50f), vec2(61.50f, 12.50f), vec2(72.56f, 11.08f), vec2(85.25f, 8.99f), vec2(98.25f, 6.40f), vec2(110.25f, 3.50f), vec2(115.74f, 1.69f), vec2(118.33f, 0.62f), vec2(118.90f, 0.00f), vec2(118.33f, -0.62f), vec2(115.74f, -1.69f), vec2(110.25f, -3.50f), vec2(98.25f, -6.40f), vec2(85.25f, -8.99f), vec2(72.56f, -11.08f), vec2(61.50f, -12.50f), vec2(58.00f, -12.50f), vec2(48.06f, -13.90f), vec2(35.59f, -15.00f), vec2(19.93f, -15.73f), vec2(0.00f, -16.00f), vec2(-20.08f, -15.74f), vec2(-39.33f, -14.93f), vec2(-59.25f, -13.50f), vec2(-64.25f, -13.50f), vec2(-65.00f, -13.50f), vec2(-75.81f, -12.69f), vec2(-87.12f, -11.20f), vec2(-97.70f, -9.16f), vec2(-107.00f, -6.75f), vec2(-114.75f, -3.74f), vec2(-117.45f, -2.24f), vec2(-118.61f, -1.06f),
 };
 
 #define DEG(a) math::deg2rad(a)
@@ -631,44 +631,44 @@ const ship_design ship_littorio_battleship =
     {
         // main battery
         {
-            /* position */          vec3(56.f,0,1),
+            /* position */          vec3(53.f,0,8),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_littorio_381mm,
         },
         {
-            /* position */          vec3(34.5f,0,1),
+            /* position */          vec3(32.75f,0,12),
             /* orientation */       0,
             /* train_limit */       DEGV(-135.f, 135.f),
             /* design */            &turret_littorio_381mm,
         },
         {
-            /* position */          vec3(-56.f,0,1),
+            /* position */          vec3(-57.f,0,9.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-155.f, 155.f),
             /* design */            &turret_littorio_381mm,
         },
         // secondary battery
         {
-            /* position */          vec3(26.5f, 9.6f,1),
+            /* position */          vec3(23.75f, 10, 6.75),
             /* orientation */       0,
             /* train_limit */       DEGV(0.f, 160.f),
             /* design */            &turret_littorio_152mm,
         },
         {
-            /* position */          vec3(26.5f, -9.6f,1),
+            /* position */          vec3(23.75f, -10, 6.75),
             /* orientation */       0,
             /* train_limit */       DEGV(-160.f, 0.f),
             /* design */            &turret_littorio_152mm,
         },
         {
-            /* position */          vec3(-48.f, 9.6f,1),
+            /* position */          vec3(-47.25f, 10, 6.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(-170.f, 0.f),
             /* design */            &turret_littorio_152mm,
         },
         {
-            /* position */          vec3(-48.f, -9.6f,1),
+            /* position */          vec3(-47.25f, -10, 6.75),
             /* orientation */       math::pi,
             /* train_limit */       DEGV(0.f, 170.f),
             /* design */            &turret_littorio_152mm,
