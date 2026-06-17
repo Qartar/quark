@@ -1191,17 +1191,19 @@ bool ship_editor::key_event(int key, bool down)
 
         case K_MWHEELUP:
             _view.size /= 1.25;
+            update_highlight();
             return true;
 
         case K_MWHEELDOWN:
             _view.size *= 1.25;
+            update_highlight();
             return true;
 
         case K_INS:
-            if (_mode == editor_mode::deck && (_feature == feature::segment || _feature == feature::segment_mirror)) {
-                _outlines[0].insert_vertex(cursor_to_world(), _viewport_projection);
-            } else if (_mode == editor_mode::turret && (_feature == feature::segment || _feature == feature::segment_mirror)) {
+            if (_feature == feature::segment) {
                 _outlines[_feature_outline].insert_vertex(cursor_to_world() * _feature_inverse_transform, _viewport_projection);
+            } else if (_feature == feature::segment_mirror) {
+                _outlines[_feature_outline].insert_vertex(cursor_to_world() * _feature_inverse_transform * vec3(1,-1,1), _viewport_projection);
             } else if (_mode == editor_mode::turret && _feature == feature::none) {
                 insert_turret(cursor_to_world(), _viewport_projection);
             }
@@ -1209,10 +1211,10 @@ bool ship_editor::key_event(int key, bool down)
             return true;
 
         case K_DEL:
-            if (_mode == editor_mode::deck && (_feature == feature::vertex || _feature == feature::vertex_mirror)) {
-                _outlines[0].remove_vertex(cursor_to_world(), _viewport_projection);
-            } else if (_mode == editor_mode::turret && (_feature == feature::vertex || _feature == feature::vertex_mirror)) {
+            if (_feature == feature::vertex) {
                 _outlines[_feature_outline].remove_vertex(cursor_to_world() * _feature_inverse_transform, _viewport_projection);
+            }else if (_feature == feature::vertex_mirror) {
+                _outlines[_feature_outline].remove_vertex(cursor_to_world() * _feature_inverse_transform * vec3(1,-1,1), _viewport_projection);
             } else if (_mode == editor_mode::turret && _feature == feature::turret) {
                 remove_turret(cursor_to_world(), _viewport_projection);
             }
@@ -1220,62 +1222,52 @@ bool ship_editor::key_event(int key, bool down)
             return true;
 
         case K_PGUP:
-            if (_mode == editor_mode::deck) {
-                _outlines[0].upconvert_segment(cursor_to_world(), _viewport_projection);
-            } else if (_mode == editor_mode::turret) {
+            if (_feature == feature::segment) {
+                _outlines[_feature_outline].upconvert_segment(cursor_to_world() * _feature_inverse_transform, _viewport_projection);
+            } else if (_feature == feature::segment_mirror) {
+                _outlines[_feature_outline].upconvert_segment(cursor_to_world() * _feature_inverse_transform * vec3(1,-1,1), _viewport_projection);
+            } else if (_feature == feature::turret) {
                 if (_turret_instance < _turret_instances.size()) {
-                    auto& instance = _turret_instances[_turret_instance];
-                    auto& turret = _turrets[instance.index];
-                    auto& outline = _outlines[turret.index];
-                    return outline.upconvert_segment(cursor_to_world() * instance.inverse_transform, _viewport_projection);
+                    if (_turret_instances[_turret_instance].index + 1 < _turrets.size()) {
+                        ++_turret_instances[_turret_instance].index;
+                    }
                 }
             }
-            break;
+            update_highlight();
+            return true;
 
         case K_PGDN:
-            if (_mode == editor_mode::deck) {
-                _outlines[0].downconvert_segment(cursor_to_world(), _viewport_projection);
-            } else if (_mode == editor_mode::turret) {
+            if (_feature == feature::segment) {
+                _outlines[_feature_outline].downconvert_segment(cursor_to_world() * _feature_inverse_transform, _viewport_projection);
+            } else if (_feature == feature::segment_mirror) {
+                _outlines[_feature_outline].downconvert_segment(cursor_to_world() * _feature_inverse_transform * vec3(1,-1,1), _viewport_projection);
+            } else if (_feature == feature::turret) {
                 if (_turret_instance < _turret_instances.size()) {
-                    auto& instance = _turret_instances[_turret_instance];
-                    auto& turret = _turrets[instance.index];
-                    auto& outline = _outlines[turret.index];
-                    return outline.downconvert_segment(cursor_to_world() * instance.inverse_transform, _viewport_projection);
+                    if (_turret_instances[_turret_instance].index > 0) {
+                        --_turret_instances[_turret_instance].index;
+                    }
                 }
             }
-            break;
+            update_highlight();
+            return true;
 
         case K_KP_PLUS:
             if (_mode == editor_mode::turret) {
-                if (_control && _turret_instance < _turret_instances.size()) {
-                    if (_turret_instances[_turret_instance].index + 1 < _turrets.size()) {
-                        ++_turret_instances[_turret_instance].index;
-                        return true;
-                    }
-                } else if (!_control) {
-                    if (_turret_instance + 1 < _turret_instances.size()) {
-                        ++_turret_instance;
-                        return true;
-                    }
+                if (_turret_instance + 1 < _turret_instances.size()) {
+                    ++_turret_instance;
                 }
             }
-            break;
+            update_highlight();
+            return true;
 
         case K_KP_MINUS:
             if (_mode == editor_mode::turret) {
-                if (_control && _turret_instance < _turret_instances.size()) {
-                    if (_turret_instances[_turret_instance].index > 0) {
-                        --_turret_instances[_turret_instance].index;
-                        return true;
-                    }
-                } else if (!_control) {
-                    if (_turret_instance > 0) {
-                        --_turret_instance;
-                        return true;
-                    }
+                if (_turret_instance > 0) {
+                    --_turret_instance;
                 }
             }
-            break;
+            update_highlight();
+            return true;
     }
 
     return false;
