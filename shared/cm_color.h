@@ -22,22 +22,22 @@ public:
     constexpr color3(float R, float G, float B) : r(R), g(G), b(B) {}
     constexpr explicit color3(vec3 const& V) : r(float(V.x)), g(float(V.y)), b(float(V.z)) {}
 
-    bool operator==(color3 const& C) const {return r == C.r && g == C.g && b == C.b; }
-    bool operator!=(color3 const& C) const {return r != C.r || g != C.g || b != C.b; }
-    float operator[](std::size_t idx) const { return (&r)[idx]; }
+    constexpr bool operator==(color3 const& C) const {return r == C.r && g == C.g && b == C.b; }
+    constexpr bool operator!=(color3 const& C) const {return r != C.r || g != C.g || b != C.b; }
+    constexpr float operator[](std::size_t idx) const { return (&r)[idx]; }
     float& operator[](std::size_t idx) { return (&r)[idx]; }
     operator float*() { return &r; }
-    operator float const*() const { return &r; }
+    constexpr operator float const*() const { return &r; }
 
 // algebraic vector operations
 
-    color3 operator-() const { return color3(-r, -g, -b); }
-    color3 operator+(color3 const& C) const { return color3(r+C.r, g+C.g, b+C.b); }
-    color3 operator-(color3 const& C) const { return color3(r-C.r, g-C.g, b-C.b); }
-    color3 operator*(color3 const& C) const { return color3(r*C.r, g*C.g, b*C.b); }
-    color3 operator/(color3 const& C) const { return color3(r/C.r, g/C.g, b/C.b); }
-    color3 operator*(float S) const { return color3(r*S, g*S, b*S); }
-    color3 operator/(float S) const { return color3(r/S, g/S, b/S); }
+    constexpr color3 operator-() const { return color3(-r, -g, -b); }
+    constexpr color3 operator+(color3 const& C) const { return color3(r+C.r, g+C.g, b+C.b); }
+    constexpr color3 operator-(color3 const& C) const { return color3(r-C.r, g-C.g, b-C.b); }
+    constexpr color3 operator*(color3 const& C) const { return color3(r*C.r, g*C.g, b*C.b); }
+    constexpr color3 operator/(color3 const& C) const { return color3(r/C.r, g/C.g, b/C.b); }
+    constexpr color3 operator*(float S) const { return color3(r*S, g*S, b*S); }
+    constexpr color3 operator/(float S) const { return color3(r/S, g/S, b/S); }
 
 // algebraic vector assignment operations
 
@@ -69,22 +69,22 @@ public:
     constexpr explicit color4(color3 const& C, float A = 1) : r(C.r), g(C.g), b(C.b), a(A) {}
     constexpr explicit color4(vec4 const& V) : r(float(V.x)), g(float(V.y)), b(float(V.z)), a(float(V.w)) {}
 
-    bool operator==(color4 const& C) const { return r==C.r && g==C.g && b==C.b && a==C.a; }
-    bool operator!=(color4 const& C) const { return r!=C.r || g!=C.g || b!=C.b || a!=C.a; }
-    float operator[](std::size_t idx) const { return (&r)[idx]; }
+    constexpr bool operator==(color4 const& C) const { return r==C.r && g==C.g && b==C.b && a==C.a; }
+    constexpr bool operator!=(color4 const& C) const { return r!=C.r || g!=C.g || b!=C.b || a!=C.a; }
+    constexpr float operator[](std::size_t idx) const { return (&r)[idx]; }
     float& operator[](std::size_t idx) { return (&r)[idx]; }
     operator float*() { return &r; }
-    operator float const*() const { return &r; }
+    constexpr operator float const*() const { return &r; }
 
 // algebraic vector operations
 
-    color4 operator-() const { return color4(-r, -g, -b, -a); }
-    color4 operator+(color4 const& C) const { return color4(r+C.r, g+C.g, b+C.b, a+C.a); }
-    color4 operator-(color4 const& C) const { return color4(r-C.r, g-C.g, b-C.b, a-C.a); }
-    color4 operator*(color4 const& C) const { return color4(r*C.r, g*C.g, b*C.b, a*C.a); }
-    color4 operator/(color4 const& C) const { return color4(r/C.r, g/C.g, b/C.b, a/C.a); }
-    color4 operator*(float S) const { return color4(r*S, g*S, b*S, a*S); }
-    color4 operator/(float S) const { return color4(r/S, g/S, b/S, a/S); }
+    constexpr color4 operator-() const { return color4(-r, -g, -b, -a); }
+    constexpr color4 operator+(color4 const& C) const { return color4(r+C.r, g+C.g, b+C.b, a+C.a); }
+    constexpr color4 operator-(color4 const& C) const { return color4(r-C.r, g-C.g, b-C.b, a-C.a); }
+    constexpr color4 operator*(color4 const& C) const { return color4(r*C.r, g*C.g, b*C.b, a*C.a); }
+    constexpr color4 operator/(color4 const& C) const { return color4(r/C.r, g/C.g, b/C.b, a/C.a); }
+    constexpr color4 operator*(float S) const { return color4(r*S, g*S, b*S, a*S); }
+    constexpr color4 operator/(float S) const { return color4(r/S, g/S, b/S, a/S); }
 
 // algebraic vector assignment operations
 
