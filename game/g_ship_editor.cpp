@@ -1066,7 +1066,7 @@ bool ship_editor::remove_turret(vec3 v, mat4 projection)
 bool ship_editor::key_event(int key, bool down)
 {
     if (down) {
-        if (key == K_MOUSE2) {
+        if (key == K_MOUSE3) {
             if (_control) {
                 _is_panning_image = true;
             } else {
@@ -1077,7 +1077,7 @@ bool ship_editor::key_event(int key, bool down)
         if (key == K_CTRL) {
             _control = true;
         }
-    } else if (key == K_MOUSE2) {
+    } else if (key == K_MOUSE3) {
         if (_is_panning) {
             _is_panning = false;
             return true;
@@ -1188,9 +1188,6 @@ bool ship_editor::key_event(int key, bool down)
             }
             break;
         }
-
-        case K_MOUSE2:
-            break;
 
         case K_MWHEELUP:
             _view.size /= 1.25;
