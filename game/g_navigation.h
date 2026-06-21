@@ -8,6 +8,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+class formation;
+
 //------------------------------------------------------------------------------
 class navigation : public subsystem
 {
@@ -43,10 +45,18 @@ public:
         _waypoints.push_back(point);
     }
 
+    void set_formation(handle<formation> f, std::size_t idx) {
+        _formation = f;
+        _formation_index = idx;
+    }
+
 protected:
     float _target_speed;
     rot2 _target_heading;
     std::vector<vec3> _waypoints;
+
+    handle<formation> _formation;
+    std::size_t _formation_index;
 };
 
 } // namespace game

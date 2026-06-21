@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_navigation.h"
+#include "g_formation.h"
 #include "g_ship.h"
 
 #include "design/g_ship_design.h"
@@ -19,6 +20,7 @@ navigation::navigation(game::ship* owner)
     : subsystem(owner)
     , _target_speed(0)
     , _target_heading(0)
+    , _formation_index(0)
 {}
 
 //------------------------------------------------------------------------------
@@ -46,8 +48,24 @@ void navigation::think()
             _waypoints.erase(_waypoints.begin());
         }
 
+        double target_speed = ship->design()->speed;
+
         double delta_angle;
-        if (_waypoints.size()) {
+        if (_formation && _formation_index) {
+            vec3 target_position = _formation->target_position(_formation_index);
+            vec3 target_velocity = _formation->target_velocity(_formation_index);
+
+            // Intercept the formation target position assuming constant velocity
+            double intercept_time = max(90.0, length(target_position - current_position) / _formation->target_speed());
+            target_position += target_velocity * intercept_time;
+            vec3 direction = (target_position - current_position) * ship->get_rotation().inverse();
+            delta_angle = std::atan2(direction.y, direction.x);
+
+            // Modulate speed based on distance to formation target position
+            vec3 delta_position = (_formation->target_position(_formation_index) - current_position);
+            vec3 proj = (delta_position * ship->get_rotation().inverse()) / _formation->target_speed();
+            target_speed = _formation->target_speed() + 1e-1 * proj.x / (1.0 + 1e-1 * std::abs(proj.y));
+        } else if (_waypoints.size()) {
             vec3 direction = (_waypoints[0] - current_position) * ship->get_rotation().inverse();
             delta_angle = std::atan2(direction.y, direction.x);
         } else {
@@ -65,7 +83,7 @@ void navigation::think()
             engines->set_rudder_target(std::copysign(ship->design()->rudder_angle, -delta_angle));
         }
 
-        engines->set_speed_target(ship->design()->speed);
+        engines->set_speed_target(target_speed);
     }
 }
 

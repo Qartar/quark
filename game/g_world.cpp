@@ -5,6 +5,7 @@
 #pragma hdrstop
 
 #include "g_faction.h"
+#include "g_formation.h"
 #include "g_navigation.h"
 #include "g_projectile.h"
 #include "g_ship.h"
@@ -70,6 +71,9 @@ void world::reset()
     faction* blufor = spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
     faction* opfor = spawn<faction>("opfor", color4(1.f, .6f, .6f, 1.f));
 
+    formation* blueform = spawn<formation>();
+    formation* opform = spawn<formation>();
+
     for (int ii = 0; ii < 6; ++ii) {
         double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
         vec2 dir = vec2(std::cos(angle), std::sin(angle));
@@ -80,6 +84,7 @@ void world::reset()
         sh->set_heading(rot2(0,1), true);
 
         sh->navigation()->set_heading(rot2(0,1));
+        blueform->add(sh);
     }
 
     for (int ii = 0; ii < 6; ++ii) {
@@ -92,6 +97,7 @@ void world::reset()
         sh->set_heading(rot2(0,1), true);
 
         sh->navigation()->set_heading(rot2(0,1));
+        opform->add(sh);
     }
 }
 
