@@ -28,6 +28,8 @@ framebuffer::PFNGLBLITNAMEDFRAMEBUFFER framebuffer::glBlitNamedFramebuffer = nul
 
 framebuffer::PFNGLDRAWBUFFERS framebuffer::glDrawBuffers = nullptr;
 
+bool framebuffer::use_arm_workaround = false;
+
 //------------------------------------------------------------------------------
 void framebuffer::init()
 {
@@ -47,6 +49,11 @@ void framebuffer::init()
     glBlitNamedFramebuffer = (PFNGLBLITNAMEDFRAMEBUFFER )wglGetProcAddress("glBlitNamedFramebuffer");
 
     glDrawBuffers = (PFNGLDRAWBUFFERS )wglGetProcAddress("glDrawBuffers");
+
+    // Detect ARM using renderer string to enable workaround for driver defects
+    if (strstr((char const*)glGetString(GL_VERSION), "Mesa")) {
+        use_arm_workaround = true;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -271,6 +278,9 @@ void framebuffer::read_buffer(GLenum buf) const
 void framebuffer::draw_buffer(GLenum buf) const
 {
     if (glNamedFramebufferDrawBuffer) {
+        if (use_arm_workaround) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _name);
+        }
         glNamedFramebufferDrawBuffer(_name, buf);
     } else if (glBindFramebuffer) {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _name);
@@ -282,6 +292,9 @@ void framebuffer::draw_buffer(GLenum buf) const
 void framebuffer::draw_buffers(GLsizei n, GLenum const* bufs) const
 {
     if (glNamedFramebufferDrawBuffers) {
+        if (use_arm_workaround) {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _name);
+        }
         glNamedFramebufferDrawBuffers(_name, n, bufs);
     } else if (glBindFramebuffer) {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _name);

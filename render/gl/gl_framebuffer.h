@@ -127,6 +127,10 @@ protected:
     using PFNGLDRAWBUFFERS = void (APIENTRY*)(GLsizei n, GLenum const* bufs);
 
     static PFNGLDRAWBUFFERS glDrawBuffers;
+
+    //! Enable DSA workaround for buggy drivers on Windows ARM which do not
+    //! set draw buffers correctly unless the draw framebuffer is bound.
+    static bool use_arm_workaround;
 };
 
 } // namespace gl
