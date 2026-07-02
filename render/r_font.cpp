@@ -426,19 +426,21 @@ render::font const* system::load_font(string::view name, int size)
     return _fonts.back().get();
 }
 
-font::PFNGLDRAWELEMENTSINSTANCED font::glDrawElementsInstanced = nullptr;
+font::PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE font::glDrawElementsInstancedBaseVertexBaseInstance = nullptr;
 
 //------------------------------------------------------------------------------
 void font::init()
 {
     // additional opengl bindings
-    glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCED)wglGetProcAddress("glDrawElementsInstanced");
+    glDrawElementsInstancedBaseVertexBaseInstance = (PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE)wglGetProcAddress("glDrawElementsInstancedBaseVertexBaseInstance");
 }
 
 //------------------------------------------------------------------------------
 font::font(render::system* renderer, string::view name, int size)
     : _name(name)
     , _size(size)
+    , _shader(nullptr)
+    , _instance_offset(0)
 {
     string::buffer data_filename = string::buffer(va("assets/font/atlas_%.*s-%d.dat", name.length(), name.begin(), _size));
     string::buffer image_filename = string::buffer(va("assets/font/atlas_%.*s-%d.dds", name.length(), name.begin(), _size));
@@ -556,7 +558,7 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         uint32_t packed_color = (a << 24) | (b << 16) | (g << 8) | r;
 
         // Convert codepoints to character indices
-        while (cursor < next && instances.size() < max_instances) {
+        while (cursor < next && instances.size() + _instance_offset < max_instances) {
             int glyph_index = _sdf->codepoint_to_glyph_index((unsigned char)*cursor++);
             instances.push_back({
                     vec2(float(xoffs), 0),
@@ -567,7 +569,7 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         }
 
         // Scan color and potentially continue filling instance data
-        if (instances.size() < max_instances && cursor < end) {
+        if (instances.size() + _instance_offset < max_instances && cursor < end) {
             if (!get_color(cursor, r, g, b)) {
                 r = static_cast<int>(color.r * 255.f + .5f);
                 g = static_cast<int>(color.g * 255.f + .5f);
@@ -580,15 +582,18 @@ void font::draw(string::view string, vec2 position, color4 color, vec2 scale) co
         }
 
         if (instances.size()) {
-            _vbo.upload(0, instances.size(), instances.data());
+            _vbo.upload(_instance_offset, instances.size(), instances.data());
 
-            glDrawElementsInstanced(
+            glDrawElementsInstancedBaseVertexBaseInstance(
                 GL_TRIANGLES,
                 6,
                 GL_UNSIGNED_SHORT,
                 nullptr,
-                narrow_cast<GLsizei>(instances.size()));
+                narrow_cast<GLsizei>(instances.size()),
+                0,
+                _instance_offset);
 
+            _instance_offset = (_instance_offset + instances.size()) % max_instances;
             instances.resize(0);
         }
     }

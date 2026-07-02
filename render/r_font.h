@@ -60,13 +60,17 @@ private:
     gl::shader_storage_buffer<glyph_info> _ssbo;
     render::shader const* _shader;
 
-    static constexpr int max_instances = 1024;
+    //! Offset into circular vertex instance buffer, mutable so it can be
+    //! modified inside of draw.
+    mutable int _instance_offset;
+
+    static constexpr int max_instances = 65536 / sizeof(instance);
 
 private:
     // additional opengl bindings
-    using PFNGLDRAWELEMENTSINSTANCED = void (APIENTRY*)(GLenum mode, GLsizei count, GLenum type, void const* indices, GLsizei instancecount);
+    using PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE = void (APIENTRY*)(GLenum mode, GLsizei count, GLenum type, void const* indices, GLsizei instancecount, GLint basevertex, GLuint baseinstance);
 
-    static PFNGLDRAWELEMENTSINSTANCED glDrawElementsInstanced;
+    static PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCE glDrawElementsInstancedBaseVertexBaseInstance;
 };
 
 } // namespace render
