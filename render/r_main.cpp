@@ -217,7 +217,7 @@ void system::resize(vec2i size)
 //------------------------------------------------------------------------------
 void system::create_default_font()
 {
-    int size = static_cast<int>((12.f / 720.f) * float(_framebuffer.height()));
+    int size = static_cast<int>((24.f / 1920.f) * float(_framebuffer.width()));
     _font_scale = static_cast<float>(size) / static_cast<float>(_font_size);
 
     if (!_default_font || !_default_font->compare("Tahoma", _font_size)) {
