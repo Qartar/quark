@@ -64,6 +64,8 @@ protected:
     handle<ship> hover_target(vec2 cursor) const;
     std::vector<handle<ship>> selection_target(vec2 cursor) const;
     void on_select(vec2 cursor);
+    //! Adjust the view origin based on scroll buttons
+    void on_button_pan(vec2 direction);
     //! Adjust the view origin so that the cursor remains in the same point in world space.
     void on_pan(vec2 cursor);
     //! Adjust the view origin and size so that the cursor remains in the same point in world space.

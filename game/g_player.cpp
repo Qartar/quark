@@ -271,7 +271,7 @@ void player::set_aspect(float aspect)
 void player::update_usercmd(usercmd cmd, time_value realtime)
 {
     constexpr double zoom_speed = 1.0 + (1.0 / 4.0);
-    constexpr double scroll_speed = 1.0;
+    constexpr double scroll_speed = 1e-7;
 
     double delta_time = (realtime - _usercmd_time).to_seconds();
 
@@ -284,21 +284,22 @@ void player::update_usercmd(usercmd cmd, time_value realtime)
         on_select(_usercmd.cursor);
     }
 
-    if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
-        _view.origin.y += scroll_speed * _view.size.x * delta_time;
-        _follow = nullptr;
-    }
-    if (!!(_usercmd.buttons & usercmd::button::scroll_down)) {
-        _view.origin.y -= scroll_speed * _view.size.x * delta_time;
-        _follow = nullptr;
-    }
-    if (!!(_usercmd.buttons & usercmd::button::scroll_left)) {
-        _view.origin.x -= scroll_speed * _view.size.x * delta_time;
-        _follow = nullptr;
-    }
-    if (!!(_usercmd.buttons & usercmd::button::scroll_right)) {
-        _view.origin.x += scroll_speed * _view.size.x * delta_time;
-        _follow = nullptr;
+    // Keyboard/button panning
+    {
+        vec2 scroll_direction = vec2_zero;
+        if (!!(_usercmd.buttons & usercmd::button::scroll_up)) {
+            scroll_direction.y += scroll_speed * _view.size.x * delta_time;
+        }
+        if (!!(_usercmd.buttons & usercmd::button::scroll_down)) {
+            scroll_direction.y -= scroll_speed * _view.size.x * delta_time;
+        }
+        if (!!(_usercmd.buttons & usercmd::button::scroll_left)) {
+            scroll_direction.x -= scroll_speed * _view.size.x * delta_time;
+        }
+        if (!!(_usercmd.buttons & usercmd::button::scroll_right)) {
+            scroll_direction.x += scroll_speed * _view.size.x * delta_time;
+        }
+        on_button_pan(scroll_direction);
     }
     if (!!(_usercmd.buttons & usercmd::button::zoom_in)) {
         on_zoom(_view.size * exp(-zoom_speed * delta_time));
@@ -398,6 +399,26 @@ void player::on_select(vec2 cursor)
         _selection_time = _usercmd_time;
     }
     _is_selecting = false;
+}
+
+//------------------------------------------------------------------------------
+void player::on_button_pan(vec2 direction)
+{
+    if (direction == vec2_zero) {
+        return;
+    }
+
+    if (direction.y) {
+        vec3 axis = normalize(cross(_view.origin, vec3(0,0,1)));
+        _view.origin = _view.origin * rot3(axis, -direction.y);
+    }
+
+    if (direction.x) {
+        double angle = -direction.x / length(_view.origin.to_vec2()) * length(_view.origin);
+        _view.origin = _view.origin * rot3(vec3(0,0,1), angle);
+    }
+
+    _follow = nullptr;
 }
 
 //------------------------------------------------------------------------------
