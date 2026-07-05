@@ -233,9 +233,7 @@ void session::command_editor(parser::text const& /*args*/)
 {
     _ship_editor = std::make_unique<ship_editor>();
     _menu_active = false;
-    if (_console.active()) {
-        _console.char_event('`');
-    }
+    _console.deactivate();
 }
 
 //------------------------------------------------------------------------------

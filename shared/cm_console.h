@@ -159,6 +159,7 @@ public:
     float height() const { return _height; }
     std::size_t scroll() const { return _scroll_offset; }
     bool active() const { return _height > 0.f; }
+    void deactivate() { _height = 0; }
 
     std::size_t num_rows() const { return _buffer.num_rows(); }
     char const* get_row(std::size_t index) const { return _buffer.get_row(index); }
