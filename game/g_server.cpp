@@ -4,15 +4,109 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "cm_parser.h"
+#include "g_faction.h"
+#include "g_formation.h"
+#include "g_globe.h"
+#include "g_navigation.h"
+#include "g_player.h"
+#include "g_ship.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
+
+//------------------------------------------------------------------------------
+void session::command_start(parser::text const& args)
+{
+    stop_server();
+    stop_client();
+
+    start_server_local();
+    start_client_local();
+
+    start_game(args);
+    _console.deactivate();
+}
+
+//------------------------------------------------------------------------------
+void session::start_game(parser::text const& args)
+{
+    if (!svs.active) {
+        return;
+    }
+
+    //
+    //  reset players
+    //
+
+    for ( int i=0 ; i<MAX_PLAYERS ; i++ )
+    {
+        if (svs.local && i > 1 )
+            break;
+        else if (svs.active && !svs.clients[i].active )
+            continue;
+    }
+
+    _menu_active = false;
+
+    //
+    //  reset world
+    //
+
+    _world.reset( );
+    _worldtime = time_value::zero;
+    _player = _world.spawn<player>();
+
+
+    if (args.tokens().size() > 1 && args.tokens()[1] == "lineup") {
+        faction* blufor = _world.spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
+
+        for (int ii = 0; ii < 6; ++ii) {
+            ship* sh = _world.spawn<ship>(blufor);
+            vec3 p = globe::planar_to_surface(vec2(ii * 100,0));
+            sh->set_position(p, true);
+            sh->set_heading(rot2(0,1), true);
+            sh->navigation()->set_heading(rot2(0,1));
+        }
+    } else {
+        faction* blufor = _world.spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
+        faction* opfor = _world.spawn<faction>("opfor", color4(1.f, .6f, .6f, 1.f));
+
+        formation* blueform = _world.spawn<formation>();
+        formation* opform = _world.spawn<formation>();
+
+        for (int ii = 0; ii < 6; ++ii) {
+            double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
+            vec2 dir = vec2(std::cos(angle), std::sin(angle));
+
+            ship* sh = _world.spawn<ship>(blufor);
+            vec3 p = globe::planar_to_surface(-dir * 1024.0);
+            sh->set_position(p, true);
+            sh->set_heading(rot2(0,1), true);
+
+            sh->navigation()->set_heading(rot2(0,1));
+            blueform->add(sh);
+        }
+
+        for (int ii = 0; ii < 6; ++ii) {
+            double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
+            vec2 dir = vec2(std::cos(angle), std::sin(angle));
+
+            ship* sh = _world.spawn<ship>(opfor);
+            vec3 p = globe::planar_to_surface(vec2(16384, 0) - dir * 1024.0);
+            sh->set_position(p, true);
+            sh->set_heading(rot2(0,1), true);
+
+            sh->navigation()->set_heading(rot2(0,1));
+            opform->add(sh);
+        }
+    }
+}
 
 //------------------------------------------------------------------------------
 void session::start_server ()
 {
     stop_client( );
-
-    reset();
 
     for (std::size_t ii = 0; ii < svs.clients.size(); ++ii) {
         svs.clients[ii].active = false;
@@ -64,8 +158,6 @@ void session::start_server_local()
             svs.clients[ii].local = false;
         }
     }
-
-    new_game();
 }
 
 //------------------------------------------------------------------------------

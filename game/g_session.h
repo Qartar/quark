@@ -173,10 +173,7 @@ public:
     void cursor_event(vec2 position);
     void gamepad_event(int index, gamepad const& pad);
 
-    void reset();
-    void new_game();
-    void restart();
-    void resume();
+    void start_game(parser::text const& args);
 
     bool _menu_active;
     bool _dedicated;
@@ -249,10 +246,13 @@ public:
     console_command _command_disconnect;
     console_command _command_connect;
 
+    console_command _command_start;
+
 private:
     static void command_quit(parser::text const& args);
     void command_disconnect(parser::text const& args);
     void command_connect(parser::text const& args);
+    void command_start(parser::text const& args);
 
     void get_packets ();
     void read_snapshot(network::message& message);

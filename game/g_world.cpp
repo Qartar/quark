@@ -4,12 +4,7 @@
 #include "precompiled.h"
 #pragma hdrstop
 
-#include "g_faction.h"
-#include "g_formation.h"
-#include "g_navigation.h"
 #include "g_projectile.h"
-#include "g_ship.h"
-#include "g_player.h"
 #include "p_collide.h"
 #include "p_trace.h"
 #include "g_ballistics.h"
@@ -67,38 +62,6 @@ void world::shutdown()
 void world::reset()
 {
     clear();
-
-    faction* blufor = spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
-    faction* opfor = spawn<faction>("opfor", color4(1.f, .6f, .6f, 1.f));
-
-    formation* blueform = spawn<formation>();
-    formation* opform = spawn<formation>();
-
-    for (int ii = 0; ii < 6; ++ii) {
-        double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
-        vec2 dir = vec2(std::cos(angle), std::sin(angle));
-
-        ship* sh = spawn<ship>(blufor);
-        vec3 p = globe::planar_to_surface(-dir * 1024.0);
-        sh->set_position(p, true);
-        sh->set_heading(rot2(0,1), true);
-
-        sh->navigation()->set_heading(rot2(0,1));
-        blueform->add(sh);
-    }
-
-    for (int ii = 0; ii < 6; ++ii) {
-        double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
-        vec2 dir = vec2(std::cos(angle), std::sin(angle));
-
-        ship* sh = spawn<ship>(opfor);
-        vec3 p = globe::planar_to_surface(vec2(16384, 0) - dir * 1024.0);
-        sh->set_position(p, true);
-        sh->set_heading(rot2(0,1), true);
-
-        sh->navigation()->set_heading(rot2(0,1));
-        opform->add(sh);
-    }
 }
 
 //------------------------------------------------------------------------------

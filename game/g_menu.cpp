@@ -4,6 +4,8 @@
 #include "precompiled.h"
 #pragma hdrstop
 
+#include "cm_parser.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace menu {
 
@@ -15,10 +17,6 @@ void window::init ()
     _submenus.emplace_back(new menu::window);  // local
     _submenus.emplace_back(new menu::window);  // network
     _submenus.emplace_back(new menu::window);  // options
-
-    add_button<conditional_button>("Resume", vec2i(64,32), vec2i(96,32), &g_Game->svs.active, [](){
-        g_Game->resume();
-    });
 
     add_button<submenu_button>("Network Game", vec2i(192,32), vec2i(96,32), this, _submenus[1].get());
     add_button<submenu_button>("Local Game", vec2i(320,32), vec2i(96,32), this, _submenus[0].get());
@@ -37,10 +35,7 @@ void window::init ()
         g_Game->stop_client();
         g_Game->start_server_local();
         g_Game->start_client_local();
-    });
-
-    _submenus[0]->add_button<button>("Reset", vec2i(48,128), vec2i(64,32), [](){
-        g_Game->reset();
+        g_Game->start_game({});
     });
 
     // network

@@ -37,6 +37,7 @@ session::session()
     , _command_quit("quit", &session::command_quit)
     , _command_disconnect("disconnect", this, &session::command_disconnect)
     , _command_connect("connect", this, &session::command_connect)
+    , _command_start("start", this, &session::command_start)
 {
     log::set(this);
     g_Game = this;
@@ -463,69 +464,6 @@ void session::draw_netgraph()
         _renderer->draw_string(smax, vec2(638.0 - _renderer->string_size(smax).x, ymax), color4(1,1,1,1));
         _renderer->draw_string(savg, vec2(638.0 - _renderer->string_size(savg).x, yavg), color4(1,1,1,alpha_avg));
     }
-}
-
-//------------------------------------------------------------------------------
-void session::reset()
-{
-    _world.reset( );
-    _worldtime = time_value::zero;
-}
-
-//------------------------------------------------------------------------------
-void session::resume()
-{
-    _menu_active = false;
-}
-
-//------------------------------------------------------------------------------
-void session::new_game()
-{
-    _world.clear_particles( );
-
-    if (!svs.active) {
-        return;
-    }
-
-    //
-    //  reset world
-    //
-
-    _world.reset( );
-    _worldtime = time_value::zero;
-    _player = _world.spawn<player>();
-
-    //
-    //  reset players
-    //
-
-    for ( int i=0 ; i<MAX_PLAYERS ; i++ )
-    {
-        if (svs.local && i > 1 )
-            break;
-        else if (svs.active && !svs.clients[i].active )
-            continue;
-    }
-
-    _menu_active = false;
-}
-
-//------------------------------------------------------------------------------
-void session::restart()
-{
-    if (!svs.active) {
-        return;
-    }
-
-    for (int ii = 0; ii < MAX_PLAYERS; ++ii) {
-        if (svs.local && ii > 1) {
-            break;
-        } else if (svs.local && !svs.clients[ii].active) {
-            continue;
-        }
-    }
-
-    _menu_active = false;
 }
 
 //------------------------------------------------------------------------------
