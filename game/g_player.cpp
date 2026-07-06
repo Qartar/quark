@@ -25,7 +25,6 @@ player::player()
     , _selection_time(time_delta::zero)
     , _is_selecting(false)
 {
-    _view.origin = globe::planar_to_surface(vec2_zero);
 }
 
 //------------------------------------------------------------------------------
@@ -221,6 +220,12 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
 //------------------------------------------------------------------------------
 void player::think()
 {
+}
+
+//------------------------------------------------------------------------------
+void player::set_position(vec3 position)
+{
+    _view.origin = position;
 }
 
 //------------------------------------------------------------------------------

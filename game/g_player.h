@@ -34,6 +34,8 @@ public:
     virtual void draw(render::system* renderer, time_value time) const;
     virtual void think() override;
 
+    void set_position(vec3 position);
+
     virtual vec3 get_position(time_value time) const override;
     virtual rot3 get_rotation(time_value time) const override;
     virtual mat4 get_transform(time_value time) const override;

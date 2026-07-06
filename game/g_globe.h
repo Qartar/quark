@@ -51,10 +51,15 @@ public:
     //! Return the absolute bearing from the given position to the given target position
     static rot2 bearing(vec3 position, vec3 target);
 
-    //! Convert legacy 2D coordinates to 3D surface coordinates
-    static vec3 planar_to_surface(vec2 v);
-    //! Convert 3D surface coordinates to legacy 2D coordinates
-    static vec2 surface_to_planar(vec3 v);
+    //! Calculate offset positions from the given initial position and cardinal offsets
+    static void offset(vec3 position, vec2 const* cardinal_offset, vec3* offset_position, std::size_t size);
+    //! Return offset position from the given position and cardinal offset
+    static vec3 offset(vec3 position, vec2 cardinal_offset);
+    //! Calculate offset positions from the given initial position and cardinal offsets
+    template<std::size_t size>
+    static void offset(vec3 position, vec2 const (&cardinal_offset)[size], vec3 (&offset_position)[size]) {
+        offset(position, cardinal_offset, offset_position, size);
+    }
 
 protected:
     gshhg _gshhg[5];

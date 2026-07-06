@@ -57,14 +57,20 @@ void session::start_game(parser::text const& args)
     _worldtime = time_value::zero;
     _player = _world.spawn<player>();
 
+    // Makassar Strait
+    vec3 origin = globe::lonlat_to_surface(vec2(117.9167, -1.95) * (math::pi / 180.0));
+
+    _player->set_position(origin);
 
     if (args.tokens().size() > 1 && args.tokens()[1] == "lineup") {
         faction* blufor = _world.spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
+        vec2 offset[6] = {{-250,0}, {-150,0}, {-50,0}, {50,0}, {150,0}, {250,0}};
+        vec3 position[6];
+        globe::offset(origin, offset, position);
 
         for (int ii = 0; ii < 6; ++ii) {
             ship* sh = _world.spawn<ship>(blufor);
-            vec3 p = globe::planar_to_surface(vec2(ii * 100,0));
-            sh->set_position(p, true);
+            sh->set_position(position[ii], true);
             sh->set_heading(rot2(0,1), true);
             sh->navigation()->set_heading(rot2(0,1));
         }
@@ -75,28 +81,29 @@ void session::start_game(parser::text const& args)
         formation* blueform = _world.spawn<formation>();
         formation* opform = _world.spawn<formation>();
 
-        for (int ii = 0; ii < 6; ++ii) {
-            double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
-            vec2 dir = vec2(std::cos(angle), std::sin(angle));
+        constexpr int N = 6;
+        vec2 offset[N];
+        vec3 position[N];
+        for (int ii = 0; ii < N; ++ii) {
+            double angle = double(ii) * (math::pi * 2.0 / double(N)) + math::pi / double(2 * N);
+            offset[ii] = vec2(std::cos(angle), std::sin(angle)) * -1024;
+        }
 
+        globe::offset(origin, offset, position);
+        for (int ii = 0; ii < N; ++ii) {
             ship* sh = _world.spawn<ship>(blufor);
-            vec3 p = globe::planar_to_surface(-dir * 1024.0);
-            sh->set_position(p, true);
+            sh->set_position(position[ii], true);
             sh->set_heading(rot2(0,1), true);
-
             sh->navigation()->set_heading(rot2(0,1));
             blueform->add(sh);
         }
 
-        for (int ii = 0; ii < 6; ++ii) {
-            double angle = double(ii) * (math::pi * 2.0 / 6.0) + math::pi / 12.0;
-            vec2 dir = vec2(std::cos(angle), std::sin(angle));
-
+        vec3 origin2 = globe::offset(origin, vec2(16384,0));
+        globe::offset(origin2, offset, position);
+        for (int ii = 0; ii < N; ++ii) {
             ship* sh = _world.spawn<ship>(opfor);
-            vec3 p = globe::planar_to_surface(vec2(16384, 0) - dir * 1024.0);
-            sh->set_position(p, true);
+            sh->set_position(position[ii], true);
             sh->set_heading(rot2(0,1), true);
-
             sh->navigation()->set_heading(rot2(0,1));
             opform->add(sh);
         }

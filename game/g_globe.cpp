@@ -241,19 +241,27 @@ rot2 globe::bearing(vec3 position, vec3 target)
 }
 
 //------------------------------------------------------------------------------
-vec3 globe::planar_to_surface(vec2 v)
+void globe::offset(vec3 position, vec2 const* cardinal_offset, vec3* offset_position, std::size_t size)
 {
-    static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait
-    // Pretend x/y are lon/lat
-    return lonlat_to_surface(v * (1.f / mean_radius) + offset);
+    // Using spherical globe approximation (not ellipsoidal)
+    vec3 z = position.normalize();
+    vec3 x = cross(vec3(0,0,1), z).normalize();
+    vec3 y = cross(z, x);
+
+    for (std::size_t ii = 0; ii < size; ++ii) {
+        double s = length(cardinal_offset[ii]);
+        double d = mean_radius * std::tan(s * (1.0 / mean_radius));
+        vec3 v = x * cardinal_offset[ii].x + y * cardinal_offset[ii].y;
+        offset_position[ii] = normalize(position + v * (d / s)) * mean_radius;
+    }
 }
 
 //------------------------------------------------------------------------------
-vec2 globe::surface_to_planar(vec3 v)
+vec3 globe::offset(vec3 position, vec2 cardinal_offset)
 {
-    static constexpr vec2 offset = vec2(117.9167, -1.95) * (math::pi / 180.0); // Makassar Strait
-    // Pretend x/y are lon/lat
-    return (surface_to_lonlat(v) - offset) * mean_radius;
+    vec3 offset_position;
+    offset(position, &cardinal_offset, &offset_position, 1);
+    return offset_position;
 }
 
 } // namespace game

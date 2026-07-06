@@ -19,6 +19,8 @@ class system;
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
+class player;
+
 //------------------------------------------------------------------------------
 typedef struct game_client_s
 {
@@ -181,7 +183,7 @@ public:
 private:
     menu::window _menu;
     game::world _world;
-    game::handle<game::object const> _player;
+    game::handle<game::player> _player;
 
     render::system* _renderer;
 

@@ -156,8 +156,8 @@ result session::run_frame(time_delta time)
 
         // update client
         if (!_dedicated) {
-            if (_player && _player->is_type<player>()) {
-                static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate(), _frametime);
+            if (_player) {
+                _player->update_usercmd(_clients[0].input.generate(), _frametime);
             }
         }
 
@@ -395,8 +395,8 @@ void session::cursor_event(vec2 position)
     }
 
     _clients[0].input.cursor_event(position / vec2(size) * vec2(1,-1) + vec2(0,1));
-    if (_player && _player->is_type<player>()) {
-        static_cast<player*>(const_cast<object*>(_player.get()))->update_usercmd(_clients[0].input.generate_direct(), _frametime);
+    if (_player) {
+        _player->update_usercmd(_clients[0].input.generate_direct(), _frametime);
     }
 
     if (_menu_active) {
