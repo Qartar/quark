@@ -19,21 +19,10 @@ namespace game {
 const object_type ship::_type(object::_type);
 physics::material ship::_material(0.5f, 1.0f, 5.0f);
 
-ship_design const* ship_designs[] = {
-    &ship_yamato_battleship,
-    &ship_north_carolina_battleship,
-    &ship_king_george_v_battleship,
-    &ship_richelieu_battleship,
-    &ship_bismarck_battleship,
-    &ship_littorio_battleship,
-};
-
-static int ships_idx = 0;
-
 //------------------------------------------------------------------------------
-ship::ship(handle<game::faction> faction)
+ship::ship(ship_design const* design, handle<game::faction> faction)
     : _usercmd{}
-    , _design(ship_designs[ships_idx++ % countof(ship_designs)])
+    , _design(design)
     , _faction(faction)
     , _wake_index(0)
 {

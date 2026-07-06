@@ -27,7 +27,7 @@ public:
     static const object_type _type;
 
 public:
-    ship(handle<game::faction> faction);
+    ship(ship_design const* design, handle<game::faction> faction);
     ~ship();
 
     void spawn();

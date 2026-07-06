@@ -11,6 +11,7 @@
 #include "g_navigation.h"
 #include "g_player.h"
 #include "g_ship.h"
+#include "design/g_ship_design.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -63,18 +64,66 @@ void session::start_game(parser::text const& args)
     _player->set_position(origin);
 
     if (args.tokens().size() > 1 && args.tokens()[1] == "lineup") {
+        ship_design const* ship_designs[] = {
+            &ship_yamato_battleship,
+            &ship_north_carolina_battleship,
+            &ship_king_george_v_battleship,
+            &ship_richelieu_battleship,
+            &ship_bismarck_battleship,
+            &ship_littorio_battleship,
+        };
+
         faction* blufor = _world.spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
         vec2 offset[6] = {{-250,0}, {-150,0}, {-50,0}, {50,0}, {150,0}, {250,0}};
         vec3 position[6];
         globe::offset(origin, offset, position);
 
         for (int ii = 0; ii < 6; ++ii) {
-            ship* sh = _world.spawn<ship>(blufor);
+            ship* sh = _world.spawn<ship>(ship_designs[ii], blufor);
+            sh->set_position(position[ii], true);
+            sh->set_heading(rot2(0,1), true);
+            sh->navigation()->set_heading(rot2(0,1));
+        }
+    } else if (args.tokens().size() > 1 && args.tokens()[1] == "lineup_full") {
+        ship_design const* ship_designs[] = {
+            &ship_yamato_battleship,
+            &ship_fuso_battleship,
+            &ship_iowa_battleship,
+            &ship_north_carolina_battleship,
+            &ship_king_george_v_battleship,
+            &ship_richelieu_battleship,
+            &ship_bismarck_battleship,
+            &ship_littorio_battleship,
+            &ship_deutschland_cruiser,
+            &ship_town_cruiser,
+            &ship_tribal_destroyer,
+        };
+
+        faction* blufor = _world.spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
+        constexpr std::size_t N = countof(ship_designs);
+        vec2 offset[N];
+        for (int ii = 0; ii < N; ++ii) {
+            offset[ii] = vec2(ii * 100 - 250, 0);
+        }
+        vec3 position[N];
+        globe::offset(origin, offset, position);
+
+        for (int ii = 0; ii < N; ++ii) {
+            ship* sh = _world.spawn<ship>(ship_designs[ii], blufor);
             sh->set_position(position[ii], true);
             sh->set_heading(rot2(0,1), true);
             sh->navigation()->set_heading(rot2(0,1));
         }
     } else {
+        ship_design const* ship_designs[] = {
+            &ship_yamato_battleship,
+            &ship_north_carolina_battleship,
+            &ship_king_george_v_battleship,
+            &ship_richelieu_battleship,
+            &ship_bismarck_battleship,
+            &ship_littorio_battleship,
+        };
+
         faction* blufor = _world.spawn<faction>("blufor", color4(.6f, .8f, 1.f, 1.f));
         faction* opfor = _world.spawn<faction>("opfor", color4(1.f, .6f, .6f, 1.f));
 
@@ -91,7 +140,7 @@ void session::start_game(parser::text const& args)
 
         globe::offset(origin, offset, position);
         for (int ii = 0; ii < N; ++ii) {
-            ship* sh = _world.spawn<ship>(blufor);
+            ship* sh = _world.spawn<ship>(ship_designs[ii % countof(ship_designs)], blufor);
             sh->set_position(position[ii], true);
             sh->set_heading(rot2(0,1), true);
             sh->navigation()->set_heading(rot2(0,1));
@@ -101,7 +150,7 @@ void session::start_game(parser::text const& args)
         vec3 origin2 = globe::offset(origin, vec2(16384,0));
         globe::offset(origin2, offset, position);
         for (int ii = 0; ii < N; ++ii) {
-            ship* sh = _world.spawn<ship>(opfor);
+            ship* sh = _world.spawn<ship>(ship_designs[ii % countof(ship_designs)], opfor);
             sh->set_position(position[ii], true);
             sh->set_heading(rot2(0,1), true);
             sh->navigation()->set_heading(rot2(0,1));
