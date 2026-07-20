@@ -28,6 +28,12 @@ namespace game {
     QBZ8(vec2(-0.5f * L, 0.f), vec2(-0.5f * L, -0.5f * B), vec2(0.f, -0.5f * B)),   \
     QBZ8(vec2(0.f, -0.5f * B), vec2(0.3f * L, -0.5f * B), vec2(0.5f * L, 0.f)),   }
 
+#define CRUISER_HULL(L,B) {     \
+    QBZ8(vec2(-0.5f * L, 0.f), vec2(-0.3f * L, 0.5f * B), vec2(0.f, 0.5f * B)),   \
+    QBZ8(vec2(0.f, 0.5f * B), vec2(0.3f * L, 0.5f * B), vec2(0.5f * L, 0.f)),   \
+    QBZ8(vec2(0.5f * L, 0.f), vec2(0.3f * L, -0.5f * B), vec2(0.f, -0.5f * B)),   \
+    QBZ8(vec2(0.f, -0.5f * B), vec2(-0.3f * L, -0.5f * B), vec2(-0.5f * L, 0.f)),   }
+
 const vec2 ship_hulls[][32] = {
     // yamato-class battleship
     SHIP(263.f, 39.f),
@@ -79,6 +85,13 @@ const vec2 bismarck_verts[] = {
 const vec2 littorio_verts[] = {
     vec2(-118.90f, 0.00f), vec2(-118.61f, 1.06f), vec2(-117.45f, 2.24f), vec2(-114.75f, 3.74f), vec2(-107.00f, 6.75f), vec2(-97.70f, 9.16f), vec2(-87.12f, 11.20f), vec2(-75.81f, 12.69f), vec2(-65.00f, 13.50f), vec2(-64.25f, 13.50f), vec2(-59.25f, 13.50f), vec2(-39.33f, 14.93f), vec2(-20.08f, 15.74f), vec2(0.00f, 16.00f), vec2(19.93f, 15.73f), vec2(35.59f, 15.00f), vec2(48.06f, 13.90f), vec2(58.00f, 12.50f), vec2(61.50f, 12.50f), vec2(72.56f, 11.08f), vec2(85.25f, 8.99f), vec2(98.25f, 6.40f), vec2(110.25f, 3.50f), vec2(115.74f, 1.69f), vec2(118.33f, 0.62f), vec2(118.90f, 0.00f), vec2(118.33f, -0.62f), vec2(115.74f, -1.69f), vec2(110.25f, -3.50f), vec2(98.25f, -6.40f), vec2(85.25f, -8.99f), vec2(72.56f, -11.08f), vec2(61.50f, -12.50f), vec2(58.00f, -12.50f), vec2(48.06f, -13.90f), vec2(35.59f, -15.00f), vec2(19.93f, -15.73f), vec2(0.00f, -16.00f), vec2(-20.08f, -15.74f), vec2(-39.33f, -14.93f), vec2(-59.25f, -13.50f), vec2(-64.25f, -13.50f), vec2(-65.00f, -13.50f), vec2(-75.81f, -12.69f), vec2(-87.12f, -11.20f), vec2(-97.70f, -9.16f), vec2(-107.00f, -6.75f), vec2(-114.75f, -3.74f), vec2(-117.45f, -2.24f), vec2(-118.61f, -1.06f),
 };
+
+const vec2 mogami_verts[] = CRUISER_HULL(201.6, 20.6);
+const vec2 new_orleans_verts[] = CRUISER_HULL(179.27, 18.82);
+const vec2 county_verts[] = CRUISER_HULL(190.0, 21.0);
+const vec2 algerie_verts[] = CRUISER_HULL(186.2, 20.0);
+const vec2 admiral_hipper_verts[] = CRUISER_HULL(205, 21.3);
+const vec2 zara_verts[] = CRUISER_HULL(182.8, 20.62);
 
 #define DEG(a) math::deg2rad(a)
 #define DEGV(x,y) vec2(math::deg2rad(x), math::deg2rad(y))
@@ -715,6 +728,306 @@ const ship_design ship_deutschland_cruiser =
 
     /* hull_outline */      SHIP(186.f, 21.7f),
     /* hull_shape */        {{{std::make_unique<physics::convex_shape>(ship_hulls[3])}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_mogami_cruiser =
+{
+    /* name */              string::buffer("Mogami"),
+    /* length */            201.6f,
+    /* beam */              20.6f,
+    /* draft */             5.5f,
+    /* displacement */      11000000.f,
+
+    /* speed */             KNOTS(35.5f),
+    /* power */             SHP(152000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(2.f),
+
+    /* minimum_turning_radius */    400.f,
+    /* optimal_turning_radius */    600.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec3(56,0,5),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_mogami_20cm,
+        },
+        {
+            /* position */          vec3(42,0,5),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_mogami_20cm,
+        },
+        {
+            /* position */          vec3(34,0,8),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_mogami_20cm_rf,
+        },
+        {
+            /* position */          vec3(-38,0,8),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_mogami_20cm_rf,
+        },
+        {
+            /* position */          vec3(-48,0,5),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_mogami_20cm,
+        },
+    },
+
+    /* hull_outline */      {mogami_verts, mogami_verts + countof(mogami_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(mogami_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_new_orleans_cruiser =
+{
+    /* name */              string::buffer("New Orleans"),
+    /* length */            179.27f,
+    /* beam */              18.82f,
+    /* draft */             5.92f,
+    /* displacement */      12663000.f,
+
+    /* speed */             KNOTS(32.7f),
+    /* power */             SHP(107000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(2.f),
+
+    /* minimum_turning_radius */    400.f,
+    /* optimal_turning_radius */    600.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec3(48,0,5),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_new_orleans_8in,
+        },
+        {
+            /* position */          vec3(36,0,8),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_new_orleans_8in,
+        },
+        {
+            /* position */          vec3(-48,0,8),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_new_orleans_8in,
+        },
+    },
+
+    /* hull_outline */      {new_orleans_verts, new_orleans_verts + countof(new_orleans_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(new_orleans_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_county_cruiser =
+{
+    /* name */              string::buffer("County"),
+    /* length */            190.f,
+    /* beam */              21.f,
+    /* draft */             6.6f,
+    /* displacement */      14150000.f,
+
+    /* speed */             KNOTS(31.5f),
+    /* power */             SHP(80000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(2.f),
+
+    /* minimum_turning_radius */    400.f,
+    /* optimal_turning_radius */    600.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec3(52,0,5),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_county_8in,
+        },
+        {
+            /* position */          vec3(40,0,8),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_county_8in,
+        },
+        {
+            /* position */          vec3(-40,0,8),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_county_8in,
+        },
+        {
+            /* position */          vec3(-52,0,5),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_county_8in,
+        },
+    },
+
+    /* hull_outline */      {county_verts, county_verts + countof(county_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(county_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_algerie_cruiser =
+{
+    /* name */              string::buffer("Alg\xe9rie"),
+    /* length */            186.2f,
+    /* beam */              20.f,
+    /* draft */             6.3f,
+    /* displacement */      13667000.f,
+
+    /* speed */             KNOTS(31.f),
+    /* power */             SHP(84000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(2.f),
+
+    /* minimum_turning_radius */    400.f,
+    /* optimal_turning_radius */    600.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec3(48,0,5),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_algerie_203mm,
+        },
+        {
+            /* position */          vec3(36,0,8),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_algerie_203mm_rf,
+        },
+        {
+            /* position */          vec3(-36,0,8),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_algerie_203mm_rf,
+        },
+        {
+            /* position */          vec3(-48,0,5),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_algerie_203mm,
+        },
+    },
+
+    /* hull_outline */      {algerie_verts, algerie_verts + countof(algerie_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(algerie_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_admiral_hipper_cruiser =
+{
+    /* name */              string::buffer("Admiral Hipper"),
+    /* length */            205.f,
+    /* beam */              21.3f,
+    /* draft */             7.2f,
+    /* displacement */      16170000.f,
+
+    /* speed */             KNOTS(32.f),
+    /* power */             SHP(132000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(2.f),
+
+    /* minimum_turning_radius */    400.f,
+    /* optimal_turning_radius */    600.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec3(52,0,5),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_admiral_hipper_20_3cm,
+        },
+        {
+            /* position */          vec3(40,0,8),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_admiral_hipper_20_3cm_rf,
+        },
+        {
+            /* position */          vec3(-40,0,8),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_admiral_hipper_20_3cm_rf,
+        },
+        {
+            /* position */          vec3(-52,0,5),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_admiral_hipper_20_3cm,
+        },
+    },
+
+    /* hull_outline */      {admiral_hipper_verts, admiral_hipper_verts + countof(admiral_hipper_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(admiral_hipper_verts)}}},
+};
+
+//------------------------------------------------------------------------------
+const ship_design ship_zara_cruiser =
+{
+    /* name */              string::buffer("Zara"),
+    /* length */            182.8f,
+    /* beam */              20.62f,
+    /* draft */             7.2f,
+    /* displacement */      11900000.f,
+
+    /* speed */             KNOTS(32.f),
+    /* power */             SHP(95000),
+
+    /* rudder_angle */      DEG(36.f),
+    /* rudder_speed */      DEG(2.f),
+
+    /* minimum_turning_radius */    400.f,
+    /* optimal_turning_radius */    600.f,
+
+    /* turrets */
+    {
+        {
+            /* position */          vec3(48,0,5),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_zara_203mm,
+        },
+        {
+            /* position */          vec3(36,0,8),
+            /* orientation */       0,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_zara_203mm,
+        },
+        {
+            /* position */          vec3(-36,0,8),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_zara_203mm,
+        },
+        {
+            /* position */          vec3(-48,0,5),
+            /* orientation */       math::pi,
+            /* train_limit */       DEGV(-135.f, 135.f),
+            /* design */            &turret_zara_203mm,
+        },
+    },
+
+    /* hull_outline */      {zara_verts, zara_verts + countof(zara_verts)},
+    /* hull_shape */        {{{std::make_unique<physics::convex_shape>(zara_verts)}}},
 };
 
 //------------------------------------------------------------------------------

@@ -183,6 +183,72 @@ const gun_design gun_28cm_SK_C_28 =
     /* outline */           GUN_OUTLINE(0.283f, 14.815f),
 };
 
+const gun_design gun_20cm_50_3rd_Year_Type =
+{
+    /* name */              string::buffer("20 cm/50 3rd Year Type"),
+    /* caliber */           0.203f,
+    /* length */            10.0f,
+    /* shell_mass */        126.f,
+    /* shell_velocity */    840.f,
+    /* shell_coefficient */ 5850.f,
+    /* outline */           GUN_OUTLINE(0.203f, 10.0f),
+};
+
+const gun_design gun_8in_55_Mark_9 =
+{
+    /* name */              string::buffer("8\"/55 Mark 9"),
+    /* caliber */           0.203f,
+    /* length */            11.179f,
+    /* shell_mass */        118.f,
+    /* shell_velocity */    853.f,
+    /* shell_coefficient */ 5720.f,
+    /* outline */           GUN_OUTLINE(0.203f, 11.179f),
+};
+
+const gun_design gun_BL_8_inch_Mk_VIII =
+{
+    /* name */              string::buffer("BL 8-inch Mk VIII"),
+    /* caliber */           0.203f,
+    /* length */            10.16f,
+    /* shell_mass */        116.1f,
+    /* shell_velocity */    925.f,
+    /* shell_coefficient */ 5200.f,
+    /* outline */           GUN_OUTLINE(0.203f, 10.16f),
+};
+
+const gun_design gun_203mm_55_Model_1931 =
+{
+    /* name */              string::buffer("203 mm/55 Model 1931"),
+    /* caliber */           0.203f,
+    /* length */            11.3f,
+    /* shell_mass */        119.f,
+    /* shell_velocity */    870.f,
+    /* shell_coefficient */ 6350.f,
+    /* outline */           GUN_OUTLINE(0.203f, 11.3f),
+};
+
+const gun_design gun_20_3cm_SK_C_34 =
+{
+    /* name */              string::buffer("20.3 cm SK C/34"),
+    /* caliber */           0.203f,
+    /* length */            11.518f,
+    /* shell_mass */        122.f,
+    /* shell_velocity */    925.f,
+    /* shell_coefficient */ 6270.f,
+    /* outline */           GUN_OUTLINE(0.203f, 11.518f),
+};
+
+const gun_design gun_203mm_53_Model_1929 =
+{
+    /* name */              string::buffer("203 mm/53 Model 1929"),
+    /* caliber */           0.203f,
+    /* length */            10.7f,
+    /* shell_mass */        125.3f,
+    /* shell_velocity */    900.f,
+    /* shell_coefficient */ 5620.f,
+    /* outline */           GUN_OUTLINE(0.203f, 10.7f),
+};
+
 const gun_design gun_BL_6_inch_Mk_XXIII =
 {
     /* name */              string::buffer("BL 6-inch Mk XIII"),

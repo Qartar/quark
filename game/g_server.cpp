@@ -95,6 +95,12 @@ void session::start_game(parser::text const& args)
             &ship_bismarck_battleship,
             &ship_littorio_battleship,
             &ship_deutschland_cruiser,
+            &ship_mogami_cruiser,
+            &ship_new_orleans_cruiser,
+            &ship_county_cruiser,
+            &ship_algerie_cruiser,
+            &ship_admiral_hipper_cruiser,
+            &ship_zara_cruiser,
             &ship_town_cruiser,
             &ship_tribal_destroyer,
         };

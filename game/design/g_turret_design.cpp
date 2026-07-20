@@ -625,6 +625,332 @@ const turret_design turret_deutschland_28cm =
     /* outline */           OUTLINE(5.5f)
 };
 
+const turret_design turret_mogami_20cm_rf =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-10.f, 55.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(2, -1.0, 1),
+        vec3(2, 1.0, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(15.f),
+    /* gun_design */        &gun_20cm_50_3rd_Year_Type,
+    /* outline */           {
+        // Bismarck 15cm vertices
+        vec2(-4.23f, 0.00f),
+        vec2(-4.16f, 1.08f),
+        vec2(-3.94f, 1.95f),
+        vec2(-3.50f, 2.04f),
+        vec2(-3.48f, 3.61f),
+        vec2(-2.14f, 3.62f),
+        vec2(-2.14f, 2.18f),
+        vec2(-1.31f, 2.25f),
+        vec2(2.00f, 2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(-1.31f, -2.25f),
+        vec2(-2.14f, -2.18f),
+        vec2(-2.14f, -3.62f),
+        vec2(-3.48f, -3.61f),
+        vec2(-3.50f, -2.04f),
+        vec2(-3.94f, -1.95f),
+        vec2(-4.16f, -1.08f),
+    }
+};
+
+const turret_design turret_mogami_20cm =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-10.f, 55.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(2, -1.0, 1),
+        vec3(2, 1.0, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(15.f),
+    /* gun_design */        &gun_20cm_50_3rd_Year_Type,
+    /* outline */           {
+        vec2(-4.25f, 0.00f),
+        vec2(-4.18f, 1.15f),
+        vec2(-3.95f, 1.95f),
+        vec2(-2.93f, 2.19f),
+        vec2(-1.75f, 2.27f),
+        vec2(2.00f, 2.27f),
+        vec2(2.00f, -2.27f),
+        vec2(2.00f, -2.27f),
+        vec2(-1.75f, -2.27f),
+        vec2(-2.93f, -2.19f),
+        vec2(-3.95f, -1.95f),
+        vec2(-4.18f, -1.15f),
+    }
+};
+
+const turret_design turret_new_orleans_8in =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-10.f, 40.f),
+    /* num_guns */          3,
+    /* position */
+    {
+        vec3(3.2, -1.85, 1),
+        vec3(3.2, 0.0, 1),
+        vec3(3.2, 1.85, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(15.f),
+    /* gun_design */        &gun_8in_55_Mark_9,
+    /* outline */           {
+        // Richelieu 152mm verts
+        vec2(-4.70f, 0.00f),
+        vec2(-4.63f, 1.60f),
+        vec2(-4.40f, 2.89f),
+        vec2(-3.95f, 3.06f),
+        vec2(-3.95f, 4.59f),
+        vec2(-3.50f, 4.59f),
+        vec2(-3.49f, 3.19f),
+        vec2(-1.58f, 3.35f),
+        vec2(0.68f, 3.37f),
+        vec2(3.20f, 2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(0.68f, -3.37f),
+        vec2(-1.58f, -3.35f),
+        vec2(-3.49f, -3.19f),
+        vec2(-3.50f, -4.59f),
+        vec2(-3.95f, -4.59f),
+        vec2(-3.95f, -3.06f),
+        vec2(-4.40f, -2.89f),
+        vec2(-4.63f, -1.60f),
+    }
+};
+
+const turret_design turret_county_8in =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-10.f, 70.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(2, -1.0, 1),
+        vec3(2, 1.0, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(10.f),
+    /* gun_design */        &gun_BL_8_inch_Mk_VIII,
+    /* outline */           {
+        // Bismarck 15cm verts
+        vec2(-4.23f, 0.00f),
+        vec2(-4.16f, 1.08f),
+        vec2(-3.94f, 1.95f),
+        vec2(-3.50f, 2.04f),
+        vec2(-3.48f, 3.61f),
+        vec2(-2.14f, 3.62f),
+        vec2(-2.14f, 2.18f),
+        vec2(-1.31f, 2.25f),
+        vec2(2.00f, 2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(-1.31f, -2.25f),
+        vec2(-2.14f, -2.18f),
+        vec2(-2.14f, -3.62f),
+        vec2(-3.48f, -3.61f),
+        vec2(-3.50f, -2.04f),
+        vec2(-3.94f, -1.95f),
+        vec2(-4.16f, -1.08f),
+    }
+};
+
+const turret_design turret_algerie_203mm =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-5.f, 45.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(3.2, -1.0, 1),
+        vec3(3.2, 1.0, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(12.f),
+    /* gun_design */        &gun_203mm_55_Model_1931,
+    /* outline */           {
+        // Richelieu 152mm verts
+        vec2(-4.70f, 0.00f),
+        vec2(-4.63f, 1.60f),
+        vec2(-4.40f, 2.89f),
+        vec2(-3.95f, 3.06f),
+        //vec2(-3.95f, 4.59f),
+        //vec2(-3.50f, 4.59f),
+        vec2(-3.49f, 3.19f),
+        vec2(-1.58f, 3.35f),
+        vec2(0.68f, 3.37f),
+        vec2(3.20f, 2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(0.68f, -3.37f),
+        vec2(-1.58f, -3.35f),
+        vec2(-3.49f, -3.19f),
+        //vec2(-3.50f, -4.59f),
+        //vec2(-3.95f, -4.59f),
+        vec2(-3.95f, -3.06f),
+        vec2(-4.40f, -2.89f),
+        vec2(-4.63f, -1.60f),
+    }
+};
+
+const turret_design turret_algerie_203mm_rf =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-5.f, 45.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(3.2, -1.0, 1),
+        vec3(3.2, 1.0, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(12.f),
+    /* gun_design */        &gun_203mm_55_Model_1931,
+    /* outline */           {
+        // Richelieu 152mm verts
+        vec2(-4.70f, 0.00f),
+        vec2(-4.63f, 1.60f),
+        vec2(-4.40f, 2.89f),
+        vec2(-3.95f, 3.06f),
+        vec2(-3.95f, 4.59f),
+        vec2(-3.50f, 4.59f),
+        vec2(-3.49f, 3.19f),
+        vec2(-1.58f, 3.35f),
+        vec2(0.68f, 3.37f),
+        vec2(3.20f, 2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(3.20f, -2.75f),
+        vec2(0.68f, -3.37f),
+        vec2(-1.58f, -3.35f),
+        vec2(-3.49f, -3.19f),
+        vec2(-3.50f, -4.59f),
+        vec2(-3.95f, -4.59f),
+        vec2(-3.95f, -3.06f),
+        vec2(-4.40f, -2.89f),
+        vec2(-4.63f, -1.60f),
+    }
+};
+
+const turret_design turret_admiral_hipper_20_3cm_rf =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-10.f, 37.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(2, -1.0, 1),
+        vec3(2, 1.0, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(12.f),
+    /* gun_design */        &gun_20_3cm_SK_C_34,
+    /* outline */           {
+        // Bismarck 15cm vertices
+        vec2(-4.23f, 0.00f),
+        vec2(-4.16f, 1.08f),
+        vec2(-3.94f, 1.95f),
+        vec2(-3.50f, 2.04f),
+        vec2(-3.48f, 3.61f),
+        vec2(-2.14f, 3.62f),
+        vec2(-2.14f, 2.18f),
+        vec2(-1.31f, 2.25f),
+        vec2(2.00f, 2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(-1.31f, -2.25f),
+        vec2(-2.14f, -2.18f),
+        vec2(-2.14f, -3.62f),
+        vec2(-3.48f, -3.61f),
+        vec2(-3.50f, -2.04f),
+        vec2(-3.94f, -1.95f),
+        vec2(-4.16f, -1.08f),
+    }
+};
+
+const turret_design turret_admiral_hipper_20_3cm =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-10.f, 37.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(2, -1.0, 1),
+        vec3(2, 1.0, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(12.f),
+    /* gun_design */        &gun_20_3cm_SK_C_34,
+    /* outline */           {
+        vec2(-4.25f, 0.00f),
+        vec2(-4.18f, 1.15f),
+        vec2(-3.95f, 1.95f),
+        vec2(-2.93f, 2.19f),
+        vec2(-1.75f, 2.27f),
+        vec2(2.00f, 2.27f),
+        vec2(2.00f, -2.27f),
+        vec2(2.00f, -2.27f),
+        vec2(-1.75f, -2.27f),
+        vec2(-2.93f, -2.19f),
+        vec2(-3.95f, -1.95f),
+        vec2(-4.18f, -1.15f),
+    }
+};
+
+const turret_design turret_zara_203mm =
+{
+    /* radius */            2.f,
+    /* train_speed */       DEG(6.f),
+    /* elevation_speed */   DEG(9.f),
+    /* elevation_limit */   DEGV(-10.f, 45.f),
+    /* num_guns */          2,
+    /* position */
+    {
+        vec3(2, -0.5, 1),
+        vec3(2, 0.5, 1),
+    },
+    /* reload_time */       time_delta::from_seconds(15.f),
+    /* gun_design */        &gun_203mm_53_Model_1929,
+    /* outline */           {
+        // Bismarck 15cm verts
+        vec2(-4.23f, 0.00f),
+        vec2(-4.16f, 1.08f),
+        vec2(-3.94f, 1.95f),
+        vec2(-3.50f, 2.04f),
+        vec2(-3.48f, 3.61f),
+        vec2(-2.14f, 3.62f),
+        vec2(-2.14f, 2.18f),
+        vec2(-1.31f, 2.25f),
+        vec2(2.00f, 2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(2.00f, -2.25f),
+        vec2(-1.31f, -2.25f),
+        vec2(-2.14f, -2.18f),
+        vec2(-2.14f, -3.62f),
+        vec2(-3.48f, -3.61f),
+        vec2(-3.50f, -2.04f),
+        vec2(-3.94f, -1.95f),
+        vec2(-4.16f, -1.08f),
+    }
+};
+
 const turret_design turret_town_6in =
 {
     /* radius */            3.f,

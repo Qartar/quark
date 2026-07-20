@@ -39,6 +39,12 @@ extern const gun_design gun_15cm_SK_C_28;
 extern const gun_design gun_381_50_ansaldo_m1934;
 extern const gun_design gun_152_55_ansaldo_m1934;
 extern const gun_design gun_28cm_SK_C_28;
+extern const gun_design gun_20cm_50_3rd_Year_Type;
+extern const gun_design gun_8in_55_Mark_9;
+extern const gun_design gun_BL_8_inch_Mk_VIII;
+extern const gun_design gun_203mm_55_Model_1931;
+extern const gun_design gun_20_3cm_SK_C_34;
+extern const gun_design gun_203mm_53_Model_1929;
 extern const gun_design gun_BL_6_inch_Mk_XXIII;
 extern const gun_design gun_QF_4_7_inch_Mark_IX;
 

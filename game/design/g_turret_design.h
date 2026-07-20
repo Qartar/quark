@@ -46,6 +46,15 @@ extern const turret_design turret_bismarck_15cm;
 extern const turret_design turret_littorio_381mm;
 extern const turret_design turret_littorio_152mm;
 extern const turret_design turret_deutschland_28cm;
+extern const turret_design turret_mogami_20cm_rf;
+extern const turret_design turret_mogami_20cm;
+extern const turret_design turret_new_orleans_8in;
+extern const turret_design turret_county_8in;
+extern const turret_design turret_algerie_203mm;
+extern const turret_design turret_algerie_203mm_rf;
+extern const turret_design turret_admiral_hipper_20_3cm_rf;
+extern const turret_design turret_admiral_hipper_20_3cm;
+extern const turret_design turret_zara_203mm;
 extern const turret_design turret_town_6in;
 extern const turret_design turret_tribal_4_7in;
 
