@@ -352,7 +352,7 @@ void ship::update_firing_solution(std::size_t turret_index)
 {
     double bearing, elevation;
 
-    if (_turrets[turret_index].fire_director) {
+    if (_turrets[turret_index].fire_director && _turrets[turret_index].fire_director->get_target()) {
         _turrets[turret_index].fire_director->get_solution(bearing, elevation);
         // Get bearing relative to turret orientation, normalize to [-pi,pi)
         bearing -= _design->turrets[turret_index].orientation;
@@ -360,6 +360,9 @@ void ship::update_firing_solution(std::size_t turret_index)
         // TODO: parallax corrections
         _turrets[turret_index].traverse_target = bearing;
         _turrets[turret_index].elevation_target = elevation;
+    } else {
+        _turrets[turret_index].traverse_target = 0;
+        _turrets[turret_index].elevation_target = 0;
     }
 }
 
