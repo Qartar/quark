@@ -89,6 +89,7 @@ void engines::think()
     {
         vec3 current_axis = vec3(0,0,1) * _owner->get_rotation();
         vec3 current_velocity = _owner->get_linear_velocity();
+        vec3 angular_velocity = _owner->get_angular_velocity();
         vec3 current_direction = vec3(1,0,0) * _owner->get_rotation();
         // Orthogonal velocity components
         vec3 vx = current_direction * dot(current_direction, current_velocity);
@@ -96,23 +97,23 @@ void engines::think()
         // Calculate drag from linear velocity of ship hull
         vec3 drag_force = -_linear_drag_coefficient[0] * vx * length(vx)
                           -_linear_drag_coefficient[1] * vy * length(vy);
-        // Calculate drag from angular velocity of ship hull
-        vec3 drag_torque = _angular_drag_coefficient * _owner->get_angular_velocity() * length(_owner->get_angular_velocity());
+        // Apply drag from angular velocity of ship hull using analytic solution
+        // since Euler method is too unstable for the magnitude of forces here.
+        angular_velocity = angular_velocity / (length(angular_velocity) * _angular_drag_coefficient * _inverse_inertia * FRAMETIME.to_seconds() + 1.0);
 
         // Simplified rudder model: Calculate torque required to match drag torque
         // at target angular velocity and apply directly to forehead.
         double target_curvature = _rudder_angle / (design->rudder_angle * design->minimum_turning_radius);
         double target_angular_velocity = dot(current_velocity, current_direction) * target_curvature;
-        vec3 rudder_torque = _angular_drag_coefficient * current_axis * target_angular_velocity * abs(target_angular_velocity);
-
-        vec3 torque = rudder_torque - drag_torque;
+        double angular_delta = 1.0 - 1.0 / (abs(target_angular_velocity) * _angular_drag_coefficient * _inverse_inertia * FRAMETIME.to_seconds() + 1.0);
+        double rudder_torque = target_angular_velocity * angular_delta / (_inverse_inertia * FRAMETIME.to_seconds());
 
         vec3 rudder_offset = current_direction * design->length * -0.45; // FIXME: add to design
-        vec3 rudder_direction = current_direction * rot3(current_axis, _rudder_angle);
-        vec3 rudder_normal = rudder_direction.cross(current_axis);
+        vec3 rudder_direction = current_direction * rot3(current_axis, -_rudder_angle);
+        vec3 rudder_normal = cross(current_axis, rudder_direction);
 
         // Calculate force imparted by rudder
-        vec3 rudder_force = rudder_normal * torque / (rudder_offset.length() * cos(_rudder_angle));
+        vec3 rudder_force = rudder_torque_coefficient * rudder_normal * rudder_torque / (rudder_offset.length() * cos(_rudder_angle));
 
         // Apply drag
         current_velocity += (rudder_force + drag_force) / design->displacement * FRAMETIME.to_seconds();
@@ -127,28 +128,27 @@ void engines::think()
             current_velocity += current_direction * speed_delta;
         }
 
-        vec3 angular_velocity = _owner->get_angular_velocity();
-        angular_velocity += torque * _inverse_inertia * FRAMETIME.to_seconds();
+        angular_velocity += current_axis * rudder_torque * _inverse_inertia * FRAMETIME.to_seconds();
         // project velocity onto local plane
         angular_velocity = current_axis * dot(angular_velocity, current_axis);
         current_velocity -= current_axis * dot(current_velocity, current_axis);
         _owner->set_linear_velocity(current_velocity);
         _owner->set_angular_velocity(angular_velocity);
+    }
 
-        // Even if we project velocity onto the local plane every frame we will
-        // drift in the local-z direction due the plane rotating beneath us.
-        // TODO: move this to post-physics update so that we're always on plane.
-        {
-            vec3 vertical = -globe::gravity_normal(_owner->get_position());
-            // Reproject position
-            _owner->set_position(_owner->get_position() - vertical * globe::altitude(_owner->get_position()));
-            // Reproject rotation
-            mat3 rotation = mat3(_owner->get_rotation());
-            rotation[0] = normalize(rotation[0] - vertical * dot(rotation[0], vertical));
-            rotation[1] = normalize(rotation[1] - vertical * dot(rotation[1], vertical));
-            rotation[2] = cross(rotation[0], rotation[1]);
-            _owner->set_rotation(rotation.to_rotation());
-        }
+    // Even if we project velocity onto the local plane every frame we will
+    // drift in the local-z direction due the plane rotating beneath us.
+    // TODO: move this to post-physics update so that we're always on plane.
+    {
+        vec3 vertical = -globe::gravity_normal(_owner->get_position());
+        // Reproject position
+        _owner->set_position(_owner->get_position() - vertical * globe::altitude(_owner->get_position()));
+        // Reproject rotation
+        mat3 rotation = mat3(_owner->get_rotation());
+        rotation[0] = normalize(rotation[0] - vertical * dot(rotation[0], vertical));
+        rotation[1] = normalize(rotation[1] - vertical * dot(rotation[1], vertical));
+        rotation[2] = cross(rotation[0], rotation[1]);
+        _owner->set_rotation(rotation.to_rotation());
     }
 }
 

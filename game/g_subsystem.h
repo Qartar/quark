@@ -65,6 +65,15 @@ protected:
     double _rudder_target;
 
     double _speed_target;
+
+    //! Ratio of total torque applied directly by the rudder. In ships the rudder
+    //! imparts only a small amount of torque; most of the turning moment comes
+    //! from unbalanced form drag caused by lateral motion (i.e. "sway") induced
+    //! by the rudder. The simulation ignores the torque from form drag and applies
+    //! the total turning torque as if it were entirely driven by the rudder but
+    //! scales the linear force by this value, otherwise the rudder will induce an
+    //! absurd amount of drag and lateral motion.
+    static constexpr double rudder_torque_coefficient = 0.05;
 };
 
 } // namespace game
