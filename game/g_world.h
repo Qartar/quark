@@ -185,6 +185,13 @@ public:
         return bounds_query(b, projection, objects, max_objects);
     }
 
+    std::size_t bounds_query(bounds3 b, game::object** objects, std::size_t max_objects) const;
+
+    template<std::size_t max_objects>
+    std::size_t bounds_query(bounds3 b, game::object* (&objects)[max_objects]) const {
+        return bounds_query(b, objects, max_objects);
+    }
+
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
 

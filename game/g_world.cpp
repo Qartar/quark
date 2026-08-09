@@ -301,6 +301,24 @@ std::size_t world::bounds_query(bounds b, mat4 projection, game::object** object
 }
 
 //------------------------------------------------------------------------------
+std::size_t world::bounds_query(bounds3 b, game::object** objects, std::size_t max_objects_) const
+{
+    physics::rigid_body** bodies = reinterpret_cast<physics::rigid_body**>(objects);
+    std::size_t num_bodies = _physics.bounds_query(b, bodies, max_objects_);
+    std::size_t num_objects = 0;
+
+    for (std::size_t ii = 0; ii < num_bodies; ++ii) {
+        if (bodies[ii]) {
+            objects[num_objects] = handle<object>(bodies[ii]->get_handle_bits()).get();
+            if (objects[num_objects]) {
+                num_objects++;
+            }
+        }
+    }
+    return num_objects;
+}
+
+//------------------------------------------------------------------------------
 void world::add_sound(sound::asset sound_asset, vec3 position, float volume)
 {
     write_sound(sound_asset, position, volume);

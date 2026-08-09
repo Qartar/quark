@@ -45,6 +45,9 @@ public:
     void update_usercmd(game::usercmd usercmd);
     void damage(object* inflictor, vec3 point, float amount);
 
+    //! Update fire directors with the shell splash location
+    bool splash_observation(handle<ship const> target, float shell_size, vec3 splash_origin);
+
     std::vector<unique_handle<subsystem>>& subsystems() { return _subsystems; }
     std::vector<unique_handle<subsystem>> const& subsystems() const { return _subsystems; }
 

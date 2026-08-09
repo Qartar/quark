@@ -88,6 +88,17 @@ void projectile::think()
 
         _impact_time = get_world()->frametime() + time_delta::from_seconds(t);
 
+        // Notify owner of shell splashes to update fire control correction
+        if (_owner && _owner->is_type<ship>()) {
+            object* results[128];
+            std::size_t num_results = get_world()->bounds_query(bounds3::from_center(p, vec3(1000.0)), results);
+            for (std::size_t ii = 0; ii < num_results; ++ii) {
+                if (results[ii]->is_type<ship>()) {
+                    _owner->cast<ship>()->splash_observation(results[ii]->cast<ship>(), _info.diameter, p);
+                }
+            }
+        }
+
         get_world()->add_effect(_impact_time, effect_type::splash, p, vec3_zero, std::cbrt(_info.damage));
         get_world()->remove(this);
     }
@@ -141,6 +152,10 @@ bool projectile::touch(object *other, physics::collision const* collision)
 
     if (other && other->is_type<ship>()) {
         static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _info.damage);
+        // Notify owner of shell impact to update fire control correction
+        if (_owner && _owner->is_type<ship>()) {
+            _owner->cast<ship>()->splash_observation(other->cast<ship>(), _info.diameter, collision ? collision->point : get_position());
+        }
     }
 
     get_world()->remove(this);

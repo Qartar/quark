@@ -56,6 +56,7 @@ public:
     physics::rigid_body* point_query(vec3 point) const;
     //! Returns rigid bodies intersecting the given bounds
     std::size_t bounds_query(bounds b, mat4 projection, physics::rigid_body** bodies, std::size_t max_bodies) const;
+    std::size_t bounds_query(bounds3 b, physics::rigid_body** bodies, std::size_t max_bodies) const;
 
 protected:
     std::vector<physics::rigid_body*> _bodies;

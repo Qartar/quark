@@ -210,7 +210,7 @@ void ship::think()
         }
     }
 
-    if (!_primary_target || _random.uniform_real() < .001f) {
+    if (!_primary_target || _random.uniform_real() < .0001f) {
         update_targets();
     }
 
@@ -318,6 +318,17 @@ void ship::set_heading(rot2 heading, bool teleport)
 //------------------------------------------------------------------------------
 void ship::damage(object* /*inflictor*/, vec3 /*point*/, float /*amount*/)
 {
+}
+
+//------------------------------------------------------------------------------
+bool ship::splash_observation(handle<ship const> target, float shell_size, vec3 splash_origin)
+{
+    for (std::size_t ii = 0; ii < _fire_directors.size(); ++ii) {
+        if (_fire_directors[ii]->splash_observation(target, shell_size, splash_origin)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------

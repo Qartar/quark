@@ -187,6 +187,20 @@ std::size_t world::bounds_query(bounds b, mat4 projection, physics::rigid_body**
 }
 
 //------------------------------------------------------------------------------
+std::size_t world::bounds_query(bounds3 b, physics::rigid_body** bodies, std::size_t max_bodies) const
+{
+    // TODO: spatial acceleration
+    std::size_t num_bodies = 0;
+    for (std::size_t ii = 0; num_bodies < max_bodies && ii < _bodies.size(); ++ii) {
+        if (_bodies[ii]->get_bounds().intersects(b)) {
+            bodies[num_bodies++] = _bodies[ii];
+        }
+    }
+
+    return num_bodies;
+}
+
+//------------------------------------------------------------------------------
 vec3 world::collision_impulse(
     physics::rigid_body const* body_a,
     physics::rigid_body const* body_b,
