@@ -188,7 +188,7 @@ void world::add_effect(time_value time, effect_type type, vec3 position, vec3 di
 
         case effect_type::cannon: {
             render::particle* p;
-            float scale = std::sqrt(strength);
+            float scale = std::cbrt(strength);
 
             // flash
 
@@ -199,13 +199,13 @@ void world::add_effect(time_value time, effect_type type, vec3 position, vec3 di
             p->velocity = direction * 9.6f + velocity;
 
             p->color = color4(1,.95f,.9f,1);
-            p->color_velocity = color4(0,0,0,-3);
+            p->color_velocity = color4(0,0,0,-5);
             p->size = 1.f;
             p->size_velocity = 144.0f * scale;
 
             // fire
 
-            for (int ii = 0; ii < 32 * scale; ++ii) {
+            for (int ii = 0; ii < 16 * scale; ++ii) {
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
@@ -222,7 +222,7 @@ void world::add_effect(time_value time, effect_type type, vec3 position, vec3 di
 
                 p->color = color4(1.0f,_random.uniform_real(.25f, .75f),0.0f,0.1f);
                 p->color_velocity = color4(-2,-2,0,-p->color.a/(0.25f+square(_random.uniform_real())*7.5f));
-                p->size = _random.uniform_real(4.f, 8.f) * scale;
+                p->size = _random.uniform_real(6.f, 12.f) * scale;
                 p->size_velocity = 3.0f * scale;
 
                 p->drag = _random.uniform_real(2.f, 4.f);
@@ -257,182 +257,34 @@ void world::add_effect(time_value time, effect_type type, vec3 position, vec3 di
                 p->drag = _random.uniform_real(2.f, 4.f);
                 p->flags = render::particle::tail;
             }
-            break;
-        }
 
-        case effect_type::blaster: {
-            render::particle* p;
+            // smoke
 
-            // vortex
-
-            if ( (p = add_particle(time)) == NULL )
-                return;
-
-            p->position = position;
-            p->velocity = direction * 9.6f;
-
-            p->color = color4(1,0,0,0);
-            p->color_velocity = color4(0,1,0,2.5f);
-            p->size = 19.2f;
-            p->size_velocity = -96.0f;
-            p->flags = render::particle::invert;
-
-            // fire
-
-            for (int ii = 0; ii < 8; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
+            int count = int(16 * scale);
+            for (int ii = 0; ii < count; ++ii) {
+                float dt = square(ii / float(count));
+                if ( (p = add_particle(time + time_delta::from_seconds(dt))) == NULL )
                     return;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = _random.uniform_real(4.f);
 
-                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
+                p->position = position + velocity * dt + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
                 d = sqrt(_random.uniform_real()) * 32.f;
 
-                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
-                p->velocity += direction * d * 0.5f;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d * scale * (1.f - dt)) * tx;
+                p->velocity += direction * d * 5.f * scale * (1.f - dt) + velocity;
 
-                p->color = color4(1.0f,_random.uniform_real(.5f),0.0f,0.1f);
-                p->color_velocity = color4(0,0,0,-p->color.a/(0.25f+square(_random.uniform_real())));
-                p->size = _random.uniform_real(2.f, 6.f);
-                p->size_velocity = 0.5f;
-                p->flags = render::particle::invert;
+                p->color = color4(1.0f,_random.uniform_real(.25f, .75f),0.0f,0.1f);
+                p->color_velocity = color4(-2,-2,0,-p->color.a/(0.25f+square(_random.uniform_real())*7.5f));
+                p->size = _random.uniform_real(4.f, 8.f) * (1.5f - dt) * scale;
+                p->size_velocity = 2.0f * (1.5f - dt) * scale;
 
-                p->drag = _random.uniform_real(3.f, 6.f);
-
-                // vortex
-
-                render::particle* p2;
-
-                if ( (p2 = add_particle(time)) == NULL )
-                    return;
-
-                p2->position = p->position;
-                p2->velocity = p->velocity;
-                p2->drag = p->drag;
-
-                p2->color = color4(1,0,0,0);
-                p2->color_velocity = color4(0,1,0,1);
-                p2->size = 4.8f;
-                p2->size_velocity = -18.0f;
-                p2->flags = render::particle::invert;
-            }
-
-            // debris
-
-            for (int ii = 0; ii < 4; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
-                    return;
-
-                r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(.5f);
-
-                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
-
-                r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(64.f);
-
-                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
-                p->velocity += direction * _random.uniform_real(96.f);
-
-                r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(64.f, 128.f);
-
-                p->acceleration = vec3(vec2(cos(r), sin(r))*d) * tx;
-
-                p->color = color4(1,_random.uniform_real(.5f),0,1);
-                p->color_velocity = color4(0,0,0,_random.uniform_real(-3.5f, -1.5f));
-                p->size = 0.5f;
-                p->size_velocity = 0.0f;
                 p->drag = _random.uniform_real(2.f, 4.f);
-                p->flags = render::particle::tail;
-            }
-            break;
-        }
-
-        case effect_type::blaster_impact: {
-            render::particle* p;
-            float scale = std::sqrt(strength);
-
-            // vortex
-
-            if ( (p = add_particle(time)) == NULL )
-                return;
-
-            p->position = position;
-            p->velocity = direction * 48.0f * scale;
-
-            p->color = color4(1,0,0,0);
-            p->color_velocity = color4(0,1,0,2.5f);
-            p->size = 96.0f * scale;
-            p->size_velocity = -480.0f * scale;
-            p->flags = render::particle::invert;
-
-            // shock wave
-
-            if ( (p = add_particle(time)) == NULL )
-                return;
-
-            p->position = position;
-            p->velocity = direction * 48.0f * scale;
-
-            p->color = color4(1.0f,0.25f,0.0f,0.5f);
-            p->color_velocity = -p->color * color4(0,1,3,3);
-            p->size = 12.0f * scale;
-            p->size_velocity = 192.0f * scale;
-            p->flags = render::particle::invert;
-
-            // fire
-
-            for (int ii = 0; ii < 64 * scale; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
-                    return;
-
-                r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(16.f * scale);
-
-                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
-
-                r = _random.uniform_real(2.f * math::pi);
-                d = sqrt(_random.uniform_real()) * 128.f * strength;
-
-                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
-                p->velocity += direction * d * 0.5f;
-
-                p->color = color4(1.0f,_random.uniform_real(.5f),0.0f,0.1f);
-                p->color_velocity = color4(0,0,0,-p->color.a/(0.5f+square(_random.uniform_real())*1.5f));
-                p->size = _random.uniform_real(8.f, 24.f) * scale;
-                p->size_velocity = 1.0f * strength;
-
-                p->drag = _random.uniform_real(2.f, 4.f) * scale;
             }
 
-            // debris
-
-            for (int ii = 0; ii < 32 * scale; ++ii) {
-                if ( (p = add_particle(time)) == NULL )
-                    return;
-
-                r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(2.f * scale);
-
-                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
-
-                r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(128.f * scale);
-
-                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
-                p->velocity += direction * d * 0.5f;
-
-                p->color = color4(1,_random.uniform_real(.5f),0,1);
-                p->color_velocity = color4(0,0,0,_random.uniform_real(-2.5f, -1.5f));
-                p->size = 0.5f;
-                p->size_velocity = 0.0f;
-                p->drag = _random.uniform_real(.5f, 1.f);
-                p->flags = render::particle::tail;
-            }
             break;
         }
 
@@ -449,14 +301,26 @@ void world::add_effect(time_value time, effect_type type, vec3 position, vec3 di
             p->velocity = vec3_zero;
 
             p->color = color4(0.8f,0.9f,1.0f,0.25f);
-            p->color_velocity = color4(0,0,0,-.1f / std::sqrt(scale));
-            p->size = 16.0f * scale;
-            p->size_velocity = 1.0f;
+            p->color_velocity = color4(0,0,0,-0.05f / std::sqrt(scale));
+            p->size = 12.0f * scale;
+            p->size_velocity = 0.5f;
+
+            if ( (p = add_particle(time + time_delta::from_seconds(.5f * scale))) == NULL )
+                return;
+
+            p->position = position;
+            p->velocity = vec3_zero;
+
+            p->color = color4(0.8f,0.9f,1.0f,0.25f);
+            p->color_velocity = color4(0,0,0,-.025f / std::sqrt(scale));
+            p->size = 12.0f * scale;
+            p->size_velocity = 0.5f;
+            p->flags = render::particle::invert;
 
             // splash
 
             for (int ii = 0; ii < 64 * scale; ++ii) {
-                float time_offset = (.2f + _random.normal_real(.0625f, .25f)) * scale;
+                float time_offset = (.5f + _random.normal_real(.0625f, .25f)) * scale;
                 if ( (p = add_particle(time + time_delta::from_seconds(time_offset))) == NULL )
                     return;
 

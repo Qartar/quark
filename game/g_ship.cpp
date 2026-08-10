@@ -155,8 +155,8 @@ void ship::draw(render::system* renderer, time_value time) const
 
     // draw wake
     for (std::size_t ii = 0; ii + 1 < _wake_index && ii + 1 < countof(_wake); ++ii) {
-        float a0 = float(countof(_wake) - ii) / float(countof(_wake));
-        float a1 = float(countof(_wake) - ii - 1) / float(countof(_wake));
+        float a0 = square(float(countof(_wake) - ii) / float(countof(_wake)));
+        float a1 = square(float(countof(_wake) - ii - 1) / float(countof(_wake)));
         renderer->draw_line(
             (_wake[(_wake_index - ii) % countof(_wake)] * renderer->view().transform).to_vec2(),
             (_wake[(_wake_index - ii - 1) % countof(_wake)] * renderer->view().transform).to_vec2(),
@@ -178,7 +178,7 @@ void ship::think()
     time_value time = get_world()->frametime();
 
     {
-        _wake_index = std::size_t(time.to_seconds() / 1.f);
+        _wake_index = std::size_t(time.to_seconds() / 2.f);
         _wake[_wake_index % countof(_wake)] = get_position() - vec3(.5f * _design->length, 0, 0) * get_rotation();
     }
 
@@ -218,24 +218,6 @@ void ship::think()
 
     for (std::size_t idx = 0; idx < _turrets.size(); ++idx) {
         auto const& turret = _design->turrets[idx];
-
-        // Emit smoke particles after firing
-        constexpr time_delta smoke_delta = time_delta::from_seconds(1.f);
-        if (_turrets[idx].refire_time - time > turret.design->reload_time - smoke_delta) {
-            double t = 1.0 - (turret.design->reload_time - (_turrets[idx].refire_time - time)) / smoke_delta;
-
-            for (std::size_t ii = 0; ii < _design->turrets[idx].design->num_guns; ++ii) {
-                vec3 position, direction, velocity;
-                get_firing_vectors(idx, ii, position, direction, velocity);
-                get_world()->add_effect(
-                    time,
-                    effect_type::smoke,
-                    position,
-                    direction * 2.0 * t,
-                    float(3.0 * square(t)),
-                    velocity);
-            }
-        }
 
         if (!is_firing || time < _turrets[idx].refire_time) {
             continue;

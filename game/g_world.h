@@ -39,11 +39,9 @@ enum class effect_type
     smoke,
     sparks,
     cannon,
-    blaster,
     missile_trail,
     cannon_impact,
     missile_impact,
-    blaster_impact,
     explosion,
     splash,
 };
