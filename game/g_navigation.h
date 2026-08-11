@@ -23,6 +23,7 @@ public:
     void spawn();
 
     virtual object_type const& type() const override { return _type; }
+    virtual void draw(render::system* renderer, time_value time) const override;
     virtual void think() override;
 
     virtual void read_snapshot(network::message const& message) override;
@@ -57,6 +58,8 @@ protected:
 
     handle<formation> _formation;
     std::size_t _formation_index;
+
+    static config::boolean _show_navigation;
 };
 
 } // namespace game

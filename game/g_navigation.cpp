@@ -15,6 +15,8 @@ namespace game {
 
 const object_type navigation::_type(subsystem::_type);
 
+config::boolean navigation::_show_navigation("g_show_navigation", false, 0, "Show navigation debug visualization");
+
 //------------------------------------------------------------------------------
 navigation::navigation(game::ship* owner)
     : subsystem(owner)
@@ -30,6 +32,39 @@ navigation::~navigation() {}
 void navigation::spawn()
 {
     object::spawn();
+}
+
+//------------------------------------------------------------------------------
+void navigation::draw(render::system* renderer, time_value /*time*/) const
+{
+    if (!_show_navigation) {
+        return;
+    }
+
+    const mat4 tx = renderer->view().transform;
+
+    auto ship = _owner->cast<game::ship>();
+    auto engines = ship ? ship->engines() : nullptr;
+
+    if (engines) {
+        vec3 current_position = ship->get_position();
+
+        if (_formation && _formation_index) {
+            vec3 target_position = _formation->target_position(_formation_index);
+            vec3 target_velocity = _formation->target_velocity(_formation_index);
+
+            // Intercept the formation target position assuming constant velocity
+            double intercept_time = max(90.0, length(target_position - current_position) / _formation->target_speed());
+            target_position += target_velocity * intercept_time;
+
+            renderer->draw_line((current_position * tx).to_vec2(), (target_position * tx).to_vec2(), color4(1,1,0,.5f), color4(1,1,0,.5f));
+            renderer->draw_arc((target_position * tx).to_vec2(), 10.f, 0.f, 0.f, math::twopi, color4(1,1,0,.5f));
+        } else if (_waypoints.size()) {
+            renderer->draw_line((current_position * tx).to_vec2(), (_waypoints[0] * tx).to_vec2(), color4(1,1,0,.5f), color4(1,1,0,.5f));
+        } else {
+            rot2 current_heading = globe::heading(current_position, ship->get_rotation());
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

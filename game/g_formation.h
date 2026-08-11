@@ -66,6 +66,8 @@ protected:
 
     vec3 _target_position[maximum_size];
     vec3 _target_velocity[maximum_size];
+
+    static config::boolean _show_formation;
 };
 
 } // namespace game

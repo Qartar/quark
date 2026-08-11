@@ -14,6 +14,8 @@ namespace game {
 
 const object_type formation::_type(object::_type);
 
+config::boolean formation::_show_formation("g_show_formation", false, 0, "Show formation debug visualization");
+
 //------------------------------------------------------------------------------
 formation::formation()
     : _size(0)
@@ -33,12 +35,14 @@ formation::~formation()
 //------------------------------------------------------------------------------
 void formation::draw(render::system* renderer, time_value /*time*/) const
 {
-    mat4 const tx = renderer->view().transform;
-    for (std::size_t ii = 0; ii < _size; ++ii) {
-        vec2 v0 = (_target_position[ii] * tx).to_vec2();
-        vec2 v1 = v0 + (_target_velocity[ii] * tx).to_vec2();
-        renderer->draw_arc(v0, 10.f, 0.f, 0.f, math::twopi, color4(1,1,1,1)); 
-        renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+    if (_show_formation) {
+        mat4 const tx = renderer->view().transform;
+        for (std::size_t ii = 0; ii < _size; ++ii) {
+            vec2 v0 = (_target_position[ii] * tx).to_vec2();
+            vec2 v1 = v0 + (_target_velocity[ii] * tx).to_vec2();
+            renderer->draw_arc(v0, 10.f, 0.f, 0.f, math::twopi, color4(1,1,1,1));
+            renderer->draw_line(v0, v1, color4(1,1,1,1), color4(1,1,1,1));
+        }
     }
 }
 
