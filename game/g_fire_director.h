@@ -30,7 +30,7 @@ public:
     //! Returns true if the fire director has a valid firing solution
     bool has_solution() const { return _is_valid; }
     //! Return the current firing solution
-    void get_solution(double& bearing, double& elevation) const;
+    void get_solution(double& range, double& bearing, double& elevation) const;
 
     //! Update aim correction based on the shell splash location
     bool splash_observation(handle<ship const> target, float shell_size, vec3 splash_origin);
@@ -39,6 +39,7 @@ protected:
     handle<ship const> _target;
     gun_design const* _gun;
 
+    double _range;
     double _bearing;
     double _elevation;
     time_delta _time_of_flight;

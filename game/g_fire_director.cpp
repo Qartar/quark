@@ -21,6 +21,7 @@ config::boolean fire_director::_show_correction("g_show_correction", false, 0, "
 fire_director::fire_director(game::ship* owner, gun_design const* gun)
     : subsystem(owner)
     , _gun(gun)
+    , _range(0)
     , _bearing(0)
     , _elevation(0)
     , _time_of_flight(time_delta::zero)
@@ -60,6 +61,7 @@ void fire_director::think()
 void fire_director::set_target(handle<ship const> target)
 {
     _target = target;
+    _range = 0;
     _bearing = 0;
     _elevation = 0;
     _time_of_flight = time_delta::zero;
@@ -71,9 +73,10 @@ void fire_director::set_target(handle<ship const> target)
 }
 
 //------------------------------------------------------------------------------
-void fire_director::get_solution(double& bearing, double& elevation) const
+void fire_director::get_solution(double& range, double& bearing, double& elevation) const
 {
     // Return the best available solution even if invalid to allow 'pre-aiming'
+    range = _range;
     bearing = _bearing;
     elevation = _elevation;
 }
@@ -133,11 +136,11 @@ void fire_director::update_solution()
         dr += _corrections[(_num_corrections - 1) % max_corrections].total;
     }
     vec3 dir = dr * _owner->get_rotation().inverse();
-    double dist = dir.normalize_length();
+    _range = dir.normalize_length();
     _bearing = std::atan2(dir.y, dir.x);
 
     // Calculate elevation and time of flight
-    _is_valid = interpolate_range(dist, r);
+    _is_valid = interpolate_range(_range, r);
     _elevation = r.elevation;
     _time_of_flight = r.time_of_flight;
 }

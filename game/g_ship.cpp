@@ -253,9 +253,9 @@ void ship::think()
             get_firing_vectors(idx, ii, position, direction, velocity);
 
             // add dispersion
-            direction = normalize(direction + vec3(_random.normal_real(1e-3f),
-                                                   _random.normal_real(1e-3f),
-                                                   _random.normal_real(1e-3f)));
+            direction = normalize(direction + vec3(_random.normal_real(5e-3f),
+                                                   _random.normal_real(5e-3f),
+                                                   _random.normal_real(5e-3f)));
 
             get_world()->spawn<projectile>(
                 this,
@@ -343,14 +343,17 @@ void ship::update_targets()
 //------------------------------------------------------------------------------
 void ship::update_firing_solution(std::size_t turret_index)
 {
-    double bearing, elevation;
+    double range, bearing, elevation;
 
     if (_turrets[turret_index].fire_director && _turrets[turret_index].fire_director->get_target()) {
-        _turrets[turret_index].fire_director->get_solution(bearing, elevation);
-        // Get bearing relative to turret orientation, normalize to [-pi,pi)
+        _turrets[turret_index].fire_director->get_solution(range, bearing, elevation);
+        vec2 parallax = _design->turrets[turret_index].position.to_vec2() * rot2(-bearing);
+        // Get bearing relative to turret orientation
         bearing -= _design->turrets[turret_index].orientation;
+        // Parallax correction using small angle approximation
+        bearing -= parallax.y / range;
+        // Normalize to [-pi,pi)
         bearing -= math::twopi * std::round(bearing / math::twopi);
-        // TODO: parallax corrections
         _turrets[turret_index].traverse_target = bearing;
         _turrets[turret_index].elevation_target = elevation;
     } else {
