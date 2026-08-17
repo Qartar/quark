@@ -55,7 +55,7 @@ void globe::init()
         }
     }
 
-    vec2f outline[4096];
+    vec2f outline[1024];
     constexpr float dd = math::twopi / float(countof(outline));
     for (std::size_t ii = 0; ii < countof(outline); ++ii) {
         float c = std::cos(float(ii) * dd);
