@@ -15,6 +15,8 @@ set(SHARED_SOURCES
     cm_gtopo30.cpp
     cm_gtopo30.h
     cm_keys.h
+    cm_lexer.cpp
+    cm_lexer.h
     cm_matrix.h
     cm_parser.cpp
     cm_parser.h

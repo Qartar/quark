@@ -81,6 +81,18 @@
     </Expand>
   </Type>
 
+  <!-- lexer types -->
+  <Type Name="lexer::token">
+    <Intrinsic Name="length" Expression="end - begin"/>
+    <DisplayString>{begin, [length()]s}</DisplayString>
+    <StringView>begin, [length()]</StringView>
+    <Expand>
+      <Item Name="size">length()</Item>
+      <Item Name="data">begin, [length()]</Item>
+      <Item Name="type">type</Item>
+    </Expand>
+  </Type>
+
   <!-- time_base<T> -->
   <Type Name="time_base&lt;*&gt;">
     <DisplayString Condition="_value == -9223372036854775808">-inf</DisplayString>
