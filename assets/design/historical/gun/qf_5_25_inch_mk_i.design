@@ -1,0 +1,19 @@
+qf_5_25_inch_mk_i = {
+    name = "QF 5.25-inch Mk I";
+
+    caliber = 0.133 m;
+    length = 6.67 m;
+
+    shell_mass = 36.3 kg;
+    shell_velocity = 814 m/s;
+    shell_coefficient = 3610;
+
+    outline = [
+        (-0.5336, 0.16625),
+        (0, 0.16625),
+        (4.669, 0.0665),
+        (4.669, -0.0665),
+        (0, -0.16625),
+        (-0.5336, -0.16625),
+    ];
+};

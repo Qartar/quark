@@ -8,11 +8,23 @@
 #include "design/g_gun_design.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+class lexer;
+
+namespace file {
+class stream;
+}
+
+//------------------------------------------------------------------------------
 namespace game {
+
+class design_manager;
 
 //------------------------------------------------------------------------------
 struct turret_design
 {
+    static bool parse(lexer& lex, design_manager const& mgr, turret_design& turret);
+    static void print(file::stream& s, turret_design const& turret);
+
     string::buffer id;
 
     float radius; //!< Radius of the turret ring
@@ -29,35 +41,5 @@ struct turret_design
 
     std::vector<vec2> outline;
 };
-
-extern const turret_design turret_yamato_46cm;
-extern const turret_design turret_yamato_15_5cm;
-extern const turret_design turret_fuso_36cm;
-extern const turret_design turret_fuso_36cm_rf;
-extern const turret_design turret_iowa_16in;
-extern const turret_design turret_north_carolina_16in;
-extern const turret_design turret_north_carolina_5in;
-extern const turret_design turret_kgv_14in_quad;
-extern const turret_design turret_kgv_14in_twin;
-extern const turret_design turret_kgv_5_25in;
-extern const turret_design turret_richelieu_380mm;
-extern const turret_design turret_richelieu_152mm;
-extern const turret_design turret_bismarck_38cm;
-extern const turret_design turret_bismarck_15cm_rf;
-extern const turret_design turret_bismarck_15cm;
-extern const turret_design turret_littorio_381mm;
-extern const turret_design turret_littorio_152mm;
-extern const turret_design turret_deutschland_28cm;
-extern const turret_design turret_mogami_20cm_rf;
-extern const turret_design turret_mogami_20cm;
-extern const turret_design turret_new_orleans_8in;
-extern const turret_design turret_county_8in;
-extern const turret_design turret_algerie_203mm;
-extern const turret_design turret_algerie_203mm_rf;
-extern const turret_design turret_admiral_hipper_20_3cm_rf;
-extern const turret_design turret_admiral_hipper_20_3cm;
-extern const turret_design turret_zara_203mm;
-extern const turret_design turret_town_6in;
-extern const turret_design turret_tribal_4_7in;
 
 } // namespace game

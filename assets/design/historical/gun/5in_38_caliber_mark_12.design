@@ -1,0 +1,19 @@
+5in_38_caliber_mark_12 = {
+    name = "5\"/38 caliber Mark 12";
+
+    caliber = 0.127 m;
+    length = 4.83 m;
+
+    shell_mass = 25 kg;
+    shell_velocity = 790 m/s;
+    shell_coefficient = 3270;
+
+    outline = [
+        (-0.3864, 0.15875),
+        (0, 0.15875),
+        (3.381, 0.0635),
+        (3.381, -0.0635),
+        (0, -0.15875),
+        (-0.3864, -0.15875),
+    ];
+};

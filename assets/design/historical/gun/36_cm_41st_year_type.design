@@ -1,0 +1,19 @@
+36_cm_41st_year_type = {
+    name = "36 cm 41st Year Type";
+
+    caliber = 0.356 m;
+    length = 16 m;
+
+    shell_mass = 673.5 kg;
+    shell_velocity = 775 m/s;
+    shell_coefficient = 9270;
+
+    outline = [
+        (-1.28, 0.445),
+        (0, 0.445),
+        (11.2, 0.178),
+        (11.2, -0.178),
+        (0, -0.445),
+        (-1.28, -0.445),
+    ];
+};

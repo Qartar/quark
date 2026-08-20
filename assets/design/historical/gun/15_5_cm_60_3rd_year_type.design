@@ -1,0 +1,19 @@
+15_5_cm_60_3rd_year_type = {
+    name = "15.5 cm/60 3rd Year Type";
+
+    caliber = 0.155 m;
+    length = 9.3 m;
+
+    shell_mass = 55.9 kg;
+    shell_velocity = 925 m/s;
+    shell_coefficient = 4170;
+
+    outline = [
+        (-0.744, 0.19375),
+        (0, 0.19375),
+        (6.51, 0.0775),
+        (6.51, -0.0775),
+        (0, -0.19375),
+        (-0.744, -0.19375),
+    ];
+};

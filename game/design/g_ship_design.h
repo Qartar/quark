@@ -12,11 +12,23 @@
 #include "design/g_turret_design.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+class lexer;
+
+namespace file {
+class stream;
+}
+
+//------------------------------------------------------------------------------
 namespace game {
+
+class design_manager;
 
 //------------------------------------------------------------------------------
 struct ship_design
 {
+    static bool parse(lexer& lex, design_manager const& mgr, ship_design& ship);
+    static void print(file::stream& s, ship_design const& ship);
+
     string::buffer id;
     string::buffer name;
 
@@ -47,23 +59,5 @@ struct ship_design
     std::vector<vec2> hull_outline;
     physics::compound_shape hull_shape;
 };
-
-extern const ship_design ship_yamato_battleship;
-extern const ship_design ship_fuso_battleship;
-extern const ship_design ship_iowa_battleship;
-extern const ship_design ship_north_carolina_battleship;
-extern const ship_design ship_king_george_v_battleship;
-extern const ship_design ship_richelieu_battleship;
-extern const ship_design ship_bismarck_battleship;
-extern const ship_design ship_littorio_battleship;
-extern const ship_design ship_deutschland_cruiser;
-extern const ship_design ship_mogami_cruiser;
-extern const ship_design ship_new_orleans_cruiser;
-extern const ship_design ship_county_cruiser;
-extern const ship_design ship_algerie_cruiser;
-extern const ship_design ship_admiral_hipper_cruiser;
-extern const ship_design ship_zara_cruiser;
-extern const ship_design ship_town_cruiser;
-extern const ship_design ship_tribal_destroyer;
 
 } // namespace game

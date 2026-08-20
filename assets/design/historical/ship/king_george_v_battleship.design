@@ -1,0 +1,137 @@
+king_george_v_battleship = {
+    name = "King George V";
+    length = 227 m;
+    beam = 31.5 m;
+    draft = 10.2 m;
+    displacement = 37316 t;
+
+    power = 110000 shp;
+    speed = 28 kn;
+
+    rudder_angle = 36;
+    rudder_speed = 1;
+
+    minimum_turning_radius = 500 m;
+    optimal_turning_radius = 750 m;
+
+    turrets = [
+        {
+            position = (49.5, 0, 8.25);
+            orientation = 0;
+            train_limit = (-135, 135);
+
+            design = king_george_v_14in_quad;
+        },
+        {
+            position = (34.25, 0, 11.5);
+            orientation = 0;
+            train_limit = (-135, 135);
+
+            design = king_george_v_14in_twin;
+        },
+        {
+            position = (-62, 0, 8.75);
+            orientation = 180;
+            train_limit = (-135, 135);
+
+            design = king_george_v_14in_quad;
+        },
+        {
+            position = (11.5, -13, 7.75);
+            orientation = 0;
+            train_limit = (-150, 0);
+
+            design = king_george_v_5_25in;
+        },
+        {
+            position = (0.25, -13.25, 10.25);
+            orientation = 0;
+            train_limit = (-180, 0);
+
+            design = king_george_v_5_25in;
+        },
+        {
+            position = (-24, -13, 10.25);
+            orientation = 180;
+            train_limit = (0, 180);
+
+            design = king_george_v_5_25in;
+        },
+        {
+            position = (-34.5, -12.25, 7.75);
+            orientation = 180;
+            train_limit = (0, 150);
+
+            design = king_george_v_5_25in;
+        },
+        {
+            position = (11.5, 13, 7.75);
+            orientation = 0;
+            train_limit = (0, 150);
+
+            design = king_george_v_5_25in;
+        },
+        {
+            position = (0.25, 13.25, 10.25);
+            orientation = 0;
+            train_limit = (0, 180);
+
+            design = king_george_v_5_25in;
+        },
+        {
+            position = (-24, 13, 10.25);
+            orientation = 180;
+            train_limit = (-180, 0);
+
+            design = king_george_v_5_25in;
+        },
+        {
+            position = (-34.5, 12.25, 7.75);
+            orientation = 180;
+            train_limit = (-150, 0);
+
+            design = king_george_v_5_25in;
+        },
+    ];
+
+    hull_outline = [
+        (-113, 0),
+        (-112.44, 0.88),
+        (-110.06, 2.61),
+        (-105.43, 5.03),
+        (-99.17, 7.58),
+        (-92.14, 9.82),
+        (-84.97, 11.51),
+        (-78.02, 12.58),
+        (-60.41, 14.13),
+        (-41.4, 15.12),
+        (-22.66, 15.47),
+        (15.01, 15.4),
+        (28.22, 15.06),
+        (43.62, 14.08),
+        (58.83, 12.56),
+        (72.83, 10.61),
+        (85.28, 8.32),
+        (96.14, 5.76),
+        (105.51, 2.97),
+        (113.5, 0),
+        (105.51, -2.97),
+        (96.14, -5.76),
+        (85.28, -8.32),
+        (72.83, -10.61),
+        (58.83, -12.56),
+        (43.62, -14.08),
+        (28.22, -15.06),
+        (15.01, -15.4),
+        (-22.66, -15.47),
+        (-41.4, -15.12),
+        (-60.41, -14.13),
+        (-78.02, -12.58),
+        (-84.97, -11.51),
+        (-92.14, -9.82),
+        (-99.17, -7.58),
+        (-105.43, -5.03),
+        (-110.06, -2.61),
+        (-112.44, -0.88),
+    ];
+};

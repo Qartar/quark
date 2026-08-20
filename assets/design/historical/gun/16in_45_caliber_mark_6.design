@@ -1,0 +1,19 @@
+16in_45_caliber_mark_6 = {
+    name = "16\"/45 caliber Mark 6";
+
+    caliber = 0.406 m;
+    length = 18 m;
+
+    shell_mass = 1225 kg;
+    shell_velocity = 701 m/s;
+    shell_coefficient = 14200;
+
+    outline = [
+        (-1.44, 0.5075),
+        (0, 0.5075),
+        (12.6, 0.203),
+        (12.6, -0.203),
+        (0, -0.5075),
+        (-1.44, -0.5075),
+    ];
+};

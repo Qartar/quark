@@ -1,0 +1,19 @@
+16in_50_caliber_mark_7 = {
+    name = "16\"/50 caliber Mark 7";
+
+    caliber = 0.406 m;
+    length = 20 m;
+
+    shell_mass = 1225 kg;
+    shell_velocity = 762 m/s;
+    shell_coefficient = 14000;
+
+    outline = [
+        (-1.6, 0.5075),
+        (0, 0.5075),
+        (14, 0.203),
+        (14, -0.203),
+        (0, -0.5075),
+        (-1.6, -0.5075),
+    ];
+};

@@ -1,0 +1,19 @@
+cannone_da_381_50_ansaldo_m1934 = {
+    name = "Cannone da 381/50 Ansaldo M1934";
+
+    caliber = 0.381 m;
+    length = 19.05 m;
+
+    shell_mass = 885 kg;
+    shell_velocity = 850 m/s;
+    shell_coefficient = 12600;
+
+    outline = [
+        (-1.524, 0.47625),
+        (0, 0.47625),
+        (13.335, 0.1905),
+        (13.335, -0.1905),
+        (0, -0.47625),
+        (-1.524, -0.47625),
+    ];
+};

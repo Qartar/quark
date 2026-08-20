@@ -1,0 +1,19 @@
+bl_8_inch_mk_viii = {
+    name = "BL 8-inch Mk VIII";
+
+    caliber = 0.203 m;
+    length = 10.16 m;
+
+    shell_mass = 116.1 kg;
+    shell_velocity = 925 m/s;
+    shell_coefficient = 5200;
+
+    outline = [
+        (-0.8128, 0.25375),
+        (0, 0.25375),
+        (7.112, 0.1015),
+        (7.112, -0.1015),
+        (0, -0.25375),
+        (-0.8128, -0.25375),
+    ];
+};

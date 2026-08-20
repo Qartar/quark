@@ -6,11 +6,23 @@
 #include "cm_string.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+class lexer;
+
+namespace file {
+class stream;
+}
+
+//------------------------------------------------------------------------------
 namespace game {
+
+class design_manager;
 
 //------------------------------------------------------------------------------
 struct gun_design
 {
+    static bool parse(lexer& lex, design_manager const& mgr, gun_design& gun);
+    static void print(file::stream& s, gun_design const& gun);
+
     string::buffer id;
     string::buffer name;
 
@@ -24,29 +36,5 @@ struct gun_design
 
     std::vector<vec2> outline;
 };
-
-extern const gun_design gun_46cm_45_Type_94;
-extern const gun_design gun_15_5cm_60_3rd_Year_Type;
-extern const gun_design gun_36cm_41st_Year_Type;
-extern const gun_design gun_16in_50_caliber_Mark_7;
-extern const gun_design gun_16in_45_caliber_Mark_6;
-extern const gun_design gun_5in_38_caliber_Mark_12;
-extern const gun_design gun_BL_14_inch_Mk_VII;
-extern const gun_design gun_QF_5_25_inch_Mk_I;
-extern const gun_design gun_380mm_45_Modele_1935;
-extern const gun_design gun_152mm_55_Modele_1930;
-extern const gun_design gun_38cm_SK_C_34;
-extern const gun_design gun_15cm_SK_C_28;
-extern const gun_design gun_381_50_ansaldo_m1934;
-extern const gun_design gun_152_55_ansaldo_m1934;
-extern const gun_design gun_28cm_SK_C_28;
-extern const gun_design gun_20cm_50_3rd_Year_Type;
-extern const gun_design gun_8in_55_Mark_9;
-extern const gun_design gun_BL_8_inch_Mk_VIII;
-extern const gun_design gun_203mm_55_Model_1931;
-extern const gun_design gun_20_3cm_SK_C_34;
-extern const gun_design gun_203mm_53_Model_1929;
-extern const gun_design gun_BL_6_inch_Mk_XXIII;
-extern const gun_design gun_QF_4_7_inch_Mark_IX;
 
 } // namespace game

@@ -1,0 +1,163 @@
+north_carolina_battleship = {
+    name = "North Carolina";
+    length = 222 m;
+    beam = 33 m;
+    draft = 10.82 m;
+    displacement = 37187 t;
+
+    power = 90000 shp;
+    speed = 28 kn;
+
+    rudder_angle = 36;
+    rudder_speed = 1;
+
+    minimum_turning_radius = 500 m;
+    optimal_turning_radius = 750 m;
+
+    turrets = [
+        {
+            position = (51, 0, 1);
+            orientation = 0;
+            train_limit = (-135, 135);
+
+            design = north_carolina_16in;
+        },
+        {
+            position = (30.5, 0, 1);
+            orientation = 0;
+            train_limit = (-135, 135);
+
+            design = north_carolina_16in;
+        },
+        {
+            position = (-62, 0, 1);
+            orientation = 180;
+            train_limit = (-135, 135);
+
+            design = north_carolina_16in;
+        },
+        {
+            position = (0, -10, 1);
+            orientation = 0;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-7, -14, 1);
+            orientation = 0;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-16, -10, 1);
+            orientation = 0;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-23.5, -14, 1);
+            orientation = 180;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-32, -10, 1);
+            orientation = 180;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (0, 10, 1);
+            orientation = 0;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-7, 14, 1);
+            orientation = 0;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-16, 10, 1);
+            orientation = 0;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-23.5, 14, 1);
+            orientation = 180;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-32, 10, 1);
+            orientation = 180;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+    ];
+
+    hull_outline = [
+        (-111, 0),
+        (-110.63, 1.66),
+        (-109.45, 3.32),
+        (-107.32, 4.99),
+        (-104.02, 6.69),
+        (-99.35, 8.38),
+        (-93.06, 10.05),
+        (-84.97, 11.63),
+        (-75.02, 13.08),
+        (-63.37, 14.31),
+        (-50.55, 15.24),
+        (-37.61, 15.82),
+        (-26, 16),
+        (-5, 16),
+        (11.97, 15.64),
+        (26.5, 14.63),
+        (40.28, 13.05),
+        (55, 11),
+        (62.85, 9.99),
+        (93.14, 6.64),
+        (100.3, 5.43),
+        (104.95, 4.28),
+        (107.98, 3.16),
+        (109.8, 2.07),
+        (110.72, 1.03),
+        (111, 0),
+        (110.72, -1.03),
+        (109.8, -2.07),
+        (107.98, -3.16),
+        (104.95, -4.28),
+        (100.3, -5.43),
+        (93.14, -6.64),
+        (62.85, -9.99),
+        (55, -11),
+        (40.28, -13.05),
+        (26.5, -14.63),
+        (11.97, -15.64),
+        (-5, -16),
+        (-26, -16),
+        (-37.61, -15.82),
+        (-50.55, -15.24),
+        (-63.37, -14.31),
+        (-75.02, -13.08),
+        (-84.97, -11.63),
+        (-93.06, -10.05),
+        (-99.35, -8.38),
+        (-104.02, -6.69),
+        (-107.32, -4.99),
+        (-109.45, -3.32),
+        (-110.63, -1.66),
+    ];
+};

@@ -1,0 +1,19 @@
+46_cm_45_type_94 = {
+    name = "46 cm/45 Type 94";
+
+    caliber = 0.46 m;
+    length = 20.7 m;
+
+    shell_mass = 1460 kg;
+    shell_velocity = 780 m/s;
+    shell_coefficient = 13500;
+
+    outline = [
+        (-1.656, 0.575),
+        (0, 0.575),
+        (14.49, 0.23),
+        (14.49, -0.23),
+        (0, -0.575),
+        (-1.656, -0.575),
+    ];
+};

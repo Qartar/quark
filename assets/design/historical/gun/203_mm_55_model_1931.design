@@ -1,0 +1,19 @@
+203_mm_55_model_1931 = {
+    name = "203 mm/55 Model 1931";
+
+    caliber = 0.203 m;
+    length = 11.3 m;
+
+    shell_mass = 119 kg;
+    shell_velocity = 870 m/s;
+    shell_coefficient = 6350;
+
+    outline = [
+        (-0.904, 0.25375),
+        (0, 0.25375),
+        (7.91, 0.1015),
+        (7.91, -0.1015),
+        (0, -0.25375),
+        (-0.904, -0.25375),
+    ];
+};

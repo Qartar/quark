@@ -1,0 +1,19 @@
+bl_14_inch_mk_vii = {
+    name = "BL 14-inch Mk VII";
+
+    caliber = 0.3556 m;
+    length = 16 m;
+
+    shell_mass = 721.2 kg;
+    shell_velocity = 757 m/s;
+    shell_coefficient = 12000;
+
+    outline = [
+        (-1.28, 0.4445),
+        (0, 0.4445),
+        (11.2, 0.1778),
+        (11.2, -0.1778),
+        (0, -0.4445),
+        (-1.28, -0.4445),
+    ];
+};

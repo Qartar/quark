@@ -1,0 +1,19 @@
+20_cm_50_3rd_year_type = {
+    name = "20 cm/50 3rd Year Type";
+
+    caliber = 0.203 m;
+    length = 10 m;
+
+    shell_mass = 126 kg;
+    shell_velocity = 840 m/s;
+    shell_coefficient = 5850;
+
+    outline = [
+        (-0.8, 0.25375),
+        (0, 0.25375),
+        (7, 0.1015),
+        (7, -0.1015),
+        (0, -0.25375),
+        (-0.8, -0.25375),
+    ];
+};

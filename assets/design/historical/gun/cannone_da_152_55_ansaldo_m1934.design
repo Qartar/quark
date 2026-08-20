@@ -1,0 +1,19 @@
+cannone_da_152_55_ansaldo_m1934 = {
+    name = "Cannone da 152/55 Ansaldo M1934";
+
+    caliber = 0.152 m;
+    length = 8.38 m;
+
+    shell_mass = 50 kg;
+    shell_velocity = 910 m/s;
+    shell_coefficient = 4030;
+
+    outline = [
+        (-0.6704, 0.19),
+        (0, 0.19),
+        (5.866, 0.076),
+        (5.866, -0.076),
+        (0, -0.19),
+        (-0.6704, -0.19),
+    ];
+};

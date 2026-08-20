@@ -6,6 +6,7 @@
 #include "g_usercmd.h"
 #include "g_object.h"
 #include "g_globe.h"
+#include "design/g_design_manager.h"
 
 #include "p_material.h"
 #include "p_rigidbody.h"
@@ -199,6 +200,8 @@ public:
     void on_speed_down(); //!< Command callback for decreasing the game speed
     void on_pause(); //!< Command callback for pausing/unpausing the game world
 
+    design_manager& designs() { return _designs; }
+
 private:
     //! Sparse array of objects in the world, resized as needed
     std::vector<std::unique_ptr<object>> _objects;
@@ -237,6 +240,8 @@ private:
     float _prev_timescale; //!< Previous game speed, used for unpausing
 
     globe _globe;
+
+    design_manager _designs;
 
     //
     // particle system

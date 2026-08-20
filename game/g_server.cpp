@@ -12,6 +12,7 @@
 #include "g_player.h"
 #include "g_ship.h"
 #include "design/g_ship_design.h"
+#include "design/g_design_manager.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
@@ -67,19 +68,19 @@ void session::start_game(parser::text const& args)
 
     std::vector<ship_design const*> ship_designs = {
         // Fast battleships
-        &ship_yamato_battleship,
-        &ship_north_carolina_battleship,
-        &ship_king_george_v_battleship,
-        &ship_richelieu_battleship,
-        &ship_bismarck_battleship,
-        &ship_littorio_battleship,
+        _world.designs().find_ship("yamato_battleship"),
+        _world.designs().find_ship("north_carolina_battleship"),
+        _world.designs().find_ship("king_george_v_battleship"),
+        _world.designs().find_ship("richelieu_battleship"),
+        _world.designs().find_ship("bismarck_battleship"),
+        _world.designs().find_ship("littorio_battleship"),
         // Heavy cruisers
-        &ship_mogami_cruiser,
-        &ship_new_orleans_cruiser,
-        &ship_county_cruiser,
-        &ship_algerie_cruiser,
-        &ship_admiral_hipper_cruiser,
-        &ship_zara_cruiser,
+        _world.designs().find_ship("mogami_cruiser"),
+        _world.designs().find_ship("new_orleans_cruiser"),
+        _world.designs().find_ship("county_cruiser"),
+        _world.designs().find_ship("algerie_cruiser"),
+        _world.designs().find_ship("admiral_hipper_cruiser"),
+        _world.designs().find_ship("zara_cruiser"),
     };
 
     for (std::size_t ii = 1; ii < args.tokens().size(); ++ii) {
@@ -102,43 +103,43 @@ void session::start_game(parser::text const& args)
         } else if (args.tokens()[ii] == "battleship") {
             // Fast battleships
             ship_designs = {
-                &ship_yamato_battleship,
-                &ship_north_carolina_battleship,
-                &ship_king_george_v_battleship,
-                &ship_richelieu_battleship,
-                &ship_bismarck_battleship,
-                &ship_littorio_battleship,
+                _world.designs().find_ship("yamato_battleship"),
+                _world.designs().find_ship("north_carolina_battleship"),
+                _world.designs().find_ship("king_george_v_battleship"),
+                _world.designs().find_ship("richelieu_battleship"),
+                _world.designs().find_ship("bismarck_battleship"),
+                _world.designs().find_ship("littorio_battleship"),
             };
         } else if (args.tokens()[ii] == "cruiser") {
             // Heavy cruisers
             ship_designs = {
-                &ship_mogami_cruiser,
-                &ship_new_orleans_cruiser,
-                &ship_county_cruiser,
-                &ship_algerie_cruiser,
-                &ship_admiral_hipper_cruiser,
-                &ship_zara_cruiser,
+                _world.designs().find_ship("mogami_cruiser"),
+                _world.designs().find_ship("new_orleans_cruiser"),
+                _world.designs().find_ship("county_cruiser"),
+                _world.designs().find_ship("algerie_cruiser"),
+                _world.designs().find_ship("admiral_hipper_cruiser"),
+                _world.designs().find_ship("zara_cruiser"),
             };
         } else if (args.tokens()[ii] == "all") {
             // All ship designs
             ship_designs = {
-                &ship_yamato_battleship,
-                &ship_fuso_battleship,
-                &ship_iowa_battleship,
-                &ship_north_carolina_battleship,
-                &ship_king_george_v_battleship,
-                &ship_richelieu_battleship,
-                &ship_bismarck_battleship,
-                &ship_littorio_battleship,
-                &ship_deutschland_cruiser,
-                &ship_mogami_cruiser,
-                &ship_new_orleans_cruiser,
-                &ship_county_cruiser,
-                &ship_algerie_cruiser,
-                &ship_admiral_hipper_cruiser,
-                &ship_zara_cruiser,
-                &ship_town_cruiser,
-                &ship_tribal_destroyer,
+                _world.designs().find_ship("yamato_battleship"),
+                _world.designs().find_ship("fuso_battleship"),
+                _world.designs().find_ship("iowa_battleship"),
+                _world.designs().find_ship("north_carolina_battleship"),
+                _world.designs().find_ship("king_george_v_battleship"),
+                _world.designs().find_ship("richelieu_battleship"),
+                _world.designs().find_ship("bismarck_battleship"),
+                _world.designs().find_ship("littorio_battleship"),
+                _world.designs().find_ship("deutschland_cruiser"),
+                _world.designs().find_ship("mogami_cruiser"),
+                _world.designs().find_ship("new_orleans_cruiser"),
+                _world.designs().find_ship("county_cruiser"),
+                _world.designs().find_ship("algerie_cruiser"),
+                _world.designs().find_ship("admiral_hipper_cruiser"),
+                _world.designs().find_ship("zara_cruiser"),
+                _world.designs().find_ship("town_cruiser"),
+                _world.designs().find_ship("tribal_destroyer"),
             };
 
         //

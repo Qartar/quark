@@ -5,293 +5,81 @@
 #pragma hdrstop
 
 #include "design/g_gun_design.h"
+#include "design/g_design_parser.h"
+#include "cm_filesystem.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-#define GUN_OUTLINE(c, l) {     \
-    vec2(-0.08 * l,  1.25f * c),\
-    vec2(0,  1.25f * c),        \
-    vec2(0.7 * l,  0.5f * c),   \
-    vec2(0.7 * l, -0.5f * c),   \
-    vec2(0, -1.25f * c),        \
-    vec2(-0.08 * l, -1.25f * c),\
+//------------------------------------------------------------------------------
+bool gun_design::parse(lexer& lex, design_manager const&, gun_design& gun)
+{
+    if (!lex.expect_token("{")) {
+        return false;
+    }
+
+    while (!lex.has_error() && !lex.check_token("}")) {
+        if (check_field(lex, "name", gun.name)) {
+        } else if (check_field(lex, "caliber", gun.caliber, units_length)) {
+        } else if (check_field(lex, "length", gun.length, units_length)) {
+        } else if (check_field(lex, "shell_mass", gun.shell_mass, units_mass)) {
+        } else if (check_field(lex, "shell_velocity", gun.shell_velocity, units_speed)) {
+        } else if (check_field(lex, "shell_coefficient", gun.shell_coefficient)) {
+        } else if (lex.check_token("outline")) {
+            if (!lex.expect_token("=") || !lex.expect_token("[")) {
+                return false;
+            }
+            vec2 v;
+            while (!lex.has_error() && !lex.peek_token("]") && lex.parse(v)) {
+                gun.outline.push_back(v);
+                // Trailing comma is allowed
+                if (!lex.check_token(",")) {
+                    break;
+                }
+            }
+            if (!lex.has_error()) {
+                lex.expect_token("]");
+                lex.expect_token(";");
+            }
+        } else {
+            lexer::token t;
+            if (lex.expect_any_token(t)) {
+                lex.set_error(t, "unrecognized field '%.*s'", int(t.end - t.begin), t.begin);
+            }
+            return false;
+        }
+    }
+
+    if (!lex.has_error()) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
-const gun_design gun_46cm_45_Type_94 =
+//------------------------------------------------------------------------------
+void gun_design::print(file::stream& s, gun_design const& gun)
 {
-    /* id */                string::buffer("46_cm_45_type_94"),
-    /* name */              string::buffer("46 cm/45 Type 94"),
-    /* caliber */           0.46f,
-    /* length */            20.7f,
-    /* shell_mass */        1460.f,
-    /* shell_velocity */    780.f,
-    /* shell_coefficient */ 13500.f,
-    /* outline */           GUN_OUTLINE(0.46f, 20.7f),
-};
+    s.printf("%s = {\n", gun.id.c_str());
+    s.printf("    name = %s;\n", make_literal(gun.name).c_str());
+    s.printf("\n");
 
-const gun_design gun_15_5cm_60_3rd_Year_Type =
-{
-    /* id */                string::buffer("15_5_cm_60_3rd_year_type"),
-    /* name */              string::buffer("15.5 cm/60 3rd Year Type"),
-    /* caliber */           0.155f,
-    /* length */            9.3f,
-    /* shell_mass */        55.9f,
-    /* shell_velocity */    925.f,
-    /* shell_coefficient */ 4170.f,
-    /* outline */           GUN_OUTLINE(0.155f, 9.3f),
-};
+    s.printf("    caliber = %g m;\n", gun.caliber);
+    s.printf("    length = %g m;\n", gun.length);
+    s.printf("\n");
 
-const gun_design gun_36cm_41st_Year_Type =
-{
-    /* id */                string::buffer("36_cm_41st_year_type"),
-    /* name */              string::buffer("36 cm 41st Year Type"),
-    /* caliber */           0.356f,
-    /* length */            16.f,
-    /* shell_mass */        673.5f,
-    /* shell_velocity */    775.f,
-    /* shell_coefficient */ 9270.f,
-    /* outline */           GUN_OUTLINE(0.356f, 16.f),
-};
+    s.printf("    shell_mass = %g kg;\n", gun.shell_mass);
+    s.printf("    shell_velocity = %g m/s;\n", gun.shell_velocity);
+    s.printf("    shell_coefficient = %g;\n", gun.shell_coefficient);
+    s.printf("\n");
 
-const gun_design gun_16in_50_caliber_Mark_7 =
-{
-    /* id */                string::buffer("16in_50_caliber_mark_7"),
-    /* name */              string::buffer("16\"/50 caliber Mark 7"),
-    /* caliber */           .406f,
-    /* length */            20.f,
-    /* shell_mass */        1225.f,
-    /* shell_velocity */    762.f,
-    /* shell_coefficient */ 14000.f,
-    /* outline */           GUN_OUTLINE(0.406f, 20.f),
-};
+    s.printf("    outline = [\n");
+    for (std::size_t ii = 0; ii < gun.outline.size(); ++ii) {
+        s.printf("        (%lg, %lg),\n", gun.outline[ii].x, gun.outline[ii].y);
+    }
+    s.printf("    ];\n");
 
-const gun_design gun_16in_45_caliber_Mark_6 =
-{
-    /* id */                string::buffer("16in_45_caliber_mark_6"),
-    /* name */              string::buffer("16\"/45 caliber Mark 6"),
-    /* caliber */           .406f,
-    /* length */            18.f,
-    /* shell_mass */        1225.f,
-    /* shell_velocity */    701.f,
-    /* shell_coefficient */ 14200.f,
-    /* outline */           GUN_OUTLINE(0.406f, 18.f),
-};
-
-const gun_design gun_5in_38_caliber_Mark_12 =
-{
-    /* id */                string::buffer("5in_38_caliber_mark_12"),
-    /* name */              string::buffer("5\"/38 caliber Mark 12"),
-    /* caliber */           .127f,
-    /* length */            4.83f,
-    /* shell_mass */        25.f,
-    /* shell_velocity */    790.f,
-    /* shell_coefficient */ 3270.f,
-    /* outline */           GUN_OUTLINE(0.127f, 4.83f),
-};
-
-const gun_design gun_BL_14_inch_Mk_VII =
-{
-    /* id */                string::buffer("bl_14_inch_mk_vii"),
-    /* name */              string::buffer("BL 14-inch Mk VII"),
-    /* caliber */           .3556f,
-    /* length */            16.f,
-    /* shell_mass */        721.2f,
-    /* shell_velocity */    757.f,
-    /* shell_coefficient */ 12000.f,
-    /* outline */           GUN_OUTLINE(0.3556f, 16.f),
-};
-
-const gun_design gun_QF_5_25_inch_Mk_I =
-{
-    /* id */                string::buffer("qf_5_25_inch_mk_i"),
-    /* name */              string::buffer("QF 5.25-inch Mk I"),
-    /* caliber */           .133f,
-    /* length */            6.67f,
-    /* shell_mass */        36.3f,
-    /* shell_velocity */    814.f,
-    /* shell_coefficient */ 3610.f,
-    /* outline */           GUN_OUTLINE(0.133f, 6.67f),
-};
-
-const gun_design gun_380mm_45_Modele_1935 =
-{
-    /* id */                string::buffer("380mm_45_modele_1935"),
-    /* name */              string::buffer("380mm/45 Modèle 1935"),
-    /* caliber */           .38f,
-    /* length */            17.257f,
-    /* shell_mass */        884.f,
-    /* shell_velocity */    830.f,
-    /* shell_coefficient */ 12700.f,
-    /* outline */           GUN_OUTLINE(0.38f, 17.257f),
-};
-
-const gun_design gun_152mm_55_Modele_1930 =
-{
-    /* id */                string::buffer("152mm_55_modele_1930"),
-    /* name */              string::buffer("152mm/55 Modèle 1930"),
-    /* caliber */           .152f,
-    /* length */            8.39f,
-    /* shell_mass */        56.f,
-    /* shell_velocity */    870.f,
-    /* shell_coefficient */ 4580.f,
-    /* outline */           GUN_OUTLINE(0.152f, 8.39f),
-};
-
-const gun_design gun_38cm_SK_C_34 =
-{
-    /* id */                string::buffer("38_cm_sk_c_34"),
-    /* name */              string::buffer("38 cm SK C/34"),
-    /* caliber */           .38f,
-    /* length */            18.405f,
-    /* shell_mass */        800.f,
-    /* shell_velocity */    820.f,
-    /* shell_coefficient */ 11500.f,
-    /* outline */           GUN_OUTLINE(0.38f, 18.405f),
-};
-
-const gun_design gun_15cm_SK_C_28 =
-{
-    /* id */                string::buffer("15_cm_sk_c_28"),
-    /* name */              string::buffer("15 cm SK C/28"),
-    /* caliber */           .15f,
-    /* length */            7.815f,
-    /* shell_mass */        45.3f,
-    /* shell_velocity */    875.f,
-    /* shell_coefficient */ 3710.f,
-    /* outline */           GUN_OUTLINE(0.15f, 7.815f),
-};
-
-const gun_design gun_381_50_ansaldo_m1934 =
-{
-    /* id */                string::buffer("cannone_da_381_50_ansaldo_m1934"),
-    /* name */              string::buffer("Cannone da 381/50 Ansaldo M1934"),
-    /* caliber */           .381f,
-    /* length */            19.05f,
-    /* shell_mass */        885.f,
-    /* shell_velocity */    850.f,
-    /* shell_coefficient */ 12600.f,
-    /* outline */           GUN_OUTLINE(0.381f, 19.05f),
-};
-
-const gun_design gun_152_55_ansaldo_m1934 =
-{
-    /* id */                string::buffer("cannone_da_152_55_ansaldo_m1934"),
-    /* name */              string::buffer("Cannone da 152/55 Ansaldo M1934"),
-    /* caliber */           .152f,
-    /* length */            8.38f,
-    /* shell_mass */        50.f,
-    /* shell_velocity */    910.f,
-    /* shell_coefficient */ 4030.f,
-    /* outline */           GUN_OUTLINE(0.152f, 8.38f),
-};
-
-const gun_design gun_28cm_SK_C_28 =
-{
-    /* id */                string::buffer("28_cm_sk_c_28"),
-    /* name */              string::buffer("28 cm SK C/28"),
-    /* caliber */           .283f,
-    /* length */            14.815f,
-    /* shell_mass */        300.f,
-    /* shell_velocity */    910.f,
-    /* shell_coefficient */ 5510.f,
-    /* outline */           GUN_OUTLINE(0.283f, 14.815f),
-};
-
-const gun_design gun_20cm_50_3rd_Year_Type =
-{
-    /* id */                string::buffer("20_cm_50_3rd_year_type"),
-    /* name */              string::buffer("20 cm/50 3rd Year Type"),
-    /* caliber */           0.203f,
-    /* length */            10.0f,
-    /* shell_mass */        126.f,
-    /* shell_velocity */    840.f,
-    /* shell_coefficient */ 5850.f,
-    /* outline */           GUN_OUTLINE(0.203f, 10.0f),
-};
-
-const gun_design gun_8in_55_Mark_9 =
-{
-    /* id */                string::buffer("8in_55_mark_9"),
-    /* name */              string::buffer("8\"/55 Mark 9"),
-    /* caliber */           0.203f,
-    /* length */            11.179f,
-    /* shell_mass */        118.f,
-    /* shell_velocity */    853.f,
-    /* shell_coefficient */ 5720.f,
-    /* outline */           GUN_OUTLINE(0.203f, 11.179f),
-};
-
-const gun_design gun_BL_8_inch_Mk_VIII =
-{
-    /* id */                string::buffer("bl_8_inch_mk_viii"),
-    /* name */              string::buffer("BL 8-inch Mk VIII"),
-    /* caliber */           0.203f,
-    /* length */            10.16f,
-    /* shell_mass */        116.1f,
-    /* shell_velocity */    925.f,
-    /* shell_coefficient */ 5200.f,
-    /* outline */           GUN_OUTLINE(0.203f, 10.16f),
-};
-
-const gun_design gun_203mm_55_Model_1931 =
-{
-    /* id */                string::buffer("203_mm_55_model_1931"),
-    /* name */              string::buffer("203 mm/55 Model 1931"),
-    /* caliber */           0.203f,
-    /* length */            11.3f,
-    /* shell_mass */        119.f,
-    /* shell_velocity */    870.f,
-    /* shell_coefficient */ 6350.f,
-    /* outline */           GUN_OUTLINE(0.203f, 11.3f),
-};
-
-const gun_design gun_20_3cm_SK_C_34 =
-{
-    /* id */                string::buffer("20_3_cm_sk_c_34"),
-    /* name */              string::buffer("20.3 cm SK C/34"),
-    /* caliber */           0.203f,
-    /* length */            11.518f,
-    /* shell_mass */        122.f,
-    /* shell_velocity */    925.f,
-    /* shell_coefficient */ 6270.f,
-    /* outline */           GUN_OUTLINE(0.203f, 11.518f),
-};
-
-const gun_design gun_203mm_53_Model_1929 =
-{
-    /* id */                string::buffer("203_mm_53_model_1929"),
-    /* name */              string::buffer("203 mm/53 Model 1929"),
-    /* caliber */           0.203f,
-    /* length */            10.7f,
-    /* shell_mass */        125.3f,
-    /* shell_velocity */    900.f,
-    /* shell_coefficient */ 5620.f,
-    /* outline */           GUN_OUTLINE(0.203f, 10.7f),
-};
-
-const gun_design gun_BL_6_inch_Mk_XXIII =
-{
-    /* id */                string::buffer("bl_6_inch_mk_xiii"),
-    /* name */              string::buffer("BL 6-inch Mk XIII"),
-    /* caliber */           .1524f,
-    /* length */            7.6f,
-    /* shell_mass */        51.f,
-    /* shell_velocity */    840.f,
-    /* shell_coefficient */ 4210.f,
-    /* outline */           GUN_OUTLINE(0.1524f, 7.6f),
-};
-
-const gun_design gun_QF_4_7_inch_Mark_IX =
-{
-    /* id */                string::buffer("qf_4_7_inch_mk_ix"),
-    /* name */              string::buffer("QF 4.7-inch Mk IX"),
-    /* caliber */           .12f,
-    /* length */            5.4f,
-    /* shell_mass */        22.7f,
-    /* shell_velocity */    810.f,
-    /* shell_coefficient */ 2150.f,
-    /* outline */           GUN_OUTLINE(0.12f, 5.4f),
-};
+    s.printf("};\n");
+}
 
 } // namespace game

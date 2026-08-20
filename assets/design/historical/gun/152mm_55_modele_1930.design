@@ -1,0 +1,19 @@
+152mm_55_modele_1930 = {
+    name = "152mm/55 Modèle 1930";
+
+    caliber = 0.152 m;
+    length = 8.39 m;
+
+    shell_mass = 56 kg;
+    shell_velocity = 870 m/s;
+    shell_coefficient = 4580;
+
+    outline = [
+        (-0.6712, 0.19),
+        (0, 0.19),
+        (5.873, 0.076),
+        (5.873, -0.076),
+        (0, -0.19),
+        (-0.6712, -0.19),
+    ];
+};

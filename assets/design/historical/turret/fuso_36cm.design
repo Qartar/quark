@@ -1,0 +1,28 @@
+fuso_36cm = {
+    radius = 4.75 m;
+    train_speed = 2;
+    elevation_speed = 10;
+    elevation_limit = (-3, 43);
+
+    num_guns = 2;
+    position = [
+        (4.75, -1, 1),
+        (4.75, 1, 1),
+    ];
+    reload_time = 30 s;
+
+    gun_design = 36_cm_41st_year_type;
+
+    outline = [
+        (4.75, 1.5),
+        (3, 3.4),
+        (-1, 4.4),
+        (-6.25, 3.4),
+        (-7, 1.5),
+        (-7, -1.5),
+        (-6.25, -3.4),
+        (-1, -4.4),
+        (3, -3.4),
+        (4.75, -1.5),
+    ];
+};
