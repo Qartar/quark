@@ -17,6 +17,7 @@ namespace game {
 //------------------------------------------------------------------------------
 struct ship_design
 {
+    string::buffer id;
     string::buffer name;
 
     float length; //!< Overall length in meters

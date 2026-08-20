@@ -20,6 +20,7 @@ namespace game {
 
 const gun_design gun_46cm_45_Type_94 =
 {
+    /* id */                string::buffer("46_cm_45_type_94"),
     /* name */              string::buffer("46 cm/45 Type 94"),
     /* caliber */           0.46f,
     /* length */            20.7f,
@@ -31,6 +32,7 @@ const gun_design gun_46cm_45_Type_94 =
 
 const gun_design gun_15_5cm_60_3rd_Year_Type =
 {
+    /* id */                string::buffer("15_5_cm_60_3rd_year_type"),
     /* name */              string::buffer("15.5 cm/60 3rd Year Type"),
     /* caliber */           0.155f,
     /* length */            9.3f,
@@ -42,6 +44,7 @@ const gun_design gun_15_5cm_60_3rd_Year_Type =
 
 const gun_design gun_36cm_41st_Year_Type =
 {
+    /* id */                string::buffer("36_cm_41st_year_type"),
     /* name */              string::buffer("36 cm 41st Year Type"),
     /* caliber */           0.356f,
     /* length */            16.f,
@@ -53,6 +56,7 @@ const gun_design gun_36cm_41st_Year_Type =
 
 const gun_design gun_16in_50_caliber_Mark_7 =
 {
+    /* id */                string::buffer("16in_50_caliber_mark_7"),
     /* name */              string::buffer("16\"/50 caliber Mark 7"),
     /* caliber */           .406f,
     /* length */            20.f,
@@ -64,6 +68,7 @@ const gun_design gun_16in_50_caliber_Mark_7 =
 
 const gun_design gun_16in_45_caliber_Mark_6 =
 {
+    /* id */                string::buffer("16in_45_caliber_mark_6"),
     /* name */              string::buffer("16\"/45 caliber Mark 6"),
     /* caliber */           .406f,
     /* length */            18.f,
@@ -75,6 +80,7 @@ const gun_design gun_16in_45_caliber_Mark_6 =
 
 const gun_design gun_5in_38_caliber_Mark_12 =
 {
+    /* id */                string::buffer("5in_38_caliber_mark_12"),
     /* name */              string::buffer("5\"/38 caliber Mark 12"),
     /* caliber */           .127f,
     /* length */            4.83f,
@@ -86,6 +92,7 @@ const gun_design gun_5in_38_caliber_Mark_12 =
 
 const gun_design gun_BL_14_inch_Mk_VII =
 {
+    /* id */                string::buffer("bl_14_inch_mk_vii"),
     /* name */              string::buffer("BL 14-inch Mk VII"),
     /* caliber */           .3556f,
     /* length */            16.f,
@@ -97,6 +104,7 @@ const gun_design gun_BL_14_inch_Mk_VII =
 
 const gun_design gun_QF_5_25_inch_Mk_I =
 {
+    /* id */                string::buffer("qf_5_25_inch_mk_i"),
     /* name */              string::buffer("QF 5.25-inch Mk I"),
     /* caliber */           .133f,
     /* length */            6.67f,
@@ -108,6 +116,7 @@ const gun_design gun_QF_5_25_inch_Mk_I =
 
 const gun_design gun_380mm_45_Modele_1935 =
 {
+    /* id */                string::buffer("380mm_45_modele_1935"),
     /* name */              string::buffer("380mm/45 Modèle 1935"),
     /* caliber */           .38f,
     /* length */            17.257f,
@@ -119,6 +128,7 @@ const gun_design gun_380mm_45_Modele_1935 =
 
 const gun_design gun_152mm_55_Modele_1930 =
 {
+    /* id */                string::buffer("152mm_55_modele_1930"),
     /* name */              string::buffer("152mm/55 Modèle 1930"),
     /* caliber */           .152f,
     /* length */            8.39f,
@@ -130,6 +140,7 @@ const gun_design gun_152mm_55_Modele_1930 =
 
 const gun_design gun_38cm_SK_C_34 =
 {
+    /* id */                string::buffer("38_cm_sk_c_34"),
     /* name */              string::buffer("38 cm SK C/34"),
     /* caliber */           .38f,
     /* length */            18.405f,
@@ -141,6 +152,7 @@ const gun_design gun_38cm_SK_C_34 =
 
 const gun_design gun_15cm_SK_C_28 =
 {
+    /* id */                string::buffer("15_cm_sk_c_28"),
     /* name */              string::buffer("15 cm SK C/28"),
     /* caliber */           .15f,
     /* length */            7.815f,
@@ -152,6 +164,7 @@ const gun_design gun_15cm_SK_C_28 =
 
 const gun_design gun_381_50_ansaldo_m1934 =
 {
+    /* id */                string::buffer("cannone_da_381_50_ansaldo_m1934"),
     /* name */              string::buffer("Cannone da 381/50 Ansaldo M1934"),
     /* caliber */           .381f,
     /* length */            19.05f,
@@ -163,6 +176,7 @@ const gun_design gun_381_50_ansaldo_m1934 =
 
 const gun_design gun_152_55_ansaldo_m1934 =
 {
+    /* id */                string::buffer("cannone_da_152_55_ansaldo_m1934"),
     /* name */              string::buffer("Cannone da 152/55 Ansaldo M1934"),
     /* caliber */           .152f,
     /* length */            8.38f,
@@ -174,6 +188,7 @@ const gun_design gun_152_55_ansaldo_m1934 =
 
 const gun_design gun_28cm_SK_C_28 =
 {
+    /* id */                string::buffer("28_cm_sk_c_28"),
     /* name */              string::buffer("28 cm SK C/28"),
     /* caliber */           .283f,
     /* length */            14.815f,
@@ -185,6 +200,7 @@ const gun_design gun_28cm_SK_C_28 =
 
 const gun_design gun_20cm_50_3rd_Year_Type =
 {
+    /* id */                string::buffer("20_cm_50_3rd_year_type"),
     /* name */              string::buffer("20 cm/50 3rd Year Type"),
     /* caliber */           0.203f,
     /* length */            10.0f,
@@ -196,6 +212,7 @@ const gun_design gun_20cm_50_3rd_Year_Type =
 
 const gun_design gun_8in_55_Mark_9 =
 {
+    /* id */                string::buffer("8in_55_mark_9"),
     /* name */              string::buffer("8\"/55 Mark 9"),
     /* caliber */           0.203f,
     /* length */            11.179f,
@@ -207,6 +224,7 @@ const gun_design gun_8in_55_Mark_9 =
 
 const gun_design gun_BL_8_inch_Mk_VIII =
 {
+    /* id */                string::buffer("bl_8_inch_mk_viii"),
     /* name */              string::buffer("BL 8-inch Mk VIII"),
     /* caliber */           0.203f,
     /* length */            10.16f,
@@ -218,6 +236,7 @@ const gun_design gun_BL_8_inch_Mk_VIII =
 
 const gun_design gun_203mm_55_Model_1931 =
 {
+    /* id */                string::buffer("203_mm_55_model_1931"),
     /* name */              string::buffer("203 mm/55 Model 1931"),
     /* caliber */           0.203f,
     /* length */            11.3f,
@@ -229,6 +248,7 @@ const gun_design gun_203mm_55_Model_1931 =
 
 const gun_design gun_20_3cm_SK_C_34 =
 {
+    /* id */                string::buffer("20_3_cm_sk_c_34"),
     /* name */              string::buffer("20.3 cm SK C/34"),
     /* caliber */           0.203f,
     /* length */            11.518f,
@@ -240,6 +260,7 @@ const gun_design gun_20_3cm_SK_C_34 =
 
 const gun_design gun_203mm_53_Model_1929 =
 {
+    /* id */                string::buffer("203_mm_53_model_1929"),
     /* name */              string::buffer("203 mm/53 Model 1929"),
     /* caliber */           0.203f,
     /* length */            10.7f,
@@ -251,6 +272,7 @@ const gun_design gun_203mm_53_Model_1929 =
 
 const gun_design gun_BL_6_inch_Mk_XXIII =
 {
+    /* id */                string::buffer("bl_6_inch_mk_xiii"),
     /* name */              string::buffer("BL 6-inch Mk XIII"),
     /* caliber */           .1524f,
     /* length */            7.6f,
@@ -262,6 +284,7 @@ const gun_design gun_BL_6_inch_Mk_XXIII =
 
 const gun_design gun_QF_4_7_inch_Mark_IX =
 {
+    /* id */                string::buffer("qf_4_7_inch_mk_ix"),
     /* name */              string::buffer("QF 4.7-inch Mk IX"),
     /* caliber */           .12f,
     /* length */            5.4f,

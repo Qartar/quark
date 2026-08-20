@@ -13,6 +13,8 @@ namespace game {
 //------------------------------------------------------------------------------
 struct turret_design
 {
+    string::buffer id;
+
     float radius; //!< Radius of the turret ring
     float train_speed; //!< Angular speed in radians/sec
     float elevation_speed; //!< Angular speed in radians/sec

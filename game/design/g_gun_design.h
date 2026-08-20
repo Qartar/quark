@@ -11,6 +11,7 @@ namespace game {
 //------------------------------------------------------------------------------
 struct gun_design
 {
+    string::buffer id;
     string::buffer name;
 
     float caliber; //!< Internal diameter of gun barrels

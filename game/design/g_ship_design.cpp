@@ -101,6 +101,7 @@ const vec2 zara_verts[] = CRUISER_HULL(182.8, 20.62);
 //------------------------------------------------------------------------------
 const ship_design ship_yamato_battleship =
 {
+    /* id */                string::buffer("yamato_battleship"),
     /* name */              string::buffer("Yamato"),
     /* length */            263.f,
     /* beam */              39.f,
@@ -171,6 +172,7 @@ const ship_design ship_yamato_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_fuso_battleship =
 {
+    /* id */                string::buffer("fuso_battleship"),
     /* name */              string::buffer("Fuso"),
     /* length */            210.3f,
     /* beam */              33.1f,
@@ -233,6 +235,7 @@ const ship_design ship_fuso_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_iowa_battleship =
 {
+    /* id */                string::buffer("iowa_battleship"),
     /* name */              string::buffer("Iowa"),
     /* length */            270.f,
     /* beam */              33.f,
@@ -277,6 +280,7 @@ const ship_design ship_iowa_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_north_carolina_battleship =
 {
+    /* id */                string::buffer("north_carolina_battleship"),
     /* name */              string::buffer("North Carolina"),
     /* length */            222.f,
     /* beam */              33.f,
@@ -384,6 +388,7 @@ const ship_design ship_north_carolina_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_king_george_v_battleship =
 {
+    /* id */                string::buffer("king_george_v_battleship"),
     /* name */              string::buffer("King George V"),
     /* length */            227.f,
     /* beam */              31.5f,
@@ -479,6 +484,7 @@ const ship_design ship_king_george_v_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_richelieu_battleship =
 {
+    /* id */                string::buffer("richelieu_battleship"),
     /* name */              string::buffer("Richelieu"),
     /* length */            247.85f,
     /* beam */              33.1f,
@@ -537,6 +543,7 @@ const ship_design ship_richelieu_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_bismarck_battleship =
 {
+    /* id */                string::buffer("bismarck_battleship"),
     /* name */              string::buffer("Bismarck"),
     /* length */            251.f,
     /* beam */              36.f,
@@ -625,6 +632,7 @@ const ship_design ship_bismarck_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_littorio_battleship =
 {
+    /* id */                string::buffer("littorio_battleship"),
     /* name */              string::buffer("Littorio"),
     /* length */            237.76f,
     /* beam */              32.82f,
@@ -695,6 +703,7 @@ const ship_design ship_littorio_battleship =
 //------------------------------------------------------------------------------
 const ship_design ship_deutschland_cruiser =
 {
+    /* id */                string::buffer("deutschland_cruiser"),
     /* name */              string::buffer("Deutschland"),
     /* length */            186.f,
     /* beam */              21.7f,
@@ -733,6 +742,7 @@ const ship_design ship_deutschland_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_mogami_cruiser =
 {
+    /* id */                string::buffer("mogami_cruiser"),
     /* name */              string::buffer("Mogami"),
     /* length */            201.6f,
     /* beam */              20.6f,
@@ -789,6 +799,7 @@ const ship_design ship_mogami_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_new_orleans_cruiser =
 {
+    /* id */                string::buffer("new_orleans_cruiser"),
     /* name */              string::buffer("New Orleans"),
     /* length */            179.27f,
     /* beam */              18.82f,
@@ -833,6 +844,7 @@ const ship_design ship_new_orleans_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_county_cruiser =
 {
+    /* id */                string::buffer("county_cruiser"),
     /* name */              string::buffer("County"),
     /* length */            190.f,
     /* beam */              21.f,
@@ -883,6 +895,7 @@ const ship_design ship_county_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_algerie_cruiser =
 {
+    /* id */                string::buffer("algerie_cruiser"),
     /* name */              string::buffer("Alg\xe9rie"),
     /* length */            186.2f,
     /* beam */              20.f,
@@ -933,6 +946,7 @@ const ship_design ship_algerie_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_admiral_hipper_cruiser =
 {
+    /* id */                string::buffer("admiral_hipper_cruiser"),
     /* name */              string::buffer("Admiral Hipper"),
     /* length */            205.f,
     /* beam */              21.3f,
@@ -983,6 +997,7 @@ const ship_design ship_admiral_hipper_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_zara_cruiser =
 {
+    /* id */                string::buffer("zara_cruiser"),
     /* name */              string::buffer("Zara"),
     /* length */            182.8f,
     /* beam */              20.62f,
@@ -1033,6 +1048,7 @@ const ship_design ship_zara_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_town_cruiser =
 {
+    /* id */                string::buffer("town_cruiser"),
     /* name */              string::buffer("Town"),
     /* length */            180.f,
     /* beam */              19.f,
@@ -1083,6 +1099,7 @@ const ship_design ship_town_cruiser =
 //------------------------------------------------------------------------------
 const ship_design ship_tribal_destroyer =
 {
+    /* id */                string::buffer("tribal_destroyer"),
     /* name */              string::buffer("Tribal"),
     /* length */            115.f,
     /* beam */              11.f,

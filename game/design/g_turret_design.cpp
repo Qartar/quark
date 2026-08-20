@@ -25,6 +25,7 @@ namespace game {
 
 const turret_design turret_yamato_46cm =
 {
+    /* id */                string::buffer("yamato_46cm"),
     /* radius */            6.5f,
     /* train_speed */       DEG(2.f),
     /* elevation_speed */   DEG(10.f),
@@ -65,6 +66,7 @@ const turret_design turret_yamato_46cm =
 
 const turret_design turret_yamato_15_5cm =
 {
+    /* id */                string::buffer("yamato_15_5cm"),
     /* radius */            2.9f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(10.f),
@@ -98,6 +100,7 @@ const turret_design turret_yamato_15_5cm =
 
 const turret_design turret_fuso_36cm =
 {
+    /* id */                string::buffer("fuso_36cm"),
     /* radius */            4.75f,
     /* train_speed */       DEG(2.f),
     /* elevation_speed */   DEG(10.f),
@@ -126,6 +129,7 @@ const turret_design turret_fuso_36cm =
 
 const turret_design turret_fuso_36cm_rf =
 {
+    /* id */                string::buffer("fuso_36cm_rf"),
     /* radius */            4.75f,
     /* train_speed */       DEG(2.f),
     /* elevation_speed */   DEG(10.f),
@@ -160,6 +164,7 @@ const turret_design turret_fuso_36cm_rf =
 
 const turret_design turret_iowa_16in =
 {
+    /* id */                string::buffer("iowa_16in"),
     /* radius */            6.5f,
     /* train_speed */       DEG(4.f),
     /* elevation_speed */   DEG(12.f),
@@ -194,6 +199,7 @@ const turret_design turret_iowa_16in =
 
 const turret_design turret_north_carolina_16in =
 {
+    /* id */                string::buffer("north_carolina_16in"),
     /* radius */            5.f,
     /* train_speed */       DEG(4.f),
     /* elevation_speed */   DEG(12.f),
@@ -229,6 +235,7 @@ const turret_design turret_north_carolina_16in =
 
 const turret_design turret_north_carolina_5in =
 {
+    /* id */                string::buffer("north_carolina_5in"),
     /* radius */            2.f,
     /* train_speed */       DEG(10.f),
     /* elevation_speed */   DEG(12.f),
@@ -257,6 +264,7 @@ const turret_design turret_north_carolina_5in =
 
 const turret_design turret_kgv_14in_quad =
 {
+    /* id */                string::buffer("king_george_v_14in_quad"),
     /* radius */            4.75f,
     /* train_speed */       DEG(4.f),
     /* elevation_speed */   DEG(10.f),
@@ -294,6 +302,7 @@ const turret_design turret_kgv_14in_quad =
 
 const turret_design turret_kgv_14in_twin =
 {
+    /* id */                string::buffer("king_george_v_14in_twin"),
     /* radius */            .65f * 4.75f,
     /* train_speed */       DEG(4.f),
     /* elevation_speed */   DEG(10.f),
@@ -330,6 +339,7 @@ const turret_design turret_kgv_14in_twin =
 
 const turret_design turret_kgv_5_25in =
 {
+    /* id */                string::buffer("king_george_v_5_25in"),
     /* radius */            1.f,
     /* train_speed */       DEG(10.f),
     /* elevation_speed */   DEG(10.f),
@@ -365,6 +375,7 @@ const turret_design turret_kgv_5_25in =
 
 const turret_design turret_richelieu_380mm =
 {
+    /* id */                string::buffer("richelieu_380mm"),
     /* radius */            5.f,
     /* train_speed */       DEG(5.f),
     /* elevation_speed */   DEG(6.f),
@@ -399,6 +410,7 @@ const turret_design turret_richelieu_380mm =
 
 const turret_design turret_richelieu_152mm =
 {
+    /* id */                string::buffer("richelieu_152mm"),
     /* radius */            3.2f,
     /* train_speed */       DEG(8.f),
     /* elevation_speed */   DEG(8.f),
@@ -438,6 +450,7 @@ const turret_design turret_richelieu_152mm =
 
 const turret_design turret_bismarck_38cm =
 {
+    /* id */                string::buffer("bismarck_38cm"),
     /* radius */            5.15f,
     /* train_speed */       DEG(5.f),
     /* elevation_speed */   DEG(6.f),
@@ -473,6 +486,7 @@ const turret_design turret_bismarck_38cm =
 
 const turret_design turret_bismarck_15cm_rf =
 {
+    /* id */                string::buffer("bismarck_15cm_rf"),
     /* radius */            2.f,
     /* train_speed */       DEG(9.f),
     /* elevation_speed */   DEG(8.f),
@@ -509,6 +523,7 @@ const turret_design turret_bismarck_15cm_rf =
 
 const turret_design turret_bismarck_15cm =
 {
+    /* id */                string::buffer("bismarck_15cm"),
     /* radius */            2.f,
     /* train_speed */       DEG(9.f),
     /* elevation_speed */   DEG(8.f),
@@ -539,6 +554,7 @@ const turret_design turret_bismarck_15cm =
 
 const turret_design turret_littorio_381mm =
 {
+    /* id */                string::buffer("littorio_381mm"),
     /* radius */            5.15f,
     /* train_speed */       DEG(4.f),
     /* elevation_speed */   DEG(10.f),
@@ -574,6 +590,7 @@ const turret_design turret_littorio_381mm =
 
 const turret_design turret_littorio_152mm =
 {
+    /* id */                string::buffer("littorio_152mm"),
     /* radius */            2.f,
     /* train_speed */       DEG(8.f),
     /* elevation_speed */   DEG(10.f),
@@ -609,6 +626,7 @@ const turret_design turret_littorio_152mm =
 
 const turret_design turret_deutschland_28cm =
 {
+    /* id */                string::buffer("deutschland_28cm"),
     /* radius */            5.5f,
     /* train_speed */       DEG(5.f),
     /* elevation_speed */   DEG(15.f),
@@ -627,6 +645,7 @@ const turret_design turret_deutschland_28cm =
 
 const turret_design turret_mogami_20cm_rf =
 {
+    /* id */                string::buffer("mogami_20cm_rf"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -664,6 +683,7 @@ const turret_design turret_mogami_20cm_rf =
 
 const turret_design turret_mogami_20cm =
 {
+    /* id */                string::buffer("mogami_20cm"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -694,6 +714,7 @@ const turret_design turret_mogami_20cm =
 
 const turret_design turret_new_orleans_8in =
 {
+    /* id */                string::buffer("new_orleans_8in"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -734,6 +755,7 @@ const turret_design turret_new_orleans_8in =
 
 const turret_design turret_county_8in =
 {
+    /* id */                string::buffer("county_8in"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -771,6 +793,7 @@ const turret_design turret_county_8in =
 
 const turret_design turret_algerie_203mm =
 {
+    /* id */                string::buffer("algerie_203mm"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -810,6 +833,7 @@ const turret_design turret_algerie_203mm =
 
 const turret_design turret_algerie_203mm_rf =
 {
+    /* id */                string::buffer("algerie_203mm_rf"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -849,6 +873,7 @@ const turret_design turret_algerie_203mm_rf =
 
 const turret_design turret_admiral_hipper_20_3cm_rf =
 {
+    /* id */                string::buffer("admiral_hipper_20_3cm_rf"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -886,6 +911,7 @@ const turret_design turret_admiral_hipper_20_3cm_rf =
 
 const turret_design turret_admiral_hipper_20_3cm =
 {
+    /* id */                string::buffer("admiral_hipper_20_3cm"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -916,6 +942,7 @@ const turret_design turret_admiral_hipper_20_3cm =
 
 const turret_design turret_zara_203mm =
 {
+    /* id */                string::buffer("zara_203mm"),
     /* radius */            2.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(9.f),
@@ -953,6 +980,7 @@ const turret_design turret_zara_203mm =
 
 const turret_design turret_town_6in =
 {
+    /* id */                string::buffer("town_6in"),
     /* radius */            3.f,
     /* train_speed */       DEG(6.f),
     /* elevation_speed */   DEG(20.f),
@@ -971,6 +999,7 @@ const turret_design turret_town_6in =
 
 const turret_design turret_tribal_4_7in =
 {
+    /* id */                string::buffer("tribal_4_7in"),
     /* radius */            2.f,
     /* train_speed */       DEG(7.f),
     /* elevation_speed */   DEG(25.f),
