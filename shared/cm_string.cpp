@@ -47,6 +47,13 @@ bool view::starts_with(string::view prefix) const
 }
 
 //------------------------------------------------------------------------------
+bool view::ends_with(string::view suffix) const
+{
+    return length() >= suffix.length()
+        && strncmp(begin() + length() - suffix.length(), suffix.begin(), suffix.length()) == 0;
+}
+
+//------------------------------------------------------------------------------
 bool view::has_extension(string::view extension) const
 {
     assert(extension.length() && extension[0] == '.');

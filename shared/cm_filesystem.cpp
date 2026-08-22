@@ -257,4 +257,52 @@ time modified_time(string::view filename)
 #endif
 }
 
+//------------------------------------------------------------------------------
+find::find(string::view path, string::view filter)
+    : _path(path)
+{
+    assert(path.ends_with("/"));
+    _handle = _findfirst64(va("%.*s%.*s",
+        int(path.length()), path.begin(),
+        int(filter.length()), filter.begin()).c_str(),
+        &_data);
+}
+
+//------------------------------------------------------------------------------
+find::~find()
+{
+    if (_handle > 0) {
+        _findclose(_handle);
+    }
+}
+
+//------------------------------------------------------------------------------
+find::operator bool() const
+{
+    return _handle > 0;
+}
+
+//------------------------------------------------------------------------------
+find& find::operator++()
+{
+    assert(_handle > 0);
+    if (_findnext64(_handle, &_data) != 0) {
+        _findclose(_handle);
+        _handle = 0;
+    }
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+string::view find::fullname() const
+{
+    return va("%.*s%s", int(_path.length()), _path.begin(), _data.name);
+}
+
+//------------------------------------------------------------------------------
+string::view find::filename() const
+{
+    return string::view(_data.name);
+}
+
 } // namespace file

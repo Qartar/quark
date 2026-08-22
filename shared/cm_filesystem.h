@@ -5,8 +5,9 @@
 
 #include "cm_string.h"
 
-#include <cstddef>
 #include <cstdint>
+#include <cstdio>
+#include <io.h>
 
 typedef struct _iobuf FILE;
 
@@ -101,5 +102,29 @@ enum class time : uint64_t {};
 
 //------------------------------------------------------------------------------
 time modified_time(string::view filename);
+
+//------------------------------------------------------------------------------
+class find
+{
+public:
+    find(string::view path, string::view filter);
+    find(find const&) = delete;
+    find& operator=(find const&) = delete;
+    ~find();
+
+    //! return true if current file is valid
+    explicit operator bool() const;
+    //! advance to the next file
+    find& operator++();
+    //! return name of current file including search path
+    string::view fullname() const;
+    //! return name of current file without search path
+    string::view filename() const;
+
+protected:
+    string::buffer _path;
+    intptr_t _handle;
+    __finddata64_t _data;
+};
 
 } // namespace file

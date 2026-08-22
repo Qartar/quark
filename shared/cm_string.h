@@ -55,6 +55,9 @@ public:
     //! Returns true if the string begins with the given prefix
     bool starts_with(string::view prefix) const;
 
+    //! Returns true if the string ends with the given suffix
+    bool ends_with(string::view suffix) const;
+
     //! Returns true if the string ends with the given extension
     bool has_extension(string::view extension) const;
 
