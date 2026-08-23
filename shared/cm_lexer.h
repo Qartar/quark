@@ -43,6 +43,9 @@ public:
 public:
     lexer(string::view filename);
 
+    //! Print the text to the log with color-coded tokens
+    void print() const;
+
     //! Returns true if there have been any errors.
     bool has_error() const { return _last_error.message.length() > 0; }
     //! Set error state at the given token with the given formatted message

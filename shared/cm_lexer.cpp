@@ -3,6 +3,7 @@
 
 #include "cm_lexer.h"
 #include "cm_filesystem.h"
+#include "cm_shared.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -37,6 +38,33 @@ lexer::lexer(string::view filename)
     split_lines();
 
     tokenize();
+}
+
+//------------------------------------------------------------------------------
+void lexer::print() const
+{
+    for (std::size_t ii = 0; ii < _tokens.size(); ++ii) {
+        if (_tokens[ii].begin > _tokens[ii].whitespace) {
+            log::message("%.*s", int(_tokens[ii].begin - _tokens[ii].whitespace), _tokens[ii].whitespace);
+        }
+        switch (_tokens[ii].type) {
+            case lexer::token_type::name:
+                log::message("^da6%.*s", int(_tokens[ii].end - _tokens[ii].begin), _tokens[ii].begin);
+                break;
+            case lexer::token_type::string:
+                log::message("^d88%.*s", int(_tokens[ii].end - _tokens[ii].begin), _tokens[ii].begin);
+                break;
+            case lexer::token_type::number:
+                log::message("^8dd%.*s", int(_tokens[ii].end - _tokens[ii].begin), _tokens[ii].begin);
+                break;
+            case lexer::token_type::punctuation:
+                log::message("^dd8%.*s", int(_tokens[ii].end - _tokens[ii].begin), _tokens[ii].begin);
+                break;
+        }
+    }
+    if (_tokens.size() && _buffer.end() > _tokens.back().end) {
+        log::message("^ff4%.*s", int(_buffer.end() - _tokens.back().end), _tokens.back().end);
+    }
 }
 
 //------------------------------------------------------------------------------
