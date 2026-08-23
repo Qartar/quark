@@ -380,8 +380,28 @@ bool lexer::tokenize()
             }
         }
 
-        // evaluate number token
+        // evaluate name token
         char const* begin = str;
+        // names can start with number digits
+        if (*str >= '0' && *str <= '9') {
+            while (str < end && (*str >= '0' && *str <= '9')) {
+                ++str;
+            }
+            if (!(str < end && (*str == '_' || *str >= '0' && *str <= '9' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z'))) {
+                str = begin;
+            }
+            // fall through
+        }
+
+        if (*str == '_' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z') {
+            while (str < end && (*str == '_' || *str >= '0' && *str <= '9' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z')) {
+                ++str;
+            }
+            _tokens.push_back({whitespace, begin, str, token_type::name});
+            continue;
+        }
+
+        // evaluate number token
         if ((*str >= '0' && *str <= '9') || *str == '.'
             || (*str == '-' && str + 1 < end && ((str[1] >= '0' && str[1] <= '9') || str[1] =='.'))) {
             bool has_dot = false;
@@ -423,15 +443,6 @@ bool lexer::tokenize()
                 ++str;
                 _tokens.push_back({whitespace, begin, str, token_type::punctuation});
                 continue;
-        }
-
-        // evaluate name token
-        if (*str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z') {
-            while (str < end && (*str == '_' || *str >= '0' && *str <= '9' || *str >= 'a' && *str <= 'z' || *str >= 'A' && *str <= 'Z')) {
-                ++str;
-            }
-            _tokens.push_back({whitespace, begin, str, token_type::name});
-            continue;
         }
 
         // evaluate string token

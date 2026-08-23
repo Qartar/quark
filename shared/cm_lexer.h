@@ -45,6 +45,8 @@ public:
 
     //! Returns true if there have been any errors.
     bool has_error() const { return _last_error.message.length() > 0; }
+    //! Set error state at the given token with the given formatted message
+    void set_error(token t, string::literal fmt, ...);
     //! Returns the most recent error.
     error last_error() const { return _last_error; }
 
@@ -113,8 +115,6 @@ protected:
     std::size_t _next_token;
 
 protected:
-    void set_error(token t, string::literal fmt, ...);
-
     //! Splits the source text into lines, used for locating token line/column
     void split_lines();
 
