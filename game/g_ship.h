@@ -89,6 +89,7 @@ protected:
         handle<game::fire_director> fire_director;
 
         std::size_t turret_outline; //!< Index of turret render outline
+        std::size_t barbette_outline; //!< Index of barbette render outline
         std::size_t gun_outline; //!< Index of gun render outline
     };
 

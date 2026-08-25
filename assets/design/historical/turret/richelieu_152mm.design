@@ -1,4 +1,4 @@
-turret_richelieu_152mm = {
+richelieu_152mm = {
     radius = 3.2 m;
     train_speed = 8;
     elevation_speed = 8;

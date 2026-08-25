@@ -1,5 +1,5 @@
 bismarck_38cm = {
-    radius = 5.15 m;
+    radius = 5.25 m;
     train_speed = 5;
     elevation_speed = 6;
     elevation_limit = (-5.5, 30);

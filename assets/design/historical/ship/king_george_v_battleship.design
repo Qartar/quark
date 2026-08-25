@@ -37,56 +37,56 @@ king_george_v_battleship = {
             design = king_george_v_14in_quad;
         },
         {
-            position = (11.5, -13, 7.75);
+            position = (11.5, -11.5, 7.75);
             orientation = 0;
             train_limit = (-150, 0);
 
             design = king_george_v_5_25in;
         },
         {
-            position = (0.25, -13.25, 10.25);
+            position = (0.25, -12, 10.25);
             orientation = 0;
             train_limit = (-180, 0);
 
             design = king_george_v_5_25in;
         },
         {
-            position = (-24, -13, 10.25);
+            position = (-24, -12, 10.25);
             orientation = 180;
             train_limit = (0, 180);
 
             design = king_george_v_5_25in;
         },
         {
-            position = (-34.5, -12.25, 7.75);
+            position = (-34.5, -11.5, 7.75);
             orientation = 180;
             train_limit = (0, 150);
 
             design = king_george_v_5_25in;
         },
         {
-            position = (11.5, 13, 7.75);
+            position = (11.5, 11.5, 7.75);
             orientation = 0;
             train_limit = (0, 150);
 
             design = king_george_v_5_25in;
         },
         {
-            position = (0.25, 13.25, 10.25);
+            position = (0.25, 12, 10.25);
             orientation = 0;
             train_limit = (0, 180);
 
             design = king_george_v_5_25in;
         },
         {
-            position = (-24, 13, 10.25);
+            position = (-24, 12, 10.25);
             orientation = 180;
             train_limit = (-180, 0);
 
             design = king_george_v_5_25in;
         },
         {
-            position = (-34.5, 12.25, 7.75);
+            position = (-34.5, 11.5, 7.75);
             orientation = 180;
             train_limit = (-150, 0);
 

@@ -73,11 +73,13 @@ void ship::spawn()
     {
         for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
             _turrets[ii].turret_outline = SIZE_MAX;
+            _turrets[ii].barbette_outline = SIZE_MAX;
             _turrets[ii].gun_outline = SIZE_MAX;
             // turret designs are not necessarily 1:1 with gun designs, check all preceding designs
             for (std::size_t jj = 0; jj < ii; ++jj) {
                 if (_design->turrets[ii].design == _design->turrets[jj].design) {
                     _turrets[ii].turret_outline = _turrets[jj].turret_outline;
+                    _turrets[ii].barbette_outline = _turrets[jj].barbette_outline;
                 }
                 if (_design->turrets[ii].design->gun_design == _design->turrets[jj].design->gun_design) {
                     _turrets[ii].gun_outline = _turrets[jj].gun_outline;
@@ -90,6 +92,16 @@ void ship::spawn()
                     _design->turrets[ii].design->outline.data(),
                     _design->turrets[ii].design->outline.size()));
 
+            }
+
+            if (_turrets[ii].barbette_outline == SIZE_MAX) {
+                _turrets[ii].barbette_outline = _outlines.size();
+                vec2 outline_verts[64];
+                for (std::size_t jj = 0; jj < countof(outline_verts); ++jj) {
+                    double a = jj * (math::twopi / double(countof(outline_verts)));
+                    outline_verts[jj] = vec2(std::cos(a), std::sin(a)) * _design->turrets[ii].design->radius;
+                }
+                _outlines.push_back(render::outline(outline_verts, countof(outline_verts)));
             }
 
             if (_turrets[ii].gun_outline == SIZE_MAX) {
@@ -136,6 +148,16 @@ void ship::draw(render::system* renderer, time_value time) const
 
         color4 fill_color = color * .25f + hull_color * .75f;
         renderer->draw_outline(_outlines[_turrets[jj].turret_outline], turret_tx4, color, fill_color);
+
+        // draw barbette outline
+        mat4 barbette_tx4 = mat4(1, 0, 0, 0,
+                                 0, 1, 0, 0,
+                                 0, 0, 1, 0,
+                                 turret.position.x, turret.position.y, turret.position.z - 0.1, 1) * tx4;
+
+        color4 barbette_color = color + (hull_color - color) * sqrt(.75f);
+        color4 barbette_edge = color * .75f + color4(.1f,.2f,.4f,1) * .25f;
+        renderer->draw_outline(_outlines[_turrets[jj].barbette_outline], barbette_tx4, barbette_edge, barbette_color);
 
         double cp = cos(_turrets[jj].elevation);
         double sp = sin(_turrets[jj].elevation);
