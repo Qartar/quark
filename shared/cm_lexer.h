@@ -41,7 +41,7 @@ public:
     };
 
 public:
-    lexer(string::view filename);
+    lexer(string::view source, string::view filename, std::size_t linenumber = 1, std::size_t column = 1);
 
     //! Print the text to the log with color-coded tokens
     void print() const;
@@ -104,12 +104,14 @@ protected:
     string::buffer _filename;
     //! Starting line number (typically 1)
     std::size_t _linenumber;
+    //! Starting column (typically 1)
+    std::size_t _column;
 
-    //! String buffer for tokens to point into
-    string::buffer _buffer;
-    //! Pointer into buffer at the start of each line
+    //! String view for tokens to point into
+    string::view _source;
+    //! Pointer into source at the start of each line
     std::vector<char const*> _lines;
-    //! All tokens, points into _buffer
+    //! All tokens, points into source
     std::vector<token> _tokens;
 
     //! Most recent error

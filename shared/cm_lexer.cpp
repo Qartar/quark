@@ -2,7 +2,6 @@
 //
 
 #include "cm_lexer.h"
-#include "cm_filesystem.h"
 #include "cm_shared.h"
 
 #include <cstdarg>
@@ -23,20 +22,15 @@ string::literal token_type_string(lexer::token_type type)
 } // anonymous namespace
 
 //------------------------------------------------------------------------------
-lexer::lexer(string::view filename)
+lexer::lexer(string::view source, string::view filename, std::size_t linenumber, std::size_t column)
     : _filename(filename)
-    , _linenumber(1)
+    , _linenumber(linenumber)
+    , _column(column)
+    , _source(source)
     , _last_error{}
     , _next_token(0)
 {
-    file::stream s = file::open(filename, file::mode::read);
-    _buffer.resize(s.size());
-    s.read((file::byte*)_buffer.data(), s.size());
-    _buffer[_buffer.length()] = 0;
-    s.close();
-
     split_lines();
-
     tokenize();
 }
 
@@ -62,8 +56,8 @@ void lexer::print() const
                 break;
         }
     }
-    if (_tokens.size() && _buffer.end() > _tokens.back().end) {
-        log::message("^ff4%.*s", int(_buffer.end() - _tokens.back().end), _tokens.back().end);
+    if (_tokens.size() && _source.end() > _tokens.back().end) {
+        log::message("^ff4%.*s", int(_source.end() - _tokens.back().end), _tokens.back().end);
     }
 }
 
@@ -107,7 +101,7 @@ bool lexer::check_token(string::view expected)
 bool lexer::expect_token(string::view expected)
 {
     if (_next_token >= _tokens.size()) {
-        set_error({_buffer.end(), _buffer.end(), _buffer.end()}, "expected token");
+        set_error({_source.end(), _source.end(), _source.end()}, "expected token");
         return false;
     } else if (_tokens[_next_token] != expected) {
         set_error(_tokens[_next_token], "expected token '%.*s', found '%.*s'",
@@ -125,7 +119,7 @@ bool lexer::expect_token(string::view expected)
 bool lexer::expect_any_token(lexer::token& t)
 {
     if (_next_token >= _tokens.size()) {
-        set_error({_buffer.end(), _buffer.end(), _buffer.end()}, "expected token");
+        set_error({_source.end(), _source.end(), _source.end()}, "expected token");
         return false;
     } else {
         t = _tokens[_next_token++];
@@ -137,7 +131,7 @@ bool lexer::expect_any_token(lexer::token& t)
 bool lexer::expect_token_type(lexer::token& t, token_type type)
 {
     if (_next_token >= _tokens.size()) {
-        set_error({_buffer.end(), _buffer.end(), _buffer.end()}, "expected token");
+        set_error({_source.end(), _source.end(), _source.end()}, "expected token");
         return false;
     } else if (_tokens[_next_token].type != type) {
         set_error(_tokens[_next_token], "expected %s, found '%.*s'",
@@ -270,7 +264,7 @@ bool lexer::parse(vec3& v)
 //------------------------------------------------------------------------------
 bool lexer::locate(token const& t, location& l) const
 {
-    if (t.begin < _buffer.begin() || t.begin > _buffer.end()) {
+    if (t.begin < _source.begin() || t.begin > _source.end()) {
         return false;
     }
 
@@ -283,10 +277,12 @@ bool lexer::locate(token const& t, location& l) const
     assert(it != _lines.begin());
     --it;
 
+    std::size_t col = (it == _lines.begin()) ? _column : 1;
+
     l = {
         _filename,
         _linenumber + std::distance(_lines.begin(), it),
-        1 + static_cast<std::size_t>(t.begin - *it),
+        col + static_cast<std::size_t>(t.begin - *it),
     };
     return true;
 }
@@ -346,17 +342,21 @@ void lexer::set_error(token t, string::literal fmt, ...)
 //------------------------------------------------------------------------------
 void lexer::split_lines()
 {
-    assert(_buffer.begin());
+    assert(_source.begin());
 
-    char const* begin = _buffer.begin();
-    char const* end = begin;
+    char const* begin = _source.begin();
+    char const* cur = begin;
 
-    while (end = strstr(end, "\n")) {
+    // cannot use strstr since source may not be null terminated
+    while (cur < _source.end()) {
+        while (cur < _source.end() && *cur != '\n') {
+            ++cur;
+        }
         _lines.push_back(begin);
-        begin = ++end;
+        begin = ++cur;
     }
 
-    if (begin != end) {
+    if (begin != cur) {
         _lines.push_back(begin);
     }
 }
@@ -364,11 +364,11 @@ void lexer::split_lines()
 //------------------------------------------------------------------------------
 bool lexer::tokenize()
 {
-    assert(_buffer.begin());
-    assert(_buffer.end());
+    assert(_source.begin());
+    assert(_source.end());
 
-    char const* str = _buffer.begin();
-    char const* end = _buffer.end();
+    char const* str = _source.begin();
+    char const* end = _source.end();
 
     while (true) {
         char const* whitespace = str;
