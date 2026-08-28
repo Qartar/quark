@@ -5,8 +5,6 @@
 
 #include "cm_vector.h"
 
-#include "design/g_gun_design.h"
-
 ////////////////////////////////////////////////////////////////////////////////
 class lexer;
 
@@ -18,6 +16,7 @@ class stream;
 namespace game {
 
 class design_manager;
+struct gun_design;
 
 //------------------------------------------------------------------------------
 struct turret_design

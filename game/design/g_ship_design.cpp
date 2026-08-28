@@ -6,6 +6,8 @@
 
 #include "design/g_ship_design.h"
 #include "design/g_design_parser.h"
+#include "design/g_funnel_design.h"
+#include "design/g_turret_design.h"
 #include "cm_filesystem.h"
 #include "cm_lexer.h"
 
@@ -61,6 +63,43 @@ bool ship_design::parse(lexer& lex, design_manager const& mgr, ship_design& ship
                     }
                 }
                 ship.turrets.push_back(ti);
+                // Trailing comma is allowed
+                if (!lex.check_token(",")) {
+                    break;
+                }
+            }
+            if (!lex.has_error()) {
+                lex.expect_token("]");
+                lex.expect_token(";");
+            }
+        } else if (lex.check_token("funnels")
+            && lex.expect_token("=")
+            && lex.expect_token("[")) {
+            while (!lex.has_error() && lex.check_token("{")) {
+                ship_design::funnel_instance fi{};
+                while (!lex.has_error() && !lex.check_token("}")) {
+                    if (lex.check_token("design")) {
+                        lexer::token design;
+                        if (lex.expect_token("=")
+                            && lex.expect_token_type(design, lexer::token_type::name)
+                            && lex.expect_token(";")) {
+                            if (!(fi.design = mgr.find_funnel(design))) {
+                                lex.set_error(design, "failed to find funnel design '%.*s'",
+                                    int(design.end - design.begin), design.begin);
+                            }
+                        } else {
+                            return false;
+                        }
+                    } else if (check_field(lex, "position", fi.position)) {
+                    } else {
+                        lexer::token t;
+                        if (lex.expect_any_token(t)) {
+                            lex.set_error(t, "unrecognized field '%.*s'", int(t.end - t.begin), t.begin);
+                        }
+                        return false;
+                    }
+                }
+                ship.funnels.push_back(fi);
                 // Trailing comma is allowed
                 if (!lex.check_token(",")) {
                     break;
@@ -141,6 +180,19 @@ void ship_design::print(file::stream& s, ship_design const& ship)
         s.printf("\n");
 
         s.printf("            design = %s;\n", ship.turrets[ii].design->id.c_str());
+        s.printf("        },\n");
+    }
+    s.printf("    ];\n");
+    s.printf("\n");
+
+    s.printf("    funnels = [\n");
+    for (std::size_t ii = 0; ii < ship.funnels.size(); ++ii) {
+        s.printf("        {\n");
+        s.printf("            design = %s;\n", ship.funnels[ii].design->id.c_str());
+        s.printf("            position = (%lg, %lg, %lg);\n",
+            ship.funnels[ii].position.x,
+            ship.funnels[ii].position.y,
+            ship.funnels[ii].position.z);
         s.printf("        },\n");
     }
     s.printf("    ];\n");

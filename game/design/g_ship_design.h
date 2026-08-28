@@ -9,8 +9,6 @@
 #include "cm_vector.h"
 #include "p_compound.h"
 
-#include "design/g_turret_design.h"
-
 ////////////////////////////////////////////////////////////////////////////////
 class lexer;
 
@@ -22,6 +20,8 @@ class stream;
 namespace game {
 
 class design_manager;
+struct funnel_design;
+struct turret_design;
 
 //------------------------------------------------------------------------------
 struct ship_design
@@ -56,6 +56,15 @@ struct ship_design
     };
 
     std::vector<turret_instance> turrets;
+
+    struct funnel_instance
+    {
+        funnel_design const* design;
+        vec3 position;
+    };
+
+    std::vector<funnel_instance> funnels;
+
     std::vector<vec2> hull_outline;
     physics::compound_shape hull_shape;
 };

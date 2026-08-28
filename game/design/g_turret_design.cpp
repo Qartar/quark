@@ -6,6 +6,7 @@
 
 #include "design/g_turret_design.h"
 #include "design/g_design_parser.h"
+#include "design/g_gun_design.h"
 #include "cm_filesystem.h"
 
 ////////////////////////////////////////////////////////////////////////////////

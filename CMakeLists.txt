@@ -48,6 +48,8 @@ set(QUARK_SOURCES
     game/design/g_design_manager.cpp
     game/design/g_design_manager.h
     game/design/g_design_parser.h
+    game/design/g_funnel_design.cpp
+    game/design/g_funnel_design.h
     game/design/g_gun_design.cpp
     game/design/g_gun_design.h
     game/design/g_ship_design.cpp

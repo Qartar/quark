@@ -13,6 +13,7 @@ class lexer;
 
 namespace game {
 
+struct funnel_design;
 struct gun_design;
 struct ship_design;
 struct turret_design;
@@ -27,16 +28,19 @@ public:
     void clear();
     void load_historical();
 
+    funnel_design* find_funnel(string::view id) const;
     gun_design* find_gun(string::view id) const;
     ship_design* find_ship(string::view id) const;
     turret_design* find_turret(string::view id) const;
 
 protected:
+    std::map<string::view, std::unique_ptr<funnel_design>> _funnels;
     std::map<string::view, std::unique_ptr<gun_design>> _guns;
     std::map<string::view, std::unique_ptr<ship_design>> _ships;
     std::map<string::view, std::unique_ptr<turret_design>> _turrets;
 
 protected:
+    bool load_funnel(string::view filename, funnel_design& funnel);
     bool load_gun(string::view filename, gun_design& gun);
     bool load_ship(string::view filename, ship_design& ship);
     bool load_turret(string::view filename, turret_design& turret);

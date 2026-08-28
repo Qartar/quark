@@ -11,7 +11,9 @@
 #include "g_projectile.h"
 #include "g_subsystem.h"
 #include "r_model.h"
+#include "design/g_gun_design.h"
 #include "design/g_ship_design.h"
+#include "design/g_turret_design.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
