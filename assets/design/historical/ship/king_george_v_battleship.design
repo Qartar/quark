@@ -94,6 +94,17 @@ king_george_v_battleship = {
         },
     ];
 
+    funnels = [
+        {
+            design = bismarck_funnel; // placeholder
+            position = (1, 0, 27);
+        },
+        {
+            design = bismarck_funnel; // placeholder
+            position = (-24, 0, 27);
+        },
+    ];
+
     hull_outline = [
         (-113, 0),
         (-112.44, 0.88),

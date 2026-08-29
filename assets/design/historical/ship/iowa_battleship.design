@@ -36,6 +36,87 @@ iowa_battleship = {
 
             design = iowa_16in;
         },
+        {
+            position = (9, -9.5, 1);
+            orientation = 0;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (0, -14, 1);
+            orientation = 0;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-9, -9.5, 1);
+            orientation = 0;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-26, -14, 1);
+            orientation = 180;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-35, -9.5, 1);
+            orientation = 180;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (9, 9.5, 1);
+            orientation = 0;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (0, 14, 1);
+            orientation = 0;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-9, 9.5, 1);
+            orientation = 0;
+            train_limit = (0, 180);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-26, 14, 1);
+            orientation = 180;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+        {
+            position = (-35, 9.5, 1);
+            orientation = 180;
+            train_limit = (-180, 0);
+
+            design = north_carolina_5in;
+        },
+    ];
+
+    funnels = [
+        {
+            design = bismarck_funnel; // placeholder
+            position = (-4, 0, 24);
+        },
+        {
+            design = bismarck_funnel; // placeholder
+            position = (-30, 0, 24);
+        },
     ];
 
     hull_outline = [

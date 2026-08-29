@@ -52,6 +52,13 @@ richelieu_battleship = {
         },
     ];
 
+    funnels = [
+        {
+            design = richelieu_funnel;
+            position = (-39, 0, 24);
+        },
+    ];
+
     hull_outline = [
         (-123.93, 0),
         (-123.55, 1.85),

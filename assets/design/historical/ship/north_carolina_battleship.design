@@ -108,6 +108,17 @@ north_carolina_battleship = {
         },
     ];
 
+    funnels = [
+        {
+            design = bismarck_funnel; // placeholder
+            position = (-20, 0, 24);
+        },
+        {
+            design = bismarck_funnel; // placeholder
+            position = (-34, 0, 24);
+        },
+    ];
+
     hull_outline = [
         (-111, 0),
         (-110.63, 1.66),

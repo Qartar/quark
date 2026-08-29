@@ -1,0 +1,17 @@
+fuso_15cm = {
+    radius = 1.2 m;
+    train_speed = 7;
+    elevation_speed = 12;
+    elevation_limit = (-5, 30);
+
+    num_guns = 1;
+    position = [
+        (0, 0, -1),
+    ];
+    reload_time = 10 s;
+
+    gun_design = 15_cm_50_41st_year_type;
+
+    outline = [
+    ];
+};

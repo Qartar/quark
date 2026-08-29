@@ -14,6 +14,10 @@ namespace render {
 //------------------------------------------------------------------------------
 outline::outline(vec2 const* vertices, std::size_t num_vertices)
 {
+    if (!num_vertices) {
+        return;
+    }
+
     std::size_t xmin = 0;
     std::vector<vec2f> s(num_vertices);
     for (std::size_t ii = 0; ii < num_vertices; ++ii) {

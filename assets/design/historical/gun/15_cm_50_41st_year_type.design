@@ -1,0 +1,19 @@
+15_cm_50_41st_year_type = {
+    name = "15 cm/50 41st Year Type";
+
+    caliber = 0.15 m;
+    length = 7.815 m;
+
+    shell_mass = 45 kg;
+    shell_velocity = 850 m/s;
+    shell_coefficient = 3710;
+
+    outline = [
+        (-0.6252, 0.1875),
+        (0, 0.1875),
+        (5.4705, 0.075),
+        (5.4705, -0.075),
+        (0, -0.1875),
+        (-0.6252, -0.1875),
+    ];
+};

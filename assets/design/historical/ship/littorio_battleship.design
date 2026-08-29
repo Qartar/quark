@@ -66,6 +66,17 @@ littorio_battleship = {
         },
     ];
 
+    funnels = [
+        {
+            design = littorio_funnel;
+            position = (-2, 0, 22);
+        },
+        {
+            design = littorio_funnel;
+            position = (-16, 0, 21);
+        },
+    ];
+
     hull_outline = [
         (-118.9, 0),
         (-118.61, 1.06),

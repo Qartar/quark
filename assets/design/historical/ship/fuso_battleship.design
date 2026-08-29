@@ -57,6 +57,111 @@ fuso_battleship = {
 
             design = fuso_36cm;
         },
+        {
+            position = (42.1, -9.8, 2);
+            orientation = 0;
+            train_limit = (-155, 0);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (29.9, -11.1, 2);
+            orientation = -25;
+            train_limit = (-130, 0);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (17, -11.9, 2);
+            orientation = -25;
+            train_limit = (-130, 0);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (2, -12.2, 2);
+            orientation = -155;
+            train_limit = (0, 130);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (-15.1, -12.2, 2);
+            orientation = -155;
+            train_limit = (0, 130);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (-24.1, -12.2, 2);
+            orientation = 180;
+            train_limit = (0, 155);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (-36.2, -10.1, 2);
+            orientation = 180;
+            train_limit = (0, 155);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (42.1, 9.8, 2);
+            orientation = 0;
+            train_limit = (0, 155);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (29.9, 11.1, 2);
+            orientation = 25;
+            train_limit = (0, 130);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (17, 11.9, 2);
+            orientation = 25;
+            train_limit = (0, 130);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (2, 12.2, 2);
+            orientation = 155;
+            train_limit = (-130, 0);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (-15.1, 12.2, 2);
+            orientation = 155;
+            train_limit = (-130, 0);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (-24.1, 12.2, 2);
+            orientation = 180;
+            train_limit = (-155, 0);
+
+            design = fuso_15cm;
+        },
+        {
+            position = (-36.2, 10.1, 2);
+            orientation = 180;
+            train_limit = (-155, 0);
+
+            design = fuso_15cm;
+        },
+    ];
+
+    funnels = [
+        {
+            design = fuso_funnel;
+            position = (-11.5, 0, 22.5);
+        },
     ];
 
     hull_outline = [

@@ -12,6 +12,7 @@
 #include "g_subsystem.h"
 #include "r_model.h"
 #include "design/g_gun_design.h"
+#include "design/g_funnel_design.h"
 #include "design/g_ship_design.h"
 #include "design/g_turret_design.h"
 
@@ -114,6 +115,32 @@ void ship::spawn()
             }
         }
     }
+
+    // add funnel outlines
+    {
+        _funnels.resize(_design->funnels.size());
+        for (std::size_t ii = 0; ii < _design->funnels.size(); ++ii) {
+            _funnels[ii].inner_outline = SIZE_MAX;
+            for (std::size_t jj = 0; jj < ii; ++jj) {
+                if (_design->funnels[ii].design == _design->funnels[jj].design) {
+                    _funnels[ii].inner_outline = _funnels[jj].inner_outline;
+                    _funnels[ii].outer_outline = _funnels[jj].outer_outline;
+                    break;
+                }
+            }
+
+            if (_funnels[ii].inner_outline == SIZE_MAX) {
+                _funnels[ii].inner_outline = _outlines.size();
+                _outlines.push_back(render::outline(
+                    _design->funnels[ii].design->inner_outline.data(),
+                    _design->funnels[ii].design->inner_outline.size()));
+                _funnels[ii].outer_outline = _outlines.size();
+                _outlines.push_back(render::outline(
+                    _design->funnels[ii].design->outer_outline.data(),
+                    _design->funnels[ii].design->outer_outline.size()));
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -175,6 +202,28 @@ void ship::draw(render::system* renderer, time_value time) const
 
             renderer->draw_outline(_outlines[_turrets[jj].gun_outline], gun_tx4, color, fill_color);
         }
+    }
+
+    // draw funnels
+    for (std::size_t jj = 0, num = _funnels.size(); jj < num; ++jj) {
+        mat4 outer_tx4 = mat4(1, 0, 0, 0,
+                              0, 1, 0, 0,
+                              0, 0, 1, 0,
+                              _design->funnels[jj].position.x,
+                              _design->funnels[jj].position.y,
+                              _design->funnels[jj].position.z, 1) * tx4;
+
+        color4 fill_color = color * .25f + hull_color * .75f;
+        renderer->draw_outline(_outlines[_funnels[jj].outer_outline], outer_tx4, color, fill_color);
+
+        mat4 inner_tx4 = mat4(1, 0, 0, 0,
+                              0, 1, 0, 0,
+                              0, 0, 1, 0,
+                              _design->funnels[jj].position.x,
+                              _design->funnels[jj].position.y,
+                              _design->funnels[jj].position.z + 1.0, 1) * tx4;
+
+        renderer->draw_outline(_outlines[_funnels[jj].inner_outline], inner_tx4, color, hull_color);
     }
 
     // draw wake

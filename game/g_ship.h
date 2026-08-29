@@ -95,6 +95,13 @@ protected:
 
     std::vector<turret_state> _turrets;
 
+    struct funnel_state {
+        std::size_t inner_outline;
+        std::size_t outer_outline;
+    };
+
+    std::vector<funnel_state> _funnels;
+
     //! Render outlines for hull, turrets, and guns. Hull is always index 0
     std::vector<render::outline> _outlines;
 

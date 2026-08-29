@@ -66,6 +66,13 @@ yamato_battleship = {
         },
     ];
 
+    funnels = [
+        {
+            design = yamato_funnel;
+            position = (-24.5, 0, 30);
+        },
+    ];
+
     hull_outline = [
         (131.15, -2.51),
         (130.22, -4.27),
