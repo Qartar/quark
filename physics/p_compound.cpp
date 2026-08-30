@@ -70,7 +70,9 @@ void compound_shape::calculate_mass_properties(double inverse_mass, vec2& center
 //------------------------------------------------------------------------------
 bounds compound_shape::calculate_bounds(mat3 transform) const
 {
-    assert(_children.size());
+    if (!_children.size()) {
+        return bounds{};
+    }
     bounds out = _children[0].shape->calculate_bounds(_children[0].transform() * transform);
     for (std::size_t ii = 1, sz = _children.size(); ii < sz; ++ii) {
         out |= _children[ii].shape->calculate_bounds(_children[ii].transform() * transform);

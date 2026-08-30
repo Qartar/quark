@@ -24,6 +24,7 @@ public:
     };
 
 public:
+    compound_shape() {}
     template<std::size_t size> compound_shape(child_shape (&&children)[size]) {
         _children.reserve(size);
         for (std::size_t ii = 0; ii < size; ++ii) {

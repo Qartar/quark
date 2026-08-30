@@ -38,12 +38,6 @@ protected:
     std::map<string::view, std::unique_ptr<gun_design>> _guns;
     std::map<string::view, std::unique_ptr<ship_design>> _ships;
     std::map<string::view, std::unique_ptr<turret_design>> _turrets;
-
-protected:
-    bool load_funnel(string::view filename, funnel_design& funnel);
-    bool load_gun(string::view filename, gun_design& gun);
-    bool load_ship(string::view filename, ship_design& ship);
-    bool load_turret(string::view filename, turret_design& turret);
 };
 
 } // namespace game
