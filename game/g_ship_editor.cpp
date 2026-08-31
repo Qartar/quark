@@ -1178,6 +1178,9 @@ bool ship_editor::key_event(int key, bool down)
             return true;
 
         case K_F9:
+            for (auto& outline : _outlines) {
+                outline.linearize();
+            }
             export_verts("editor.log");
             return true;
 
@@ -1969,20 +1972,20 @@ void ship_editor::export_verts(string::view filename) const
         return;
     }
 
-    s.printf("/* deck */ {\n    ");
+    s.printf("/* deck */ {\n");
     for (std::size_t ii = 0; ii < _outlines[0].linearized().size(); ++ii) {
-        s.printf("vec3(%.2ff, %.2ff, %.2ff), ", _outlines[0].linearized()[ii].x, _outlines[0].linearized()[ii].y, _outlines[0].linearized()[ii].z);
+        s.printf("        (%lg, %lg),\n", _outlines[0].linearized()[ii].x, _outlines[0].linearized()[ii].y);
     }
-    s.printf("\n}\n");
+    s.printf("}\n");
     for (std::size_t jj = 0; jj < _turrets.size(); ++jj) {
-        s.printf("/* turret */ {\n    ");
+        s.printf("/* turret */ {\n");
         for (std::size_t ii = 0; ii < _outlines[_turrets[jj].index].linearized().size(); ++ii) {
-            s.printf("vec3(%.2ff, %.2ff, %.2ff), ", _outlines[_turrets[jj].index].linearized()[ii].x, _outlines[_turrets[jj].index].linearized()[ii].y, _outlines[_turrets[jj].index].linearized()[ii].z);
+            s.printf("        (%lg, %lg),\n", _outlines[_turrets[jj].index].linearized()[ii].x, _outlines[_turrets[jj].index].linearized()[ii].y);
         }
-        s.printf("\n}\n");
+        s.printf("}\n");
     }
     for (std::size_t ii = 0; ii < _turret_instances.size(); ++ii) {
-        s.printf("/* turret_instance */ vec3(%.2ff, %.2ff, %.2ff),\n", _turret_instances[ii].transform[3][0], _turret_instances[ii].transform[3][1], _turret_instances[ii].transform[3][2]);
+        s.printf("/* turret_instance */ (%lg, %lg, %lg),\n", _turret_instances[ii].transform[3][0], _turret_instances[ii].transform[3][1], _turret_instances[ii].transform[3][2]);
     }
 }
 
