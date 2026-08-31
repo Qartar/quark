@@ -171,6 +171,7 @@ void system::draw_particles(time_value time, render::particle const* particles, 
     // Scaling factor for particle tessellation
     vec2i framebuffer_size(_framebuffer.width(), _framebuffer.height());
     const double view_scale = sqrt(framebuffer_size.length_sqr() / _view.size.length_sqr());
+    bounds view_bounds(-0.5 * _view.size, 0.5 * _view.size);
 
     render::particle const* end = particles + num_particles;
     for (render::particle const*p = particles; p < end; ++p) {
@@ -187,6 +188,11 @@ void system::draw_particles(time_value time, render::particle const* particles, 
         vec3 position = (p->position
                       + p->velocity * vtime
                       + p->acceleration * 0.5 * vtime * vtime) * _view.transform;
+
+        // Viewport cull, may incorrectly reject particles with tail flag
+        if (!view_bounds.intersects_circle(position.to_vec2(), radius)) {
+            continue;
+        }
 
         color4 color_in = p->flags & render::particle::invert ? color * color4(1,1,1,0.25f) : color;
         color4 color_out = p->flags & render::particle::invert ? color : color * color4(1,1,1,0.25f);
