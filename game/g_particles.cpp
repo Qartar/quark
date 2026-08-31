@@ -27,6 +27,11 @@ void world::draw_particles(render::system* renderer, time_value time) const
 {
     for (std::size_t ii = 0; ii < _particles.size(); ++ii) {
         double ptime = (time - _particles[ii].time).to_seconds();
+        // Particles can be emitted in the future, skip size/alpha culling in
+        // case particle would have negative size or alpha when time is negative
+        if (ptime < 0) {
+            continue;
+        }
         if (_particles[ii].color.a + _particles[ii].color_velocity.a * ptime < 0.0) {
             free_particle(&_particles[ii]);
             --ii;
@@ -343,32 +348,41 @@ void world::add_effect(time_value time, effect_type type, vec3 position, vec3 di
                 p->drag = _random.uniform_real(2.f, 4.f) * scale;
             }
 
-#if 0
-            // debris
+            break;
+        }
 
-            for (int ii = 0; ii < 32 * scale; ++ii) {
+        case effect_type::funnel_smoke: {
+            int count = static_cast<int>(strength);
+            if (_random.uniform_real() < (strength - count)) {
+                ++count;
+            }
+            render::particle* p;
+
+            for (int ii = 0; ii < count; ++ii) {
                 if ( (p = add_particle(time)) == NULL )
                     return;
 
                 r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(2.f * scale);
+                d = _random.uniform_real(4.f);
 
-                p->position = position + vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
+                p->position = position + vec3(vec2(cos(r),sin(r))*d) * tx;
 
                 r = _random.uniform_real(2.f * math::pi);
-                d = _random.uniform_real(128.f * scale);
+                d = sqrt(_random.uniform_real()) * 8.f;
 
-                p->velocity = vec3(vec2(cos(r)*d,sin(r)*d)) * tx;
-                p->velocity += direction * d * 0.5f;
+                p->velocity = vec3(vec2(cos(r),sin(r))*d) * tx;
+                p->velocity += direction * d * 5.f + velocity;
 
-                p->color = color4(1,_random.uniform_real(.5f, 1.f),0,1);
-                p->color_velocity = color4(0,0,0,_random.uniform_real(-2.5f, -1.5f));
-                p->size = 0.5f;
-                p->size_velocity = 0.0f;
-                p->drag = _random.uniform_real(.5f, 1.f);
-                p->flags = render::particle::tail;
+                float albedo = _random.uniform_real(0.f, .2f);
+                p->color = color4(albedo, albedo, albedo, 0.2f);
+                float duration = std::exp(_random.normal_real(1.f, 1.f));
+                p->color_velocity = color4(0,0,0,-p->color.a/duration);
+                p->size = _random.uniform_real(2.f, 4.f);
+                p->size_velocity = _random.uniform_real(5.f, 10.f) / sqrt(duration);
+
+                p->drag = _random.uniform_real(1.f, 2.f);
             }
-#endif
+
             break;
         }
 

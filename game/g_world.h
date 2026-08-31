@@ -45,6 +45,7 @@ enum class effect_type
     missile_impact,
     explosion,
     splash,
+    funnel_smoke,
 };
 
 //------------------------------------------------------------------------------

@@ -350,6 +350,19 @@ void ship::think()
 
         _turrets[idx].refire_time = time + turret.design->reload_time;
     }
+
+    // Emit exhaust particles
+    for (std::size_t ii = 0; ii < _funnels.size(); ++ii) {
+        vec3 position = _design->funnels[ii].position * get_transform();
+        vec3 velocity = get_linear_velocity();
+        get_world()->add_effect(
+            time,
+            effect_type::funnel_smoke,
+            position,
+            vec3_zero,
+            _design->power * 1e-5f / float(_funnels.size()),
+            velocity);
+    }
 }
 
 //------------------------------------------------------------------------------
