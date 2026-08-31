@@ -1,0 +1,24 @@
+deutschland_15cm = {
+    radius = 0.5 m;
+    train_speed = 9;
+    elevation_speed = 8;
+    elevation_limit = (-10, 35);
+
+    num_guns = 1;
+    position = [
+        (1.45, 0, 1),
+    ];
+    reload_time = 7.5 s;
+
+    gun_design = 15_cm_sk_c_28;
+
+    outline = [
+        (-2.18, 0.49),
+        (-1.34, 1.34),
+        (1.47, 1.18),
+        (1.47, -1.18),
+        (1.47, -1.18),
+        (-1.34, -1.34),
+        (-2.18, -0.49),
+    ];
+};
