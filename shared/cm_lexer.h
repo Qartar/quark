@@ -101,7 +101,7 @@ public:
 
 protected:
     //! Source filename
-    string::buffer _filename;
+    string::view _filename;
     //! Starting line number (typically 1)
     std::size_t _linenumber;
     //! Starting column (typically 1)

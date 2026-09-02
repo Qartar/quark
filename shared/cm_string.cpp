@@ -82,6 +82,17 @@ buffer::buffer(view s)
 }
 
 //------------------------------------------------------------------------------
+buffer::buffer(view s, std::size_t capacity)
+    : _begin(nullptr)
+    , _end(nullptr)
+    , _capacity(nullptr)
+{
+    reserve(max(s.length() + 1, capacity), true);
+    strzcpy(_begin, s, _capacity - _begin);
+    _end = _begin + s.length();
+}
+
+//------------------------------------------------------------------------------
 buffer::buffer(buffer&& s)
     : _begin(s._begin)
     , _end(s._end)
@@ -147,16 +158,26 @@ void buffer::clear()
 //------------------------------------------------------------------------------
 void buffer::resize(std::size_t length)
 {
-    reserve(length + 1);
+    reserve(length + 1, true);
     _end = _begin + length;
+    *_end = '\0';
 }
 
 //------------------------------------------------------------------------------
-void buffer::reserve(std::size_t size)
+void buffer::reserve(std::size_t size, bool discard)
 {
     if (_capacity < _begin + size) {
-        delete [] _begin;
-        _begin = new char[size];
+        if (discard || _end == _begin) {
+            delete [] _begin;
+            _begin = new char[size];
+            _end = _begin;
+        } else {
+            char* new_begin = new char[size];
+            strzcpy(new_begin, {_begin, _end}, size);
+            delete [] _begin;
+            _end = new_begin + (_end - _begin);
+            _begin = new_begin;
+        }
         _capacity = _begin + size;
     }
 }
@@ -166,6 +187,24 @@ buffer& buffer::assign(char const* s, std::size_t len)
 {
     resize(len);
     strzcpy(_begin, {s, s + len}, _capacity - _begin);
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+buffer& buffer::append(string::view s)
+{
+    reserve(length() + s.length() + 1, false);
+    strzcpy(_end, s, _capacity - _end + 1);
+    _end += s.length();
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+buffer& buffer::truncate(std::size_t n)
+{
+    assert(_end >= _begin + n);
+    _end = _begin + n;
+    *_end = '\0';
     return *this;
 }
 

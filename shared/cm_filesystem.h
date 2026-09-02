@@ -117,12 +117,13 @@ public:
     //! advance to the next file
     find& operator++();
     //! return name of current file including search path
-    string::view fullname() const;
+    string::buffer const& fullname() const;
     //! return name of current file without search path
     string::view filename() const;
 
 protected:
     string::buffer _path;
+    std::size_t _path_length;
     intptr_t _handle;
     __finddata64_t _data;
 };

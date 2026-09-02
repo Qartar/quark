@@ -115,6 +115,8 @@ public:
     explicit buffer(char const* c_str);
     //! Explicit conversion from string view
     explicit buffer(view s);
+    //! Conversion from string view with explicit capacity
+    buffer(view s, std::size_t capacity);
     buffer(buffer&& s);
     buffer(buffer const& s);
     buffer& operator=(buffer&& s);
@@ -154,8 +156,14 @@ public:
     //! Sets the contents of the string to the given string
     buffer& assign(char const* s, std::size_t len);
 
+    //! Appends the contents of the given string, resizing if necessary
+    buffer& append(string::view s);
+
+    //! Truncates the string after the given number of characters
+    buffer& truncate(std::size_t n);
+
     //! Resize the internal string data for the given number of bytes, not
-    //! including null terminator.
+    //! including null terminator. The string contents are undefined.
     void resize(std::size_t size);
 
     //! Releases internal string data
@@ -168,8 +176,9 @@ protected:
 
 protected:
     //! Resize the internal string data for the given number of bytes, including
-    //! null terminator.
-    void reserve(std::size_t size);
+    //! null terminator. If `discard` is false then the contents of the internal
+    //! string data is preserved across allocations, otherwise they are undefined.
+    void reserve(std::size_t size, bool discard);
 };
 
 //! Returns true if the strings `lhs` and `rhs` represent the same string.
