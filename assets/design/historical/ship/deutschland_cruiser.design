@@ -6,7 +6,7 @@ deutschland_cruiser = {
     displacement = 10800 t;
 
     power = 53260 shp;
-    speed = 26 kn;
+    speed = 28 kn;
 
     rudder_angle = 36;
     rudder_speed = 1;
