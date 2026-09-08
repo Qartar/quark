@@ -25,22 +25,7 @@ bool gun_design::parse(lexer& lex, design_manager const&, gun_design& gun)
         } else if (check_field(lex, "shell_mass", gun.shell_mass, units_mass)) {
         } else if (check_field(lex, "shell_velocity", gun.shell_velocity, units_speed)) {
         } else if (check_field(lex, "shell_coefficient", gun.shell_coefficient)) {
-        } else if (lex.check_token("outline")) {
-            if (!lex.expect_token("=") || !lex.expect_token("[")) {
-                return false;
-            }
-            vec2 v;
-            while (!lex.has_error() && !lex.peek_token("]") && lex.parse(v)) {
-                gun.outline.push_back(v);
-                // Trailing comma is allowed
-                if (!lex.check_token(",")) {
-                    break;
-                }
-            }
-            if (!lex.has_error()) {
-                lex.expect_token("]");
-                lex.expect_token(";");
-            }
+        } else if (check_field(lex, "outline", gun.outline)) {
         } else {
             lexer::token t;
             if (lex.expect_any_token(t)) {

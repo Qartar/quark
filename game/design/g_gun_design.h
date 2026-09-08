@@ -4,6 +4,7 @@
 #pragma once
 
 #include "cm_string.h"
+#include "r_outline.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 class lexer;
@@ -34,7 +35,7 @@ struct gun_design
 
     float shell_coefficient; //!< Ballistic coefficient of projectile
 
-    std::vector<vec2> outline;
+    render::outline outline;
 };
 
 } // namespace game

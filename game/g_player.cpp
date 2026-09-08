@@ -106,7 +106,7 @@ void player::draw(render::system* renderer, time_value time) const
                               0, 0, 1, 0, 0, 0, 0, 1);
 
             renderer->draw_outline(
-                target->hull_outline(),
+                target->design()->hull_outline,
                 scale * target->get_transform(time),
                 color4(1,1,1,1), color4(1,1,1,.5f));
         }
@@ -189,7 +189,7 @@ void player::draw_selection(render::system* renderer, time_value time, std::vect
                           0, 0, 1, 0, 0, 0, 0, 1);
 
         renderer->draw_outline(
-            ship->hull_outline(),
+            ship->design()->hull_outline,
             scale * ship->get_transform(time),
             color4(1,1,1,1), color4(1,1,1,.5f));
     }

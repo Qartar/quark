@@ -3,6 +3,10 @@
 
 #include "cm_lexer.h"
 
+namespace render {
+class outline;
+} // namespace render
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -102,23 +106,13 @@ bool check_field(lexer& lex,
 }
 
 //------------------------------------------------------------------------------
-inline bool check_field(lexer& lex,
+bool check_field(lexer& lex,
                  string::view field_name,
                  time_delta& field_value,
-                 bool (*check_units)(lexer&,double&) = units_none<double>)
-{
-    double value;
-    if (lex.check_token(field_name)
-        && lex.expect_token("=")
-        && lex.parse(value)
-        && check_units(lex, value)
-        && lex.expect_token(";")) {
-        field_value = time_delta::from_seconds(value);
-        return true;
-    } else {
-        return false;
-    }
-}
+                 bool (*check_units)(lexer&,double&) = units_none<double>);
+
+//------------------------------------------------------------------------------
+bool check_field(lexer& lex, string::view field_name, render::outline& outline);
 
 //------------------------------------------------------------------------------
 inline string::buffer make_literal(string::view s)

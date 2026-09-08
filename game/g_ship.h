@@ -60,8 +60,6 @@ public:
 
     ship_design const* design() const { return _design; }
 
-    render::outline const& hull_outline() const { return _outlines[0]; }
-
 protected:
     game::usercmd _usercmd;
 
@@ -87,23 +85,9 @@ protected:
         time_value refire_time;
 
         handle<game::fire_director> fire_director;
-
-        std::size_t turret_outline; //!< Index of turret render outline
-        std::size_t barbette_outline; //!< Index of barbette render outline
-        std::size_t gun_outline; //!< Index of gun render outline
     };
 
     std::vector<turret_state> _turrets;
-
-    struct funnel_state {
-        std::size_t inner_outline;
-        std::size_t outer_outline;
-    };
-
-    std::vector<funnel_state> _funnels;
-
-    //! Render outlines for hull, turrets, and guns. Hull is always index 0
-    std::vector<render::outline> _outlines;
 
     handle<ship const> _primary_target;
 

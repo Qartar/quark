@@ -109,22 +109,7 @@ bool ship_design::parse(lexer& lex, design_manager const& mgr, ship_design& ship
                 lex.expect_token("]");
                 lex.expect_token(";");
             }
-        } else if (lex.check_token("hull_outline")) {
-            if (!lex.expect_token("=") || !lex.expect_token("[")) {
-                return false;
-            }
-            vec2 v;
-            while (!lex.has_error() && !lex.peek_token("]") && lex.parse(v)) {
-                ship.hull_outline.push_back(v);
-                // Trailing comma is allowed
-                if (!lex.check_token(",")) {
-                    break;
-                }
-            }
-            if (!lex.has_error()) {
-                lex.expect_token("]");
-                lex.expect_token(";");
-            }
+        } else if (check_field(lex, "hull_outline", ship.hull_outline)) {
         } else {
             lexer::token t;
             if (lex.expect_any_token(t)) {

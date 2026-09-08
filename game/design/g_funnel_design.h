@@ -4,6 +4,7 @@
 #pragma once
 
 #include "cm_vector.h"
+#include "r_outline.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 class lexer;
@@ -25,8 +26,8 @@ struct funnel_design
 
     string::buffer id;
 
-    std::vector<vec2> inner_outline; //!< Exhaust port outline
-    std::vector<vec2> outer_outline; //!< Exterior structure outline
+    render::outline inner_outline; //!< Exhaust port outline
+    render::outline outer_outline; //!< Exterior structure outline
 };
 
 } // namespace game

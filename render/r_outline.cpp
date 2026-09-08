@@ -13,18 +13,17 @@ namespace render {
 
 //------------------------------------------------------------------------------
 outline::outline(vec2 const* vertices, std::size_t num_vertices)
+    : _local(vertices, vertices + num_vertices)
 {
     if (!num_vertices) {
         return;
     }
 
     std::size_t xmin = 0;
-    std::vector<vec2f> s(num_vertices);
     for (std::size_t ii = 0; ii < num_vertices; ++ii) {
-        s[ii] = vec2f(vertices[ii]);
-        if (s[ii].x < s[xmin].x) {
+        if (_local[ii].x < _local[xmin].x) {
             xmin = ii;
-        } else if (s[ii].x == s[xmin].x && s[ii].y >= 0 && s[ii].y < s[xmin].y) {
+        } else if (_local[ii].x == _local[xmin].x && _local[ii].y >= 0 && _local[ii].y < _local[xmin].y) {
             xmin = ii;
         }
     }
@@ -32,11 +31,11 @@ outline::outline(vec2 const* vertices, std::size_t num_vertices)
     // triangulation. Eventually triangles should be provided explicitly, making
     // this logic unnecessary.
     if (xmin != 0) {
-        std::rotate(s.begin(), s.begin() + xmin, s.end());
+        std::rotate(_local.begin(), _local.begin() + xmin, _local.end());
     }
-    if (s[1].y < 0) {
-        std::reverse(s.begin(), s.end());
-        std::rotate(s.begin(), s.end() - 1, s.end());
+    if (_local[1].y < 0) {
+        std::reverse(_local.begin(), _local.end());
+        std::rotate(_local.begin(), _local.end() - 1, _local.end());
     }
 
     // Create a single triangle strip. NOTE: some turrets will have triangles that
@@ -45,7 +44,7 @@ outline::outline(vec2 const* vertices, std::size_t num_vertices)
     {
         short i0 = 0;
         short i1 = narrow_cast<short>(num_vertices - 1);
-        if (vertices[0].y == 0) {
+        if (_local[0].y == 0) {
             idx.push_back(0);
             idx.push_back(i1);
             idx.push_back(1);
@@ -65,11 +64,17 @@ outline::outline(vec2 const* vertices, std::size_t num_vertices)
             --i1;
         }
 
-        if (vertices[num_vertices / 2].y == 0) {
+        if (_local[num_vertices / 2].y == 0) {
             idx.push_back(narrow_cast<short>(num_vertices / 2 - 1));
             idx.push_back(narrow_cast<short>(num_vertices / 2));
             idx.push_back(narrow_cast<short>(num_vertices / 2 + 1));
         }
+    }
+
+    // Create array of single-precision vec2 for upload
+    std::vector<vec2f> s(num_vertices);
+    for (std::size_t ii = 0; ii < num_vertices; ++ii) {
+        s[ii] = vec2f(_local[ii]);
     }
 
     _vertices = gl::vertex_buffer<vec2f>(

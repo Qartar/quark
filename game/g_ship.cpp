@@ -55,8 +55,6 @@ void ship::spawn()
     _navigation = get_world()->spawn<game::navigation>(this);
     _subsystems.push_back(_navigation);
 
-    _outlines.push_back(render::outline(_design->hull_outline.data(), _design->hull_outline.size()));
-
     // add a fire director for each unique gun design
     {
         gun_design const* gun = nullptr;
@@ -68,77 +66,6 @@ void ship::spawn()
                 _subsystems.push_back(_fire_directors.back());
             }
             _turrets[ii].fire_director = _fire_directors.back();
-        }
-    }
-
-    // add turret and gun outlines
-    // TODO: render outlines should be on the designs themselves instead of duplicated on every ship
-    {
-        for (std::size_t ii = 0; ii < _turrets.size(); ++ii) {
-            _turrets[ii].turret_outline = SIZE_MAX;
-            _turrets[ii].barbette_outline = SIZE_MAX;
-            _turrets[ii].gun_outline = SIZE_MAX;
-            // turret designs are not necessarily 1:1 with gun designs, check all preceding designs
-            for (std::size_t jj = 0; jj < ii; ++jj) {
-                if (_design->turrets[ii].design == _design->turrets[jj].design) {
-                    _turrets[ii].turret_outline = _turrets[jj].turret_outline;
-                    _turrets[ii].barbette_outline = _turrets[jj].barbette_outline;
-                }
-                if (_design->turrets[ii].design->gun_design == _design->turrets[jj].design->gun_design) {
-                    _turrets[ii].gun_outline = _turrets[jj].gun_outline;
-                }
-            }
-
-            if (_turrets[ii].turret_outline == SIZE_MAX) {
-                _turrets[ii].turret_outline = _outlines.size();
-                _outlines.push_back(render::outline(
-                    _design->turrets[ii].design->outline.data(),
-                    _design->turrets[ii].design->outline.size()));
-
-            }
-
-            if (_turrets[ii].barbette_outline == SIZE_MAX) {
-                _turrets[ii].barbette_outline = _outlines.size();
-                vec2 outline_verts[64];
-                for (std::size_t jj = 0; jj < countof(outline_verts); ++jj) {
-                    double a = jj * (math::twopi / double(countof(outline_verts)));
-                    outline_verts[jj] = vec2(std::cos(a), std::sin(a)) * _design->turrets[ii].design->radius;
-                }
-                _outlines.push_back(render::outline(outline_verts, countof(outline_verts)));
-            }
-
-            if (_turrets[ii].gun_outline == SIZE_MAX) {
-                _turrets[ii].gun_outline = _outlines.size();
-                _outlines.push_back(render::outline(
-                    _design->turrets[ii].design->gun_design->outline.data(),
-                    _design->turrets[ii].design->gun_design->outline.size()));
-            }
-        }
-    }
-
-    // add funnel outlines
-    {
-        _funnels.resize(_design->funnels.size());
-        for (std::size_t ii = 0; ii < _design->funnels.size(); ++ii) {
-            _funnels[ii].inner_outline = SIZE_MAX;
-            for (std::size_t jj = 0; jj < ii; ++jj) {
-                if (_design->funnels[ii].design == _design->funnels[jj].design) {
-                    _funnels[ii].inner_outline = _funnels[jj].inner_outline;
-                    _funnels[ii].outer_outline = _funnels[jj].outer_outline;
-                    break;
-                }
-            }
-
-            if (_funnels[ii].inner_outline == SIZE_MAX) {
-                _funnels[ii].inner_outline = _outlines.size();
-                _outlines.push_back(render::outline(
-                    _design->funnels[ii].design->inner_outline.data(),
-                    _design->funnels[ii].design->inner_outline.size()));
-                _funnels[ii].outer_outline = _outlines.size();
-                _outlines.push_back(render::outline(
-                    _design->funnels[ii].design->outer_outline.data(),
-                    _design->funnels[ii].design->outer_outline.size()));
-            }
         }
     }
 }
@@ -153,7 +80,7 @@ void ship::draw(render::system* renderer, time_value time) const
 
     // blend color with sea color to give semi-transparent effect, but render solid
     color4 hull_color = color * .25f + color4(.1f,.2f,.4f,1) * .75f;
-    renderer->draw_outline(_outlines[0], tx4, color, hull_color);
+    renderer->draw_outline(_design->hull_outline, tx4, color, hull_color);
 
     // draw rudder
     {
@@ -176,7 +103,7 @@ void ship::draw(render::system* renderer, time_value time) const
                                turret.position.x, turret.position.y, turret.position.z, 1) * tx4;
 
         color4 fill_color = color * .25f + hull_color * .75f;
-        renderer->draw_outline(_outlines[_turrets[jj].turret_outline], turret_tx4, color, fill_color);
+        renderer->draw_outline(turret.design->outline, turret_tx4, color, fill_color);
 
         // draw barbette outline
         mat4 barbette_tx4 = mat4(1, 0, 0, 0,
@@ -186,7 +113,7 @@ void ship::draw(render::system* renderer, time_value time) const
 
         color4 barbette_color = color + (hull_color - color) * sqrt(.75f);
         color4 barbette_edge = color * .75f + color4(.1f,.2f,.4f,1) * .25f;
-        renderer->draw_outline(_outlines[_turrets[jj].barbette_outline], barbette_tx4, barbette_edge, barbette_color);
+        renderer->draw_outline(turret.design->barbette_outline, barbette_tx4, barbette_edge, barbette_color);
 
         double cp = cos(_turrets[jj].elevation);
         double sp = sin(_turrets[jj].elevation);
@@ -200,12 +127,12 @@ void ship::draw(render::system* renderer, time_value time) const
                                -sp, 0, cp, 0,
                                 p.x, p.y, p.z, 1) * turret_tx4;
 
-            renderer->draw_outline(_outlines[_turrets[jj].gun_outline], gun_tx4, color, fill_color);
+            renderer->draw_outline(turret.design->gun_design->outline, gun_tx4, color, fill_color);
         }
     }
 
     // draw funnels
-    for (std::size_t jj = 0, num = _funnels.size(); jj < num; ++jj) {
+    for (std::size_t jj = 0, num = _design->funnels.size(); jj < num; ++jj) {
         mat4 outer_tx4 = mat4(1, 0, 0, 0,
                               0, 1, 0, 0,
                               0, 0, 1, 0,
@@ -214,7 +141,7 @@ void ship::draw(render::system* renderer, time_value time) const
                               _design->funnels[jj].position.z, 1) * tx4;
 
         color4 fill_color = color * .25f + hull_color * .75f;
-        renderer->draw_outline(_outlines[_funnels[jj].outer_outline], outer_tx4, color, fill_color);
+        renderer->draw_outline(_design->funnels[jj].design->outer_outline, outer_tx4, color, fill_color);
 
         mat4 inner_tx4 = mat4(1, 0, 0, 0,
                               0, 1, 0, 0,
@@ -223,7 +150,7 @@ void ship::draw(render::system* renderer, time_value time) const
                               _design->funnels[jj].position.y,
                               _design->funnels[jj].position.z + 1.0, 1) * tx4;
 
-        renderer->draw_outline(_outlines[_funnels[jj].inner_outline], inner_tx4, color, hull_color);
+        renderer->draw_outline(_design->funnels[jj].design->inner_outline, inner_tx4, color, hull_color);
     }
 
     // draw wake
@@ -352,7 +279,7 @@ void ship::think()
     }
 
     // Emit exhaust particles
-    for (std::size_t ii = 0; ii < _funnels.size(); ++ii) {
+    for (std::size_t ii = 0; ii < _design->funnels.size(); ++ii) {
         vec3 position = _design->funnels[ii].position * get_transform();
         vec3 velocity = get_linear_velocity();
         get_world()->add_effect(
@@ -360,7 +287,7 @@ void ship::think()
             effect_type::funnel_smoke,
             position,
             vec3_zero,
-            _design->power * 1e-5f / float(_funnels.size()),
+            _design->power * 1e-5f / float(_design->funnels.size()),
             velocity);
     }
 }

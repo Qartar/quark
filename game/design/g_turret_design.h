@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include "cm_string.h"
+#include "cm_time.h"
 #include "cm_vector.h"
+#include "r_outline.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 class lexer;
@@ -38,7 +41,8 @@ struct turret_design
 
     gun_design const* gun_design;
 
-    std::vector<vec2> outline;
+    render::outline outline;
+    render::outline barbette_outline;
 };
 
 } // namespace game

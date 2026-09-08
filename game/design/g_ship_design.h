@@ -8,6 +8,7 @@
 #include "cm_string.h"
 #include "cm_vector.h"
 #include "p_compound.h"
+#include "r_outline.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 class lexer;
@@ -65,7 +66,7 @@ struct ship_design
 
     std::vector<funnel_instance> funnels;
 
-    std::vector<vec2> hull_outline;
+    render::outline hull_outline;
     physics::compound_shape hull_shape;
 };
 

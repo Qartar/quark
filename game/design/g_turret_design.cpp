@@ -56,22 +56,7 @@ bool turret_design::parse(lexer& lex, design_manager const& mgr, turret_design& 
             } else {
                 return false;
             }
-        } else if (lex.check_token("outline")) {
-            if (!lex.expect_token("=") || !lex.expect_token("[")) {
-                return false;
-            }
-            vec2 v;
-            while (!lex.has_error() && !lex.peek_token("]") && lex.parse(v)) {
-                turret.outline.push_back(v);
-                // Trailing comma is allowed
-                if (!lex.check_token(",")) {
-                    break;
-                }
-            }
-            if (!lex.has_error()) {
-                lex.expect_token("]");
-                lex.expect_token(";");
-            }
+        } else if (check_field(lex, "outline", turret.outline)) {
         } else {
             lexer::token t;
             if (lex.expect_any_token(t)) {
@@ -79,6 +64,20 @@ bool turret_design::parse(lexer& lex, design_manager const& mgr, turret_design& 
             }
             return false;
         }
+    }
+
+    // Create barbette outline
+    if (turret.radius) {
+        vec2 v[64];
+        for (std::size_t ii = 0; ii < countof(v) / 4; ++ii) {
+            float a = float(ii) * (math::twopi / float(countof(v)));
+            // render::outline expects vertices in clockwise order starting with quadrant II
+            v[ii] = vec2(-cos(a) * turret.radius, sin(a) * turret.radius);
+            v[ii + (countof(v) * 1 / 4)] = vec2(v[ii].y, -v[ii].x);
+            v[ii + (countof(v) * 2 / 4)] = vec2(-v[ii].x, -v[ii].y);
+            v[ii + (countof(v) * 3 / 4)] = vec2(-v[ii].y, v[ii].x);
+        }
+        turret.barbette_outline = render::outline(v, countof(v));
     }
 
     if (!lex.has_error()) {
