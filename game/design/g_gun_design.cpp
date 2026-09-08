@@ -25,6 +25,7 @@ bool gun_design::parse(lexer& lex, design_manager const&, gun_design& gun)
         } else if (check_field(lex, "shell_mass", gun.shell_mass, units_mass)) {
         } else if (check_field(lex, "shell_velocity", gun.shell_velocity, units_speed)) {
         } else if (check_field(lex, "shell_coefficient", gun.shell_coefficient)) {
+        } else if (check_field(lex, "shell_outline", gun.shell_outline)) {
         } else if (check_field(lex, "outline", gun.outline)) {
         } else {
             lexer::token t;
@@ -33,6 +34,22 @@ bool gun_design::parse(lexer& lex, design_manager const&, gun_design& gun)
             }
             return false;
         }
+    }
+
+    if (!gun.shell_outline.size()) {
+        // Generic ballistic capped shell
+        vec2 v[9] = {
+            vec2(-2.0 * gun.caliber, 0.45 * gun.caliber),
+            vec2(-1.5 * gun.caliber, 0.5 * gun.caliber),
+            vec2( 0, 0.5 * gun.caliber),
+            vec2( 2.4 * gun.caliber, 0.1 * gun.caliber),
+            vec2( 2.5 * gun.caliber, 0),
+            vec2( 2.4 * gun.caliber,-0.1 * gun.caliber),
+            vec2( 0,-0.5 * gun.caliber),
+            vec2(-1.5 * gun.caliber,-0.5 * gun.caliber),
+            vec2(-2.0 * gun.caliber,-0.45 * gun.caliber),
+        };
+        gun.shell_outline = render::outline(v, countof(v));
     }
 
     if (!lex.has_error()) {
@@ -57,6 +74,12 @@ void gun_design::print(file::stream& s, gun_design const& gun)
     s.printf("    shell_velocity = %g m/s;\n", gun.shell_velocity);
     s.printf("    shell_coefficient = %g;\n", gun.shell_coefficient);
     s.printf("\n");
+
+    s.printf("    shell_outline = [\n");
+    for (std::size_t ii = 0; ii < gun.shell_outline.size(); ++ii) {
+        s.printf("        (%lg, %lg),\n", gun.shell_outline[ii].x, gun.shell_outline[ii].y);
+    }
+    s.printf("    ];\n");
 
     s.printf("    outline = [\n");
     for (std::size_t ii = 0; ii < gun.outline.size(); ++ii) {

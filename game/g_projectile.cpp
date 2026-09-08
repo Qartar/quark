@@ -10,6 +10,8 @@
 #include "g_ship.h"
 #include "p_collide.h"
 
+#include "design/g_gun_design.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
@@ -18,9 +20,9 @@ physics::circle_shape projectile::_shape(1.0f);
 physics::material projectile::_material(0.5f, 1.0f);
 
 //------------------------------------------------------------------------------
-projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 velocity)
+projectile::projectile(object* owner, gun_design const* design, vec3 position, vec3 velocity)
     : object(owner)
-    , _info(info)
+    , _design(design)
     , _position(position)
     , _velocity(velocity)
     , _impact_time(time_value::max)
@@ -33,16 +35,6 @@ projectile::projectile(object* owner, projectile_info info, vec3 position, vec3 
     vec3 normal = cross(direction, tangent);
     set_rotation(mat3(direction, tangent, normal).to_rotation(), true);
     _channel = pSound->allocate_channel();
-
-    vec2 p[5] = {
-        vec2( _info.diameter, 0),
-        vec2( 0, 0.5 * _info.diameter),
-        vec2(-2.0 * _info.diameter, 0.5 * _info.diameter),
-        vec2(-2.0 * _info.diameter,-0.5 * _info.diameter),
-        vec2( 0,-0.5 * _info.diameter),
-    };
-
-    _outline = render::outline(p, countof(p));
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +58,7 @@ void projectile::think()
     vec3 new_position = _position;
     vec3 new_velocity = _velocity;
 
-    ballistics::step(new_position, new_velocity, ballistics::curve::G1, _info.ballistic_coefficient, FRAMETIME);
+    ballistics::step(new_position, new_velocity, ballistics::curve::G1, _design->shell_coefficient, FRAMETIME);
 
     // Assume projectiles never hit anything on their way up
     if (dot(new_velocity, new_position) < 0.0 && globe::altitude(new_position) < 12.0) {
@@ -94,12 +86,12 @@ void projectile::think()
             std::size_t num_results = get_world()->bounds_query(bounds3::from_center(p, vec3(1000.0)), results);
             for (std::size_t ii = 0; ii < num_results; ++ii) {
                 if (results[ii]->is_type<ship>()) {
-                    _owner->cast<ship>()->splash_observation(results[ii]->cast<ship>(), _info.diameter, p);
+                    _owner->cast<ship>()->splash_observation(results[ii]->cast<ship>(), _design->caliber, p);
                 }
             }
         }
 
-        get_world()->add_effect(_impact_time, effect_type::splash, p, vec3_zero, std::cbrt(_info.damage));
+        get_world()->add_effect(_impact_time, effect_type::splash, p, vec3_zero, std::cbrt(_design->shell_mass * mass_to_damage));
         get_world()->remove(this);
     }
 
@@ -137,24 +129,18 @@ bool projectile::touch(object *other, physics::collision const* collision)
         _impact_time = get_world()->frametime() + time_delta::from_seconds(1) * delta_time;
     }
 
-    if (collision) {
-        get_world()->add_sound(_info.impact_sound, collision->point, _info.damage);
-        get_world()->add_effect(
-            _impact_time,
-            _info.impact_effect,
-            collision->point,
-            collision->normal,
-            std::cbrt(_info.damage));
-    } else {
-        get_world()->add_sound(_info.impact_sound, get_position(), _info.damage);
-        get_world()->add_effect(_impact_time, _info.impact_effect, get_position(), vec3_zero, std::cbrt(_info.damage));
-    }
+    get_world()->add_effect(
+        _impact_time,
+        effect_type::cannon_impact,
+        collision ? collision->point : get_position(),
+        collision ? collision->normal : vec3_zero,
+        std::cbrt(_design->shell_mass * mass_to_damage));
 
     if (other && other->is_type<ship>()) {
-        static_cast<ship*>(other)->damage(this, collision ? collision->point : get_position(), _info.damage);
+        other->cast<ship>()->damage(this, collision ? collision->point : get_position(), _design->shell_mass * mass_to_damage);
         // Notify owner of shell impact to update fire control correction
         if (_owner && _owner->is_type<ship>()) {
-            _owner->cast<ship>()->splash_observation(other->cast<ship>(), _info.diameter, collision ? collision->point : get_position());
+            _owner->cast<ship>()->splash_observation(other->cast<ship>(), _design->caliber, collision ? collision->point : get_position());
         }
     }
 
@@ -172,7 +158,7 @@ void projectile::draw(render::system* renderer, time_value time) const
         return;
     }
 
-    renderer->draw_outline(_outline, get_transform(time), color, fill_color);
+    renderer->draw_outline(_design->shell_outline, get_transform(time), color, fill_color);
 }
 
 //------------------------------------------------------------------------------

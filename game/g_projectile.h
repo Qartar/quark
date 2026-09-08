@@ -9,23 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace game {
 
-//------------------------------------------------------------------------------
-struct projectile_info
-{
-    float damage; //!< damage of the projectile
-    float speed; //!< launch speed of the projectile
-    float diameter; //!< 
-    float ballistic_coefficient;
-
-    effect_type launch_effect;
-    sound::asset launch_sound;
-
-    effect_type flight_effect;
-    sound::asset flight_sound;
-
-    effect_type impact_effect;
-    sound::asset impact_sound;
-};
+struct gun_design;
 
 //------------------------------------------------------------------------------
 class projectile : public object
@@ -34,7 +18,7 @@ public:
     static const object_type _type;
 
 public:
-    projectile(object* owner, projectile_info info, vec3 position, vec3 velocity);
+    projectile(object* owner, gun_design const* design, vec3 position, vec3 velocity);
     ~projectile();
 
     void spawn();
@@ -47,13 +31,11 @@ public:
     virtual void read_snapshot(network::message const& message) override;
     virtual void write_snapshot(network::message& message) const override;
 
-    float damage() const { return _info.damage; }
-
     static physics::circle_shape _shape;
     static physics::material _material;
 
 protected:
-    projectile_info _info;
+    gun_design const* _design;
 
     vec3 _position;
     vec3 _velocity;
@@ -62,7 +44,7 @@ protected:
 
     sound::channel* _channel;
 
-    render::outline _outline;
+    static constexpr float mass_to_damage = 1.5e-4f;
 };
 
 } // namespace game

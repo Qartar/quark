@@ -35,6 +35,8 @@ struct gun_design
 
     float shell_coefficient; //!< Ballistic coefficient of projectile
 
+    render::outline shell_outline;
+
     render::outline outline;
 };
 

@@ -235,19 +235,6 @@ void ship::think()
             continue;
         }
 
-        projectile_info pinfo = {
-            /* damage */            1.5e-4f * turret.design->gun_design->shell_mass,
-            /* speed */             turret.design->gun_design->shell_velocity,
-            /* diameter */          turret.design->gun_design->caliber,
-            /* ballistic_coefficient */ turret.design->gun_design->shell_coefficient,
-            /* launch_effect */     effect_type::cannon,
-            /* launch_sound */      sound::asset::invalid,
-            /* flight_effect */     effect_type::none,
-            /* flight sound */      sound::asset::invalid,
-            /* impact_effect */     effect_type::cannon_impact,
-            /* impact_sound */      sound::asset::invalid,
-        };
-
         for (std::size_t ii = 0; ii < _design->turrets[idx].design->num_guns; ++ii) {
             vec3 position, direction, velocity;
             get_firing_vectors(idx, ii, position, direction, velocity);
@@ -259,20 +246,18 @@ void ship::think()
 
             get_world()->spawn<projectile>(
                 this,
-                pinfo,
+                turret.design->gun_design,
                 position,
-                direction * pinfo.speed + velocity);
+                direction * turret.design->gun_design->shell_velocity + velocity);
 
-            if (pinfo.launch_effect != effect_type::none) {
-                float strength = 1.9e-9f * turret.design->gun_design->shell_mass * square(turret.design->gun_design->shell_velocity);
-                get_world()->add_effect(
-                    time,
-                    pinfo.launch_effect,
-                    position,
-                    direction * 2,
-                    strength,
-                    velocity);
-            }
+            float strength = 1.9e-9f * turret.design->gun_design->shell_mass * square(turret.design->gun_design->shell_velocity);
+            get_world()->add_effect(
+                time,
+                effect_type::cannon,
+                position,
+                direction * 2,
+                strength,
+                velocity);
         }
 
         _turrets[idx].refire_time = time + turret.design->reload_time;
