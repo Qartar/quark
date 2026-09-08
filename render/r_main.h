@@ -130,6 +130,7 @@ private:
     bounds _view_bounds;
 
     config::boolean _draw_tris;
+    config::boolean _draw_particles;
 
     config::boolean _graph;
     struct timing {

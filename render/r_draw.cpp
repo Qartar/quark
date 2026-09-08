@@ -164,6 +164,10 @@ void system::draw_triangles(vec2 const* position, color4 const* color, int const
 //------------------------------------------------------------------------------
 void system::draw_particles(time_value time, render::particle const* particles, std::size_t num_particles)
 {
+    if (!_draw_particles) {
+        return;
+    }
+
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glLoadIdentity();

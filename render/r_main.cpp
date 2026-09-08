@@ -59,6 +59,7 @@ system::system(render::window* window)
     , _view{}
     , _view_bounds{}
     , _draw_tris("r_tris", 0, 0, "draw triangle edges")
+    , _draw_particles("r_particles", true, 0, "draw particles")
     , _graph("r_graph", false, 0, "draw frame timing graph")
 {}
 
