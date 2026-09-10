@@ -5,6 +5,7 @@
 
 #include "cm_string.h"
 #include "r_outline.h"
+#include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
 class lexer;
@@ -38,6 +39,17 @@ struct gun_design
     render::outline shell_outline;
 
     render::outline outline;
+
+    struct range_data {
+        double range;
+        double elevation; //!< Gun elevation
+        vec2 impact; //!< Impact velocity
+        time_delta time; //!< Time of flight
+    };
+
+    bool interpolate_range(double d, range_data& r) const;
+
+    std::vector<range_data> range_table;
 };
 
 } // namespace game

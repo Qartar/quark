@@ -45,22 +45,6 @@ protected:
     time_delta _time_of_flight;
     bool _is_valid;
 
-    // TODO: Move range table to gun design instead of duplicating it for every
-    // fire director (e.g. every ship) with that gun design.
-    struct range
-    {
-        double elevation;
-        double range;
-        time_delta time_of_flight;
-    };
-
-    static constexpr std::size_t max_table = 128;
-    range _table[max_table];
-    std::size_t _table_size;
-
-    static constexpr double min_elevation = math::deg2rad(0.0);
-    static constexpr double max_elevation = math::deg2rad(50.0);
-
     static constexpr std::size_t max_corrections = 16;
 
     //! Correction data to account for variables not reflected in the range
@@ -77,14 +61,6 @@ protected:
 
 protected:
     void update_solution();
-
-    //! Fill range data by linear interpolation of the range table. If the given
-    //! range falls outside the bounds of the range table then use the nearest
-    //! row of the table and return false.
-    bool interpolate_range(double d, range& r) const;
-
-    //! Populate the range table by simulating the projectile at varying elevations.
-    void populate_table();
 };
 
 } // namespace game
