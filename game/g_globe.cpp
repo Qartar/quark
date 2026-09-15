@@ -171,12 +171,12 @@ mat4 globe::surface_inverse_projection(vec3 surface)
 }
 
 //------------------------------------------------------------------------------
-double globe::intersect(vec3 start, vec3 direction)
+double globe::intersect(vec3 start, vec3 direction, double altitude)
 {
     // Using spherical globe approximation (not ellipsoidal)
     double a = dot(direction, direction);
     double b = 2.0 * dot(start, direction);
-    double c = dot(start, start) - mean_radius * mean_radius;
+    double c = dot(start, start) - square(mean_radius + altitude);
     double d = b * b - 4.0 * a * c;
 
     if (d < 0.0) {

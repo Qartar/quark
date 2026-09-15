@@ -37,7 +37,7 @@ public:
     //! Create an orthogonal inverse projection matrix centered on the given point on the surface
     static mat4 surface_inverse_projection(vec3 surface);
     //! Return the smallest intersection fraction, or DBL_MAX if no intersection exists
-    static double intersect(vec3 start, vec3 direction);
+    static double intersect(vec3 start, vec3 direction, double altitude = 0);
     //! Return the altitude above the surface of the given point
     static double altitude(vec3 point);
     //! Return the gravity vector (direction and magnitude) at the given point

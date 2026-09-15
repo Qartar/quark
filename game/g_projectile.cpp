@@ -61,13 +61,27 @@ void projectile::think()
     ballistics::step(new_position, new_velocity, ballistics::curve::G1, _design->shell_coefficient, FRAMETIME);
 
     // Assume projectiles never hit anything on their way up
-    if (dot(new_velocity, new_position) < 0.0 && globe::altitude(new_position) < 12.0) {
+    if (dot(new_velocity, new_position) < 0.0 && globe::altitude(new_position) < 5.0) {
         physics::contact c;
         game::object* obj = get_world()->trace(c, _position, new_position);
 
         if (obj) {
-            physics::collision collision(c);
-            touch(obj, &collision);
+            // Check whether projectile hits side or deck first
+            vec3 displacement = new_position - _position;
+            double d0 = dot(c.point - _position, displacement) / length_sqr(displacement);
+            double d1 = globe::intersect(_position, displacement, 5.0);
+            if (d1 > d0) {
+                c.point = _position + displacement * d1;
+                c.normal = normalize(c.point);
+                // Check whether vertical intersection is inside target shape
+                if (obj->rigid_body().contains_point(c.point)) {
+                    physics::collision collision(c);
+                    touch(obj, &collision);
+                }
+            } else {
+                physics::collision collision(c);
+                touch(obj, &collision);
+            }
         }
     }
 
