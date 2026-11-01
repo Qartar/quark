@@ -76,6 +76,8 @@ void world::clear()
 
     _sequence = 0;
     _framenum = 0;
+
+    _date = date_value(1942);
 }
 
 //------------------------------------------------------------------------------
@@ -124,6 +126,7 @@ void world::run_frame()
     _message.reset();
 
     ++_framenum;
+    _date += FRAMETIME;
 
     while (_removed.size()) {
         if (_removed.front()) {

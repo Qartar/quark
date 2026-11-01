@@ -156,6 +156,17 @@ void player::draw(render::system* renderer, time_value time) const
 
         renderer->set_view(old_view);
     }
+
+    {
+        string::literal months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        string::literal weekdays[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        date_value date = get_world()->date();
+        string::view date_string = va("%d %s %d %s %02d:%02d:%02d",
+            date.year(), months[date.month() - 1].c_str(), date.day_of_month(), weekdays[date.day_of_week()].c_str(), date.hours(), date.minutes(), date.seconds());
+        vec2 text_size = renderer->string_size(date_string);
+        vec2 text_offset = renderer->view().origin + vec2(-0.495, 0.495) * renderer->view().size - vec2(0,text_size.y);
+        renderer->draw_string(date_string, text_offset, color4(1,1,1,1));
+    }
 }
 
 //------------------------------------------------------------------------------

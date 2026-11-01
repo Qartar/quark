@@ -13,6 +13,8 @@
 #include "p_shape.h"
 #include "p_world.h"
 
+#include "cm_date.h"
+
 #include "net_message.h"
 
 #include "r_particle.h"
@@ -195,6 +197,8 @@ public:
     int framenum() const { return _framenum; }
     time_value frametime() const { return time_value(_framenum * FRAMETIME); }
 
+    date_value date() const { return _date; }
+
     float timescale() const { return _timescale; } //!< Game speed as a multiplier
 
     void on_speed_up(); //!< Command callback for increasing the game speed
@@ -239,6 +243,8 @@ private:
 
     config::scalar _timescale; //!< Current game speed as a multiplier
     float _prev_timescale; //!< Previous game speed, used for unpausing
+
+    date_value _date;
 
     globe _globe;
 
